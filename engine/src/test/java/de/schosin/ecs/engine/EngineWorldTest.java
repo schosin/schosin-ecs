@@ -44,10 +44,51 @@ public class EngineWorldTest extends AbstractWorldTest {
                     .hasFieldOrPropertyWithValue("processLoops", 42);
         }
 
+        @Test
+        void testPassedSingletons() {
+            var sharedBag = new IntBag(1);
+
+            var world = (EngineWorld) World.builder()
+                    .processLoops(42)
+                    .singletons("foobar", sharedBag)
+                    .build();
+
+            assertThat(world.getSingleton(String.class)).isEqualTo("foobar");
+            assertThat(world.getSingleton(IntBag.class)).isSameAs(sharedBag);
+        }
+
+        @Test
+        void testSingletonCreation() {
+            var world = World.builder().build();
+
+            var shared = assertThat(world.getSingleton(PublicShared.class)).isNotNull().actual();
+            assertThat(world.getSingleton(PublicShared.class)).isSameAs(shared);
+
+            assertThatThrownBy(() -> world.getSingleton(PublicSharedNoDefault.class)).isExactlyInstanceOf(UnsupportedOperationException.class);
+            assertThatThrownBy(() -> world.getSingleton(PrivateShared.class)).isExactlyInstanceOf(UnsupportedOperationException.class);
+        }
+
+        public static class PublicShared {
+        }
+
+        public static class PublicSharedNoDefault {
+            @SuppressWarnings("unused")
+            public PublicSharedNoDefault(int foo) {
+            }
+        }
+
+        private static class PrivateShared {
+        }
+
         public static class CustomBuilder implements World.Builder {
 
             @Override
             public Builder processLoops(int loops) {
+                return this;
+            }
+
+            @Override
+            public Builder singletons(Object... singletons) {
                 return this;
             }
 

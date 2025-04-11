@@ -14,4 +14,14 @@ public class ReflectionUtils {
         }
     }
 
+    public static <T> T createSingleton(Class<T> clazz) {
+        try {
+            return clazz.getDeclaredConstructor().newInstance();
+        } catch (NoSuchMethodException ex) {
+            throw new UnsupportedOperationException("Failed to create singleton of %s. Default constructor not found.".formatted(clazz.getName()), ex);
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException ex) {
+            throw new UnsupportedOperationException("Failed to create singleton of %s: %s".formatted(clazz.getName(), ex.getMessage()), ex);
+        }
+    }
+
 }

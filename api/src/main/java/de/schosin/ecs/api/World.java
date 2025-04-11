@@ -48,6 +48,15 @@ public interface World extends Archetype.Creator, Transmuter.Creator, Compositio
          */
         Builder processLoops(int loops);
 
+        /**
+         * Singletons to add to this world. Can be retrieved by systems with
+         * {@link World#getSingleton(Class)}.
+         * 
+         * @param singletons singletons to add
+         * @return this instance
+         */
+        Builder singletons(Object... singletons);
+
         World build();
 
     }
@@ -77,6 +86,25 @@ public interface World extends Archetype.Creator, Transmuter.Creator, Compositio
      * @param entityId
      */
     void deleteEntity(int entityId);
+
+    /**
+     * Returns a singleton instance of the given class. Can be used to share state
+     * between systems and other code without passing every singleton around manually.
+     * 
+     * <p>
+     * The singleton instance can be supplied with {@link World.Builder#addSingletons(Object...)}.
+     * If no singleton is found, a new instance will be created via reflection, requiring a public
+     * default constructor. If that fails, a {@link UnsupportedOperationException} is thrown. <b>That should be
+     * treated as an error to fix and not to catch</b>.
+     * </p>
+     * 
+     * @param <T> type of singleton
+     * @param clazz class of singleton
+     * @return singleton instnace
+     * @throws UnsupportedOperationException if singleton not found and creation failed
+     */
+    @NonNull
+    <T> T getSingleton(@NonNull Class<T> clazz) throws UnsupportedOperationException;
 
     /**
      * Retrieves the mapper of a given component class. This can be used to access components and 

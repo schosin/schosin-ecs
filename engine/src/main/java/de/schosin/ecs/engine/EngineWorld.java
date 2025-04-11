@@ -1,5 +1,9 @@
 package de.schosin.ecs.engine;
 
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
@@ -16,6 +20,7 @@ import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.compositions.CompositionManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 
 public class EngineWorld implements World {
 
@@ -26,6 +31,7 @@ public class EngineWorld implements World {
     }
 
     private final Config config;
+    private final Map<Class<?>, Object> singletons;
 
     private final BagManager bagManager;
     private final ComponentManager componentManager;
@@ -39,6 +45,7 @@ public class EngineWorld implements World {
 
     public EngineWorld(WorldBuilder builder) {
         this.config = new Config(builder);
+        this.singletons = builder.singletons != null ? new ConcurrentHashMap<>(builder.singletons) : new ConcurrentHashMap<>();
 
         this.bagManager = new BagManager();
         this.componentManager = new ComponentManager(bagManager);
@@ -59,6 +66,16 @@ public class EngineWorld implements World {
     @Override
     public void deleteEntity(int entityId) {
         changeManager.deleteEntity(entityId);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> @NonNull T getSingleton(@NonNull Class<T> clazz) throws NoSuchElementException {
+        return (T) this.singletons.computeIfAbsent(clazz, ignore -> createSingleton(clazz));
+    }
+
+    private <T> T createSingleton(Class<T> clazz) {
+        return ReflectionUtils.createSingleton(clazz);
     }
 
     @Override
