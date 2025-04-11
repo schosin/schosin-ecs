@@ -1,0 +1,145 @@
+package de.schosin.ecs.api;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.NoSuchElementException;
+import java.util.ServiceLoader;
+
+import org.jspecify.annotations.NonNull;
+
+import de.schosin.ecs.api.archetype.Archetype;
+import de.schosin.ecs.api.archetype.Transmuter;
+import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.api.components.Composition;
+
+public interface World extends Archetype.Creator, Transmuter.Creator, Composition.Creator {
+
+    String DEFAULT_IMPLEMENTATION = "de.schosin.ecs.engine.WorldBuilder";
+
+    static World.Builder builder() {
+        return builder(DEFAULT_IMPLEMENTATION);
+    }
+
+    static World.Builder builder(String implementation) {
+        try {
+            return ServiceLoader.load(World.Builder.class)
+                    .stream()
+                    .filter(p -> p.get().getClass().getName().contains(implementation))
+                    .findFirst()
+                    .orElseThrow(() -> new NoSuchElementException("Unable to load " + implementation))
+                    .get();
+        } catch (NoSuchElementException e) {
+            try {
+                return (Builder) Class.forName(implementation).getDeclaredConstructor().newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException ex) {
+                e.printStackTrace();
+                throw new IllegalArgumentException("Exception creating builder '%s' instance".formatted(implementation), ex);
+            }
+        }
+    }
+
+    interface Builder {
+
+        /**
+         * Default loop count used by {@link World#process()} when delegating to {@link World#process(int)}.
+         * 
+         * @param loops default value
+         * @return this instance
+         */
+        Builder processLoops(int loops);
+
+        World build();
+
+    }
+
+    /**
+     * Creates an entity with the given components. 
+     * 
+     * <p>
+     * The returned int is the id of the entity, which is unique during the lifetime of this entity.
+     * The id may be reused after this entity has been {@link #deleteEntity(int) deleted}.
+     * </p>
+     * 
+     * @param components components to add to the entity
+     * 
+     * @return id of the entity
+     */
+    int createEntity(Object... components);
+
+    /**
+     * Marks an entity for deletion. 
+     * 
+     * <p>
+     * The entity will be deleted during the {@link #process()} call. 
+     * Interested {@link Composition compositions} will be notified after the deletion.
+     * </p>
+     *  
+     * @param entityId
+     */
+    void deleteEntity(int entityId);
+
+    /**
+     * Retrieves the mapper of a given component class. This can be used to access components and 
+     * to add or remove components from entities given their id.
+     * 
+     * <p>
+     * <b>Note:</b> If T extends Pooled, the returned instance will also implement and
+     * can be cast to {@link PooledComponents}. Alternativly use {@link #getPooledComponents(Class)}
+     * instead.
+     * </p>
+     *  
+     * @param clazz {@link Class} of the component
+     * @return class to manage the components defined by the clazz argument 
+     */
+    @NonNull
+    <T> Components<T> getComponents(@NonNull Class<T> clazz);
+
+    /**
+     * Retrieves the mapper of a given component class. This can be used to access components and 
+     * to add or remove components from entities given their id.
+     * 
+     * @param clazz {@link Class} of the component
+     * @return class to manage the components defined by the clazz argument 
+     */
+    <T extends Pooled> PooledComponents<T> getPooledComponents(@NonNull Class<T> clazz);
+
+    /**
+     * Processes deletions of entities and removals of components. Depending on the implementation additional work may be done in this step.
+     * 
+     * <p>
+     * This method should be called either at the end of a game loop or in between systems. When the processing caused additional changes,
+     * this method returns true and the call can either be repeated immedietly or run next time (e.g. next frame). This can happen when
+     * {@link Composition#inserted(java.util.function.IntConsumer) inserted} and {@link Composition#removed(java.util.function.IntConsumer) removed}
+     * callbacks trigger changes for another composition. 
+     * </p>
+     * 
+     * <p>
+     * <b>Attention:</b> If this method is called while another thread is {@link Composition#process(java.util.function.IntConsumer) processing entities},
+     * entities might be skipped or the callback might see zeros (0) for the entity id.
+     * </p>
+     * 
+     * @return true if processing should be repeated due to further updates caused by the processing
+     */
+    boolean process();
+
+    /**
+     * Processes deletions of entities and removals of components. Depending on the implementation additional work may be done in this step.
+     * 
+     * <p>
+     * This method should be called either at the end of a game loop or in between systems. When the processing caused additional changes,
+     * this method returns true and the call can either be repeated immedietly or run next time (e.g. next frame). This can happen when
+     * {@link Composition#inserted(java.util.function.IntConsumer) inserted} and {@link Composition#removed(java.util.function.IntConsumer) removed}
+     * callbacks trigger changes for another composition. 
+     * </p>
+     * 
+     * <p>
+     * <b>Attention:</b> If this method is called while another thread is {@link Composition#process(java.util.function.IntConsumer) processing entities},
+     * entities might be skipped or the callback might see zeros (0) for the entity id.
+     * </p>
+     * 
+     * @param loops number of times the processing should be repeated if iterations require further processing
+     * @return true if processing should be repeated due to further updates caused by the processing
+     */
+    boolean process(int loops);
+
+}

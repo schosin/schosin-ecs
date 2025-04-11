@@ -1,0 +1,121 @@
+package de.schosin.ecs.engine.utils.collections;
+
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
+
+import org.jspecify.annotations.NullMarked;
+
+import de.schosin.ecs.api.Pooled;
+
+@NullMarked
+public sealed interface Pool<T> {
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    static <T> Pool<T> bounded(int limit, Class<T> clazz, Supplier<T> constructor) {
+        if (Pooled.class.isAssignableFrom(clazz)) {
+            return new BoundedPoolImpl<>(limit, clazz, constructor, instance -> ((Pooled) instance).reset());
+        }
+
+        return new BoundedPoolImpl(limit, clazz, constructor, null);
+    }
+
+    static <T> Pool<T> bounded(int limit, Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+        return new BoundedPoolImpl<>(limit, clazz, constructor, reset);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    static <T> Pool<T> unbounded(Class<T> clazz, Supplier<T> constructor) {
+        if (Pooled.class.isAssignableFrom(clazz)) {
+            return new PoolImpl<>(clazz, constructor, instance -> ((Pooled) instance).reset());
+        }
+
+        return new PoolImpl(clazz, constructor, null);
+    }
+
+    static <T> Pool<T> unbounded(Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+        return new PoolImpl<>(clazz, constructor, reset);
+    }
+
+    <R> R withInstance(Function<T, R> func);
+
+    void withInstanceNoResult(Consumer<T> consumer);
+
+    T getInstance();
+
+    void free(T instance);
+
+}
+
+final class BoundedPoolImpl<T> extends PoolImpl<T> {
+
+    private final int limit;
+
+    protected BoundedPoolImpl(int limit, Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+        super(clazz, constructor, reset);
+
+        this.limit = limit;
+    }
+
+    @Override
+    public void free(T instance) {
+        if (data.getSize() < limit) {
+            super.free(instance);
+        }
+    }
+
+}
+
+sealed class PoolImpl<T> implements Pool<T> {
+
+    protected final Bag<T> data;
+    private final Supplier<T> constructor;
+    private final Consumer<T> reset;
+
+    protected PoolImpl(Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+        this.data = new Bag<>(clazz, 1024);
+        this.constructor = constructor;
+        this.reset = reset;
+    }
+
+    public <R> R withInstance(Function<T, R> func) {
+        var instance = getInstance();
+        try {
+            return func.apply(instance);
+        } finally {
+            free(instance);
+        }
+    }
+
+    public void withInstanceNoResult(Consumer<T> consumer) {
+        var instance = getInstance();
+        try {
+            consumer.accept(instance);
+        } finally {
+            free(instance);
+        }
+    }
+
+    public T getInstance() {
+        if (data.getSize() > 0) {
+            synchronized (data) {
+                if (data.getSize() > 0) {
+                    return data.removeLast();
+                }
+            }
+        }
+
+        return constructor.get();
+    }
+
+    public void free(T instance) {
+        if (reset != null) {
+            reset.accept(instance);
+        }
+
+        synchronized (data) {
+            this.data.add(instance);
+        }
+    }
+
+}

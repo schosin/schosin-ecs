@@ -1,0 +1,882 @@
+package de.schosin.ecs.engine.entities;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.ArrayList;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.archetype.Archetype;
+import de.schosin.ecs.api.components.Composition;
+import de.schosin.ecs.engine.AbstractWorldTest;
+
+class ArchetypeManagerTest extends AbstractWorldTest {
+
+    @SuppressWarnings("rawtypes")
+    static final Archetype.Initialize NO_OP = (i, init) -> {
+    };
+
+    @Nested
+    class Archetype1Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class);
+
+            var entityId = archetype.create(new C1());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class);
+
+            assertThatThrownBy(() -> archetype.create(null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComposition(entityId, Composition.all(C1.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class Archetype2Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class);
+
+            var entityId = archetype.create(new C1(), new C2());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class Archetype3Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2(), new C3())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null, new C3())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class Archetype4Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3(), new C4());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComponent(entityId, C4.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class, C3.class, C4.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class Archetype5Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComponent(entityId, C4.class);
+            verifyHasComponent(entityId, C5.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComponent(entityId, C5.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class Archetype6Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComponent(entityId, C4.class);
+            verifyHasComponent(entityId, C5.class);
+            verifyHasComponent(entityId, C6.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5(), new C6())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5(), new C6())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5(), new C6())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5(), new C6())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null, new C6())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComponent(entityId, C5.class);
+                verifyHasComponent(entityId, C6.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class Archetype7Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComponent(entityId, C4.class);
+            verifyHasComponent(entityId, C5.class);
+            verifyHasComponent(entityId, C6.class);
+            verifyHasComponent(entityId, C7.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComponent(entityId, C5.class);
+                verifyHasComponent(entityId, C6.class);
+                verifyHasComponent(entityId, C7.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class Archetype8Test {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComponent(entityId, C4.class);
+            verifyHasComponent(entityId, C5.class);
+            verifyHasComponent(entityId, C6.class);
+            verifyHasComponent(entityId, C7.class);
+            verifyHasComponent(entityId, C8.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7(), new C8())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7(), new C8())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7(), new C8())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7(), new C8())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7(), new C8())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null, new C8())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), null)).isNotNull();
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComponent(entityId, C5.class);
+                verifyHasComponent(entityId, C6.class);
+                verifyHasComponent(entityId, C7.class);
+                verifyHasComponent(entityId, C8.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    @Nested
+    class ArchetypeNTest {
+
+        @Test
+        void testArchetype() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComponent(entityId, C4.class);
+            verifyHasComponent(entityId, C5.class);
+            verifyHasComponent(entityId, C6.class);
+            verifyHasComponent(entityId, C7.class);
+            verifyHasComponent(entityId, C8.class);
+            verifyHasComponent(entityId, D1.class);
+            verifyHasComponent(entityId, D2.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
+        }
+
+        @Test
+        void testOtherComponentsNotValidated() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+            verifyHasComponent(entityId, C4.class);
+            verifyHasComponent(entityId, C5.class);
+            verifyHasComponent(entityId, C6.class);
+            verifyHasComponent(entityId, C7.class);
+            verifyHasComponent(entityId, C8.class);
+            verifyDoesNotHaveComponent(entityId, D1.class);
+            verifyDoesNotHaveComponent(entityId, D2.class);
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
+        }
+
+        @Test
+        void testNullInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7(), new C8(), new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7(), new C8(), new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7(), new C8(), new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null, new C8(), new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), null, new D1(), new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), null, new D2())).isNotNull();
+            assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), null)).isNotNull();
+        }
+
+        @Test
+        void testDuplicateInstances() {
+            assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, C1.class))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Detected duplicate component types");
+
+            assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D1.class))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Detected duplicate component types");
+        }
+
+        @Test
+        void testBatch() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2()));
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComponent(entityId, C5.class);
+                verifyHasComponent(entityId, C6.class);
+                verifyHasComponent(entityId, C7.class);
+                verifyHasComponent(entityId, C8.class);
+                verifyHasComponent(entityId, D1.class);
+                verifyHasComponent(entityId, D2.class);
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
+            }
+        }
+
+        @Test
+        void testBatchComposition() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            var inserted = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
+            composition.inserted(inserted::add);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2()));
+
+            assertThat(inserted).hasSize(10);
+            for (var entityId : entityIds) {
+                assertThat(inserted).contains(entityId);
+            }
+        }
+
+        @Test
+        void testBatchLessAdditionalComponents_LargestFirst() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(),
+                    i == 0 ? new Object[] { new D1(), new D2() } : new Object[] { new D1() }));
+
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComponent(entityId, C5.class);
+                verifyHasComponent(entityId, C6.class);
+                verifyHasComponent(entityId, C7.class);
+                verifyHasComponent(entityId, C8.class);
+                verifyHasComponent(entityId, D1.class);
+
+                if (i == 0) {
+                    verifyHasComponent(entityId, D2.class);
+                } else {
+                    verifyDoesNotHaveComponent(entityId, D2.class);
+                }
+
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
+            }
+        }
+
+        @Test
+        void testBatchLessAdditionalComponents_LargestLast() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(),
+                    i == 9 ? new Object[] { new D1(), new D2() } : new Object[] { new D1() }));
+
+            assertThat(entityIds).hasSize(10);
+
+            for (int i = 0; i < 10; i++) {
+                var entityId = entityIds[i];
+                verifyHasComponent(entityId, C1.class);
+                verifyHasComponent(entityId, C2.class);
+                verifyHasComponent(entityId, C3.class);
+                verifyHasComponent(entityId, C4.class);
+                verifyHasComponent(entityId, C5.class);
+                verifyHasComponent(entityId, C6.class);
+                verifyHasComponent(entityId, C7.class);
+                verifyHasComponent(entityId, C8.class);
+                verifyHasComponent(entityId, D1.class);
+
+                if (i == 9) {
+                    verifyHasComponent(entityId, D2.class);
+                } else {
+                    verifyDoesNotHaveComponent(entityId, D2.class);
+                }
+
+                verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
+            }
+        }
+
+        @Test
+        void testBatchMoreAdditionalComponents_LargestFirst() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(),
+                    i == 0 ? new Object[] { new D1(), new D2() } : new Object[] { new D1() })))
+                            .isInstanceOf(ArrayIndexOutOfBoundsException.class);
+        }
+
+        @Test
+        void testBatchMoreAdditionalComponents_LargestLast() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(),
+                    i == 9 ? new Object[] { new D1(), new D2() } : new Object[] { new D1() })))
+                            .isInstanceOf(ArrayIndexOutOfBoundsException.class);
+        }
+
+        @Test
+        @SuppressWarnings("unchecked")
+        void testBatchInitializeNotCalled() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+
+            assertThatThrownBy(() -> archetype.createBatch(10, NO_OP))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("callback not called for entity");
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+        }
+
+    }
+
+    private record C1() {
+    }
+
+    private record C2() {
+    }
+
+    private record C3() {
+    }
+
+    private record C4() {
+    }
+
+    private record C5() {
+    }
+
+    private record C6() {
+    }
+
+    private record C7() {
+    }
+
+    private record C8() {
+    }
+
+    public record D1() implements Pooled {
+    }
+
+    public record D2() implements Pooled {
+    }
+
+}
