@@ -36,6 +36,8 @@ import de.schosin.ecs.api.archetype.Transmuter.Builder.AbstractBuilder;
 public interface Composition {
 
     sealed interface Of<C> {
+        void process(int entityId, @NonNull C process);
+
         void process(@NonNull C process);
 
         void inserted(@NonNull C callback);

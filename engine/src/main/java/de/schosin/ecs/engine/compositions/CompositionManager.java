@@ -247,18 +247,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of1.@NonNull Consumer<T1> callback) {
+            callback.consume(entityId, get(entityId, 0));
+        }
+
+        @Override
         public void process(Composition.Of1.@NonNull Consumer<T1> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
-        public void inserted(@NonNull Consumer<T1> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0)));
+        public void inserted(Composition.Of1.@NonNull Consumer<T1> callback) {
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
-        public void removed(@NonNull Consumer<T1> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0)));
+        public void removed(Composition.Of1.@NonNull Consumer<T1> callback) {
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }
@@ -270,18 +275,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of2.@NonNull Consumer<T1, T2> callback) {
+            callback.consume(entityId, get(entityId, 0), get(entityId, 1));
+        }
+
+        @Override
         public void process(Composition.Of2.@NonNull Consumer<T1, T2> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
         public void inserted(Composition.Of2.@NonNull Consumer<T1, T2> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1)));
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
         public void removed(Composition.Of2.@NonNull Consumer<T1, T2> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1)));
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }
@@ -293,18 +303,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
+            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2));
+        }
+
+        @Override
         public void process(Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
         public void inserted(Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2)));
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
         public void removed(Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2)));
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }
@@ -316,18 +331,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
+            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3));
+        }
+
+        @Override
         public void process(Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
         public void inserted(Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3)));
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
         public void removed(Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3)));
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }
@@ -339,18 +359,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
+            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4));
+        }
+
+        @Override
         public void process(Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
         public void inserted(Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4)));
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
         public void removed(Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4)));
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }
@@ -362,18 +387,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
+            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5));
+        }
+
+        @Override
         public void process(Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
         public void inserted(Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5)));
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
         public void removed(Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5)));
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }
@@ -387,18 +417,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
+            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6));
+        }
+
+        @Override
         public void process(Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
         public void inserted(Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6)));
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
         public void removed(Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6)));
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }
@@ -412,21 +447,23 @@ public class CompositionManager {
         }
 
         @Override
+        public void process(int entityId, Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
+            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6), get(entityId, 7));
+        }
+
+        @Override
         public void process(Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
-            super.process(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6),
-                    get(entityId, 7)));
+            super.process(entityId -> process(entityId, callback));
         }
 
         @Override
         public void inserted(Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
-            super.inserted(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6),
-                    get(entityId, 7)));
+            super.inserted(entityId -> process(entityId, callback));
         }
 
         @Override
         public void removed(Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
-            super.removed(entityId -> callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6),
-                    get(entityId, 7)));
+            super.removed(entityId -> process(entityId, callback));
         }
 
     }

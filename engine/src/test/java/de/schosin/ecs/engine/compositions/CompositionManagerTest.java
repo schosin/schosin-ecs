@@ -413,6 +413,17 @@ class CompositionManagerTest extends AbstractWorldTest {
         }
 
         @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1) -> {
+                assertThat(component1).isNotNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1) -> {
+                assertThat(component1).isNotNull();
+            });
+        }
+
+        @Test
         void testProcessOneComponent() {
             var composition = composition(builder1);
 
@@ -503,6 +514,19 @@ class CompositionManagerTest extends AbstractWorldTest {
         @Override
         Composition.Of2<C1, C2> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class);
+        }
+
+        @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1, component2) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1, component2) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNotNull();
+            });
         }
 
         @Test
@@ -600,6 +624,21 @@ class CompositionManagerTest extends AbstractWorldTest {
         @Override
         Composition.Of3<C1, C2, C3> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class);
+        }
+
+        @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1, component2, component3) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNull();
+                assertThat(component3).isNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1, component2, component3) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNotNull();
+                assertThat(component3).isNotNull();
+            });
         }
 
         @Test
@@ -701,6 +740,23 @@ class CompositionManagerTest extends AbstractWorldTest {
         @Override
         Composition.Of4<C1, C2, C3, C4> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
+        }
+
+        @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1, component2, component3, component4) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNull();
+                assertThat(component3).isNull();
+                assertThat(component4).isNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1, component2, component3, component4) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNotNull();
+                assertThat(component3).isNotNull();
+                assertThat(component4).isNotNull();
+            });
         }
 
         @Test
@@ -806,6 +862,25 @@ class CompositionManagerTest extends AbstractWorldTest {
         @Override
         Composition.Of5<C1, C2, C3, C4, C5> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
+        }
+
+        @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1, component2, component3, component4, component5) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNull();
+                assertThat(component3).isNull();
+                assertThat(component4).isNull();
+                assertThat(component5).isNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1, component2, component3, component4, component5) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNotNull();
+                assertThat(component3).isNotNull();
+                assertThat(component4).isNotNull();
+                assertThat(component5).isNotNull();
+            });
         }
 
         @Test
@@ -915,6 +990,27 @@ class CompositionManagerTest extends AbstractWorldTest {
         @Override
         Composition.Of6<C1, C2, C3, C4, C5, C6> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+        }
+
+        @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1, component2, component3, component4, component5, component6) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNull();
+                assertThat(component3).isNull();
+                assertThat(component4).isNull();
+                assertThat(component5).isNull();
+                assertThat(component6).isNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1, component2, component3, component4, component5, component6) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNotNull();
+                assertThat(component3).isNotNull();
+                assertThat(component4).isNotNull();
+                assertThat(component5).isNotNull();
+                assertThat(component6).isNotNull();
+            });
         }
 
         @Test
@@ -1028,6 +1124,29 @@ class CompositionManagerTest extends AbstractWorldTest {
         @Override
         Composition.Of7<C1, C2, C3, C4, C5, C6, C7> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+        }
+
+        @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1, component2, component3, component4, component5, component6, component7) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNull();
+                assertThat(component3).isNull();
+                assertThat(component4).isNull();
+                assertThat(component5).isNull();
+                assertThat(component6).isNull();
+                assertThat(component7).isNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1, component2, component3, component4, component5, component6, component7) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNotNull();
+                assertThat(component3).isNotNull();
+                assertThat(component4).isNotNull();
+                assertThat(component5).isNotNull();
+                assertThat(component6).isNotNull();
+                assertThat(component7).isNotNull();
+            });
         }
 
         @Test
@@ -1145,6 +1264,31 @@ class CompositionManagerTest extends AbstractWorldTest {
         @Override
         Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+        }
+
+        @Test
+        void testProcessOtherEntity() {
+            composition(builder1).process(expected1[0], (entityId, component1, component2, component3, component4, component5, component6, component7, component8) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNull();
+                assertThat(component3).isNull();
+                assertThat(component4).isNull();
+                assertThat(component5).isNull();
+                assertThat(component6).isNull();
+                assertThat(component7).isNull();
+                assertThat(component8).isNull();
+            });
+
+            composition(builder8).process(expected8[0], (entityId, component1, component2, component3, component4, component5, component6, component7, component8) -> {
+                assertThat(component1).isNotNull();
+                assertThat(component2).isNotNull();
+                assertThat(component3).isNotNull();
+                assertThat(component4).isNotNull();
+                assertThat(component5).isNotNull();
+                assertThat(component6).isNotNull();
+                assertThat(component7).isNotNull();
+                assertThat(component8).isNotNull();
+            });
         }
 
         @Test
