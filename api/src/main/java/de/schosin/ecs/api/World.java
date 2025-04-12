@@ -106,15 +106,17 @@ public interface World extends Archetype.Creator, Transmuter.Creator, Compositio
      * between systems and other code without passing every singleton around manually.
      * 
      * <p>
-     * The singleton instance can be supplied with {@link World.Builder#addSingletons(Object...)}.
+     * The singleton instance can be supplied with {@link World.Builder#addSingletons(Object...)} or 
+     * {@link World#addSingleton(Object)}.
      * If no singleton is found, a new instance will be created via reflection, requiring a public
-     * default constructor. If that fails, a {@link UnsupportedOperationException} is thrown. <b>That should be
-     * treated as an error to fix and not to catch</b>.
+     * default constructor or a constructor accepting only a {@link World} argument.
+     * If that fails, a {@link UnsupportedOperationException} is thrown. 
+     * <b>That should be treated as an error to fix and not to catch</b>.
      * </p>
      * 
      * @param <T> type of singleton
      * @param clazz class of singleton
-     * @return singleton instnace
+     * @return singleton instance
      * @throws UnsupportedOperationException if singleton not found and creation failed
      */
     @NonNull

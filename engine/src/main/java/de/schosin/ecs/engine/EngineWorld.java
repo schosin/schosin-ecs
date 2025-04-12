@@ -85,7 +85,7 @@ public class EngineWorld implements World {
     }
 
     private <T> T createSingleton(Class<T> clazz) {
-        return ReflectionUtils.createSingleton(clazz);
+        return ReflectionUtils.createSingleton(this, clazz);
     }
 
     @Override

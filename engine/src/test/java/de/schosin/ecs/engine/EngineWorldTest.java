@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.World.Builder;
 import de.schosin.ecs.api.components.Composition;
+import de.schosin.ecs.engine.EngineWorldTest.SingletonTest.CustomBuilder;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
 public class EngineWorldTest extends AbstractWorldTest {
@@ -44,6 +45,11 @@ public class EngineWorldTest extends AbstractWorldTest {
                     .hasFieldOrPropertyWithValue("processLoops", 42);
         }
 
+    }
+
+    @Nested
+    class SingletonTest {
+
         @Test
         void testPassedSingletons() {
             var sharedBag = new IntBag(1);
@@ -63,6 +69,16 @@ public class EngineWorldTest extends AbstractWorldTest {
 
             var shared = assertThat(world.getSingleton(PublicShared.class)).isNotNull().actual();
             assertThat(world.getSingleton(PublicShared.class)).isSameAs(shared);
+        }
+        
+        @Test
+        void testSingletonWorldConstructor() {
+            var world = World.builder().build();
+
+            var shared = assertThat(world.getSingleton(PublicWorld.class)).isNotNull().actual();
+            assertThat(shared.world).isSameAs(world);
+            
+            assertThat(world.getSingleton(PublicWorld.class)).isSameAs(shared);
         }
 
         @Test
@@ -90,6 +106,9 @@ public class EngineWorldTest extends AbstractWorldTest {
 
             var sharedNoDefault = new PublicSharedNoDefault(2);
             assertThatThrownBy(() -> world.addSingleton(sharedNoDefault)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        public record PublicWorld(World world) {
         }
 
         public static class PublicShared {
