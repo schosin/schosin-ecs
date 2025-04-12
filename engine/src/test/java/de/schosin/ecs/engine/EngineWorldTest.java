@@ -63,9 +63,33 @@ public class EngineWorldTest extends AbstractWorldTest {
 
             var shared = assertThat(world.getSingleton(PublicShared.class)).isNotNull().actual();
             assertThat(world.getSingleton(PublicShared.class)).isSameAs(shared);
+        }
+
+        @Test
+        void testSingletonCreationErrors() {
+            var world = World.builder().build();
 
             assertThatThrownBy(() -> world.getSingleton(PublicSharedNoDefault.class)).isExactlyInstanceOf(UnsupportedOperationException.class);
             assertThatThrownBy(() -> world.getSingleton(PrivateShared.class)).isExactlyInstanceOf(UnsupportedOperationException.class);
+        }
+
+        @Test
+        void testAddSingleton() {
+            var sharedNoDefault = new PublicSharedNoDefault(1);
+
+            var world = World.builder().build();
+            world.addSingleton(sharedNoDefault);
+
+            assertThat(world.getSingleton(PublicSharedNoDefault.class)).isSameAs(sharedNoDefault);
+        }
+
+        @Test
+        void testAddDuplicateSingleton() {
+            var world = World.builder().build();
+            world.addSingleton(new PublicSharedNoDefault(1));
+
+            var sharedNoDefault = new PublicSharedNoDefault(2);
+            assertThatThrownBy(() -> world.addSingleton(sharedNoDefault)).isInstanceOf(IllegalArgumentException.class);
         }
 
         public static class PublicShared {

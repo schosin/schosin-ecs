@@ -69,6 +69,16 @@ public class EngineWorld implements World {
     }
 
     @Override
+    public <T> T addSingleton(@NonNull T singleton) {
+        var existing = this.singletons.putIfAbsent(singleton.getClass(), singleton);
+        if (existing != null) {
+            throw new IllegalArgumentException("This world already contains a singleton of type " + singleton.getClass());
+        }
+
+        return singleton;
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <T> @NonNull T getSingleton(@NonNull Class<T> clazz) throws NoSuchElementException {
         return (T) this.singletons.computeIfAbsent(clazz, ignore -> createSingleton(clazz));

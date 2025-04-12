@@ -88,6 +88,20 @@ public interface World extends Archetype.Creator, Transmuter.Creator, Compositio
     void deleteEntity(int entityId);
 
     /**
+     * Adds a singleton to this world. Can be used when the singleton requires functionality of World.
+     * 
+     * <p>
+     * Prefer {@link Builder#singletons(Object...)} instead if the singleton can be created
+     * without the world.
+     * </p>
+     * 
+     * @param <T> type of singleton
+     * @param singleton singleton to add
+     * @return singleton instance
+     */
+    <T> T addSingleton(@NonNull T singleton);
+
+    /**
      * Returns a singleton instance of the given class. Can be used to share state
      * between systems and other code without passing every singleton around manually.
      * 
