@@ -113,6 +113,10 @@ public class EntityManager {
         return nextId.getAndIncrement();
     }
 
+    public boolean isActive(int entityId) {
+        return this.entities.get(entityId) != null;
+    }
+
     public IntBag getEntities(Spec spec) {
         var result = bagManager.createEntityIntBag();
 

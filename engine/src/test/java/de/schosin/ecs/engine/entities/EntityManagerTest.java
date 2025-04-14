@@ -28,6 +28,21 @@ class EntityManagerTest extends AbstractWorldTest {
         this.component3 = componentManager.getData(Component3.class);
     }
 
+    @Test
+    void testIsActive() {
+        var entityId = entityManager.createEntity();
+        assertThat(world.isActive(entityId)).isTrue();
+        assertThat(world.isActive(entityId + 1)).isFalse();
+
+        world.deleteEntity(entityId);
+        assertThat(world.isActive(entityId)).isTrue();
+        assertThat(world.isActive(entityId + 1)).isFalse();
+
+        world.process();
+        assertThat(world.isActive(entityId)).isFalse();
+        assertThat(world.isActive(entityId + 1)).isFalse();
+    }
+
     @Nested
     class CreateDynamicEntity {
 

@@ -75,6 +75,11 @@ public class EngineWorld implements World {
     }
 
     @Override
+    public boolean isActive(int entityId) {
+        return entityManager.isActive(entityId);
+    }
+
+    @Override
     public <T> T addSingleton(@NonNull T singleton) {
         var existing = this.singletons.putIfAbsent(singleton.getClass(), singleton);
         if (existing != null) {

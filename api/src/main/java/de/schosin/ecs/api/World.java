@@ -88,6 +88,14 @@ public interface World extends Archetype.Creator, Transmuter.Creator, Compositio
     void deleteEntity(int entityId);
 
     /**
+     * Returns true if the entity with the given id is active.
+     * 
+     * @param entityId id of entity
+     * @return true if active
+     */
+    boolean isActive(int entityId);
+
+    /**
      * Adds a singleton to this world. Can be used when the singleton requires functionality of World.
      * 
      * <p>
