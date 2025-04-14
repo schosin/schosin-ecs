@@ -1,5 +1,6 @@
 package de.schosin.ecs.engine.components;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -82,6 +83,12 @@ public class ComponentManager {
             var componentId = getData(components[i]).id();
             vector.set(componentId);
         }
+    }
+
+    // public api
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public Collection<ComponentData<?>> getComponents() {
+        return (Collection) this.byClass.values();
     }
 
 }
