@@ -134,6 +134,11 @@ public class ArchetypeManager implements Archetype.Creator {
         private int added;
         private boolean valid;
 
+        @SuppressWarnings("unchecked")
+        public Object get(Class component) {
+            return componentManager.getData(component).getInstance();
+        }
+
         @Override
         public void initialize(Object component1) {
             this.components[0] = component1;

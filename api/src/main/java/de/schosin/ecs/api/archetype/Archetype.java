@@ -18,6 +18,8 @@ public interface Archetype {
 
     interface Of1<T1> extends Archetype {
         interface Init<T1> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1);
         }
 
@@ -36,6 +38,8 @@ public interface Archetype {
 
     interface Of2<T1, T2> extends Archetype {
         interface Init<T1, T2> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2);
         }
 
@@ -54,6 +58,8 @@ public interface Archetype {
 
     interface Of3<T1, T2, T3> extends Archetype {
         interface Init<T1, T2, T3> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2, T3 component3);
         }
 
@@ -72,6 +78,8 @@ public interface Archetype {
 
     interface Of4<T1, T2, T3, T4> extends Archetype {
         interface Init<T1, T2, T3, T4> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4);
         }
 
@@ -90,6 +98,8 @@ public interface Archetype {
 
     interface Of5<T1, T2, T3, T4, T5> extends Archetype {
         interface Init<T1, T2, T3, T4, T5> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5);
         }
 
@@ -108,6 +118,8 @@ public interface Archetype {
 
     interface Of6<T1, T2, T3, T4, T5, T6> extends Archetype {
         interface Init<T1, T2, T3, T4, T5, T6> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6);
         }
 
@@ -126,6 +138,8 @@ public interface Archetype {
 
     interface Of7<T1, T2, T3, T4, T5, T6, T7> extends Archetype {
         interface Init<T1, T2, T3, T4, T5, T6, T7> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7);
         }
 
@@ -144,6 +158,8 @@ public interface Archetype {
 
     interface Of8<T1, T2, T3, T4, T5, T6, T7, T8> extends Archetype {
         interface Init<T1, T2, T3, T4, T5, T6, T7, T8> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7, T8 component8);
         }
 
@@ -162,6 +178,8 @@ public interface Archetype {
 
     interface OfN<T1, T2, T3, T4, T5, T6, T7, T8> extends Archetype {
         interface Init<T1, T2, T3, T4, T5, T6, T7, T8> {
+            <T> T get(Class<T> component);
+
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7, T8 component8, Object... components);
         }
 
