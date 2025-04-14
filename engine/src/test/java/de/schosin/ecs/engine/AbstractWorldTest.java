@@ -33,19 +33,15 @@ public abstract class AbstractWorldTest {
     void setupWorld() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         this.world = (EngineWorld) World.builder(WorldBuilder.class.getName()).build();
 
-        this.bagManager = getField("bagManager");
-        this.componentManager = getField("componentManager");
-        this.componentMaskManager = getField("componentMaskManager");
-        this.compositionManager = getField("compositionManager");
-        this.entityManager = getField("entityManager");
-        this.archetypeManager = getField("archetypeManager");
-        this.changeManager = getField("changeManager");
-        this.transmutationManager = getField("transmutationManager");
-        this.componentMapperManager = getField("componentMapperManager");
-    }
-
-    private <T> T getField(String name) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-        return getField(this.world, name);
+        this.bagManager = world.getSingleton(BagManager.class);
+        this.componentManager = world.getSingleton(ComponentManager.class);
+        this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
+        this.compositionManager = world.getSingleton(CompositionManager.class);
+        this.entityManager = world.getSingleton(EntityManager.class);
+        this.archetypeManager = world.getSingleton(ArchetypeManager.class);
+        this.changeManager = world.getSingleton(ChangeManager.class);
+        this.transmutationManager = world.getSingleton(TransmutationManager.class);
+        this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
     }
 
     @SuppressWarnings("unchecked")

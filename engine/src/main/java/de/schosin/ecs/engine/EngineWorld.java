@@ -45,17 +45,23 @@ public class EngineWorld implements World {
 
     public EngineWorld(WorldBuilder builder) {
         this.config = new Config(builder);
-        this.singletons = builder.singletons != null ? new ConcurrentHashMap<>(builder.singletons) : new ConcurrentHashMap<>();
+        this.singletons = new ConcurrentHashMap<>();
 
-        this.bagManager = new BagManager();
-        this.componentManager = new ComponentManager(bagManager);
-        this.componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
-        this.compositionManager = new CompositionManager(bagManager, componentManager);
-        this.entityManager = new EntityManager(bagManager, componentManager, componentMaskManager, compositionManager);
-        this.archetypeManager = new ArchetypeManager(componentManager, componentMaskManager, entityManager);
-        this.changeManager = new ChangeManager(componentManager, compositionManager, entityManager);
-        this.transmutationManager = new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager);
-        this.componentMapperManager = new ComponentMapperManager(bagManager, componentManager, transmutationManager);
+        this.bagManager = addSingleton(new BagManager());
+        this.componentManager = addSingleton(new ComponentManager(bagManager));
+        this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
+        this.compositionManager = addSingleton(new CompositionManager(bagManager, componentManager));
+        this.entityManager = addSingleton(new EntityManager(bagManager, componentManager, componentMaskManager, compositionManager));
+        this.archetypeManager = addSingleton(new ArchetypeManager(componentManager, componentMaskManager, entityManager));
+        this.changeManager = addSingleton(new ChangeManager(componentManager, compositionManager, entityManager));
+        this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
+        this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, transmutationManager));
+
+        if (builder.singletons != null) {
+            for (var singleton : builder.singletons.values()) {
+                addSingleton(singleton);
+            }
+        }
     }
 
     @Override
