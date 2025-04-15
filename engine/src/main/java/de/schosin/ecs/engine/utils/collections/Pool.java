@@ -97,9 +97,9 @@ sealed class PoolImpl<T> implements Pool<T> {
     }
 
     public T getInstance() {
-        if (data.getSize() > 0) {
+        if (!data.isEmpty()) {
             synchronized (data) {
-                if (data.getSize() > 0) {
+                if (!data.isEmpty()) {
                     return data.removeLast();
                 }
             }

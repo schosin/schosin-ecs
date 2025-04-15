@@ -673,7 +673,7 @@ public class CompositionManager {
 
         @Override
         public boolean isEmpty() {
-            return this.entities.getSize() == 0;
+            return this.entities.isEmpty();
         }
 
         @Override
