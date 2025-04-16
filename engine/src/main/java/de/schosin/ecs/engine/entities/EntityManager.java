@@ -9,7 +9,7 @@ import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.compositions.CompositionManager;
-import de.schosin.ecs.engine.compositions.Spec;
+import de.schosin.ecs.engine.compositions.EngineSpec;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 import de.schosin.ecs.engine.utils.collections.Pool;
@@ -117,7 +117,7 @@ public class EntityManager {
         return this.entities.get(entityId) != null;
     }
 
-    public IntBag getEntities(Spec spec) {
+    public IntBag getEntities(EngineSpec spec) {
         var result = bagManager.createEntityIntBag();
 
         synchronized (this.entities) {

@@ -109,11 +109,11 @@ class BitVectorTest {
             var vector2 = new BitVector();
             vector2.set(1);
 
-            assertThat(vector1.containsAll(vector2)).isTrue();
+            assertThat(vector1.containsAll(vector2)).isFalse();
             assertThat(vector1.containsNone(vector2)).isTrue();
             assertThat(vector1.containsSome(vector2)).isFalse();
 
-            assertThat(vector2.containsAll(vector1)).isFalse();
+            assertThat(vector2.containsAll(vector1)).isTrue();
             assertThat(vector2.containsNone(vector1)).isTrue();
             assertThat(vector2.containsSome(vector1)).isFalse();
         }
@@ -172,17 +172,40 @@ class BitVectorTest {
         void testShorterVector() {
             var vector1 = new BitVector();
             vector1.set(2);
+
             var vector2 = new BitVector();
             vector2.set(2);
             vector2.set(100);
 
-            assertThat(vector1.containsAll(vector2)).isTrue();
+            var vector3 = new BitVector();
+            vector3.set(100);
+
+            // vec1 vec2
+            assertThat(vector1.containsAll(vector2)).isFalse();
             assertThat(vector1.containsNone(vector2)).isFalse();
             assertThat(vector1.containsSome(vector2)).isTrue();
 
-            assertThat(vector2.containsAll(vector1)).isFalse();
+            assertThat(vector2.containsAll(vector1)).isTrue();
             assertThat(vector2.containsNone(vector1)).isFalse();
             assertThat(vector2.containsSome(vector1)).isTrue();
+
+            // vec1 vec3
+            assertThat(vector1.containsAll(vector3)).isFalse();
+            assertThat(vector1.containsNone(vector3)).isTrue();
+            assertThat(vector1.containsSome(vector3)).isFalse();
+
+            assertThat(vector3.containsAll(vector1)).isFalse();
+            assertThat(vector3.containsNone(vector1)).isTrue();
+            assertThat(vector3.containsSome(vector1)).isFalse();
+
+            // vec2 vec3
+            assertThat(vector2.containsAll(vector3)).isTrue();
+            assertThat(vector2.containsNone(vector3)).isFalse();
+            assertThat(vector2.containsSome(vector3)).isTrue();
+
+            assertThat(vector3.containsAll(vector2)).isFalse();
+            assertThat(vector3.containsNone(vector2)).isFalse();
+            assertThat(vector3.containsSome(vector2)).isTrue();
         }
 
     }

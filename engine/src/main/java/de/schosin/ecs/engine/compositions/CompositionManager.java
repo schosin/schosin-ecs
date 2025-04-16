@@ -16,10 +16,12 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.archetype.Transmuter.Builder.AbstractBuilder;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Composition.Builder;
+import de.schosin.ecs.api.components.Spec;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
+import de.schosin.ecs.engine.compositions.SpecManager.SpecImpl;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.IntBag;
@@ -29,7 +31,7 @@ import de.schosin.ecs.engine.utils.collections.Pool;
  * This class manages the {@link Composition compositions} that are used to process entities.
  * 
  * <p>
- * Given a {@link AbstractBuilder composition builder} a {@link Spec} is created. This spec is used
+ * Given a {@link AbstractBuilder composition builder} a {@link EngineSpec} is created. This spec is used
  * both as a lookup key and to test whether the composition is interested in an 
  * entity (via {@link ComponentMask} if its mask has not been encountered before.
  * </p>
@@ -42,22 +44,24 @@ import de.schosin.ecs.engine.utils.collections.Pool;
  * {@link Composition#removed(IntConsumer)} callbacks will be processed.
  * </p>
  */
-public class CompositionManager {
+public class CompositionManager extends AbstractSpecManager {
 
     private final BagManager bagManager;
     private final ComponentManager componentManager;
 
-    private final Map<Spec, CompositionImpl> compositions = new ConcurrentHashMap<>();
+    private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
 
     private final Bag<CompositionImpl> bag = new Bag<>(CompositionImpl.class, 64);
     private final Pool<BitVector> bitVectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
 
     public CompositionManager(BagManager bagManager, ComponentManager componentManager) {
+        super(componentManager);
+
         this.bagManager = bagManager;
         this.componentManager = componentManager;
     }
 
-    public <T1> Composition.Of1<T1> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1) {
+    public <T1> Composition.Of1<T1> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1) {
         var composition = (CompositionImpl) create(builder, entities);
 
         return bitVectorPool.withInstance(vector -> {
@@ -67,7 +71,7 @@ public class CompositionManager {
         });
     }
 
-    public <T1, T2> Composition.Of2<T1, T2> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1, Class<T2> component2) {
+    public <T1, T2> Composition.Of2<T1, T2> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2) {
         var composition = (CompositionImpl) create(builder, entities);
 
         return bitVectorPool.withInstance(vector -> {
@@ -77,7 +81,7 @@ public class CompositionManager {
         });
     }
 
-    public <T1, T2, T3> Composition.Of3<T1, T2, T3> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3) {
+    public <T1, T2, T3> Composition.Of3<T1, T2, T3> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3) {
         var composition = (CompositionImpl) create(builder, entities);
 
         return bitVectorPool.withInstance(vector -> {
@@ -87,7 +91,7 @@ public class CompositionManager {
         });
     }
 
-    public <T1, T2, T3, T4> Composition.Of4<T1, T2, T3, T4> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3,
+    public <T1, T2, T3, T4> Composition.Of4<T1, T2, T3, T4> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3,
             Class<T4> component4) {
 
         var composition = (CompositionImpl) create(builder, entities);
@@ -99,7 +103,7 @@ public class CompositionManager {
         });
     }
 
-    public <T1, T2, T3, T4, T5> Composition.Of5<T1, T2, T3, T4, T5> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3,
+    public <T1, T2, T3, T4, T5> Composition.Of5<T1, T2, T3, T4, T5> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3,
             Class<T4> component4, Class<T5> component5) {
 
         var composition = (CompositionImpl) create(builder, entities);
@@ -111,7 +115,8 @@ public class CompositionManager {
         });
     }
 
-    public <T1, T2, T3, T4, T5, T6> Composition.Of6<T1, T2, T3, T4, T5, T6> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3,
+    public <T1, T2, T3, T4, T5, T6> Composition.Of6<T1, T2, T3, T4, T5, T6> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2,
+            Class<T3> component3,
             Class<T4> component4, Class<T5> component5, Class<T6> component6) {
 
         var composition = (CompositionImpl) create(builder, entities);
@@ -123,7 +128,7 @@ public class CompositionManager {
         });
     }
 
-    public <T1, T2, T3, T4, T5, T6, T7> Composition.Of7<T1, T2, T3, T4, T5, T6, T7> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1, Class<T2> component2,
+    public <T1, T2, T3, T4, T5, T6, T7> Composition.Of7<T1, T2, T3, T4, T5, T6, T7> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2,
             Class<T3> component3, Class<T4> component4, Class<T5> component5, Class<T6> component6, Class<T7> component7) {
 
         var composition = (CompositionImpl) create(builder, entities);
@@ -135,7 +140,7 @@ public class CompositionManager {
         });
     }
 
-    public <T1, T2, T3, T4, T5, T6, T7, T8> Composition.Of8<T1, T2, T3, T4, T5, T6, T7, T8> create(Builder builder, Function<Spec, IntBag> entities, Class<T1> component1, Class<T2> component2,
+    public <T1, T2, T3, T4, T5, T6, T7, T8> Composition.Of8<T1, T2, T3, T4, T5, T6, T7, T8> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2,
             Class<T3> component3, Class<T4> component4, Class<T5> component5, Class<T6> component6, Class<T7> component7, Class<T8> component8) {
 
         var composition = (CompositionImpl) create(builder, entities);
@@ -147,13 +152,13 @@ public class CompositionManager {
         });
     }
 
-    public Composition create(Composition.Builder builder, Function<Spec, IntBag> entities) {
+    public Composition create(Composition.Builder builder, Function<EngineSpec, IntBag> entities) {
         var spec = buildSpec(builder);
 
         return this.compositions.computeIfAbsent(spec, ignore -> buildComposition(spec, entities));
     }
 
-    private CompositionImpl buildComposition(Spec spec, Function<Spec, IntBag> entities) {
+    private CompositionImpl buildComposition(EngineSpec spec, Function<EngineSpec, IntBag> entities) {
         var composition = new CompositionImpl(spec, entities.apply(spec), bagManager.createEntityIntBag());
 
         synchronized (this.bag) {
@@ -161,34 +166,6 @@ public class CompositionManager {
         }
 
         return composition;
-    }
-
-    private Spec buildSpec(Composition.Builder builder) {
-        BitVector allVector = null;
-        if (!builder.getAll().isEmpty()) {
-            allVector = new BitVector();
-            for (var clazz : builder.getAll()) {
-                allVector.set(componentManager.getData(clazz).id());
-            }
-        }
-
-        BitVector oneVector = null;
-        if (!builder.getOne().isEmpty()) {
-            oneVector = new BitVector();
-            for (var clazz : builder.getOne()) {
-                oneVector.set(componentManager.getData(clazz).id());
-            }
-        }
-
-        BitVector noneVector = null;
-        if (!builder.getNone().isEmpty()) {
-            noneVector = new BitVector();
-            for (var clazz : builder.getNone()) {
-                noneVector.set(componentManager.getData(clazz).id());
-            }
-        }
-
-        return Spec.create(allVector, oneVector, noneVector);
     }
 
     public void inserted(@NonNull ComponentMask componentMask, int entityId) {
@@ -488,6 +465,16 @@ public class CompositionManager {
         }
 
         @Override
+        public boolean isInterested(int entityId) {
+            return composition.isInterested(entityId);
+        }
+
+        @Override
+        public boolean matches(Spec spec) {
+            return composition.matches(spec);
+        }
+
+        @Override
         public void inserted(@NonNull IntConsumer inserted) {
             composition.inserted(inserted);
         }
@@ -524,9 +511,9 @@ public class CompositionManager {
 
     }
 
-    private static final class CompositionImpl implements Composition {
+    private final class CompositionImpl implements Composition {
 
-        private final Spec spec;
+        private final EngineSpec spec;
 
         private final IntBag entities;
         private final IntBag lookup;
@@ -541,7 +528,7 @@ public class CompositionManager {
 
         private final Map<BitVector, AbstractRetrieveComposition> retrieves = new ConcurrentHashMap<>();
 
-        private CompositionImpl(@NonNull Spec spec, @NonNull IntBag entities, @NonNull IntBag lookup) {
+        private CompositionImpl(@NonNull EngineSpec spec, @NonNull IntBag entities, @NonNull IntBag lookup) {
             this.spec = spec;
 
             this.entities = entities;
@@ -638,6 +625,32 @@ public class CompositionManager {
             maskCache.set(componentMask.getId(), result ? 1 : 2);
 
             return result;
+        }
+
+        @Override
+        public boolean isInterested(int entityId) {
+            return containsEntity(entityId);
+        }
+
+        @Override
+        public boolean matches(Spec spec) {
+            if (spec == null) {
+                throw new NullPointerException("spec was null");
+            }
+
+            if (spec instanceof CompositionImpl composition) {
+                return this.spec.matches(composition.spec);
+            }
+
+            if (spec instanceof AbstractRetrieveComposition composition) {
+                return this.spec.matches(composition.composition.spec);
+            }
+
+            if (spec instanceof SpecImpl impl) {
+                return this.spec.matches(impl.spec);
+            }
+
+            throw new IllegalArgumentException("Only compare Specs and Compositions returned by the same world.");
         }
 
         @Override

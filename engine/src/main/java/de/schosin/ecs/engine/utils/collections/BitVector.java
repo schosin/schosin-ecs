@@ -24,28 +24,29 @@ public class BitVector {
     }
 
     /**
-     * Tests whether other BitVector contains all set bits of this BitVector.
+     * Tests whether this vector contains all set bits of the other vector.
      * 
-     * @return true, if other contains all set bits of this instance
+     * @return true, if this vector contains all set bits of other 
      */
     public boolean containsAll(BitVector other) {
-        for (int i = 0; i < words.length; i++) {
-            var value = words[i];
-            var otherValue = i < other.words.length ? other.words[i] : 0L;
+        for (int i = 0; i < other.words.length; i++) {
+            var otherValue = other.words[i];
+            var value = i < words.length ? words[i] : 0L;
 
             var result = value & otherValue;
-            if (result != value) {
+            if (result != otherValue) {
                 return false;
             }
+
         }
 
         return true;
     }
 
     /**
-     * Tests whether other BitVector contains none of the set bits of this BitVector.
+     * Tests whether this BitVector contains none of the set bits of the other vector.
      * 
-     * @return true, if other contains none of the set bits of this instance
+     * @return true, if this vector contains none of the set bits of other
      */
     public boolean containsNone(BitVector other) {
         for (int i = 0; i < words.length; i++) {
@@ -62,14 +63,14 @@ public class BitVector {
     }
 
     /**
-     * Tests whether other BitVector contains atleast one set bit of this BitVector.
+     * Tests whether this BitVector contains atleast one set bit of the other vector.
      * 
-     * @return true, if other contains atleast one set bit of this instance
+     * @return true, if this contains atleast one set bit of other
      */
     public boolean containsSome(BitVector other) {
-        for (int i = 0; i < words.length; i++) {
-            var value = words[i];
-            var otherValue = i < other.words.length ? other.words[i] : 0L;
+        for (int i = 0; i < other.words.length; i++) {
+            var otherValue = other.words[i];
+            var value = i < words.length ? words[i] : 0L;
 
             var result = value & otherValue;
             if (result != 0) {

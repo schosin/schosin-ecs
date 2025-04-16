@@ -1,6 +1,7 @@
 package de.schosin.ecs.engine.compositions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -13,6 +14,8 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.archetype.Archetype;
 import de.schosin.ecs.api.components.Composition;
+import de.schosin.ecs.api.components.Composition.Builder;
+import de.schosin.ecs.api.components.Spec;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentMask;
@@ -44,7 +47,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     void testCaching() {
         // Setup
         var counter = new AtomicInteger(0);
-        Function<Spec, IntBag> supplier = spec -> {
+        Function<EngineSpec, IntBag> supplier = spec -> {
             counter.incrementAndGet();
             return new IntBag(1);
         };
@@ -134,6 +137,663 @@ class CompositionManagerTest extends AbstractWorldTest {
         assertThat(processed)
                 .hasSize(10)
                 .containsExactlyInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+    }
+
+    @Nested
+    class SpecTest {
+
+        @Nested
+        class IsInterestedTest {
+
+            @Nested
+            class CompositionTest extends SpecManagerTest.AbstractIsInterestedTest<Composition> {
+
+                @Override
+                protected Composition create(Builder builder) {
+                    return world.createComposition(builder);
+                }
+
+                @Override
+                protected boolean isInterested(Composition composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of1Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of1<C1>> {
+
+                @Override
+                protected Composition.Of1<C1> create(Builder builder) {
+                    return world.createComposition(builder, C1.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of1<C1> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of2Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of2<C1, C2>> {
+
+                @Override
+                protected Composition.Of2<C1, C2> create(Builder builder) {
+                    return world.createComposition(builder, C1.class, C2.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of2<C1, C2> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of3Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of3<C1, C2, C3>> {
+
+                @Override
+                protected Composition.Of3<C1, C2, C3> create(Builder builder) {
+                    return world.createComposition(builder, C1.class, C2.class, C3.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of3<C1, C2, C3> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of4Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of4<C1, C2, C3, C4>> {
+
+                @Override
+                protected Composition.Of4<C1, C2, C3, C4> create(Builder builder) {
+                    return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of4<C1, C2, C3, C4> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of5Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of5<C1, C2, C3, C4, C5>> {
+
+                @Override
+                protected Composition.Of5<C1, C2, C3, C4, C5> create(Builder builder) {
+                    return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of5<C1, C2, C3, C4, C5> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of6Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
+
+                @Override
+                protected Composition.Of6<C1, C2, C3, C4, C5, C6> create(Builder builder) {
+                    return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of6<C1, C2, C3, C4, C5, C6> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of7Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
+
+                @Override
+                protected Composition.Of7<C1, C2, C3, C4, C5, C6, C7> create(Builder builder) {
+                    return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of7<C1, C2, C3, C4, C5, C6, C7> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+            @Nested
+            class Of8Test extends SpecManagerTest.AbstractIsInterestedTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
+
+                @Override
+                protected Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> create(Builder builder) {
+                    return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+                }
+
+                @Override
+                protected boolean isInterested(Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> composition, int entityId) {
+                    return composition.isInterested(entityId);
+                }
+
+            }
+
+        }
+
+        @Nested
+        class MatchesTest {
+
+            static final Class<?>[] EMPTY = {};
+
+            static final Class<?>[] all = { C1.class };
+            static final Class<?>[] one = { C2.class };
+            static final Class<?>[] none = { C3.class };
+
+            static final Class<?>[] matchingAll = { C1.class, C2.class };
+            static final Class<?>[] matchingOne = { C2.class, C3.class };
+            static final Class<?>[] matchingNone = { C3.class, C1.class };
+
+            static final Class<?>[] mismatchingAll = { C2.class };
+            static final Class<?>[] mismatchingOne = { C3.class };
+            static final Class<?>[] mismatchingNone = { C1.class };
+
+            @Nested
+            class MatchesSpecTest extends AbstractTest<Spec> {
+                @Override
+                protected Spec createSpec(Composition.Builder builder) {
+                    return world.createSpec(builder);
+                }
+            }
+
+            @Nested
+            class MatchesCompositionTest {
+
+                @Nested
+                class CompositionTest extends AbstractTest<Composition> {
+                    @Override
+                    protected Composition createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder);
+                    }
+                }
+
+                @Nested
+                class Of1Test extends AbstractTest<Composition.Of1<C1>> {
+                    @Override
+                    protected Composition.Of1<C1> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class);
+                    }
+                }
+
+                @Nested
+                class Of2Test extends AbstractTest<Composition.Of2<C1, C2>> {
+                    @Override
+                    protected Composition.Of2<C1, C2> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class);
+                    }
+                }
+
+                @Nested
+                class Of3Test extends AbstractTest<Composition.Of3<C1, C2, C3>> {
+                    @Override
+                    protected Composition.Of3<C1, C2, C3> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class);
+                    }
+                }
+
+                @Nested
+                class Of4Test extends AbstractTest<Composition.Of4<C1, C2, C3, C4>> {
+                    @Override
+                    protected Composition.Of4<C1, C2, C3, C4> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
+                    }
+                }
+
+                @Nested
+                class Of5Test extends AbstractTest<Composition.Of5<C1, C2, C3, C4, C5>> {
+                    @Override
+                    protected Composition.Of5<C1, C2, C3, C4, C5> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
+                    }
+                }
+
+                @Nested
+                class Of6Test extends AbstractTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
+                    @Override
+                    protected Composition.Of6<C1, C2, C3, C4, C5, C6> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+                    }
+                }
+
+                @Nested
+                class Of7Test extends AbstractTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
+                    @Override
+                    protected Composition.Of7<C1, C2, C3, C4, C5, C6, C7> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+                    }
+                }
+
+                @Nested
+                class Of8Test extends AbstractTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
+                    @Override
+                    protected Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> createSpec(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+                    }
+                }
+
+            }
+
+            abstract class AbstractTest<T extends Spec> {
+
+                protected abstract T createSpec(Composition.Builder builder);
+
+                @Nested
+                class CompositionTest extends AbstractCompositionTest<Composition> {
+                    @Override
+                    protected Composition createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder);
+                    }
+                }
+
+                @Nested
+                class Of1Test extends AbstractCompositionTest<Composition.Of1<C1>> {
+                    @Override
+                    protected Composition.Of1<C1> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class);
+                    }
+                }
+
+                @Nested
+                class Of2Test extends AbstractCompositionTest<Composition.Of2<C1, C2>> {
+                    @Override
+                    protected Composition.Of2<C1, C2> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class);
+                    }
+                }
+
+                @Nested
+                class Of3Test extends AbstractCompositionTest<Composition.Of3<C1, C2, C3>> {
+                    @Override
+                    protected Composition.Of3<C1, C2, C3> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class);
+                    }
+                }
+
+                @Nested
+                class Of4Test extends AbstractCompositionTest<Composition.Of4<C1, C2, C3, C4>> {
+                    @Override
+                    protected Composition.Of4<C1, C2, C3, C4> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
+                    }
+                }
+
+                @Nested
+                class Of5Test extends AbstractCompositionTest<Composition.Of5<C1, C2, C3, C4, C5>> {
+                    @Override
+                    protected Composition.Of5<C1, C2, C3, C4, C5> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
+                    }
+                }
+
+                @Nested
+                class Of6Test extends AbstractCompositionTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
+                    @Override
+                    protected Composition.Of6<C1, C2, C3, C4, C5, C6> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+                    }
+                }
+
+                @Nested
+                class Of7Test extends AbstractCompositionTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
+                    @Override
+                    protected Composition.Of7<C1, C2, C3, C4, C5, C6, C7> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+                    }
+                }
+
+                @Nested
+                class Of8Test extends AbstractCompositionTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
+                    @Override
+                    protected Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> createComposition(Composition.Builder builder) {
+                        return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+                    }
+                }
+
+                abstract class AbstractCompositionTest<C extends Composition> {
+
+                    protected abstract C createComposition(Composition.Builder builder);
+
+                    @Test
+                    void testInvalidSpecImplementation() {
+                        var composition = world.createComposition(Composition.all());
+
+                        assertThatThrownBy(() -> composition.matches(CustomSpec.INSTANCE))
+                                .isInstanceOf(IllegalArgumentException.class)
+                                .hasMessage("Only compare Specs and Compositions returned by the same world.");
+                    }
+
+                    private static class CustomSpec implements Spec {
+                        static final CustomSpec INSTANCE = new CustomSpec();
+
+                        @Override
+                        public boolean isInterested(int entityId) {
+                            return false;
+                        }
+                    }
+
+                    @Test
+                    void emptySpec() {
+                        var composition = createComposition(Composition.all());
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void allSpec() {
+                        var composition = createComposition(Composition.all(matchingAll));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                    }
+
+                    @Test
+                    void allSpec_mismatching() {
+                        var composition = createComposition(Composition.all(mismatchingAll));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void allOneSpec() {
+                        var composition = createComposition(Composition.all(matchingAll).one(matchingOne));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                    }
+
+                    @Test
+                    void allOneSpec_mismatchingAll() {
+                        var composition = createComposition(Composition.all(mismatchingAll).one(matchingOne));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void allOneSpec_mismatchingOne() {
+                        var composition = createComposition(Composition.all(matchingAll).one(mismatchingOne));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void allNoneSpec() {
+                        var composition = createComposition(Composition.all(matchingAll).none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                    }
+
+                    @Test
+                    void allNoneSpec_mismatchingAll() {
+                        var composition = createComposition(Composition.all(mismatchingAll).none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void allNoneSpec_mismatchingNone() {
+                        var composition = createComposition(Composition.all(matchingAll).none(mismatchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void oneSpec() {
+                        var composition = createComposition(Composition.one(matchingOne));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                    }
+
+                    @Test
+                    void mismatchingOneSpec() {
+                        var composition = createComposition(Composition.one(mismatchingOne));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void oneNoneSpec() {
+                        var composition = createComposition(Composition.one(matchingOne).none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                    }
+
+                    @Test
+                    void oneNoneSpec_mismatchingOne() {
+                        var composition = createComposition(Composition.one(mismatchingOne).none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void oneNoneSpec_mismatchingNone() {
+                        var composition = createComposition(Composition.one(matchingOne).none(mismatchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void noneSpec() {
+                        var composition = createComposition(Composition.none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                    }
+
+                    @Test
+                    void noneSpec_mismatching() {
+                        var composition = createComposition(Composition.none(mismatchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void defaultSpec() {
+                        var composition = createComposition(Composition.all(matchingAll).one(matchingOne).none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                    }
+
+                    @Test
+                    void defaultSpec_mismatchingAll() {
+                        var composition = createComposition(Composition.all(mismatchingAll).one(matchingOne).none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void defaultSpec_mismatchingOne() {
+                        var composition = createComposition(Composition.all(matchingAll).one(mismatchingOne).none(matchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    @Test
+                    void defaultSpec_mismatchingNone() {
+                        var composition = createComposition(Composition.all(matchingAll).one(matchingOne).none(mismatchingNone));
+                        assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
+
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                    }
+
+                    private Composition.Builder builder(Class<?>[] all, Class<?>[] one, Class<?>[] none) {
+                        return Composition
+                                .all(all != null ? all : EMPTY)
+                                .one(one != null ? one : EMPTY)
+                                .none(none != null ? none : EMPTY);
+                    }
+
+                }
+
+            }
+
+        }
+
     }
 
     @Nested

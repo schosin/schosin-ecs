@@ -5,13 +5,13 @@ import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.engine.utils.collections.BitVector;
 
-public sealed interface Spec {
+public sealed interface EngineSpec {
 
     boolean isInterested(BitVector components);
 
-    boolean matches(Spec other);
+    boolean matches(EngineSpec other);
 
-    static Spec create(@Nullable BitVector all, @Nullable BitVector one, @Nullable BitVector none) {
+    public static EngineSpec create(@Nullable BitVector all, @Nullable BitVector one, @Nullable BitVector none) {
         if (all != null) {
             if (one != null) {
                 return none != null ? new DefaultCompositionSpec(all, one, none) : new AllOneCompositionSpec(all, one);
@@ -30,27 +30,27 @@ public sealed interface Spec {
 }
 
 @NullMarked
-record EmptyCompositionSpec() implements Spec {
+record EmptyCompositionSpec() implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
         return true;
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return other instanceof EmptyCompositionSpec;
     }
 }
 
 @NullMarked
-record AllCompositionSpec(BitVector all) implements Spec {
+record AllCompositionSpec(BitVector all) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return all.containsAll(components);
+        return components.containsAll(all);
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return switch (other) {
             case AllCompositionSpec(var all) -> this.all.containsAll(all);
             case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all);
@@ -62,14 +62,14 @@ record AllCompositionSpec(BitVector all) implements Spec {
 }
 
 @NullMarked
-record AllOneCompositionSpec(BitVector all, BitVector one) implements Spec {
+record AllOneCompositionSpec(BitVector all, BitVector one) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return all.containsAll(components) && one.containsSome(components);
+        return components.containsAll(all) && components.containsSome(one);
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return switch (other) {
             case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all) && this.one.containsAll(one);
             case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.one.containsAll(one);
@@ -79,14 +79,14 @@ record AllOneCompositionSpec(BitVector all, BitVector one) implements Spec {
 }
 
 @NullMarked
-record AllNoneCompositionSpec(BitVector all, BitVector none) implements Spec {
+record AllNoneCompositionSpec(BitVector all, BitVector none) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return all.containsAll(components) && none.containsNone(components);
+        return components.containsAll(all) && components.containsNone(none);
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return switch (other) {
             case AllNoneCompositionSpec(var all, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
             case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
@@ -96,14 +96,14 @@ record AllNoneCompositionSpec(BitVector all, BitVector none) implements Spec {
 }
 
 @NullMarked
-record OneCompositionSpec(BitVector one) implements Spec {
+record OneCompositionSpec(BitVector one) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return one.containsSome(components);
+        return components.containsSome(one);
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return switch (other) {
             case OneCompositionSpec(var one) -> this.one.containsAll(one);
             case AllOneCompositionSpec(var all, var one) -> this.one.containsAll(one);
@@ -115,14 +115,14 @@ record OneCompositionSpec(BitVector one) implements Spec {
 }
 
 @NullMarked
-record NoneCompositionSpec(BitVector none) implements Spec {
+record NoneCompositionSpec(BitVector none) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return none.containsNone(components);
+        return components.containsNone(none);
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return switch (other) {
             case NoneCompositionSpec(var none) -> this.none.containsAll(none);
             case AllNoneCompositionSpec(var all, var none) -> this.none.containsAll(none);
@@ -134,14 +134,14 @@ record NoneCompositionSpec(BitVector none) implements Spec {
 }
 
 @NullMarked
-record OneNoneCompositionSpec(BitVector one, BitVector none) implements Spec {
+record OneNoneCompositionSpec(BitVector one, BitVector none) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return one.containsSome(components) && none.containsNone(components);
+        return components.containsSome(one) && components.containsNone(none);
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return switch (other) {
             case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
             case DefaultCompositionSpec(var all, var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
@@ -151,14 +151,14 @@ record OneNoneCompositionSpec(BitVector one, BitVector none) implements Spec {
 }
 
 @NullMarked
-record DefaultCompositionSpec(BitVector all, BitVector one, BitVector none) implements Spec {
+record DefaultCompositionSpec(BitVector all, BitVector one, BitVector none) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return all.containsAll(components) && one.containsSome(components) && none.containsNone(components);
+        return components.containsAll(all) && components.containsSome(one) && components.containsNone(none);
     }
 
     @Override
-    public boolean matches(Spec other) {
+    public boolean matches(EngineSpec other) {
         return switch (other) {
             case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.one.containsAll(one) && this.none.containsAll(none);
             default -> false;

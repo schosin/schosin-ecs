@@ -13,11 +13,13 @@ import de.schosin.ecs.api.archetype.Transmuter;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
+import de.schosin.ecs.api.components.Spec;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.compositions.CompositionManager;
+import de.schosin.ecs.engine.compositions.SpecManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
@@ -38,6 +40,7 @@ public class EngineWorld implements World {
     private final ComponentMaskManager componentMaskManager;
     private final CompositionManager compositionManager;
     private final EntityManager entityManager;
+    private final SpecManager specManager;
     private final ArchetypeManager archetypeManager;
     private final ChangeManager changeManager;
     private final TransmutationManager transmutationManager;
@@ -52,6 +55,7 @@ public class EngineWorld implements World {
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
         this.compositionManager = addSingleton(new CompositionManager(bagManager, componentManager));
         this.entityManager = addSingleton(new EntityManager(bagManager, componentManager, componentMaskManager, compositionManager));
+        this.specManager = addSingleton(new SpecManager(componentManager, entityManager));
         this.archetypeManager = addSingleton(new ArchetypeManager(componentManager, componentMaskManager, entityManager));
         this.changeManager = addSingleton(new ChangeManager(componentManager, compositionManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
@@ -220,6 +224,11 @@ public class EngineWorld implements World {
     @Override
     public <T1, T2, T3, T4, T5, T6, T7, T8> Transmuter.AddN<T1, T2, T3, T4, T5, T6, T7, T8> createTransmuter(Transmuter.Builder.AddN<T1, T2, T3, T4, T5, T6, T7, T8> builder) {
         return transmutationManager.createTransmuter(builder);
+    }
+
+    @Override
+    public Spec createSpec(Composition.Builder builder) {
+        return specManager.createSpec(builder);
     }
 
     @Override

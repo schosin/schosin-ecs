@@ -11,8 +11,9 @@ import de.schosin.ecs.api.archetype.Transmuter;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
+import de.schosin.ecs.api.components.Spec;
 
-public interface World extends Archetype.Creator, Transmuter.Creator, Composition.Creator {
+public interface World extends Archetype.Creator, Transmuter.Creator, Spec.Creator, Composition.Creator {
 
     String DEFAULT_IMPLEMENTATION = "de.schosin.ecs.engine.WorldBuilder";
 

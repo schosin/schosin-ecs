@@ -33,7 +33,7 @@ import de.schosin.ecs.api.archetype.Transmuter.Builder.AbstractBuilder;
  * </p>
  */
 @NullMarked
-public interface Composition {
+public interface Composition extends Spec {
 
     sealed interface Of<C> {
         void process(int entityId, @NonNull C process);
@@ -93,6 +93,7 @@ public interface Composition {
         }
     }
 
+    
     /**
      * Creates a composition builder. 
      * 
@@ -126,6 +127,29 @@ public interface Composition {
     private static Builder builder() {
         return new Builder();
     }
+
+    /**
+     * Returns true if this composition is atleast as strict as the {@link Spec sepc}.
+     * The following criteria must be met:
+     * 
+     * <ul>
+     * <li>If {@code spec} defines {@code all}, {@code this} must define the same components as {@code all}</li>
+     * <li>If {@code spec} defines {@code one}, {@code this} must define the same components as {@code one}</li>
+     * <li>If {@code spec} defines {@code none}, {@code this} must define the same components as {@code none}</li>
+     * </ul>
+     * 
+     * <p>
+     * This composition may be more strict and contain additional classes in each aspect (all, one, none).
+     * </p>
+     * 
+     * <p>
+     * <b>Note:</b> {@link Composition} extends {@link Spec} and can be used as well.
+     * </p>
+     * 
+     * @param spec spec to test against
+     * @return true if this composition is atleast as strict as the spec
+     */
+    boolean matches(Spec spec);
 
     /**
      * Callback for whenever an entity matching this composition is created

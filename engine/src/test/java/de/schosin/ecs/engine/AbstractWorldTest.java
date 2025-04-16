@@ -11,6 +11,7 @@ import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.compositions.CompositionManager;
+import de.schosin.ecs.engine.compositions.SpecManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.collections.IntBag;
@@ -24,13 +25,14 @@ public abstract class AbstractWorldTest {
     protected ComponentMaskManager componentMaskManager;
     protected CompositionManager compositionManager;
     protected EntityManager entityManager;
+    protected SpecManager specManager;
     protected ArchetypeManager archetypeManager;
     protected ChangeManager changeManager;
     protected TransmutationManager transmutationManager;
     protected ComponentMapperManager componentMapperManager;
 
     @BeforeEach
-    void setupWorld() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    final void setupWorld() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         this.world = (EngineWorld) World.builder(WorldBuilder.class.getName()).build();
 
         this.bagManager = world.getSingleton(BagManager.class);
@@ -38,6 +40,7 @@ public abstract class AbstractWorldTest {
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.compositionManager = world.getSingleton(CompositionManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
+        this.specManager = world.getSingleton(SpecManager.class);
         this.archetypeManager = world.getSingleton(ArchetypeManager.class);
         this.changeManager = world.getSingleton(ChangeManager.class);
         this.transmutationManager = world.getSingleton(TransmutationManager.class);

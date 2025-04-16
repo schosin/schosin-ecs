@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.compositions.Spec;
+import de.schosin.ecs.engine.compositions.EngineSpec;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
@@ -19,7 +19,7 @@ import de.schosin.ecs.engine.utils.collections.Pool;
  * <p>
  * By giving each {@link ComponentMask component mask} an identity and caching the new masks when adding
  * or removing a component, these operations can be made a lot faster. In addition checking whether a 
- * {@link Spec} is interested in an entity with a given {@link ComponentMask component mask} can be cached
+ * {@link EngineSpec} is interested in an entity with a given {@link ComponentMask component mask} can be cached
  * for faster entity creation and modification.
  * </p>
  */
