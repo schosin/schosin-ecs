@@ -9,6 +9,8 @@ public sealed interface Spec {
 
     boolean isInterested(BitVector components);
 
+    boolean matches(Spec other);
+
     static Spec create(@Nullable BitVector all, @Nullable BitVector one, @Nullable BitVector none) {
         if (all != null) {
             if (one != null) {
@@ -33,6 +35,11 @@ record EmptyCompositionSpec() implements Spec {
     public boolean isInterested(BitVector components) {
         return true;
     }
+
+    @Override
+    public boolean matches(Spec other) {
+        return other instanceof EmptyCompositionSpec;
+    }
 }
 
 @NullMarked
@@ -40,6 +47,17 @@ record AllCompositionSpec(BitVector all) implements Spec {
     @Override
     public boolean isInterested(BitVector components) {
         return all.containsAll(components);
+    }
+
+    @Override
+    public boolean matches(Spec other) {
+        return switch (other) {
+            case AllCompositionSpec(var all) -> this.all.containsAll(all);
+            case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all);
+            case AllNoneCompositionSpec(var all, var none) -> this.all.containsAll(all);
+            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all);
+            default -> false;
+        };
     }
 }
 
@@ -49,6 +67,15 @@ record AllOneCompositionSpec(BitVector all, BitVector one) implements Spec {
     public boolean isInterested(BitVector components) {
         return all.containsAll(components) && one.containsSome(components);
     }
+
+    @Override
+    public boolean matches(Spec other) {
+        return switch (other) {
+            case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all) && this.one.containsAll(one);
+            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.one.containsAll(one);
+            default -> false;
+        };
+    }
 }
 
 @NullMarked
@@ -56,6 +83,15 @@ record AllNoneCompositionSpec(BitVector all, BitVector none) implements Spec {
     @Override
     public boolean isInterested(BitVector components) {
         return all.containsAll(components) && none.containsNone(components);
+    }
+
+    @Override
+    public boolean matches(Spec other) {
+        return switch (other) {
+            case AllNoneCompositionSpec(var all, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
+            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
+            default -> false;
+        };
     }
 }
 
@@ -65,6 +101,17 @@ record OneCompositionSpec(BitVector one) implements Spec {
     public boolean isInterested(BitVector components) {
         return one.containsSome(components);
     }
+
+    @Override
+    public boolean matches(Spec other) {
+        return switch (other) {
+            case OneCompositionSpec(var one) -> this.one.containsAll(one);
+            case AllOneCompositionSpec(var all, var one) -> this.one.containsAll(one);
+            case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one);
+            case DefaultCompositionSpec(var all, var one, var none) -> this.one.containsAll(one);
+            default -> false;
+        };
+    }
 }
 
 @NullMarked
@@ -72,6 +119,17 @@ record NoneCompositionSpec(BitVector none) implements Spec {
     @Override
     public boolean isInterested(BitVector components) {
         return none.containsNone(components);
+    }
+
+    @Override
+    public boolean matches(Spec other) {
+        return switch (other) {
+            case NoneCompositionSpec(var none) -> this.none.containsAll(none);
+            case AllNoneCompositionSpec(var all, var none) -> this.none.containsAll(none);
+            case OneNoneCompositionSpec(var one, var none) -> this.none.containsAll(none);
+            case DefaultCompositionSpec(var all, var one, var none) -> this.none.containsAll(none);
+            default -> false;
+        };
     }
 }
 
@@ -81,6 +139,15 @@ record OneNoneCompositionSpec(BitVector one, BitVector none) implements Spec {
     public boolean isInterested(BitVector components) {
         return one.containsSome(components) && none.containsNone(components);
     }
+
+    @Override
+    public boolean matches(Spec other) {
+        return switch (other) {
+            case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
+            case DefaultCompositionSpec(var all, var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
+            default -> false;
+        };
+    }
 }
 
 @NullMarked
@@ -88,5 +155,13 @@ record DefaultCompositionSpec(BitVector all, BitVector one, BitVector none) impl
     @Override
     public boolean isInterested(BitVector components) {
         return all.containsAll(components) && one.containsSome(components) && none.containsNone(components);
+    }
+
+    @Override
+    public boolean matches(Spec other) {
+        return switch (other) {
+            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.one.containsAll(one) && this.none.containsAll(none);
+            default -> false;
+        };
     }
 }
