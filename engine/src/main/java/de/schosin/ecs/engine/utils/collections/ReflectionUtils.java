@@ -32,7 +32,6 @@ public class ReflectionUtils {
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException ex) {
             throw new UnsupportedOperationException("Failed to create singleton of %s: %s".formatted(clazz.getName(), ex.getMessage()), ex);
         }
-
     }
 
 }
