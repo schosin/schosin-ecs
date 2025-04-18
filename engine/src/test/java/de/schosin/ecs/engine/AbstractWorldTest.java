@@ -20,6 +20,7 @@ public abstract class AbstractWorldTest {
 
     protected EngineWorld world;
 
+    protected SingletonManager singletonManager;
     protected BagManager bagManager;
     protected ComponentManager componentManager;
     protected ComponentMaskManager componentMaskManager;
@@ -35,6 +36,7 @@ public abstract class AbstractWorldTest {
     final void setupWorld() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         this.world = (EngineWorld) World.builder(WorldBuilder.class.getName()).build();
 
+        this.singletonManager = world.getSingleton(SingletonManager.class);
         this.bagManager = world.getSingleton(BagManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);

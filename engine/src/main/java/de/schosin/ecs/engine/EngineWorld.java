@@ -1,8 +1,6 @@
 package de.schosin.ecs.engine;
 
-import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.NonNull;
 
@@ -22,7 +20,6 @@ import de.schosin.ecs.engine.compositions.CompositionManager;
 import de.schosin.ecs.engine.compositions.SpecManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 
 public class EngineWorld implements World {
 
@@ -33,8 +30,8 @@ public class EngineWorld implements World {
     }
 
     private final Config config;
-    private final Map<Class<?>, Object> singletons;
 
+    private final SingletonManager singletonManager;
     private final BagManager bagManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
@@ -48,8 +45,8 @@ public class EngineWorld implements World {
 
     public EngineWorld(WorldBuilder builder) {
         this.config = new Config(builder);
-        this.singletons = new ConcurrentHashMap<>();
 
+        this.singletonManager = new SingletonManager(this);
         this.bagManager = addSingleton(new BagManager());
         this.componentManager = addSingleton(new ComponentManager(bagManager));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
@@ -61,6 +58,7 @@ public class EngineWorld implements World {
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
         this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, transmutationManager));
 
+        // Initialized configured singletons
         if (builder.singletons != null) {
             for (var singleton : builder.singletons.values()) {
                 addSingleton(singleton);
@@ -85,22 +83,12 @@ public class EngineWorld implements World {
 
     @Override
     public <T> T addSingleton(@NonNull T singleton) {
-        var existing = this.singletons.putIfAbsent(singleton.getClass(), singleton);
-        if (existing != null) {
-            throw new IllegalArgumentException("This world already contains a singleton of type " + singleton.getClass());
-        }
-
-        return singleton;
+        return singletonManager.addSingleton(singleton);
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <T> @NonNull T getSingleton(@NonNull Class<T> clazz) throws NoSuchElementException {
-        return (T) this.singletons.computeIfAbsent(clazz, ignore -> createSingleton(clazz));
-    }
-
-    private <T> T createSingleton(Class<T> clazz) {
-        return ReflectionUtils.createSingleton(this, clazz);
+        return singletonManager.getSingleton(clazz);
     }
 
     @Override
