@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
@@ -27,6 +28,7 @@ public class ComponentManager {
     private static final int POOL_LIMIT = 1000000; // TODO configuration or per-class (default method in interface? Annotation? config per-class?)
 
     private final BagManager bagManager;
+    private final Classes classes;
 
     final AtomicInteger nextId = new AtomicInteger(0);
 
@@ -34,8 +36,9 @@ public class ComponentManager {
     private final Bag<ComponentDataImpl> byId = new Bag<>(ComponentDataImpl.class, 64);
     private final Map<Class<?>, ComponentDataImpl<?>> byClass = new ConcurrentHashMap<>();
 
-    public ComponentManager(BagManager bagManager) {
+    public ComponentManager(BagManager bagManager, Classes classes) {
         this.bagManager = bagManager;
+        this.classes = classes;
     }
 
     public ComponentData<?> getData(int componentId) {
@@ -53,7 +56,14 @@ public class ComponentManager {
             return result;
         }
 
-        return (ComponentData<T>) byClass.computeIfAbsent(clazz, ignore -> createMetadata(clazz, bagSize));
+        synchronized (classes) {
+            if (classes.states().contains(clazz)) {
+                throw new IllegalArgumentException("Class %s is already used as a state.".formatted(clazz.getName()));
+            }
+
+            classes.components().add(clazz);
+            return (ComponentData<T>) byClass.computeIfAbsent(clazz, ignore -> createMetadata(clazz, bagSize));
+        }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

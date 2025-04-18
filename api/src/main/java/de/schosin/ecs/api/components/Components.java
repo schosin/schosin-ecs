@@ -6,7 +6,41 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.archetype.Archetype;
 import de.schosin.ecs.api.archetype.Transmuter;
+import de.schosin.ecs.api.state.State;
 
+/**
+ *  Component mapper for accessing and modifying components of an entity.
+ *  Use {@link World#getComponents(Class)} and {@link World#getPooledComponents(Class)}
+ *  to create instances of this interface.
+ *  
+ *  <p>
+ *  The component of an entity contains the data systems interact with.
+ *  These are managed by the {@link World} and can be queried and modified by this 
+ *  class. 
+ *  </p>
+ *  
+ *  <p>
+ *  For advanced querying {@link Composition Compositions} can be used. 
+ *  These allow querying entities having a specific component composition. 
+ *  </p>
+ *  
+ *  <p>
+ *  When adding and removing multiple components for an entity, consider
+ *  using {@link Transmuter Transmuters}. These reduce the number of 
+ *  calculations for the composition changes when compared to adding
+ *  and removing components sequentially.
+ *  </p> 
+ *  
+ *  <p>
+ *  When state is required for an entity that is not needed by any 
+ *  {@link Composition compositions}, use {@link State} instead. 
+ *  While such state could be managed as components, adding and removing
+ *  components causes an overhead in notifying compositions.
+ *  {@link State} does not incur this overhead.
+ *  </p>
+ * 
+ * @param <T> component type
+ */
 public interface Components<T> {
 
     interface PooledComponents<T extends Pooled> extends Components<T> {
@@ -52,6 +86,7 @@ public interface Components<T> {
          *         
          * @return 
          */
+        @NonNull
         T getInstance();
 
     }

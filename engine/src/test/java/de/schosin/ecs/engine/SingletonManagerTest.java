@@ -21,6 +21,7 @@ import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.compositions.CompositionManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.entities.StateManager;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
 class SingletonManagerTest extends AbstractWorldTest {
@@ -51,7 +52,8 @@ class SingletonManagerTest extends AbstractWorldTest {
         static Stream<Arguments> managers() {
             var singletonManager = new SingletonManager(null);
             var bagManager = new BagManager();
-            var componentManager = new ComponentManager(bagManager);
+            var stateManager = new StateManager(bagManager, null);
+            var componentManager = new ComponentManager(bagManager, null);
             var componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
             var compositionManager = new CompositionManager(bagManager, componentManager);
             var entityManager = new EntityManager(bagManager, componentManager, componentMaskManager, compositionManager);
@@ -63,6 +65,7 @@ class SingletonManagerTest extends AbstractWorldTest {
             return Stream.of(
                     Arguments.of(Named.of("singletonManager", singletonManager)),
                     Arguments.of(Named.of("bagManager", bagManager)),
+                    Arguments.of(Named.of("stateManager", stateManager)),
                     Arguments.of(Named.of("componentManager", componentManager)),
                     Arguments.of(Named.of("componentMaskManager", componentMaskManager)),
                     Arguments.of(Named.of("compositionManager", compositionManager)),

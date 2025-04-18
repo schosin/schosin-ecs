@@ -1,6 +1,8 @@
 package de.schosin.ecs.engine;
 
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.NonNull;
 
@@ -12,6 +14,8 @@ import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Spec;
+import de.schosin.ecs.api.state.State;
+import de.schosin.ecs.api.state.State.PooledState;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -20,6 +24,7 @@ import de.schosin.ecs.engine.compositions.CompositionManager;
 import de.schosin.ecs.engine.compositions.SpecManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.entities.StateManager;
 
 public class EngineWorld implements World {
 
@@ -29,10 +34,14 @@ public class EngineWorld implements World {
         }
     }
 
+    public record Classes(Set<Class<?>> components, Set<Class<?>> states) {
+    }
+
     private final Config config;
 
     private final SingletonManager singletonManager;
     private final BagManager bagManager;
+    private final StateManager stateManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
     private final CompositionManager compositionManager;
@@ -45,10 +54,12 @@ public class EngineWorld implements World {
 
     public EngineWorld(WorldBuilder builder) {
         this.config = new Config(builder);
+        var classes = new Classes(ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet());
 
         this.singletonManager = new SingletonManager(this);
         this.bagManager = addSingleton(new BagManager());
-        this.componentManager = addSingleton(new ComponentManager(bagManager));
+        this.stateManager = addSingleton(new StateManager(bagManager, classes));
+        this.componentManager = addSingleton(new ComponentManager(bagManager, classes));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
         this.compositionManager = addSingleton(new CompositionManager(bagManager, componentManager));
         this.entityManager = addSingleton(new EntityManager(bagManager, componentManager, componentMaskManager, compositionManager));
@@ -99,6 +110,16 @@ public class EngineWorld implements World {
     @Override
     public <T extends Pooled> PooledComponents<T> getPooledComponents(@NonNull Class<T> clazz) {
         return componentMapperManager.getPooledComponents(clazz);
+    }
+
+    @Override
+    public <T> State<T> getState(@NonNull Class<T> clazz) {
+        return stateManager.getState(clazz);
+    }
+
+    @Override
+    public <T extends Pooled> PooledState<T> getPooledState(@NonNull Class<T> clazz) {
+        return stateManager.getPooledState(clazz);
     }
 
     @Override

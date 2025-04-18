@@ -14,6 +14,7 @@ import de.schosin.ecs.engine.compositions.CompositionManager;
 import de.schosin.ecs.engine.compositions.SpecManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.entities.StateManager;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
 public abstract class AbstractWorldTest {
@@ -22,6 +23,7 @@ public abstract class AbstractWorldTest {
 
     protected SingletonManager singletonManager;
     protected BagManager bagManager;
+    protected StateManager stateManager;
     protected ComponentManager componentManager;
     protected ComponentMaskManager componentMaskManager;
     protected CompositionManager compositionManager;
@@ -38,6 +40,7 @@ public abstract class AbstractWorldTest {
 
         this.singletonManager = world.getSingleton(SingletonManager.class);
         this.bagManager = world.getSingleton(BagManager.class);
+        this.stateManager = world.getSingleton(StateManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.compositionManager = world.getSingleton(CompositionManager.class);
