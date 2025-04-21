@@ -66,11 +66,11 @@ public class ChangeManager {
         deleted.iterate(this::processDeletedEntity);
         deleted.clear();
 
-        removed.iterate(this::processRemovedComponent);
-        removed.clear();
-
         updated.iterate(this::processUpdatedEntities);
         updated.clear();
+
+        removed.iterate(this::processRemovedComponent);
+        removed.clear();
 
         return isDirty();
     }

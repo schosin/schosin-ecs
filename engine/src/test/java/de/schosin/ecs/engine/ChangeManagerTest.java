@@ -211,6 +211,25 @@ class ChangeManagerTest extends AbstractWorldTest {
                 assertThat(removed.getData()).containsExactly(entityId);
             }
 
+            @Test
+            void testCompositionUpdateBeforeComponentRemoval() {
+                var resetting = new Resetting().init("foobar");
+
+                var entityId = world.createEntity(resetting);
+                var removed = new IntBag(1);
+
+                var composition = world.createComposition(Composition.all(Resetting.class), Resetting.class);
+                composition.removed((id, r) -> removed.add(r.data.length()));
+
+                // Call
+                world.getComponents(Resetting.class).remove(entityId);
+                world.process();
+
+                // Verify
+                assertThat(removed.getSize()).isEqualTo(1);
+                assertThat(removed.getData()).containsExactly("foobar".length());
+            }
+
         }
 
     }
@@ -221,4 +240,20 @@ class ChangeManagerTest extends AbstractWorldTest {
     public record C2() implements Pooled {
     }
 
+    public class Resetting implements Pooled {
+
+        public String data;
+
+        public Resetting init(String data) {
+            this.data = data;
+
+            return this;
+        }
+
+        @Override
+        public void reset() {
+            this.data = null;
+        }
+
+    }
 }
