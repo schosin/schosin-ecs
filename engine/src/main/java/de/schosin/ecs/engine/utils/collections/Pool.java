@@ -12,7 +12,7 @@ import de.schosin.ecs.api.Pooled;
 public sealed interface Pool<T> {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    static <T> Pool<T> bounded(int limit, Class<T> clazz, Supplier<T> constructor) {
+    static <T> Pool<T> bounded(int limit, Class<? super T> clazz, Supplier<T> constructor) {
         if (Pooled.class.isAssignableFrom(clazz)) {
             return new BoundedPoolImpl<>(limit, clazz, constructor, instance -> ((Pooled) instance).reset());
         }
@@ -20,12 +20,12 @@ public sealed interface Pool<T> {
         return new BoundedPoolImpl(limit, clazz, constructor, null);
     }
 
-    static <T> Pool<T> bounded(int limit, Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+    static <T> Pool<T> bounded(int limit, Class<? super T> clazz, Supplier<T> constructor, Consumer<T> reset) {
         return new BoundedPoolImpl<>(limit, clazz, constructor, reset);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    static <T> Pool<T> unbounded(Class<T> clazz, Supplier<T> constructor) {
+    static <T> Pool<T> unbounded(Class<? super T> clazz, Supplier<T> constructor) {
         if (Pooled.class.isAssignableFrom(clazz)) {
             return new PoolImpl<>(clazz, constructor, instance -> ((Pooled) instance).reset());
         }
@@ -33,7 +33,7 @@ public sealed interface Pool<T> {
         return new PoolImpl(clazz, constructor, null);
     }
 
-    static <T> Pool<T> unbounded(Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+    static <T> Pool<T> unbounded(Class<? super T> clazz, Supplier<T> constructor, Consumer<T> reset) {
         return new PoolImpl<>(clazz, constructor, reset);
     }
 
@@ -51,7 +51,7 @@ final class BoundedPoolImpl<T> extends PoolImpl<T> {
 
     private final int limit;
 
-    protected BoundedPoolImpl(int limit, Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+    protected BoundedPoolImpl(int limit, Class<? super T> clazz, Supplier<T> constructor, Consumer<T> reset) {
         super(clazz, constructor, reset);
 
         this.limit = limit;
@@ -68,11 +68,11 @@ final class BoundedPoolImpl<T> extends PoolImpl<T> {
 
 sealed class PoolImpl<T> implements Pool<T> {
 
-    protected final Bag<T> data;
+    protected final Bag<? super T> data;
     private final Supplier<T> constructor;
     private final Consumer<T> reset;
 
-    protected PoolImpl(Class<T> clazz, Supplier<T> constructor, Consumer<T> reset) {
+    protected PoolImpl(Class<? super T> clazz, Supplier<T> constructor, Consumer<T> reset) {
         this.data = new Bag<>(clazz, 1024);
         this.constructor = constructor;
         this.reset = reset;
@@ -96,11 +96,12 @@ sealed class PoolImpl<T> implements Pool<T> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public T getInstance() {
         if (!data.isEmpty()) {
             synchronized (data) {
                 if (!data.isEmpty()) {
-                    return data.removeLast();
+                    return (T) data.removeLast();
                 }
             }
         }
