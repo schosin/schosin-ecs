@@ -31,8 +31,16 @@ public class SingletonManager {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> @NonNull T getSingleton(@NonNull Class<T> clazz) throws NoSuchElementException {
-        return (T) this.singletons.computeIfAbsent(clazz, ignore -> createSingleton(clazz));
+    public synchronized <T> @NonNull T getSingleton(@NonNull Class<T> clazz) throws NoSuchElementException {
+        var result = (T) this.singletons.get(clazz);
+        if (result != null) {
+            return result;
+        }
+
+        result = createSingleton(clazz);
+        this.singletons.put(clazz, result);
+
+        return result;
     }
 
     private <T> T createSingleton(Class<T> clazz) {

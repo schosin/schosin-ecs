@@ -136,6 +136,14 @@ class SingletonManagerTest extends AbstractWorldTest {
         assertThatThrownBy(() -> world.addSingleton(sharedNoDefault)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void testNestedSingletonCreation() {
+        var world = World.builder().build();
+
+        var outer = world.getSingleton(Outer.class);
+        assertThat(outer.inner.world).isSameAs(world);
+    }
+
     public record PublicWorld(World world) {
     }
 
@@ -168,6 +176,22 @@ class SingletonManagerTest extends AbstractWorldTest {
             return new EngineWorld(new WorldBuilder());
         }
 
+    }
+
+    public static class Outer {
+        public final Inner inner;
+
+        public Outer(World world) {
+            this.inner = world.getSingleton(Inner.class);
+        }
+    }
+
+    public static class Inner {
+        public final World world;
+
+        public Inner(World world) {
+            this.world = world;
+        }
     }
 
 }
