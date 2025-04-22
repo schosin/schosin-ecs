@@ -44,7 +44,7 @@ public class SingletonManager {
     }
 
     private <T> T createSingleton(Class<T> clazz) {
-        return ReflectionUtils.createSingleton(world, clazz);
+        return ReflectionUtils.createInstance(world, clazz);
     }
 
 }

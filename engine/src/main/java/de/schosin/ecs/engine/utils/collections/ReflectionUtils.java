@@ -16,7 +16,7 @@ public class ReflectionUtils {
         }
     }
 
-    public static <T> T createSingleton(World world, Class<T> clazz) {
+    public static <T> T createInstance(World world, Class<T> clazz) {
         try {
             // Try world constructor
             return clazz.getConstructor(World.class).newInstance(world);
@@ -25,12 +25,12 @@ public class ReflectionUtils {
             try {
                 return clazz.getDeclaredConstructor().newInstance();
             } catch (NoSuchMethodException ex) {
-                throw new UnsupportedOperationException("Failed to create singleton of %s. Default constructor not found.".formatted(clazz.getName()), ex);
+                throw new UnsupportedOperationException("Failed to create instance of %s. No valid constructor not found.".formatted(clazz.getName()), ex);
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException ex) {
-                throw new UnsupportedOperationException("Failed to create singleton of %s: %s".formatted(clazz.getName(), ex.getMessage()), ex);
+                throw new UnsupportedOperationException("Failed to create instance of %s: %s".formatted(clazz.getName(), ex.getMessage()), ex);
             }
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | SecurityException ex) {
-            throw new UnsupportedOperationException("Failed to create singleton of %s: %s".formatted(clazz.getName(), ex.getMessage()), ex);
+            throw new UnsupportedOperationException("Failed to create instance of %s: %s".formatted(clazz.getName(), ex.getMessage()), ex);
         }
     }
 
