@@ -21,7 +21,7 @@
         
         <jspecify.version>1.0.0</jspecify.version>
         
-        <junit.version>5.12.1</junit.version>
+        <junit.version>5.12.2</junit.version>
         <assertj.version>3.27.2</assertj.version>
         <jmh.version>1.37</jmh.version>
     </properties>
