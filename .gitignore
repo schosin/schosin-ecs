@@ -1,3 +1,5 @@
+.lwjgl/
+
 # Maven
 target/
 .mvn/
