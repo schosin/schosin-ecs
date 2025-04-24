@@ -9,12 +9,16 @@ import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.utils.collections.ArrayUtils;
+import de.schosin.ecs.engine.utils.collections.Bag;
+import de.schosin.ecs.engine.utils.collections.Pool;
 
 public class ArchetypeManager implements Archetype.Creator {
 
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
+
+    private final Pool<InitializeImpl> initializePool = Pool.unbounded(InitializeImpl.class, InitializeImpl::new);
 
     public ArchetypeManager(ComponentManager componentManager, ComponentMaskManager componentMaskManager, EntityManager entityManager) {
         this.componentManager = componentManager;
@@ -99,40 +103,51 @@ public class ArchetypeManager implements Archetype.Creator {
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
         protected final int[] createEntities(int count, Archetype.Initialize initialize) {
-            var init = new InitializeImpl();
-            init.size = this.componentMask.getComponents().length;
-            init.added = init.size;
-            init.components = new Object[init.size];
+            return initializePool.withInstance(init -> {
+                init.size = this.componentMask.getComponents().length;
+                init.added = 0;
 
-            var data = new Object[init.size][count];
+                var data = new Object[init.size][count];
 
-            for (int i = 0; i < count; i++) {
-                init.valid = false;
-                initialize.initialize(i, init);
+                for (int i = 0; i < count; i++) {
+                    init.valid = false;
+                    initialize.initialize(i, init);
 
-                if (!init.valid) {
-                    throw new IllegalStateException("Initialization callback not called for entity %d/%d".formatted(i + 1, count));
+                    if (!init.valid) {
+                        throw new IllegalStateException("Initialization callback not called for entity %d/%d".formatted(i + 1, count));
+                    }
+
+                    for (int c = 0; c < init.added; c++) {
+                        data[c][i] = init.components.get(c);
+                    }
                 }
 
-                for (int c = 0; c < init.added; c++) {
-                    data[c][i] = init.components[c];
-                }
-            }
-
-            return entityManager.createEntities(this.componentMask, data, this.dataLookup);
+                return entityManager.createEntities(this.componentMask, data, this.dataLookup);
+            });
         }
 
     }
 
     @SuppressWarnings("rawtypes")
-    private class InitializeImpl implements Archetype.Of1.Init, Archetype.Of2.Init, Archetype.Of3.Init, Archetype.Of4.Init, Archetype.Of5.Init, Archetype.Of6.Init, Archetype.Of7.Init,
+    private class InitializeImpl implements Pooled, Archetype.Of1.Init, Archetype.Of2.Init, Archetype.Of3.Init, Archetype.Of4.Init, Archetype.Of5.Init, Archetype.Of6.Init, Archetype.Of7.Init,
             Archetype.Of8.Init, Archetype.OfN.Init {
 
-        private int size;
-        private Object[] components;
+        private final Bag<Object> components = new Bag<>(Object.class, 8);
 
+        private int size;
         private int added;
+
         private boolean valid;
+
+        @Override
+        public void reset() {
+            this.components.clear();
+
+            this.size = 0;
+            this.added = 0;
+
+            this.valid = false;
+        }
 
         @SuppressWarnings("unchecked")
         public Object get(Class component) {
@@ -141,85 +156,93 @@ public class ArchetypeManager implements Archetype.Creator {
 
         @Override
         public void initialize(Object component1) {
-            this.components[0] = component1;
+            this.components.set(0, component1);
 
+            this.added = 1;
             this.valid = true;
         }
 
         @Override
         public void initialize(Object component1, Object component2) {
-            this.components[0] = component1;
-            this.components[1] = component2;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
 
+            this.added = 2;
             this.valid = true;
         }
 
         @Override
         public void initialize(Object component1, Object component2, Object component3) {
-            this.components[0] = component1;
-            this.components[1] = component2;
-            this.components[2] = component3;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
+            this.components.set(2, component3);
 
+            this.added = 3;
             this.valid = true;
         }
 
         @Override
         public void initialize(Object component1, Object component2, Object component3, Object component4) {
-            this.components[0] = component1;
-            this.components[1] = component2;
-            this.components[2] = component3;
-            this.components[3] = component4;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
+            this.components.set(2, component3);
+            this.components.set(3, component4);
 
+            this.added = 4;
             this.valid = true;
         }
 
         @Override
         public void initialize(Object component1, Object component2, Object component3, Object component4, Object component5) {
-            this.components[0] = component1;
-            this.components[1] = component2;
-            this.components[2] = component3;
-            this.components[3] = component4;
-            this.components[4] = component5;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
+            this.components.set(2, component3);
+            this.components.set(3, component4);
+            this.components.set(4, component5);
 
+            this.added = 5;
             this.valid = true;
         }
 
         @Override
         public void initialize(Object component1, Object component2, Object component3, Object component4, Object component5, Object component6) {
-            this.components[0] = component1;
-            this.components[1] = component2;
-            this.components[2] = component3;
-            this.components[3] = component4;
-            this.components[4] = component5;
-            this.components[5] = component6;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
+            this.components.set(2, component3);
+            this.components.set(3, component4);
+            this.components.set(4, component5);
+            this.components.set(5, component6);
 
+            this.added = 6;
             this.valid = true;
         }
 
         @Override
         public void initialize(Object component1, Object component2, Object component3, Object component4, Object component5, Object component6, Object component7) {
-            this.components[0] = component1;
-            this.components[1] = component2;
-            this.components[2] = component3;
-            this.components[3] = component4;
-            this.components[4] = component5;
-            this.components[5] = component6;
-            this.components[6] = component7;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
+            this.components.set(2, component3);
+            this.components.set(3, component4);
+            this.components.set(4, component5);
+            this.components.set(5, component6);
+            this.components.set(6, component7);
 
+            this.added = 7;
             this.valid = true;
         }
 
         @Override
         public void initialize(Object component1, Object component2, Object component3, Object component4, Object component5, Object component6, Object component7, Object component8) {
-            this.components[0] = component1;
-            this.components[1] = component2;
-            this.components[2] = component3;
-            this.components[3] = component4;
-            this.components[4] = component5;
-            this.components[5] = component6;
-            this.components[6] = component7;
-            this.components[7] = component8;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
+            this.components.set(2, component3);
+            this.components.set(3, component4);
+            this.components.set(4, component5);
+            this.components.set(5, component6);
+            this.components.set(6, component7);
+            this.components.set(7, component8);
 
+            this.added = 8;
             this.valid = true;
         }
 
@@ -227,17 +250,17 @@ public class ArchetypeManager implements Archetype.Creator {
         public void initialize(Object component1, Object component2, Object component3, Object component4, Object component5, Object component6, Object component7, Object component8,
                 Object... components) {
 
-            this.components[0] = component1;
-            this.components[1] = component2;
-            this.components[2] = component3;
-            this.components[3] = component4;
-            this.components[4] = component5;
-            this.components[5] = component6;
-            this.components[6] = component7;
-            this.components[7] = component8;
+            this.components.set(0, component1);
+            this.components.set(1, component2);
+            this.components.set(2, component3);
+            this.components.set(3, component4);
+            this.components.set(4, component5);
+            this.components.set(5, component6);
+            this.components.set(6, component7);
+            this.components.set(7, component8);
 
             for (int i = 0, s = components.length; i < s; i++) {
-                this.components[8 + i] = components[i];
+                this.components.set(8 + i, components[i]);
             }
 
             this.added = 8 + components.length;
