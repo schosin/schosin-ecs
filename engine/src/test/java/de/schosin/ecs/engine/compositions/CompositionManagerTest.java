@@ -941,7 +941,21 @@ class CompositionManagerTest extends AbstractWorldTest {
     class UpdatedTest {
 
         @Test
-        void testUpdatedEntities() {
+        void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
+            var componentMask = componentMaskManager.getComponentMask(C1.class);
+
+            assertThatThrownBy(() -> compositionManager.updated(42, null, componentMask)).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void testUpdatedEntities_WhenNullNewComposition_Throws() {
+            var componentMask = componentMaskManager.getComponentMask(C1.class);
+
+            assertThatThrownBy(() -> compositionManager.updated(42, componentMask, null)).isInstanceOf(NullPointerException.class);
+        }
+
+        @Test
+        void testUpdatedEntities_WhenPreviousComposition_RemovesEntities() {
             // Setup
             var entities = new HashSet<Integer>();
             bagManager.ensureEntitySize(10000);
@@ -953,10 +967,18 @@ class CompositionManagerTest extends AbstractWorldTest {
             var componentMask12 = componentMaskManager.getComponentMask(C1.class, C2.class);
             var componentMask2 = componentMaskManager.getComponentMask(C2.class);
 
+            var mask42 = componentMask1;
+            var mask1337 = componentMask2;
+            var mask9001 = componentMask1;
+
+            compositionManager.inserted(mask42, 42);
+            compositionManager.inserted(mask1337, 1337);
+            compositionManager.inserted(mask9001, 9001);
+
             // Insert entity
-            compositionManager.updated(42, componentMask1);
-            compositionManager.updated(1337, componentMask12);
-            compositionManager.updated(9001, componentMask2);
+            compositionManager.updated(42, mask42, componentMask12);
+            compositionManager.updated(1337, mask1337, componentMask12);
+            compositionManager.updated(9001, mask9001, componentMask2);
 
             // Verify
             composition1.process(entities::add);
@@ -964,7 +986,52 @@ class CompositionManagerTest extends AbstractWorldTest {
 
             entities.clear();
             composition2.process(entities::add);
-            assertThat(entities).containsExactlyInAnyOrder(1337, 9001);
+            assertThat(entities).containsExactlyInAnyOrder(42, 1337, 9001);
+        }
+
+        @Test
+        void testUpdatedEntities_WhenPreviousComposition_CallsRemoved() {
+            // Setup
+            bagManager.ensureEntitySize(10000);
+
+            var componentMask1 = componentMaskManager.getComponentMask(C1.class);
+            var componentMask12 = componentMaskManager.getComponentMask(C1.class, C2.class);
+            var componentMask2 = componentMaskManager.getComponentMask(C2.class);
+            var componentMask3 = componentMaskManager.getComponentMask(C3.class);
+
+            var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
+            var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
+            var composition3 = compositionManager.create(Composition.all(C3.class), spec -> bagManager.createEntityIntBag());
+
+            var mask7 = componentMask2;
+            var mask42 = componentMask1;
+            var mask1337 = componentMask2;
+            var mask9001 = componentMask12;
+
+            compositionManager.inserted(mask7, 7);
+            compositionManager.inserted(mask42, 42);
+            compositionManager.inserted(mask1337, 1337);
+            compositionManager.inserted(mask9001, 9001);
+
+            var removed1 = new HashSet<Integer>();
+            composition1.removed(removed1::add);
+
+            var removed2 = new HashSet<Integer>();
+            composition2.removed(removed2::add);
+
+            var removed3 = new HashSet<Integer>();
+            composition3.removed(removed3::add);
+
+            // Insert entity
+            compositionManager.updated(7, mask7, componentMask1);
+            compositionManager.updated(42, mask42, componentMask12);
+            compositionManager.updated(1337, mask1337, componentMask12);
+            compositionManager.updated(9001, mask9001, componentMask3);
+
+            // Verify
+            assertThat(removed1).containsExactlyInAnyOrder(9001);
+            assertThat(removed2).containsExactlyInAnyOrder(7, 9001);
+            assertThat(removed3).isEmpty();
         }
 
     }
@@ -981,13 +1048,14 @@ class CompositionManagerTest extends AbstractWorldTest {
             initial.add(31337);
             initial.add(9001);
 
+            var componentMask = componentMaskManager.getComponentMask(C1.class);
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Insert entity
-            compositionManager.removed(42);
-            compositionManager.removed(1337);
-            compositionManager.removed(9001);
-            compositionManager.removed(9002);
+            compositionManager.removed(42, componentMask);
+            compositionManager.removed(1337, componentMask);
+            compositionManager.removed(9001, componentMask);
+            compositionManager.removed(9002, componentMask);
 
             // Verify
             var entities = new IntBag(4);
@@ -1006,6 +1074,8 @@ class CompositionManagerTest extends AbstractWorldTest {
             initial.add(31337);
 
             var removed = new IntBag(2);
+
+            var componentMask = componentMaskManager.getComponentMask(C1.class);
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Add callback
@@ -1013,9 +1083,9 @@ class CompositionManagerTest extends AbstractWorldTest {
             assertThat(removed.getSize()).as("size").isZero();
 
             // Insert entity
-            compositionManager.removed(42);
-            compositionManager.removed(1337);
-            compositionManager.removed(9001);
+            compositionManager.removed(42, componentMask);
+            compositionManager.removed(1337, componentMask);
+            compositionManager.removed(9001, componentMask);
 
             // Verify
             assertThat(removed.getSize()).as("size").isEqualTo(2);
@@ -1035,6 +1105,7 @@ class CompositionManagerTest extends AbstractWorldTest {
             var removed2 = new ArrayList<Integer>();
             var removed3 = new HashSet<Integer>();
 
+            var componentMask = componentMaskManager.getComponentMask(C1.class);
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Add callbacks
@@ -1048,9 +1119,9 @@ class CompositionManagerTest extends AbstractWorldTest {
             assertThat(removed3).isEmpty();
 
             // Insert entity
-            compositionManager.removed(42);
-            compositionManager.removed(1337);
-            compositionManager.removed(9001);
+            compositionManager.removed(42, componentMask);
+            compositionManager.removed(1337, componentMask);
+            compositionManager.removed(9001, componentMask);
 
             // Verify
             assertThat(removed1.getSize()).as("size").isEqualTo(2);

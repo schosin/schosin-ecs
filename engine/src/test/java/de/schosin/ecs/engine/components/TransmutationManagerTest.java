@@ -278,6 +278,9 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
         @Test
         void testAddMultiple_NoInstances() {
+            var c1 = new C1();
+            var c2 = new C2();
+
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponent(entityId, C1.class);
@@ -286,11 +289,11 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1add2.apply(entityId, null, null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> add1add2.apply(entityId, new C1(), null)).isInstanceOf(NullPointerException.class);
-            assertThatThrownBy(() -> add1add2.apply(entityId, null, new C2())).isInstanceOf(NullPointerException.class);
-            world.process();
+            assertThatThrownBy(() -> add1add2.apply(entityId, c1, null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> add1add2.apply(entityId, null, c2)).isInstanceOf(NullPointerException.class);
 
             // Verify (component1 added due to second call)
+            verifyHasComponent(entityId, C1.class);
             verifyDoesNotHaveComponent(entityId, C2.class);
             verifyDoesNotHaveComposition(entityId, Composition.all(C1.class, C2.class));
         }

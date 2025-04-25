@@ -61,7 +61,7 @@ public class EngineWorld implements World {
         this.stateManager = addSingleton(new StateManager(bagManager, classes));
         this.componentManager = addSingleton(new ComponentManager(bagManager, classes));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
-        this.compositionManager = addSingleton(new CompositionManager(bagManager, componentManager));
+        this.compositionManager = addSingleton(new CompositionManager(bagManager, componentManager, componentMaskManager));
         this.entityManager = addSingleton(new EntityManager(bagManager, componentManager, componentMaskManager, compositionManager));
         this.specManager = addSingleton(new SpecManager(componentManager, entityManager));
         this.archetypeManager = addSingleton(new ArchetypeManager(componentManager, componentMaskManager, entityManager));

@@ -55,7 +55,7 @@ class SingletonManagerTest extends AbstractWorldTest {
             var stateManager = new StateManager(bagManager, null);
             var componentManager = new ComponentManager(bagManager, null);
             var componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
-            var compositionManager = new CompositionManager(bagManager, componentManager);
+            var compositionManager = new CompositionManager(bagManager, componentManager, componentMaskManager);
             var entityManager = new EntityManager(bagManager, componentManager, componentMaskManager, compositionManager);
             var archetypeManager = new ArchetypeManager(componentManager, componentMaskManager, entityManager);
             var changeManager = new ChangeManager(componentManager, compositionManager, entityManager);

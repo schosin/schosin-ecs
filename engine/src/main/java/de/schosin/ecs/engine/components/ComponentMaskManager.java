@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.compositions.EngineSpec;
@@ -208,6 +209,14 @@ public class ComponentMaskManager {
             mapping.set(componentId, result);
 
             return result;
+        }
+    }
+
+    public void getComponentMasks(Predicate<ComponentMask> predicate, Bag<ComponentMask> fill) {
+        for (var componentMask : componentMasks.values()) {
+            if (predicate.test(componentMask)) {
+                fill.add(componentMask);
+            }
         }
     }
 

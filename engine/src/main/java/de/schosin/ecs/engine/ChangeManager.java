@@ -89,10 +89,15 @@ public class ChangeManager {
     }
 
     private void processUpdatedEntities(int entityId) {
+        // Get new mask, return early if null (entity removed)
         var componentMask = entityManager.getComponentMask(entityId);
-        if (componentMask != null) {
-            compositionManager.updated(entityId, componentMask);
+        if (componentMask == null) {
+            return;
         }
+
+        // Update entity
+        var previousComponentMask = entityManager.getPreviousComponentMask(entityId);
+        compositionManager.updated(entityId, previousComponentMask, componentMask);
     }
 
     public void deleteEntity(int entityId) {

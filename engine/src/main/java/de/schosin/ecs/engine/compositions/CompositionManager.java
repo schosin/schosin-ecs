@@ -21,6 +21,7 @@ import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
+import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.compositions.SpecManager.SpecImpl;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
@@ -48,17 +49,22 @@ public class CompositionManager extends AbstractSpecManager {
 
     private final BagManager bagManager;
     private final ComponentManager componentManager;
+    private final ComponentMaskManager componentMaskManager;
 
     private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
 
-    private final Bag<CompositionImpl> bag = new Bag<>(CompositionImpl.class, 64);
-    private final Pool<BitVector> bitVectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private final Bag<Bag<CompositionImpl>> compositionsByMask = (Bag) new Bag<>(Bag.class, 64);
 
-    public CompositionManager(BagManager bagManager, ComponentManager componentManager) {
+    private final Pool<BitVector> bitVectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
+    private final Bag<ComponentMask> fill = new Bag<>(ComponentMask.class, 64);
+
+    public CompositionManager(BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager) {
         super(componentManager);
 
         this.bagManager = bagManager;
         this.componentManager = componentManager;
+        this.componentMaskManager = componentMaskManager;
     }
 
     public <T1> Composition.Of1<T1> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1) {
@@ -159,18 +165,31 @@ public class CompositionManager extends AbstractSpecManager {
     }
 
     private CompositionImpl buildComposition(EngineSpec spec, Function<EngineSpec, IntBag> entities) {
+        // Create composition
         var composition = new CompositionImpl(spec, entities.apply(spec), bagManager.createEntityIntBag());
 
-        synchronized (this.bag) {
-            this.bag.add(composition);
+        // Add composition to ComponentMask lookup 
+        synchronized (compositionsByMask) {
+            fill.clear();
+            componentMaskManager.getComponentMasks(composition::isInterested, fill);
+
+            var data = fill.getData();
+            for (int i = 0, s = fill.getSize(); i < s; i++) {
+                var componentMask = data[i];
+
+                var maskCompositions = getCompositions(componentMask);
+                maskCompositions.add(composition);
+            }
         }
 
         return composition;
     }
 
     public void inserted(@NonNull ComponentMask componentMask, int entityId) {
-        var data = this.bag.getData();
-        for (int i = 0, s = this.bag.getSize(); i < s; i++) {
+        var maskCompositions = getCompositions(componentMask);
+
+        var data = maskCompositions.getData();
+        for (int i = 0, s = maskCompositions.getSize(); i < s; i++) {
             var composition = data[i];
             if (composition.isInterested(componentMask)) {
                 composition.inserted(entityId);
@@ -179,8 +198,10 @@ public class CompositionManager extends AbstractSpecManager {
     }
 
     public void inserted(@NonNull ComponentMask componentMask, int... entitiyIds) {
-        var data = this.bag.getData();
-        for (int i = 0, s = this.bag.getSize(); i < s; i++) {
+        var maskCompositions = getCompositions(componentMask);
+
+        var data = maskCompositions.getData();
+        for (int i = 0, s = maskCompositions.getSize(); i < s; i++) {
             var composition = data[i];
             if (composition.isInterested(componentMask)) {
                 for (var entityId : entitiyIds) {
@@ -190,30 +211,63 @@ public class CompositionManager extends AbstractSpecManager {
         }
     }
 
-    public void updated(int entityId, @NonNull ComponentMask updatedComponentMask) {
-        var data = this.bag.getData();
-        for (int i = 0, s = this.bag.getSize(); i < s; i++) {
-            var composition = data[i];
+    public void updated(int entityId, @NonNull ComponentMask previousComponentMask, @NonNull ComponentMask newComponentMask) {
+        // Remove from previous composition if no longer interested
+        var previousCompositions = getCompositions(previousComponentMask);
+
+        var previousData = previousCompositions.getData();
+        for (int i = 0, s = previousCompositions.getSize(); i < s; i++) {
+            var composition = previousData[i];
 
             var beforeInterested = composition.containsEntity(entityId);
-            var afterInterested = composition.isInterested(updatedComponentMask);
-
-            if (beforeInterested && !afterInterested) {
+            if (beforeInterested && !composition.isInterested(newComponentMask)) {
                 composition.removed(entityId);
-            } else if (!beforeInterested && afterInterested) {
+            }
+        }
+
+        // Add to new composition if not yet contained
+        var newCompositions = getCompositions(newComponentMask);
+
+        var dataData = newCompositions.getData();
+        for (int i = 0, s = newCompositions.getSize(); i < s; i++) {
+            var composition = dataData[i];
+
+            var beforeInterested = composition.containsEntity(entityId);
+            if (!beforeInterested && composition.isInterested(newComponentMask)) {
                 composition.inserted(entityId);
             }
         }
     }
 
-    public void removed(int entityId) {
-        var data = this.bag.getData();
-        for (int i = 0, s = this.bag.getSize(); i < s; i++) {
+    public void removed(int entityId, ComponentMask componentMask) {
+        var maskCompositions = getCompositions(componentMask);
+
+        var data = maskCompositions.getData();
+        for (int i = 0, s = maskCompositions.getSize(); i < s; i++) {
             var composition = data[i];
 
             if (composition.containsEntity(entityId)) {
                 composition.removed(entityId);
             }
+        }
+    }
+
+    private Bag<CompositionImpl> getCompositions(ComponentMask componentMask) {
+        synchronized (compositionsByMask) {
+            var result = compositionsByMask.get(componentMask.getId());
+            if (result == null) {
+                result = new Bag<>(CompositionImpl.class);
+                compositionsByMask.set(componentMask.getId(), result);
+
+                // Add interested compositions
+                for (var composition : this.compositions.values()) {
+                    if (composition.isInterested(componentMask)) {
+                        result.add(composition);
+                    }
+                }
+            }
+
+            return result;
         }
     }
 

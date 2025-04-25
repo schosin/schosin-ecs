@@ -155,7 +155,7 @@ public class EntityManager {
         // Notify managers
         var componentMask = entity.componentMask;
 
-        compositionManager.removed(entityId);
+        compositionManager.removed(entityId, componentMask);
         componentManager.removed(entityId, componentMask);
 
         // Add entity to pool for reuse
@@ -172,6 +172,18 @@ public class EntityManager {
         }
 
         return entity.componentMask;
+    }
+
+    /**
+     * @return previous component mask for the entity, or null not changed or if entity does not exist
+     */
+    public ComponentMask getPreviousComponentMask(int entityId) {
+        var entity = this.entities.get(entityId);
+        if (entity == null) {
+            return null;
+        }
+
+        return entity.previousComponentMask;
     }
 
     /**
@@ -199,6 +211,8 @@ public class EntityManager {
     private class Entity implements Pooled {
 
         private final int id;
+
+        private ComponentMask previousComponentMask;
         private ComponentMask componentMask;
 
         private Entity(int id) {
@@ -216,12 +230,15 @@ public class EntityManager {
                 return false;
             }
 
+            this.previousComponentMask = this.componentMask;
             this.componentMask = componentMask;
+
             return true;
         }
 
         @Override
         public void reset() {
+            this.previousComponentMask = null;
             this.componentMask = null;
         }
 
