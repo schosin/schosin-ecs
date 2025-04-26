@@ -20,8 +20,13 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
         
         <jspecify.version>1.0.0</jspecify.version>
+        <jackson.version>2.18.3</jackson.version>
+        
+        <hibernate.validator.version>8.0.2.Final</hibernate.validator.version>
+        <glassfish.expressly.version>5.0.0</glassfish.expressly.version>
         
         <junit.version>5.12.2</junit.version>
+        <junit-pironeer.version>2.3.0</junit-pironeer.version>
         <assertj.version>3.27.2</assertj.version>
         <jmh.version>1.37</jmh.version>
     </properties>
@@ -32,6 +37,25 @@
                 <groupId>org.jspecify</groupId>
                 <artifactId>jspecify</artifactId>
                 <version>${jspecify.version}</version>
+            </dependency>
+                        
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+                
+            <dependency>
+                <groupId>org.hibernate.validator</groupId>
+                <artifactId>hibernate-validator</artifactId>
+                <version>${hibernate.validator.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.expressly</groupId>
+                <artifactId>expressly</artifactId>
+                <version>${glassfish.expressly.version}</version>
             </dependency>
             
             <dependency>
@@ -51,6 +75,12 @@
                 <version>${junit.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.junit-pioneer</groupId>
+                <artifactId>junit-pioneer</artifactId>
+                <version>${junit-pironeer.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
