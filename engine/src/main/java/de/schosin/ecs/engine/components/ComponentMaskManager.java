@@ -39,6 +39,10 @@ public class ComponentMaskManager {
         this.componentManager = componentManager;
     }
 
+    public ComponentMask getComponentMask(int componentMaskId) {
+        return componentMasksById.get(componentMaskId);
+    }
+
     public ComponentMask getComponentMask(Class<?>... components) {
         return pool.withInstance(componentMask -> {
             // Build component bitmask

@@ -75,21 +75,29 @@ public abstract class AbstractWorldTest {
     }
 
     protected void verifyHasComposition(int entityId, Composition.Builder builder) {
-        var entities = new IntBag(4);
-
         var composition = world.createComposition(builder);
+
+        verifyHasComposition(entityId, composition);
+    }
+
+    protected void verifyHasComposition(int entityId, Composition composition) {
+        var entities = new IntBag(4);
         composition.process(entities::add);
 
-        assertThat(entities.getData()).as("has composition " + builder).contains(entityId);
+        assertThat(entities.getData()).as("has composition " + composition).contains(entityId);
     }
 
     protected void verifyDoesNotHaveComposition(int entityId, Composition.Builder builder) {
-        var entities = new IntBag(4);
-
         var composition = world.createComposition(builder);
+
+        verifyDoesNotHaveComposition(entityId, composition);
+    }
+
+    protected void verifyDoesNotHaveComposition(int entityId, Composition composition) {
+        var entities = new IntBag(4);
         composition.process(entities::add);
 
-        assertThat(entities.getData()).doesNotContain(entityId);
+        assertThat(entities.getData()).as("does not have composition " + composition).doesNotContain(entityId);
     }
 
     protected IntBag getEntities(Composition.Builder builder) {

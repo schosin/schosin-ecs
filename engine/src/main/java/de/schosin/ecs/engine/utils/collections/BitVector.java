@@ -298,4 +298,17 @@ public class BitVector {
         return true;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("BitVector(");
+        for (int i = 0; i <= currentWord; i++) {
+            builder.append(words[i]);
+            if (i < currentWord) {
+                builder.append(", ");
+            }
+        }
+        return builder.append(")").toString();
+    }
+
 }

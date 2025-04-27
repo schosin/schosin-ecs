@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.archetype.Transmuter;
+import de.schosin.ecs.api.archetype.Transmuter.Remove;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.utils.collections.IntBag;
@@ -715,6 +716,203 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
                 return 10;
             }
+        }
+
+    }
+
+    @Nested
+    class ConsecutiveMutationsTest {
+
+        private Remove remove1;
+        private Remove remove2;
+        private Remove remove3;
+
+        @BeforeEach
+        void setupRemove() {
+            this.remove1 = world.createTransmuter(Transmuter.remove(C1.class));
+            this.remove2 = world.createTransmuter(Transmuter.remove(C2.class));
+            this.remove3 = world.createTransmuter(Transmuter.remove(C3.class));
+        }
+
+        @Test
+        void testInitialSetup() {
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            var composition12 = world.createComposition(Composition.all(C1.class, C2.class));
+            var composition123 = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            var composition13 = world.createComposition(Composition.all(C1.class, C3.class));
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            var composition23 = world.createComposition(Composition.all(C2.class, C3.class));
+            var composition3 = world.createComposition(Composition.all(C3.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+
+            // Verify
+            verifyHasComposition(entityId, composition1);
+            verifyHasComposition(entityId, composition12);
+            verifyHasComposition(entityId, composition123);
+            verifyHasComposition(entityId, composition13);
+            verifyHasComposition(entityId, composition2);
+            verifyHasComposition(entityId, composition23);
+            verifyHasComposition(entityId, composition3);
+        }
+
+        @Test
+        void testRemove1_WhenWorldNotProcessed_DoesNotChangeComposition() {
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            var composition12 = world.createComposition(Composition.all(C1.class, C2.class));
+            var composition123 = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            var composition13 = world.createComposition(Composition.all(C1.class, C3.class));
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            var composition23 = world.createComposition(Composition.all(C2.class, C3.class));
+            var composition3 = world.createComposition(Composition.all(C3.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+
+            // Call
+            remove1.apply(entityId);
+
+            // Verify
+            verifyHasComposition(entityId, composition1);
+            verifyHasComposition(entityId, composition12);
+            verifyHasComposition(entityId, composition123);
+            verifyHasComposition(entityId, composition13);
+            verifyHasComposition(entityId, composition2);
+            verifyHasComposition(entityId, composition23);
+            verifyHasComposition(entityId, composition3);
+        }
+
+        @Test
+        void testRemove1_WhenWorldProcessed_ChangesComposition() {
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            var composition12 = world.createComposition(Composition.all(C1.class, C2.class));
+            var composition123 = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            var composition13 = world.createComposition(Composition.all(C1.class, C3.class));
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            var composition23 = world.createComposition(Composition.all(C2.class, C3.class));
+            var composition3 = world.createComposition(Composition.all(C3.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+
+            // Call
+            remove1.apply(entityId);
+            world.process();
+
+            // Verify
+            verifyDoesNotHaveComposition(entityId, composition1);
+            verifyDoesNotHaveComposition(entityId, composition12);
+            verifyDoesNotHaveComposition(entityId, composition123);
+            verifyDoesNotHaveComposition(entityId, composition13);
+            verifyHasComposition(entityId, composition2);
+            verifyHasComposition(entityId, composition23);
+            verifyHasComposition(entityId, composition3);
+        }
+
+        @Test
+        void testRemove1Remove2_WhenWorldNotProcessed_DoesNotChangeComposition() {
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            var composition12 = world.createComposition(Composition.all(C1.class, C2.class));
+            var composition123 = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            var composition13 = world.createComposition(Composition.all(C1.class, C3.class));
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            var composition23 = world.createComposition(Composition.all(C2.class, C3.class));
+            var composition3 = world.createComposition(Composition.all(C3.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+
+            // Call
+            remove1.apply(entityId);
+            remove2.apply(entityId);
+
+            // Verify
+            verifyHasComposition(entityId, composition1);
+            verifyHasComposition(entityId, composition12);
+            verifyHasComposition(entityId, composition123);
+            verifyHasComposition(entityId, composition13);
+            verifyHasComposition(entityId, composition2);
+            verifyHasComposition(entityId, composition23);
+            verifyHasComposition(entityId, composition3);
+        }
+
+        @Test
+        void testRemove1Remove2_WhenWorldProcessed_ChangesComposition() {
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            var composition12 = world.createComposition(Composition.all(C1.class, C2.class));
+            var composition123 = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            var composition13 = world.createComposition(Composition.all(C1.class, C3.class));
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            var composition23 = world.createComposition(Composition.all(C2.class, C3.class));
+            var composition3 = world.createComposition(Composition.all(C3.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+
+            // Call
+            remove1.apply(entityId);
+            remove2.apply(entityId);
+            world.process();
+
+            // Verify
+            verifyDoesNotHaveComposition(entityId, composition1);
+            verifyDoesNotHaveComposition(entityId, composition12);
+            verifyDoesNotHaveComposition(entityId, composition123);
+            verifyDoesNotHaveComposition(entityId, composition13);
+            verifyDoesNotHaveComposition(entityId, composition2);
+            verifyDoesNotHaveComposition(entityId, composition23);
+            verifyHasComposition(entityId, composition3);
+        }
+
+        @Test
+        void testRemove1Remove2Remove3_WhenWorldNotProcessed_DoesNotChangeComposition() {
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            var composition12 = world.createComposition(Composition.all(C1.class, C2.class));
+            var composition123 = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            var composition13 = world.createComposition(Composition.all(C1.class, C3.class));
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            var composition23 = world.createComposition(Composition.all(C2.class, C3.class));
+            var composition3 = world.createComposition(Composition.all(C3.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+
+            // Call
+            remove1.apply(entityId);
+            remove2.apply(entityId);
+            remove3.apply(entityId);
+
+            // Verify
+            verifyHasComposition(entityId, composition1);
+            verifyHasComposition(entityId, composition12);
+            verifyHasComposition(entityId, composition123);
+            verifyHasComposition(entityId, composition13);
+            verifyHasComposition(entityId, composition2);
+            verifyHasComposition(entityId, composition23);
+            verifyHasComposition(entityId, composition3);
+        }
+
+        @Test
+        void testRemove1Remove2Remove3_WhenWorldProcessed_ChangesComposition() {
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            var composition12 = world.createComposition(Composition.all(C1.class, C2.class));
+            var composition123 = world.createComposition(Composition.all(C1.class, C2.class, C3.class));
+            var composition13 = world.createComposition(Composition.all(C1.class, C3.class));
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            var composition23 = world.createComposition(Composition.all(C2.class, C3.class));
+            var composition3 = world.createComposition(Composition.all(C3.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+
+            // Call
+            remove1.apply(entityId);
+            remove2.apply(entityId);
+            remove3.apply(entityId);
+            world.process();
+
+            // Verify
+            verifyDoesNotHaveComposition(entityId, composition1);
+            verifyDoesNotHaveComposition(entityId, composition12);
+            verifyDoesNotHaveComposition(entityId, composition123);
+            verifyDoesNotHaveComposition(entityId, composition13);
+            verifyDoesNotHaveComposition(entityId, composition2);
+            verifyDoesNotHaveComposition(entityId, composition23);
+            verifyDoesNotHaveComposition(entityId, composition3);
         }
 
     }

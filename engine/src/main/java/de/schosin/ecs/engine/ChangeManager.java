@@ -4,13 +4,17 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
+import de.schosin.ecs.engine.components.ComponentMask;
+import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.compositions.CompositionManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.collections.BitVector;
+import de.schosin.ecs.engine.utils.collections.IntBag;
 
 public class ChangeManager {
 
     private final ComponentManager componentManager;
+    private final ComponentMaskManager componentMaskManager;
     private final CompositionManager compositionManager;
     private final EntityManager entityManager;
 
@@ -20,11 +24,15 @@ public class ChangeManager {
     private BitVector updatedEntities;
     private BitVector updatedEntitiesOverflow;
 
+    private IntBag updatedEntityMasks;
+    private IntBag updatedEntityMasksOverflow;
+
     private BitVector removedComponents;
     private BitVector removedComponentsOverflow;
 
-    public ChangeManager(ComponentManager componentManager, CompositionManager compositionManager, EntityManager entityManager) {
+    public ChangeManager(BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, CompositionManager compositionManager, EntityManager entityManager) {
         this.componentManager = componentManager;
+        this.componentMaskManager = componentMaskManager;
         this.compositionManager = compositionManager;
         this.entityManager = entityManager;
 
@@ -33,6 +41,9 @@ public class ChangeManager {
 
         this.updatedEntities = new BitVector(64);
         this.updatedEntitiesOverflow = new BitVector(64);
+
+        this.updatedEntityMasks = bagManager.createEntityIntBag();
+        this.updatedEntityMasksOverflow = bagManager.createEntityIntBag();
 
         this.removedComponents = new BitVector(64);
         this.removedComponentsOverflow = new BitVector(64);
@@ -62,12 +73,17 @@ public class ChangeManager {
         this.updatedEntities = this.updatedEntitiesOverflow;
         this.updatedEntitiesOverflow = updated;
 
+        var masks = this.updatedEntityMasks;
+        this.updatedEntityMasks = this.updatedEntityMasksOverflow;
+        this.updatedEntityMasksOverflow = masks;
+
         // Process changes
         deleted.iterate(this::processDeletedEntity);
         deleted.clear();
 
-        updated.iterate(this::processUpdatedEntities);
+        updated.iterate(entityId -> processUpdatedEntity(entityId, fromLookup(masks.get(entityId))));
         updated.clear();
+        masks.clear();
 
         removed.iterate(this::processRemovedComponent);
         removed.clear();
@@ -88,24 +104,28 @@ public class ChangeManager {
         metadata.applyRemovals();
     }
 
-    private void processUpdatedEntities(int entityId) {
-        // Get new mask, return early if null (entity removed)
-        var componentMask = entityManager.getComponentMask(entityId);
-        if (componentMask == null) {
+    private void processUpdatedEntity(int entityId, int componentMaskId) {
+        // Get current mask, return early if null (entity removed)
+        var previousComponentMask = entityManager.getComponentMask(entityId);
+        if (previousComponentMask == null) {
             return;
         }
 
         // Update entity
-        var previousComponentMask = entityManager.getPreviousComponentMask(entityId);
-        compositionManager.updated(entityId, previousComponentMask, componentMask);
+        var componentMask = componentMaskManager.getComponentMask(componentMaskId);
+        if (entityManager.updateComponentMask(entityId, componentMask)) {
+            // Notify compositions
+            compositionManager.updated(entityId, previousComponentMask, componentMask);
+        }
     }
 
     public void deleteEntity(int entityId) {
         this.deletedEntities.set(entityId);
     }
 
-    public void updateEntity(int entityId) {
+    public void updateEntity(int entityId, ComponentMask componentMask) {
         this.updatedEntities.set(entityId);
+        this.updatedEntityMasks.set(entityId, fromLookup(componentMask.getId()));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -133,6 +153,21 @@ public class ChangeManager {
         this.removedComponents.set(component.id());
 
         return true;
+    }
+
+    /**
+     * @return -1 if not set
+     */
+    public int getPendingComponentMask(int entityId) {
+        return toLookup(this.updatedEntityMasks.get(entityId));
+    }
+
+    private int toLookup(int index) {
+        return index == 0 ? -1 : index;
+    }
+
+    private int fromLookup(int index) {
+        return index == -1 ? 0 : index;
     }
 
 }

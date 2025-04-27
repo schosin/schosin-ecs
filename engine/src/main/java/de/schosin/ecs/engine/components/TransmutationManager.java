@@ -300,6 +300,12 @@ public class TransmutationManager implements Transmuter.Creator {
                 return false;
             }
 
+            // Retrieve pending component mask change if present
+            var pendingComponentMaskId = changeManager.getPendingComponentMask(entityId);
+            if (pendingComponentMaskId > -1) {
+                componentMask = componentMaskManager.getComponentMask(pendingComponentMaskId);
+            }
+
             // Modify components
             addComponents(entityId, added);
             removeComponents(entityId);
@@ -310,11 +316,8 @@ public class TransmutationManager implements Transmuter.Creator {
                 return false;
             }
 
-            // Update component mask
-            entityManager.updateComponentMask(entityId, updatedComponentMask);
-
-            // Notify composition changes
-            changeManager.updateEntity(entityId);
+            // Notify entity changes
+            changeManager.updateEntity(entityId, updatedComponentMask);
 
             return true;
         }

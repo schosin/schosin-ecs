@@ -175,18 +175,6 @@ public class EntityManager {
     }
 
     /**
-     * @return previous component mask for the entity, or null not changed or if entity does not exist
-     */
-    public ComponentMask getPreviousComponentMask(int entityId) {
-        var entity = this.entities.get(entityId);
-        if (entity == null) {
-            return null;
-        }
-
-        return entity.previousComponentMask;
-    }
-
-    /**
      * Sets the component mask
      * 
      * @param entityId id of the entity
@@ -212,7 +200,6 @@ public class EntityManager {
 
         private final int id;
 
-        private ComponentMask previousComponentMask;
         private ComponentMask componentMask;
 
         private Entity(int id) {
@@ -230,15 +217,12 @@ public class EntityManager {
                 return false;
             }
 
-            this.previousComponentMask = this.componentMask;
             this.componentMask = componentMask;
-
             return true;
         }
 
         @Override
         public void reset() {
-            this.previousComponentMask = null;
             this.componentMask = null;
         }
 

@@ -765,6 +765,11 @@ public class CompositionManager extends AbstractSpecManager {
             return new CompositionSpliterator(this.entities.getData(), 0, -1, this.entities.getSize());
         }
 
+        @Override
+        public String toString() {
+            return "CompositionImpl [spec=" + this.spec + ", entities=" + this.entities.getSize() + "]";
+        }
+
     }
 
     private static class CompositionSpliterator implements Spliterator.OfInt {

@@ -173,6 +173,8 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 assertThat(firstEnum.add(entityId, EnumComponent.SECOND)).isSameAs(EnumComponent.SECOND);
                 assertThat(secondEnum.add(entityId, EnumComponent.SECOND)).isSameAs(EnumComponent.SECOND);
 
+                world.process();
+                
                 // Verify
                 assertThat(pooledInstance.data).isEqualTo("bar");
 
@@ -214,6 +216,8 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 // Call
                 var instance1 = firstEnum.add(entityId);
                 assertThat(instance1).isSameAs(EnumComponent.FIRST);
+                
+                world.process();
 
                 // Verify
                 verifyHasComponent(entityId, EnumComponent.class);
@@ -227,6 +231,8 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 // Call
                 var instance1 = secondEnum.add(entityId);
                 assertThat(instance1).isSameAs(EnumComponent.SECOND);
+                
+                world.process();
 
                 // Verify
                 verifyHasComponent(entityId, EnumComponent.class);
@@ -245,6 +251,8 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 // Call
                 var instance1 = pooledComponent.add(entityId);
                 assertThat(instance1).isNotNull();
+                
+                world.process();
 
                 // Verify
                 verifyHasComponent(entityId, PooledComponent.class);
