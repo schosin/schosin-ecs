@@ -503,12 +503,12 @@ class CompositionManagerTest extends AbstractWorldTest {
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
-                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
-                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -532,13 +532,13 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -550,7 +550,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
@@ -562,7 +562,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
@@ -577,13 +577,13 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -597,7 +597,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
@@ -607,7 +607,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
@@ -623,12 +623,12 @@ class CompositionManagerTest extends AbstractWorldTest {
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
-                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -655,10 +655,10 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
-                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -672,7 +672,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
@@ -685,7 +685,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
@@ -699,11 +699,11 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
-                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -727,12 +727,12 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isTrue();
                     }
 
@@ -745,9 +745,9 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
@@ -757,12 +757,12 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
@@ -772,10 +772,10 @@ class CompositionManagerTest extends AbstractWorldTest {
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
                         assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
-                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();

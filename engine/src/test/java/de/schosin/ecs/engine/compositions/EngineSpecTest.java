@@ -235,12 +235,12 @@ class EngineSpecTest {
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
-            assertThat(spec.matches(EngineSpec.create(all, one, null))).isTrue();
-            assertThat(spec.matches(EngineSpec.create(all, null, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
         @Test
@@ -264,13 +264,13 @@ class EngineSpecTest {
             assertThatThrownBy(() -> spec.matches(null)).isInstanceOf(NullPointerException.class);
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
         @Test
@@ -282,7 +282,7 @@ class EngineSpecTest {
             assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
@@ -294,7 +294,7 @@ class EngineSpecTest {
             assertThatThrownBy(() -> spec.matches(null)).isInstanceOf(NullPointerException.class);
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
@@ -309,13 +309,13 @@ class EngineSpecTest {
             assertThatThrownBy(() -> spec.matches(null)).isInstanceOf(NullPointerException.class);
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isTrue();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
         @Test
@@ -329,7 +329,7 @@ class EngineSpecTest {
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
@@ -339,7 +339,7 @@ class EngineSpecTest {
             assertThatThrownBy(() -> spec.matches(null)).isInstanceOf(NullPointerException.class);
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
@@ -355,12 +355,12 @@ class EngineSpecTest {
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, null))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
-            assertThat(spec.matches(EngineSpec.create(null, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
         @Test
@@ -387,10 +387,10 @@ class EngineSpecTest {
             assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isTrue();
-            assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
         @Test
@@ -404,7 +404,7 @@ class EngineSpecTest {
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
@@ -417,7 +417,7 @@ class EngineSpecTest {
             assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
@@ -431,11 +431,11 @@ class EngineSpecTest {
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
-            assertThat(spec.matches(EngineSpec.create(all, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
         @Test
@@ -459,12 +459,12 @@ class EngineSpecTest {
             assertThatThrownBy(() -> spec.matches(null)).isInstanceOf(NullPointerException.class);
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, null))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, null, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isTrue();
         }
 
@@ -477,9 +477,9 @@ class EngineSpecTest {
             assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, one, none))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
@@ -489,12 +489,12 @@ class EngineSpecTest {
             assertThatThrownBy(() -> spec.matches(null)).isInstanceOf(NullPointerException.class);
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, none))).isTrue();
             assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, null, none))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();
         }
 
@@ -504,10 +504,10 @@ class EngineSpecTest {
             assertThatThrownBy(() -> spec.matches(null)).isInstanceOf(NullPointerException.class);
 
             assertThat(spec.matches(EngineSpec.create(null, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, null, null))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(all, one, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(all, null, null))).isTrue();
+            assertThat(spec.matches(EngineSpec.create(all, one, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(all, null, none))).isFalse();
-            assertThat(spec.matches(EngineSpec.create(null, one, null))).isFalse();
+            assertThat(spec.matches(EngineSpec.create(null, one, null))).isTrue();
             assertThat(spec.matches(EngineSpec.create(null, one, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(null, null, none))).isFalse();
             assertThat(spec.matches(EngineSpec.create(all, one, none))).isFalse();

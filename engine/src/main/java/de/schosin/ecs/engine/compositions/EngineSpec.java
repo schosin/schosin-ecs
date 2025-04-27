@@ -53,9 +53,6 @@ record AllCompositionSpec(BitVector all) implements EngineSpec {
     public boolean matches(EngineSpec other) {
         return switch (other) {
             case AllCompositionSpec(var all) -> this.all.containsAll(all);
-            case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all);
-            case AllNoneCompositionSpec(var all, var none) -> this.all.containsAll(all);
-            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all);
             default -> false;
         };
     }
@@ -71,8 +68,9 @@ record AllOneCompositionSpec(BitVector all, BitVector one) implements EngineSpec
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
+            case AllCompositionSpec(var all) -> this.all.containsAll(all);
+            case OneCompositionSpec(var one) -> this.one.containsAll(one);
             case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all) && this.one.containsAll(one);
-            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.one.containsAll(one);
             default -> false;
         };
     }
@@ -88,8 +86,9 @@ record AllNoneCompositionSpec(BitVector all, BitVector none) implements EngineSp
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
+            case AllCompositionSpec(var all) -> this.all.containsAll(all);
+            case NoneCompositionSpec(var none) -> this.none.containsAll(none);
             case AllNoneCompositionSpec(var all, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
-            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
             default -> false;
         };
     }
@@ -106,9 +105,6 @@ record OneCompositionSpec(BitVector one) implements EngineSpec {
     public boolean matches(EngineSpec other) {
         return switch (other) {
             case OneCompositionSpec(var one) -> this.one.containsAll(one);
-            case AllOneCompositionSpec(var all, var one) -> this.one.containsAll(one);
-            case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one);
-            case DefaultCompositionSpec(var all, var one, var none) -> this.one.containsAll(one);
             default -> false;
         };
     }
@@ -125,9 +121,6 @@ record NoneCompositionSpec(BitVector none) implements EngineSpec {
     public boolean matches(EngineSpec other) {
         return switch (other) {
             case NoneCompositionSpec(var none) -> this.none.containsAll(none);
-            case AllNoneCompositionSpec(var all, var none) -> this.none.containsAll(none);
-            case OneNoneCompositionSpec(var one, var none) -> this.none.containsAll(none);
-            case DefaultCompositionSpec(var all, var one, var none) -> this.none.containsAll(none);
             default -> false;
         };
     }
@@ -143,8 +136,9 @@ record OneNoneCompositionSpec(BitVector one, BitVector none) implements EngineSp
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
+            case OneCompositionSpec(var one) -> this.one.containsAll(one);
+            case NoneCompositionSpec(var none) -> this.none.containsAll(none);
             case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
-            case DefaultCompositionSpec(var all, var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
             default -> false;
         };
     }
@@ -160,8 +154,14 @@ record DefaultCompositionSpec(BitVector all, BitVector one, BitVector none) impl
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
+            case EmptyCompositionSpec() -> false;
+            case AllCompositionSpec(var all) -> this.all.containsAll(all);
+            case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all) && this.one.containsAll(one);
+            case AllNoneCompositionSpec(var all, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
+            case OneCompositionSpec(var one) -> this.one.containsAll(one);
+            case NoneCompositionSpec(var none) -> this.none.containsAll(none);
+            case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
             case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.one.containsAll(one) && this.none.containsAll(none);
-            default -> false;
         };
     }
 }
