@@ -11,6 +11,7 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.archetype.Archetype;
 import de.schosin.ecs.api.archetype.Transmuter;
 import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.Components.EnumComponents;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Spec;
@@ -105,6 +106,11 @@ public class EngineWorld implements World {
     @Override
     public <T> Components<T> getComponents(Class<T> clazz) {
         return componentMapperManager.getComponents(clazz);
+    }
+
+    @Override
+    public <T extends Enum<T>> @NonNull EnumComponents<T> getEnumComponents(@NonNull T defaultComponent) {
+        return componentMapperManager.getEnumComponents(defaultComponent);
     }
 
     @Override

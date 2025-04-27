@@ -43,6 +43,34 @@ import de.schosin.ecs.api.state.State;
  */
 public interface Components<T> {
 
+    /**
+     * Specialized variant of {@link Components} for {@link Enum enums} supporting
+     * adding a default instance defined at {@link Creator#getEnumComponents(Enum) creation}.
+     * 
+     * @param <T> type of enum
+     */
+    interface EnumComponents<T extends Enum<T>> extends Components<T> {
+
+        /**
+         * Returns the current component or adds the enum instance defined
+         * at {@link Creator#getEnumComponents(Enum) creation}.
+         * 
+         * @param entityId
+         * @return existing or predefined component instance
+         */
+        @NonNull
+        T add(int entityId);
+
+        /**
+         * Returns the default instance defined at {@link Creator#getEnumComponents(Enum) creation}.
+         * 
+         * @return default instance
+         */
+        @NonNull
+        T getDefault();
+
+    }
+
     interface PooledComponents<T extends Pooled> extends Components<T> {
 
         /**
@@ -57,7 +85,7 @@ public interface Components<T> {
          * creating an instance via reflection.
          * </p>
          * 
-         * @param entityId
+         * @param entityId id of entity
          * @return existing, new, or reused component
          */
         @NonNull
@@ -128,5 +156,49 @@ public interface Components<T> {
      * @return true, if the entity had the component
      */
     boolean remove(int entityId);
+
+    interface Creator {
+
+        /**
+         * Retrieves the mapper of the given component class. This can be used to access components and 
+         * to add or remove components from entities.
+         * 
+         * <p>
+         * <b>Note:</b> If T extends Pooled, the returned instance will also implement and
+         * can be cast to {@link PooledComponents}. Prefer using {@link #getPooledComponents(Class)}
+         * for pooled components.
+         * </p>
+         *  
+         * @param clazz {@link Class} of the component
+         * @return class to manage the components defined by the clazz argument 
+         */
+        @NonNull
+        <T> Components<T> getComponents(@NonNull Class<T> clazz);
+
+        /**
+         * Retrieves the mapper of the given enum class defined by the {@literal defaultComponent}.
+         * This can be used to access components and to add or remove components from entities.
+         * 
+         * <p>
+         * {@link EnumComponents#add(int)} will add the default component to the entity an can be
+         * used for marker components (singletons) that require no starte.
+         * </p>
+         * 
+         * @param defaultComponent default component for {@link EnumComponents#add(int)}
+         * @return class to manage the components defined by the class of {@literal defaultComponent}
+         */
+        @NonNull
+        <T extends Enum<T>> EnumComponents<T> getEnumComponents(@NonNull T defaultComponent);
+
+        /**
+         * Retrieves the mapper of the given component class. This can be used to access components and 
+         * to add or remove components from entities.
+         * 
+         * @param clazz {@link Class} of the component
+         * @return class to manage the components defined by the clazz argument 
+         */
+        <T extends Pooled> PooledComponents<T> getPooledComponents(@NonNull Class<T> clazz);
+
+    }
 
 }

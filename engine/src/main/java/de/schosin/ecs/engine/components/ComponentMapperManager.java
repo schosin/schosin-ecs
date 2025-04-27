@@ -1,21 +1,26 @@
 package de.schosin.ecs.engine.components;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.archetype.Transmuter;
 import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.Components.EnumComponents;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.utils.collections.Bag;
 
-public class ComponentMapperManager {
+public class ComponentMapperManager implements Components.Creator {
 
     private final ComponentManager componentManager;
     private final TransmutationManager transmutationManager;
 
     @SuppressWarnings("rawtypes")
     private final Bag<ComponentMapper> components;
+    private final Map<Enum<?>, EnumComponentMapper<?>> enumComponents = new IdentityHashMap<>();
 
     public ComponentMapperManager(BagManager bagManager, ComponentManager componentManager, TransmutationManager transmutationManager) {
         this.componentManager = componentManager;
@@ -41,7 +46,7 @@ public class ComponentMapperManager {
 
             var mapper = Pooled.class.isAssignableFrom(clazz)
                     ? new PooledComponentMapper(metadata)
-                    : new ComponentMapper(metadata);
+                    : new ComponentMapper<>(metadata);
 
             this.components.set(metadata.id(), mapper);
 
@@ -49,7 +54,31 @@ public class ComponentMapperManager {
         }
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends Enum<T>> @NonNull EnumComponents<T> getEnumComponents(@NonNull T defaultComponent) {
+        var result = (EnumComponents<T>) enumComponents.get(defaultComponent);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.components) {
+            result = (EnumComponents<T>) enumComponents.get(defaultComponent);
+            if (result != null) {
+                return result;
+            }
+
+            var delegate = (ComponentMapper<T>) getComponents(defaultComponent.getClass());
+
+            var mapper = new EnumComponentMapper<>(delegate, defaultComponent);
+            enumComponents.put(defaultComponent, mapper);
+
+            return mapper;
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
     public <T extends Pooled> PooledComponents<T> getPooledComponents(Class<T> clazz) {
         var metadata = componentManager.getData(clazz);
 
@@ -64,8 +93,7 @@ public class ComponentMapperManager {
                 return result;
             }
 
-            var mapper = new PooledComponentMapper(metadata);
-
+            var mapper = new PooledComponentMapper<>(metadata);
             this.components.set(metadata.id(), mapper);
 
             return mapper;
@@ -106,6 +134,48 @@ public class ComponentMapperManager {
         @Override
         public boolean remove(int entityId) {
             return this.remove.apply(entityId);
+        }
+
+    }
+
+    private class EnumComponentMapper<T extends Enum<T>> implements EnumComponents<T> {
+
+        private final ComponentMapper<T> delegate;
+        private final T defaultComponent;
+
+        public EnumComponentMapper(ComponentMapper<T> delegate, T defaultComponent) {
+            this.delegate = delegate;
+            this.defaultComponent = defaultComponent;
+        }
+
+        @Override
+        public @NonNull T add(int entityId) {
+            return add(entityId, defaultComponent);
+        }
+
+        @Override
+        public @NonNull T getDefault() {
+            return defaultComponent;
+        }
+
+        @Override
+        public boolean has(int entityId) {
+            return this.delegate.has(entityId);
+        }
+
+        @Override
+        public T add(int entityId, T component) {
+            return this.delegate.add(entityId, component);
+        }
+
+        @Override
+        public T get(int entityId) {
+            return this.delegate.get(entityId);
+        }
+
+        @Override
+        public boolean remove(int entityId) {
+            return this.delegate.remove(entityId);
         }
 
     }

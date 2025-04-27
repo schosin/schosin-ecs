@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.Components.EnumComponents;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.engine.AbstractWorldTest;
@@ -30,12 +31,16 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
         Components<Component1> component1;
         Components<Component2> component2;
         PooledComponents<PooledComponent> pooledComponent;
+        EnumComponents<EnumComponent> firstEnum;
+        EnumComponents<EnumComponent> secondEnum;
 
         @BeforeEach
         void setup() {
             this.component1 = world.getComponents(Component1.class);
             this.component2 = world.getComponents(Component2.class);
             this.pooledComponent = world.getPooledComponents(PooledComponent.class);
+            this.firstEnum = world.getEnumComponents(EnumComponent.FIRST);
+            this.secondEnum = world.getEnumComponents(EnumComponent.SECOND);
         }
 
         @Test
@@ -84,17 +89,63 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 
             @Test
             void testHasComponent() {
-                var entity1 = world.createEntity(new Component1());
-                var entity2p = world.createEntity(new Component2("data"));
+                var entityId = world.createEntity(new Component1());
+                var entityIdPooled = world.createEntity(new Component2("data"));
+                var entityIdEnum = world.createEntity(EnumComponent.FIRST);
 
                 // Call
-                assertThat(component1.has(entity1)).isTrue();
-                assertThat(component2.has(entity1)).isFalse();
-                assertThat(pooledComponent.has(entity1)).isFalse();
+                assertThat(component1.has(entityId)).isTrue();
+                assertThat(component2.has(entityId)).isFalse();
+                assertThat(pooledComponent.has(entityId)).isFalse();
+                assertThat(firstEnum.has(entityId)).isFalse();
+                assertThat(secondEnum.has(entityId)).isFalse();
 
-                assertThat(component1.has(entity2p)).isFalse();
-                assertThat(component2.has(entity2p)).isTrue();
-                assertThat(pooledComponent.has(entity2p)).isFalse();
+                assertThat(component1.has(entityIdPooled)).isFalse();
+                assertThat(component2.has(entityIdPooled)).isTrue();
+                assertThat(pooledComponent.has(entityIdPooled)).isFalse();
+                assertThat(firstEnum.has(entityIdPooled)).isFalse();
+                assertThat(secondEnum.has(entityIdPooled)).isFalse();
+
+                assertThat(component1.has(entityIdEnum)).isFalse();
+                assertThat(component2.has(entityIdEnum)).isFalse();
+                assertThat(pooledComponent.has(entityIdEnum)).isFalse();
+                assertThat(firstEnum.has(entityIdEnum)).isTrue();
+                assertThat(secondEnum.has(entityIdEnum)).isTrue();
+            }
+
+        }
+
+        @Nested
+        class GetComponent {
+
+            @Test
+            void testGetComponent() {
+                var component = new Component1();
+                var entityId = world.createEntity(component);
+
+                var componentPooled = new Component2("data");
+                var entityIdPooled = world.createEntity(componentPooled);
+
+                var entityIdEnum = world.createEntity(EnumComponent.FIRST);
+
+                // Call
+                assertThat(component1.get(entityId)).isEqualTo(component);
+                assertThat(component2.get(entityId)).isNull();
+                assertThat(pooledComponent.get(entityId)).isNull();
+                assertThat(firstEnum.get(entityId)).isNull();
+                assertThat(secondEnum.get(entityId)).isNull();
+
+                assertThat(component1.get(entityIdPooled)).isNull();
+                assertThat(component2.get(entityIdPooled)).isEqualTo(componentPooled);
+                assertThat(pooledComponent.get(entityIdPooled)).isNull();
+                assertThat(firstEnum.get(entityIdPooled)).isNull();
+                assertThat(secondEnum.get(entityIdPooled)).isNull();
+
+                assertThat(component1.get(entityIdEnum)).isNull();
+                assertThat(component2.get(entityIdEnum)).isNull();
+                assertThat(pooledComponent.get(entityIdEnum)).isNull();
+                assertThat(firstEnum.get(entityIdEnum)).isEqualTo(EnumComponent.FIRST);
+                assertThat(secondEnum.get(entityIdEnum)).isEqualTo(EnumComponent.FIRST);
             }
 
         }
@@ -116,19 +167,76 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 assertThat(component2.add(entityId, instance2)).isSameAs(instance2);
                 assertThat(pooledComponent.add(entityId, pooledInstance)).isSameAs(pooledInstance);
 
+                assertThat(firstEnum.add(entityId, EnumComponent.FIRST)).isSameAs(EnumComponent.FIRST);
+                assertThat(secondEnum.add(entityId, EnumComponent.FIRST)).isSameAs(EnumComponent.FIRST);
+
+                assertThat(firstEnum.add(entityId, EnumComponent.SECOND)).isSameAs(EnumComponent.SECOND);
+                assertThat(secondEnum.add(entityId, EnumComponent.SECOND)).isSameAs(EnumComponent.SECOND);
+
                 // Verify
                 assertThat(pooledInstance.data).isEqualTo("bar");
 
                 verifyHasComponent(entityId, Component1.class);
                 verifyHasComponent(entityId, Component2.class);
                 verifyHasComponent(entityId, PooledComponent.class);
-                verifyHasComposition(entityId, Composition.all(Component1.class, Component2.class, PooledComponent.class));
+                verifyHasComponent(entityId, EnumComponent.class);
+                verifyHasComposition(entityId, Composition.all(Component1.class, Component2.class, PooledComponent.class, EnumComponent.class));
+            }
+
+            @Test
+            void testAdd_WhenAlreadyContained_ReturnsExisting() {
+                var pooled = new PooledComponent();
+                var entityId = world.createEntity(pooled);
+
+                // Call
+                assertThat(pooledComponent.add(entityId)).isSameAs(pooled);
             }
 
         }
 
         @Nested
-        class AddDefaultConstructorTest {
+        class EnumComponentsTest {
+
+            @Test
+            void testGetDefault_WhenFirstEnum() {
+                assertThat(firstEnum.getDefault()).isSameAs(EnumComponent.FIRST);
+            }
+
+            @Test
+            void testGetDefault_WhenSecondEnum() {
+                assertThat(secondEnum.getDefault()).isSameAs(EnumComponent.SECOND);
+            }
+
+            @Test
+            void testAdd_WhenFirstEnum() {
+                var entityId = world.createEntity();
+
+                // Call
+                var instance1 = firstEnum.add(entityId);
+                assertThat(instance1).isSameAs(EnumComponent.FIRST);
+
+                // Verify
+                verifyHasComponent(entityId, EnumComponent.class);
+                verifyHasComposition(entityId, Composition.all(EnumComponent.class));
+            }
+
+            @Test
+            void testAdd_WhenSecondEnum() {
+                var entityId = world.createEntity();
+
+                // Call
+                var instance1 = secondEnum.add(entityId);
+                assertThat(instance1).isSameAs(EnumComponent.SECOND);
+
+                // Verify
+                verifyHasComponent(entityId, EnumComponent.class);
+                verifyHasComposition(entityId, Composition.all(EnumComponent.class));
+            }
+
+        }
+
+        @Nested
+        class PooledComponentsTest {
 
             @Test
             void testPooledIntance() {
@@ -150,12 +258,13 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 
             @Test
             void testRemoveComponent() {
-                var entityId = world.createEntity(new Component1(), new Component2("data"));
+                var entityId = world.createEntity(new Component1(), new Component2("data"), EnumComponent.SECOND);
 
                 // Call
                 assertThat(component1.remove(entityId)).isTrue();
                 assertThat(component2.remove(entityId)).isTrue();
                 assertThat(pooledComponent.remove(entityId)).isFalse();
+                assertThat(firstEnum.remove(entityId)).isTrue();
             }
 
         }
@@ -176,6 +285,10 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
         public void reset() {
             this.data = null;
         }
+    }
+
+    enum EnumComponent {
+        FIRST, SECOND
     }
 
 }

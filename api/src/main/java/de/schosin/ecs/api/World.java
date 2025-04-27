@@ -9,13 +9,12 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.archetype.Archetype;
 import de.schosin.ecs.api.archetype.Transmuter;
 import de.schosin.ecs.api.components.Components;
-import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Spec;
 import de.schosin.ecs.api.state.State;
 import de.schosin.ecs.api.state.State.PooledState;
 
-public interface World extends Archetype.Creator, Transmuter.Creator, Spec.Creator, Composition.Creator {
+public interface World extends Components.Creator, Archetype.Creator, Transmuter.Creator, Spec.Creator, Composition.Creator {
 
     String DEFAULT_IMPLEMENTATION = "de.schosin.ecs.engine.WorldBuilder";
 
@@ -132,31 +131,6 @@ public interface World extends Archetype.Creator, Transmuter.Creator, Spec.Creat
      */
     @NonNull
     <T> T getSingleton(@NonNull Class<T> clazz) throws UnsupportedOperationException;
-
-    /**
-     * Retrieves the mapper of the given component class. This can be used to access components and 
-     * to add or remove components from entities.
-     * 
-     * <p>
-     * <b>Note:</b> If T extends Pooled, the returned instance will also implement and
-     * can be cast to {@link PooledComponents}. Prefer using {@link #getPooledComponents(Class)}
-     * for pooled components.
-     * </p>
-     *  
-     * @param clazz {@link Class} of the component
-     * @return class to manage the components defined by the clazz argument 
-     */
-    @NonNull
-    <T> Components<T> getComponents(@NonNull Class<T> clazz);
-
-    /**
-     * Retrieves the mapper of the given component class. This can be used to access components and 
-     * to add or remove components from entities.
-     * 
-     * @param clazz {@link Class} of the component
-     * @return class to manage the components defined by the clazz argument 
-     */
-    <T extends Pooled> PooledComponents<T> getPooledComponents(@NonNull Class<T> clazz);
 
     /**
      * Retrieves the mapper of the given state class. This can be used to access state and
