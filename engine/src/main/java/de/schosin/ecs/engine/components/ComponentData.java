@@ -27,6 +27,11 @@ public sealed interface ComponentData<T> {
      */
     void applyRemovals();
 
+    /**
+     * Applies pending removal of component for entity.
+     */
+    void applyRemoval(int entityId);
+
     T getInstance();
 
 }
@@ -69,6 +74,11 @@ record ComponentDataImpl<T>(int id, Class<T> clazz, Bag<T> components, BitVector
 
         this.removals.iterate(this::removeComponent);
         this.removals.clear();
+    }
+
+    @Override
+    public void applyRemoval(int entityId) {
+        removeComponent(entityId);
     }
 
     void removeComponent(int entityId) {

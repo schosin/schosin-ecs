@@ -8,6 +8,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentData;
@@ -90,7 +92,7 @@ class EntityManagerTest extends AbstractWorldTest {
         void testDuplicateTypes() {
             var otherComponent1 = new Component1();
 
-            assertThatThrownBy(() -> world.createEntity(component1, component2, otherComponent1, component2))
+            assertThatThrownBy(() -> world.createEntity(new Component1(), new Component2(), otherComponent1, new Component2()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("duplicate component types");
         }
@@ -400,6 +402,165 @@ class EntityManagerTest extends AbstractWorldTest {
 
     }
 
+    @Nested
+    class CreateEntityMutationsTest {
+
+        PooledComponents<C1> pooled1;
+        PooledComponents<C2> pooled2;
+        PooledComponents<C3> pooled3;
+
+        @BeforeEach
+        void setupMappers() {
+            this.pooled1 = world.getPooledComponents(C1.class);
+            this.pooled2 = world.getPooledComponents(C2.class);
+            this.pooled3 = world.getPooledComponents(C3.class);
+        }
+
+        @Test
+        void testDeletionDuringCreation() {
+            // Setup composition listeners
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            composition1.inserted(pooled2::add);
+
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            composition2.inserted(pooled3::add);
+
+            var composition3 = world.createComposition(Composition.all(C3.class));
+            composition3.inserted(world::deleteEntity);
+
+            // Call
+            var c1 = pooled1.getInstance();
+
+            assertThatThrownBy(() -> world.createEntity(c1))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("deleted during creation");
+        }
+
+        @Test
+        void testMutationDuringCreation_WhenListenersModifyComponents_WorksIfWorldIsProcessed() {
+            // Setup composition listeners
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            composition1.inserted(pooled2::add);
+
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            composition2.inserted(pooled3::add);
+
+            var composition3 = world.createComposition(Composition.all(C3.class));
+            composition3.inserted(pooled1::remove);
+
+            // Call
+            var entityId = world.createEntity(pooled1.getInstance());
+
+            assertThat(world.process(1)).isTrue();
+
+            // Verify
+            verifyHasComposition(entityId, Composition.all(C2.class, C3.class).none(C1.class));
+
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+        }
+
+        @Test
+        void testMutationDuringCreation_WhenListenersModifyComponents_ListenersCalledRecursivly() {
+            // Setup composition listeners
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            composition1.inserted(pooled2::add);
+
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            composition2.inserted(pooled3::add);
+
+            var composition3 = world.createComposition(Composition.all(C3.class));
+            composition3.inserted(pooled1::remove);
+
+            // Call
+            var entityId = world.createEntity(pooled1.getInstance());
+
+            // Verify
+            verifyHasComposition(entityId, Composition.all(C2.class, C3.class).none(C1.class));
+
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+        }
+
+        @Test
+        void testMutationAfterCreation_WhenListenersModifyComponents_WorksIfWorldIsProcessed() {
+            // Setup composition listeners
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            composition1.inserted(pooled2::add);
+
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            composition2.inserted(pooled3::add);
+
+            var composition3 = world.createComposition(Composition.all(C3.class));
+            composition3.inserted(pooled1::remove);
+
+            var entityId = world.createEntity();
+
+            // Call
+            pooled1.add(entityId);
+
+            // Verify first process
+            assertThat(world.process(1)).isFalse();
+            verifyHasComposition(entityId, Composition.all(C1.class).none(C2.class, C3.class));
+
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyDoesNotHaveComponent(entityId, C3.class);
+
+            // Verify second process
+            assertThat(world.process(1)).isFalse();
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class).none(C3.class));
+
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+
+            // Verify third process
+            assertThat(world.process(1)).isFalse();
+            verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class));
+
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+
+            // Verify last process
+            assertThat(world.process(1)).isTrue();
+            verifyHasComposition(entityId, Composition.all(C2.class, C3.class).none(C1.class));
+
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyHasComponent(entityId, C2.class);
+            verifyHasComponent(entityId, C3.class);
+        }
+
+        @Test
+        void testMutationAfterCreation_WhenListenersModifyComponents_ListenersNotCalledRecirsuvly() {
+            // Setup composition listeners
+            var composition1 = world.createComposition(Composition.all(C1.class));
+            composition1.inserted(pooled2::add);
+
+            var composition2 = world.createComposition(Composition.all(C2.class));
+            composition2.inserted(pooled3::add);
+
+            var composition3 = world.createComposition(Composition.all(C3.class));
+            composition3.inserted(pooled1::remove);
+
+            var entityId = world.createEntity();
+
+            // Call
+            pooled1.add(entityId);
+
+            // Verify
+            verifyHasComposition(entityId, Composition.none(C1.class, C2.class, C3.class));
+
+            verifyHasComponent(entityId, C1.class);
+            verifyDoesNotHaveComponent(entityId, C2.class);
+            verifyDoesNotHaveComponent(entityId, C3.class);
+        }
+
+    }
+
     private record Component1() {
     }
 
@@ -407,6 +568,15 @@ class EntityManagerTest extends AbstractWorldTest {
     }
 
     private record Component3() {
+    }
+
+    public record C1() implements Pooled {
+    }
+
+    public record C2() implements Pooled {
+    }
+
+    public record C3() implements Pooled {
     }
 
 }

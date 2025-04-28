@@ -161,7 +161,7 @@ public interface World extends Components.Creator, Archetype.Creator, Transmuter
      * 
      * <p>
      * This method should be called either at the end of a game loop or in between systems. When the processing caused additional changes,
-     * this method returns true and the call can either be repeated immedietly or run next time (e.g. next frame). This can happen when
+     * this method may return false and the call can either be repeated immedietly or run next time (e.g. next frame). This can happen when
      * {@link Composition#inserted(java.util.function.IntConsumer) inserted} and {@link Composition#removed(java.util.function.IntConsumer) removed}
      * callbacks trigger changes for another composition. 
      * </p>
@@ -171,7 +171,7 @@ public interface World extends Components.Creator, Archetype.Creator, Transmuter
      * entities might be skipped or the callback might see zeros (0) for the entity id.
      * </p>
      * 
-     * @return true if processing should be repeated due to further updates caused by the processing
+     * @return true if processing finished, false indicates further processing is necessary
      */
     boolean process();
 
@@ -180,7 +180,7 @@ public interface World extends Components.Creator, Archetype.Creator, Transmuter
      * 
      * <p>
      * This method should be called either at the end of a game loop or in between systems. When the processing caused additional changes,
-     * this method returns true and the call can either be repeated immedietly or run next time (e.g. next frame). This can happen when
+     * this method may return false and the call can either be repeated immedietly or run next time (e.g. next frame). This can happen when
      * {@link Composition#inserted(java.util.function.IntConsumer) inserted} and {@link Composition#removed(java.util.function.IntConsumer) removed}
      * callbacks trigger changes for another composition. 
      * </p>
@@ -191,7 +191,7 @@ public interface World extends Components.Creator, Archetype.Creator, Transmuter
      * </p>
      * 
      * @param loops number of times the processing should be repeated if iterations require further processing
-     * @return true if processing should be repeated due to further updates caused by the processing
+     * @return true if processing finished, false indicates further processing is necessary
      */
     boolean process(int loops);
 

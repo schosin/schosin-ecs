@@ -1,9 +1,13 @@
 package de.schosin.ecs.engine.entities;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
@@ -16,6 +20,10 @@ import de.schosin.ecs.engine.utils.collections.Pool;
 
 public class EntityManager {
 
+    private static final int MAX_PROCESS_REPITITIONS = 10;
+
+    private final World world;
+
     private final BagManager bagManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
@@ -26,7 +34,11 @@ public class EntityManager {
     private final Bag<Entity> entities = new Bag<>(Entity.class, 64);
     private final Pool<Entity> pool = Pool.unbounded(Entity.class, () -> new Entity(getEntityId()), Entity::reset);
 
-    public EntityManager(BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, CompositionManager compositionManager) {
+    private ChangeManager changeManager;
+
+    public EntityManager(World world, BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, CompositionManager compositionManager) {
+        this.world = world;
+
         this.bagManager = bagManager;
         this.componentManager = componentManager;
         this.componentMaskManager = componentMaskManager;
@@ -57,6 +69,9 @@ public class EntityManager {
 
         // Notify compositions
         compositionManager.inserted(componentMask, entity.id);
+
+        // Process entity updates caused by composition listeners
+        processEntityUpdates(entity.id, () -> components);
 
         return entity.id;
     }
@@ -99,7 +114,33 @@ public class EntityManager {
         // Notify compositions
         compositionManager.inserted(componentMask, entityIds);
 
+        for (var entityId : entityIds) {
+            processEntityUpdates(entityId, () -> {
+                var components = new Object[componentSize];
+                for (int c = 0; c < componentSize; c++) {
+                    components[c] = data[c][entityId];
+                }
+
+                return components;
+            });
+        }
+
         return entityIds;
+    }
+
+    private void processEntityUpdates(int entityId, Supplier<Object[]> components) {
+        if (changeManager == null) {
+            this.changeManager = world.getSingleton(ChangeManager.class);
+        }
+
+        var tries = MAX_PROCESS_REPITITIONS;
+        while (!changeManager.processEntityInCreation(entityId) && --tries > 0) {
+            // just repeat until done
+        }
+
+        if (tries == 0) {
+            System.err.println("Creating entity %d caused too many recursive updates while processing compositions. Initial components: %s".formatted(entityId, Arrays.toString(components.get())));
+        }
     }
 
     private Entity createEntity(ComponentMask componentMask) {

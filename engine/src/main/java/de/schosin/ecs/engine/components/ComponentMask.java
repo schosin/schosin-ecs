@@ -1,5 +1,7 @@
 package de.schosin.ecs.engine.components;
 
+import java.util.Objects;
+
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.IntBag;
@@ -63,6 +65,23 @@ public class ComponentMask {
 
     public Bag<ComponentMask> getRemoveMapping() {
         return remove;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        ComponentMask other = (ComponentMask) obj;
+        return this.id == other.id;
     }
 
 }

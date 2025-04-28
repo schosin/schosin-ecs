@@ -49,16 +49,62 @@ public class ChangeManager {
         this.removedComponentsOverflow = new BitVector(64);
     }
 
+    /**
+     * @return processing finished
+     */
+    public boolean processEntityInCreation(int entityId) {
+        // Throw if deleted during creation
+        if (deletedEntities.get(entityId)) {
+            throw new IllegalStateException("Entity %d deleted during creation.".formatted(entityId));
+        }
+
+        // Handle entity updates
+        if (updatedEntities.get(entityId)) {
+            var previousComponentMask = entityManager.getComponentMask(entityId);
+
+            var componentMaskId = fromLookup(updatedEntityMasks.get(entityId));
+            var componentMask = componentMaskManager.getComponentMask(componentMaskId);
+
+            // Cleanup
+            updatedEntities.clear(entityId);
+            updatedEntityMasks.set(entityId, 0);
+
+            // Process updated entity
+            processUpdatedEntity(entityId, componentMaskId);
+
+            // Flush component removals
+            outer: for (var component : previousComponentMask.getComponents()) {
+                // Skip if new component mask still contains previous component
+                for (var present : componentMask.getComponents()) {
+                    if (component == present) {
+                        continue outer;
+                    }
+                }
+
+                // Apply removal if component not in new component mask
+                component.applyRemoval(entityId);
+            }
+        }
+
+        return !updatedEntities.get(entityId) && !deletedEntities.get(entityId);
+    }
+
+    /**
+     * @return processing finished
+     */
     public boolean process(int loops) {
         do {
-            if (!processInternal()) {
-                return false;
+            if (processInternal()) {
+                return true;
             }
         } while (--loops > 0);
 
-        return true;
+        return false;
     }
 
+    /**
+     * @return processing finished
+     */
     private synchronized boolean processInternal() {
         // Prepare overflow
         var deleted = this.deletedEntities;
@@ -88,7 +134,7 @@ public class ChangeManager {
         removed.iterate(this::processRemovedComponent);
         removed.clear();
 
-        return isDirty();
+        return !isDirty();
     }
 
     private boolean isDirty() {
