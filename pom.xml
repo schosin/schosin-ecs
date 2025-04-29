@@ -28,6 +28,7 @@
         <junit.version>5.12.2</junit.version>
         <junit-pironeer.version>2.3.0</junit-pironeer.version>
         <assertj.version>3.27.2</assertj.version>
+        <archunit.version>1.4.0</archunit.version>
         <jmh.version>1.37</jmh.version>
     </properties>
 
@@ -81,6 +82,11 @@
                 <groupId>org.junit-pioneer</groupId>
                 <artifactId>junit-pioneer</artifactId>
                 <version>${junit-pironeer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
