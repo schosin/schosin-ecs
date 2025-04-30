@@ -65,28 +65,56 @@ public class ChangeManager {
             var componentMaskId = fromLookup(updatedEntityMasks.get(entityId));
             var componentMask = componentMaskManager.getComponentMask(componentMaskId);
 
-            // Cleanup
-            updatedEntities.clear(entityId);
-            updatedEntityMasks.set(entityId, 0);
-
             // Process updated entity
-            processUpdatedEntity(entityId, componentMaskId);
+            flushCompositionUpdate(entityId, componentMask);
 
             // Flush component removals
-            outer: for (var component : previousComponentMask.getComponents()) {
-                // Skip if new component mask still contains previous component
-                for (var present : componentMask.getComponents()) {
-                    if (component == present) {
-                        continue outer;
-                    }
-                }
-
-                // Apply removal if component not in new component mask
-                component.applyRemoval(entityId);
-            }
+            flushComponentRemovals(entityId, previousComponentMask, componentMask);
         }
 
         return !updatedEntities.get(entityId) && !deletedEntities.get(entityId);
+    }
+
+    public boolean flushEntityUpdates(int entityId, int loops) {
+        while (updatedEntities.get(entityId) && --loops > 0) {
+            var componentMaskId = fromLookup(updatedEntityMasks.get(entityId));
+            var componentMask = componentMaskManager.getComponentMask(componentMaskId);
+            
+            flushCompositionUpdate(entityId, componentMask);
+        }
+
+        if (loops == 0) {
+            System.err.println("Flushing updates for entity %d caused too many recursive updates while processing compositions.".formatted(entityId));
+        }
+        
+        return !updatedEntities.get(entityId);
+    }
+
+    private void flushCompositionUpdate(int entityId, ComponentMask componentMask) {
+        if (!updatedEntities.get(entityId)) {
+            return;
+        }
+
+        // Cleanup
+        updatedEntities.clear(entityId);
+        updatedEntityMasks.set(entityId, 0);
+
+        // Process updated entity
+        processUpdatedEntity(entityId, componentMask.getId());
+    }
+
+    private void flushComponentRemovals(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
+        outer: for (var component : previousComponentMask.getComponents()) {
+            // Skip if new component mask still contains previous component
+            for (var present : componentMask.getComponents()) {
+                if (component == present) {
+                    continue outer;
+                }
+            }
+
+            // Apply removal if component not in new component mask
+            component.applyRemoval(entityId);
+        }
     }
 
     /**

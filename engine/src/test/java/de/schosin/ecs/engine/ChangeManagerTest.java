@@ -13,17 +13,17 @@ import de.schosin.ecs.engine.utils.collections.IntBag;
 
 class ChangeManagerTest extends AbstractWorldTest {
 
+    PooledComponents<C1> component1;
+    PooledComponents<C2> component2;
+
+    @BeforeEach
+    void setup() {
+        this.component1 = world.getPooledComponents(C1.class);
+        this.component2 = world.getPooledComponents(C2.class);
+    }
+
     @Nested
     class InsertedRemovedDependenciesTest {
-
-        PooledComponents<C1> component1;
-        PooledComponents<C2> component2;
-
-        @BeforeEach
-        void setup() {
-            this.component1 = world.getPooledComponents(C1.class);
-            this.component2 = world.getPooledComponents(C2.class);
-        }
 
         @Nested
         class EntityCreationRemoval extends AbstractTest {
@@ -230,6 +230,84 @@ class ChangeManagerTest extends AbstractWorldTest {
                 assertThat(removed.getData()).containsExactly("foobar".length());
             }
 
+        }
+
+    }
+
+    @Nested
+    class FlushEntityUpdatesTest {
+
+        @Test
+        void testFlushEntityUpdates_WhenNoPendingUpdates() {
+            var entityId = world.createEntity();
+
+            // Call
+            assertThat(world.flushEntityUpdates(entityId)).isTrue();
+        }
+
+        @Test
+        void testFlushEntityUpdates_WhenComponentAdded_AddsComponentAndUpdatesComposition() {
+            // Setup            
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+
+            // Add component
+            component1.add(entityId);
+            verifyHasComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+
+            // Call
+            assertThat(world.flushEntityUpdates(entityId)).isTrue();
+
+            // Verify
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+        }
+
+        @Test
+        void testFlushEntityUpdates_WhenComponentRemoved_UpdatesOnlyComposition() {
+            // Setup            
+            var entityId = world.createEntity(new C1());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+
+            // Add component
+            component1.remove(entityId);
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+
+            // Call
+            assertThat(world.flushEntityUpdates(entityId)).isTrue();
+
+            // Verify
+            verifyHasComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+        }
+
+        @Test
+        void testProcess_WhenRemovedComponentFlushed_RemovesComponent() {
+            // Setup            
+            var entityId = world.createEntity(new C1());
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+
+            // Add component
+            component1.remove(entityId);
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+
+            // Flush updates
+            assertThat(world.flushEntityUpdates(entityId)).isTrue();
+            verifyHasComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+
+            // Call
+            world.process();
+
+            // Verify
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
         }
 
     }

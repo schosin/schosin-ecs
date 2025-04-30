@@ -139,6 +139,11 @@ public class EngineWorld implements World {
     }
 
     @Override
+    public boolean flushEntityUpdates(int entityId) {
+        return changeManager.flushEntityUpdates(entityId, config.processLoops);
+    }
+
+    @Override
     public <T1> Archetype.Of1<T1> createArchetype(Class<T1> component1) {
         return archetypeManager.createArchetype(component1);
     }
