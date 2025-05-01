@@ -111,5 +111,16 @@ public class IntBag {
             }
         }
     }
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder().append("IntBag(");
+        for (int i = 0; i < size; i++) {
+            if (i > 0) {
+                builder.append(", ");
+            }
+            builder.append(data[i]);
+        }
+        return builder.append(")").toString();
+    }
 
 }
