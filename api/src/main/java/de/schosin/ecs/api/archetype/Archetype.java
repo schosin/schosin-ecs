@@ -8,6 +8,25 @@ import de.schosin.ecs.api.Pooled;
 public interface Archetype {
 
     /**
+     * Create a new archetype that extends this archetype by adding the passed components to
+     * every created entity. The old archetype is not modified.
+     * 
+     * <p>
+     * Intended to be used with marker or singleton components (e.g. enums).
+     * </p>
+     * 
+     * <p>
+     * <b>Note:</b> No duplicate components are allowed. If {@link #with(Object...)} adds components
+     * defined when creating the archetype, or a previous {@link #with(Object...)} call, an error
+     * is thrown.
+     * </p>
+     * 
+     * @param components components to add to every entity
+     * @return new archetype
+     */
+    Archetype with(Object... components);
+
+    /**
      * Returns a pooled instance of the component.
      * 
      * @param <T> type of component
@@ -22,6 +41,8 @@ public interface Archetype {
 
             void initialize(T1 component1);
         }
+
+        Of1<T1> with(Object... components);
 
         int create(T1 component1);
 
@@ -43,6 +64,9 @@ public interface Archetype {
             void initialize(T1 component1, T2 component2);
         }
 
+        @Override
+        Of2<T1, T2> with(Object... components);
+
         int create(T1 component1, T2 component2);
 
         /**
@@ -62,6 +86,9 @@ public interface Archetype {
 
             void initialize(T1 component1, T2 component2, T3 component3);
         }
+
+        @Override
+        Of3<T1, T2, T3> with(Object... components);
 
         int create(T1 component1, T2 component2, T3 component3);
 
@@ -83,6 +110,9 @@ public interface Archetype {
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4);
         }
 
+        @Override
+        Of4<T1, T2, T3, T4> with(Object... components);
+
         int create(T1 component1, T2 component2, T3 component3, T4 component4);
 
         /**
@@ -102,6 +132,9 @@ public interface Archetype {
 
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5);
         }
+
+        @Override
+        Of5<T1, T2, T3, T4, T5> with(Object... components);
 
         int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5);
 
@@ -123,6 +156,9 @@ public interface Archetype {
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6);
         }
 
+        @Override
+        Of6<T1, T2, T3, T4, T5, T6> with(Object... components);
+
         int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6);
 
         /**
@@ -142,6 +178,9 @@ public interface Archetype {
 
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7);
         }
+
+        @Override
+        Of7<T1, T2, T3, T4, T5, T6, T7> with(Object... components);
 
         int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7);
 
@@ -163,6 +202,9 @@ public interface Archetype {
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7, T8 component8);
         }
 
+        @Override
+        Of8<T1, T2, T3, T4, T5, T6, T7, T8> with(Object... components);
+
         int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7, T8 component8);
 
         /**
@@ -182,6 +224,9 @@ public interface Archetype {
 
             void initialize(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7, T8 component8, Object... components);
         }
+
+        @Override
+        OfN<T1, T2, T3, T4, T5, T6, T7, T8> with(Object... components);
 
         int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7, T8 component8, Object... others);
 

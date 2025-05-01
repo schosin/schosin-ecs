@@ -1,6 +1,8 @@
 package de.schosin.ecs.engine.entities;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.stream.Stream;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.archetype.Archetype;
@@ -79,14 +81,44 @@ public class ArchetypeManager implements Archetype.Creator {
         return new ArchetypeImplN<>(component1, component2, component3, component4, component5, component6, component7, component8, others);
     }
 
-    private class AbstractArchetypeImpl implements Archetype {
+    private abstract class AbstractArchetypeImpl implements Archetype {
 
         private final ComponentMask componentMask;
+
+        private final Object[] fixed;
         private final ComponentData<?>[] dataLookup;
+
+        protected AbstractArchetypeImpl(Object[] fixed, AbstractArchetypeImpl parent) {
+            // Create components from parent, validate no duplicates
+            var components = Stream.concat(Arrays.stream(parent.dataLookup).map(ComponentData::clazz), Arrays.stream(fixed).map(Object::getClass))
+                    .toArray(Class<?>[]::new);
+
+            validateNoDuplicateComponents(components);
+
+            // Set fields
+            this.componentMask = componentMaskManager.getComponentMask(components);
+
+            this.fixed = parent.fixed != null ? ArrayUtils.concat(Object.class, parent.fixed, fixed) : fixed;
+            this.dataLookup = Arrays.stream(components)
+                    .map(componentManager::getData)
+                    .toArray(ComponentData[]::new);
+        }
+
+        private void validateNoDuplicateComponents(Class<?>[] components) {
+            var set = new HashSet<Class<?>>(components.length);
+            for (var component : components) {
+                if (set.contains(component)) {
+                    throw new IllegalArgumentException("Component '%s' already defined, cannot add duplicates.".formatted(component.getSimpleName()));
+                }
+
+                set.add(component);
+            }
+        }
 
         protected AbstractArchetypeImpl(Class<?>... components) {
             this.componentMask = componentMaskManager.getComponentMask(components);
 
+            this.fixed = null;
             this.dataLookup = Arrays.stream(components)
                     .map(componentManager::getData)
                     .toArray(ComponentData[]::new);
@@ -98,16 +130,25 @@ public class ArchetypeManager implements Archetype.Creator {
         }
 
         protected final int createEntity(Object... components) {
+            if (fixed != null) {
+                components = ArrayUtils.concat(Object.class, components, fixed);
+            }
+
             return entityManager.create(componentMask, components);
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
         protected final int[] createEntities(int count, Archetype.Initialize initialize) {
             return initializePool.withInstance(init -> {
-                init.size = this.componentMask.getComponents().length;
+                init.size = fixed != null
+                        ? this.componentMask.getComponents().length - fixed.length
+                        : this.componentMask.getComponents().length;
+
                 init.added = 0;
 
-                var data = new Object[init.size][count];
+                var data = fixed != null
+                        ? new Object[init.size + fixed.length][count]
+                        : new Object[init.size][count];
 
                 for (int i = 0; i < count; i++) {
                     init.valid = false;
@@ -117,8 +158,18 @@ public class ArchetypeManager implements Archetype.Creator {
                         throw new IllegalStateException("Initialization callback not called for entity %d/%d".formatted(i + 1, count));
                     }
 
+                    if (init.added > init.size) {
+                        throw new IllegalStateException("Expected %d added components, but got %d for entity %d/%d".formatted(init.size, init.added, i + 1, count));
+                    }
+
                     for (int c = 0; c < init.added; c++) {
                         data[c][i] = init.components.get(c);
+                    }
+
+                    if (fixed != null) {
+                        for (int c = 0, s = fixed.length; c < s; c++) {
+                            data[init.size + c][i] = fixed[c];
+                        }
                     }
                 }
 
@@ -275,6 +326,15 @@ public class ArchetypeManager implements Archetype.Creator {
             super(component1);
         }
 
+        private ArchetypeImpl1(Object[] fixed, ArchetypeImpl1<T1> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of1<T1> with(Object... components) {
+            return new ArchetypeImpl1<>(components, this);
+        }
+
         @Override
         public int create(T1 component1) {
             return createEntity(component1);
@@ -291,6 +351,15 @@ public class ArchetypeManager implements Archetype.Creator {
 
         private ArchetypeImpl2(Class<T1> component1, Class<T2> component2) {
             super(component1, component2);
+        }
+
+        private ArchetypeImpl2(Object[] fixed, ArchetypeImpl2<T1, T2> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of2<T1, T2> with(Object... components) {
+            return new ArchetypeImpl2<>(components, this);
         }
 
         @Override
@@ -311,6 +380,15 @@ public class ArchetypeManager implements Archetype.Creator {
             super(component1, component2, component3);
         }
 
+        private ArchetypeImpl3(Object[] fixed, ArchetypeImpl3<T1, T2, T3> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of3<T1, T2, T3> with(Object... components) {
+            return new ArchetypeImpl3<>(components, this);
+        }
+
         @Override
         public int create(T1 component1, T2 component2, T3 component3) {
             return createEntity(component1, component2, component3);
@@ -327,6 +405,15 @@ public class ArchetypeManager implements Archetype.Creator {
 
         private ArchetypeImpl4(Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4) {
             super(component1, component2, component3, component4);
+        }
+
+        private ArchetypeImpl4(Object[] fixed, ArchetypeImpl4<T1, T2, T3, T4> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of4<T1, T2, T3, T4> with(Object... components) {
+            return new ArchetypeImpl4<>(components, this);
         }
 
         @Override
@@ -349,6 +436,15 @@ public class ArchetypeManager implements Archetype.Creator {
             super(component1, component2, component3, component4, component5);
         }
 
+        private ArchetypeImpl5(Object[] fixed, ArchetypeImpl5<T1, T2, T3, T4, T5> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of5<T1, T2, T3, T4, T5> with(Object... components) {
+            return new ArchetypeImpl5<>(components, this);
+        }
+
         @Override
         public int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5) {
             return createEntity(component1, component2, component3, component4, component5);
@@ -367,6 +463,15 @@ public class ArchetypeManager implements Archetype.Creator {
                 Class<T5> component5, Class<T6> component6) {
 
             super(component1, component2, component3, component4, component5, component6);
+        }
+
+        private ArchetypeImpl6(Object[] fixed, ArchetypeImpl6<T1, T2, T3, T4, T5, T6> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of6<T1, T2, T3, T4, T5, T6> with(Object... components) {
+            return new ArchetypeImpl6<>(components, this);
         }
 
         @Override
@@ -389,6 +494,15 @@ public class ArchetypeManager implements Archetype.Creator {
             super(component1, component2, component3, component4, component5, component6, component7);
         }
 
+        private ArchetypeImpl7(Object[] fixed, ArchetypeImpl7<T1, T2, T3, T4, T5, T6, T7> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of7<T1, T2, T3, T4, T5, T6, T7> with(Object... components) {
+            return new ArchetypeImpl7<>(components, this);
+        }
+
         @Override
         public int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7) {
             return createEntity(component1, component2, component3, component4, component5, component6, component7);
@@ -409,6 +523,15 @@ public class ArchetypeManager implements Archetype.Creator {
             super(component1, component2, component3, component4, component5, component6, component7, component8);
         }
 
+        private ArchetypeImpl8(Object[] fixed, ArchetypeImpl8<T1, T2, T3, T4, T5, T6, T7, T8> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.Of8<T1, T2, T3, T4, T5, T6, T7, T8> with(Object... components) {
+            return new ArchetypeImpl8<>(components, this);
+        }
+
         @Override
         public int create(T1 component1, T2 component2, T3 component3, T4 component4, T5 component5, T6 component6, T7 component7, T8 component8) {
             return createEntity(component1, component2, component3, component4, component5, component6, component7, component8);
@@ -427,6 +550,15 @@ public class ArchetypeManager implements Archetype.Creator {
                 Class<T5> component5, Class<T6> component6, Class<T7> component7, Class<T8> component8, Class<?>[] others) {
 
             super(ArrayUtils.concat(Class.class, new Class<?>[] { component1, component2, component3, component4, component5, component6, component7, component8 }, others));
+        }
+
+        private ArchetypeImplN(Object[] fixed, ArchetypeImplN<T1, T2, T3, T4, T5, T6, T7, T8> parent) {
+            super(fixed, parent);
+        }
+
+        @Override
+        public Archetype.OfN<T1, T2, T3, T4, T5, T6, T7, T8> with(Object... components) {
+            return new ArchetypeImplN<>(components, this);
         }
 
         @Override
