@@ -20,7 +20,7 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
         
         <jspecify.version>1.0.0</jspecify.version>
-        <jackson.version>2.18.3</jackson.version>
+        <jackson.version>2.19.0</jackson.version>
         
         <hibernate.validator.version>8.0.2.Final</hibernate.validator.version>
         <glassfish.expressly.version>5.0.0</glassfish.expressly.version>
