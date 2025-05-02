@@ -1,7 +1,5 @@
 package de.schosin.ecs.engine.compositions;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -575,10 +573,10 @@ public class CompositionManager extends AbstractSpecManager {
         private final IntBag maskCache;
 
         private IntConsumer inserted;
-        private List<IntConsumer> moreInserted;
+        private Bag<IntConsumer> moreInserted;
 
         private IntConsumer removed;
-        private List<IntConsumer> moreRemoved;
+        private Bag<IntConsumer> moreRemoved;
 
         private final Map<BitVector, AbstractRetrieveComposition> retrieves = new ConcurrentHashMap<>();
 
@@ -624,8 +622,9 @@ public class CompositionManager extends AbstractSpecManager {
             inserted.accept(entityId);
 
             if (moreInserted != null) {
-                for (var more : moreInserted) {
-                    more.accept(entityId);
+                var data = moreInserted.getData();
+                for (int i = 0, s = moreInserted.getSize(); i < s; i++) {
+                    data[i].accept(entityId);
                 }
             }
         }
@@ -653,8 +652,9 @@ public class CompositionManager extends AbstractSpecManager {
             removed.accept(entityId);
 
             if (moreRemoved != null) {
-                for (var more : moreRemoved) {
-                    more.accept(entityId);
+                var data = moreRemoved.getData();
+                for (int i = 0, s = moreRemoved.getSize(); i < s; i++) {
+                    data[i].accept(entityId);
                 }
             }
         }
@@ -713,7 +713,7 @@ public class CompositionManager extends AbstractSpecManager {
                 this.inserted = callback;
             } else {
                 if (this.moreInserted == null) {
-                    this.moreInserted = new ArrayList<>();
+                    this.moreInserted = new Bag<>(IntConsumer.class, 8);
                 }
 
                 this.moreInserted.add(callback);
@@ -726,7 +726,7 @@ public class CompositionManager extends AbstractSpecManager {
                 this.removed = callback;
             } else {
                 if (this.moreRemoved == null) {
-                    this.moreRemoved = new ArrayList<>();
+                    this.moreRemoved = new Bag<>(IntConsumer.class, 8);
                 }
 
                 this.moreRemoved.add(callback);

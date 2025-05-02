@@ -283,14 +283,14 @@ public class TransmutationManager implements Transmuter.Creator {
 
     private abstract class AbstractTransmuter implements Transmuter {
 
-        protected final Set<Class<?>> add;
-        protected final Set<Class<?>> remove;
+        protected final Class<?>[] add;
+        protected final Class<?>[] remove;
 
         protected final Bag<ComponentMask> cache = new Bag<>(ComponentMask.class, 64);
 
         protected AbstractTransmuter(Set<Class<?>> add, Set<Class<?>> remove) {
-            this.add = add;
-            this.remove = remove;
+            this.add = add.toArray(Class<?>[]::new);
+            this.remove = remove.toArray(Class<?>[]::new);
         }
 
         protected boolean apply(int entityId, Object... added) {
