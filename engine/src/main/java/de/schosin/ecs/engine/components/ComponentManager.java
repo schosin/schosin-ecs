@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
+import de.schosin.ecs.engine.utils.ClassUtils;
+import de.schosin.ecs.engine.utils.ClassUtils.ClassType;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
@@ -68,6 +70,8 @@ public class ComponentManager {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private <T> ComponentDataImpl<T> createMetadata(Class<T> clazz, int bagSize) {
+        validateComponentHierarchy(clazz);
+
         this.bagManager.ensureComponentSize(this.byId.getCapacity() + 1);
 
         var components = bagManager.createEntityBag(clazz, bagSize);
@@ -80,6 +84,27 @@ public class ComponentManager {
         byId.set(metadata.id(), metadata);
 
         return metadata;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateComponentHierarchy(Class<?> clazz) {
+        // Validate invalid types
+        var type = ClassUtils.detectType(clazz);
+        if (!type.isValidComponent()) {
+            throw new IllegalArgumentException("Invalid component '%s' of type '%s'. Allowed types: %s".formatted(clazz.getSimpleName(), type.name().toLowerCase(), ClassType.ALLOWED_COMPONENT_TYPES));
+        }
+
+        // Validate no extends/super of existing component type
+        var data = byId.getData();
+        for (int i = 0, s = byId.getSize(); i < s; i++) {
+            var existingClass = data[i].clazz();
+
+            if (existingClass.isAssignableFrom(clazz)) {
+                throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(clazz.getSimpleName(), existingClass.getSimpleName()));
+            } else if (clazz.isAssignableFrom(existingClass)) {
+                throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(existingClass.getSimpleName(), clazz.getSimpleName()));
+            }
+        }
     }
 
     public void removed(int entityId, ComponentMask componentMask) {

@@ -64,13 +64,13 @@ class EntityManagerTest extends AbstractWorldTest {
 
         @Test
         void testReusedEntityId() {
-            var entityId = entityManager.createEntity(Component1.class);
+            var entityId = entityManager.createEntity(new Component1());
 
             world.deleteEntity(entityId);
             world.process();
 
-            assertThat(entityManager.createEntity(Component2.class)).isEqualTo(entityId);
-            assertThat(entityManager.createEntity(Component2.class)).isGreaterThan(entityId);
+            assertThat(entityManager.createEntity(new Component2())).isEqualTo(entityId);
+            assertThat(entityManager.createEntity(new Component2())).isGreaterThan(entityId);
         }
 
         @Test
