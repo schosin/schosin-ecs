@@ -1,5 +1,7 @@
 package de.schosin.ecs.engine.compositions;
 
+import java.util.Set;
+
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -11,17 +13,17 @@ public sealed interface EngineSpec {
 
     boolean matches(EngineSpec other);
 
-    public static EngineSpec create(@Nullable BitVector all, @Nullable BitVector one, @Nullable BitVector none) {
+    public static EngineSpec create(@Nullable BitVector all, @Nullable Set<BitVector> ones, @Nullable BitVector none) {
         if (all != null) {
-            if (one != null) {
-                return none != null ? new DefaultCompositionSpec(all, one, none) : new AllOneCompositionSpec(all, one);
+            if (ones != null) {
+                return none != null ? new DefaultCompositionSpec(all, ones, none) : new AllOneCompositionSpec(all, ones);
             }
 
             return none != null ? new AllNoneCompositionSpec(all, none) : new AllCompositionSpec(all);
         }
 
-        if (one != null) {
-            return none != null ? new OneNoneCompositionSpec(one, none) : new OneCompositionSpec(one);
+        if (ones != null) {
+            return none != null ? new OneNoneCompositionSpec(ones, none) : new OneCompositionSpec(ones);
         }
 
         return none != null ? new NoneCompositionSpec(none) : new EmptyCompositionSpec();
@@ -59,18 +61,18 @@ record AllCompositionSpec(BitVector all) implements EngineSpec {
 }
 
 @NullMarked
-record AllOneCompositionSpec(BitVector all, BitVector one) implements EngineSpec {
+record AllOneCompositionSpec(BitVector all, Set<BitVector> ones) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return components.containsAll(all) && components.containsSome(one);
+        return components.containsAll(all) && ones.stream().allMatch(one -> components.containsSome(one));
     }
 
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
             case AllCompositionSpec(var all) -> this.all.containsAll(all);
-            case OneCompositionSpec(var one) -> this.one.containsAll(one);
-            case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all) && this.one.containsAll(one);
+            case OneCompositionSpec(var ones) -> this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
+            case AllOneCompositionSpec(var all, var ones) -> this.all.containsAll(all) && this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
             default -> false;
         };
     }
@@ -95,16 +97,16 @@ record AllNoneCompositionSpec(BitVector all, BitVector none) implements EngineSp
 }
 
 @NullMarked
-record OneCompositionSpec(BitVector one) implements EngineSpec {
+record OneCompositionSpec(Set<BitVector> ones) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return components.containsSome(one);
+        return ones.stream().allMatch(one -> components.containsSome(one));
     }
 
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
-            case OneCompositionSpec(var one) -> this.one.containsAll(one);
+            case OneCompositionSpec(var ones) -> this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
             default -> false;
         };
     }
@@ -127,28 +129,28 @@ record NoneCompositionSpec(BitVector none) implements EngineSpec {
 }
 
 @NullMarked
-record OneNoneCompositionSpec(BitVector one, BitVector none) implements EngineSpec {
+record OneNoneCompositionSpec(Set<BitVector> ones, BitVector none) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return components.containsSome(one) && components.containsNone(none);
+        return ones.stream().allMatch(one -> components.containsSome(one)) && components.containsNone(none);
     }
 
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
-            case OneCompositionSpec(var one) -> this.one.containsAll(one);
+            case OneCompositionSpec(var ones) -> this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
             case NoneCompositionSpec(var none) -> this.none.containsAll(none);
-            case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
+            case OneNoneCompositionSpec(var ones, var none) -> this.none.containsAll(none) && this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
             default -> false;
         };
     }
 }
 
 @NullMarked
-record DefaultCompositionSpec(BitVector all, BitVector one, BitVector none) implements EngineSpec {
+record DefaultCompositionSpec(BitVector all, Set<BitVector> ones, BitVector none) implements EngineSpec {
     @Override
     public boolean isInterested(BitVector components) {
-        return components.containsAll(all) && components.containsSome(one) && components.containsNone(none);
+        return components.containsAll(all) && ones.stream().allMatch(one -> components.containsSome(one)) && components.containsNone(none);
     }
 
     @Override
@@ -156,12 +158,13 @@ record DefaultCompositionSpec(BitVector all, BitVector one, BitVector none) impl
         return switch (other) {
             case EmptyCompositionSpec() -> false;
             case AllCompositionSpec(var all) -> this.all.containsAll(all);
-            case AllOneCompositionSpec(var all, var one) -> this.all.containsAll(all) && this.one.containsAll(one);
+            case AllOneCompositionSpec(var all, var ones) -> this.all.containsAll(all) && this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
             case AllNoneCompositionSpec(var all, var none) -> this.all.containsAll(all) && this.none.containsAll(none);
-            case OneCompositionSpec(var one) -> this.one.containsAll(one);
+            case OneCompositionSpec(var ones) -> this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
             case NoneCompositionSpec(var none) -> this.none.containsAll(none);
-            case OneNoneCompositionSpec(var one, var none) -> this.one.containsAll(one) && this.none.containsAll(none);
-            case DefaultCompositionSpec(var all, var one, var none) -> this.all.containsAll(all) && this.one.containsAll(one) && this.none.containsAll(none);
+            case OneNoneCompositionSpec(var ones, var none) -> this.none.containsAll(none) && this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
+            case DefaultCompositionSpec(var all, var ones, var none) -> this.all.containsAll(all) && this.none.containsAll(none)
+                    && this.ones.stream().allMatch(thisOne -> ones.stream().anyMatch(otherOne -> thisOne.containsAll(otherOne)));
         };
     }
 }

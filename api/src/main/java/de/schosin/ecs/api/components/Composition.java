@@ -20,6 +20,9 @@ import de.schosin.ecs.api.archetype.Transmuter.Builder.AbstractBuilder;
  *  <li>none: An entity must not have any components of a given set</li>
  * </ul>
  * 
+ * Note that calls to {@link #all(Class...)} and {@link #none(Class...)} append further classes, but calls to
+ * {@link #one(Class...)} will be independently checked.
+ * 
  * The composition can then be used to listen to lifecycle events of entities matching the composition.
  * Use {@link #inserted(IntConsumer)} to be notified when a relevant entity is created or modified,
  * and {@link #removed(IntConsumer)} when an earlier {@link #inserted(IntConsumer) inserted} entity is
@@ -93,7 +96,6 @@ public interface Composition extends Spec {
         }
     }
 
-    
     /**
      * Creates a composition builder. 
      * 
@@ -235,7 +237,8 @@ public interface Composition extends Spec {
     class Builder {
 
         private final Set<Class<?>> all = new HashSet<>();
-        private final Set<Class<?>> one = new HashSet<>();
+
+        private final Set<Set<Class<?>>> ones = new HashSet<>();
         private final Set<Class<?>> none = new HashSet<>();
 
         /**
@@ -255,14 +258,22 @@ public interface Composition extends Spec {
         /**
          * Limits this composition to entities having atleast one of the given components.
          * 
+         * <p>
+         * Multiple calls will be checked independently. The composition
+         * {@code Composition.one(A.class, B.class).one(C.class, D.class)}
+         * for example would match entities that have A and D components,
+         * but not entities with C and D components. 
+         * </p>
+         * 
          * @param classes components an entity have to pocess atleast one of
          * @return this builder instance
          */
         public Builder one(Class<?>... classes) {
-            for (var clazz : classes) {
-                this.one.add(clazz);
+            if (classes.length == 0) {
+                return this;
             }
 
+            this.ones.add(Set.of(classes));
             return this;
         }
 
@@ -284,8 +295,8 @@ public interface Composition extends Spec {
             return all;
         }
 
-        public Set<Class<?>> getOne() {
-            return one;
+        public Set<Set<Class<?>>> getOnes() {
+            return this.ones;
         }
 
         public Set<Class<?>> getNone() {
@@ -299,8 +310,8 @@ public interface Composition extends Spec {
             if (!all.isEmpty()) {
                 builder.append("all=").append(all).append(", ");
             }
-            if (!one.isEmpty()) {
-                builder.append("one=").append(one).append(", ");
+            if (!ones.isEmpty()) {
+                builder.append("ones=").append(ones).append(", ");
             }
             if (!none.isEmpty()) {
                 builder.append("none=").append(none);

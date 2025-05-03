@@ -1,5 +1,8 @@
 package de.schosin.ecs.engine.compositions;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.utils.collections.BitVector;
@@ -21,11 +24,22 @@ public abstract class AbstractSpecManager {
             }
         }
 
-        BitVector oneVector = null;
-        if (!builder.getOne().isEmpty()) {
-            oneVector = new BitVector();
-            for (var clazz : builder.getOne()) {
-                oneVector.set(componentManager.getData(clazz).id());
+        Set<BitVector> oneVectors = null;
+        if (!builder.getOnes().isEmpty()) {
+            for (var one : builder.getOnes()) {
+                if (one.isEmpty()) {
+                    continue;
+                }
+                
+                if (oneVectors == null) {
+                    oneVectors = new HashSet<>();
+                }
+                
+                var oneVector = new BitVector();
+                for (var clazz : one) {
+                    oneVector.set(componentManager.getData(clazz).id());
+                }
+                oneVectors.add(oneVector);
             }
         }
 
@@ -37,7 +51,7 @@ public abstract class AbstractSpecManager {
             }
         }
 
-        return EngineSpec.create(allVector, oneVector, noneVector);
+        return EngineSpec.create(allVector, oneVectors, noneVector);
     }
 
 }

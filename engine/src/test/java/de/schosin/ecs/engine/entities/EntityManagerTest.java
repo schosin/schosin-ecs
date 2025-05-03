@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.Set;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -162,7 +164,7 @@ class EntityManagerTest extends AbstractWorldTest {
             one.set(component1.id());
             one.set(component3.id());
 
-            var spec = EngineSpec.create(null, one, null);
+            var spec = EngineSpec.create(null, Set.of(one), null);
 
             // Call
             var entities = entityManager.getEntities(spec);
