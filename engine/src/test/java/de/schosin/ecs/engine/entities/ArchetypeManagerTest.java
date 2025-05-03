@@ -45,6 +45,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
+            }
+
+            @Test
             void testDuplicateComponents_Throws() {
                 assertThatThrownBy(() -> world.createArchetype(C1.class).with(new C1()))
                         .isInstanceOf(IllegalArgumentException.class)
@@ -159,6 +166,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 var composition = world.createComposition(builder.all(E1.class, E2.class));
 
                 ArchetypeManagerTest.this.verifyHasComposition(entityId, composition);
+            }
+
+            @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
             }
 
             @Test
@@ -282,6 +296,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
+            }
+
+            @Test
             void testDuplicateComponents_Throws() {
                 assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class).with(new C1()))
                         .isInstanceOf(IllegalArgumentException.class)
@@ -402,6 +423,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 var composition = world.createComposition(builder.all(E1.class, E2.class));
 
                 ArchetypeManagerTest.this.verifyHasComposition(entityId, composition);
+            }
+
+            @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
             }
 
             @Test
@@ -530,6 +558,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 var composition = world.createComposition(builder.all(E1.class, E2.class));
 
                 ArchetypeManagerTest.this.verifyHasComposition(entityId, composition);
+            }
+
+            @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
             }
 
             @Test
@@ -662,6 +697,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 var composition = world.createComposition(builder.all(E1.class, E2.class));
 
                 ArchetypeManagerTest.this.verifyHasComposition(entityId, composition);
+            }
+
+            @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
             }
 
             @Test
@@ -800,6 +842,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
+            }
+
+            @Test
             void testDuplicateComponents_Throws() {
                 assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class).with(new C1()))
                         .isInstanceOf(IllegalArgumentException.class)
@@ -935,6 +984,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 var composition = world.createComposition(builder.all(E1.class, E2.class));
 
                 ArchetypeManagerTest.this.verifyHasComposition(entityId, composition);
+            }
+
+            @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
             }
 
             @Test
@@ -1079,6 +1135,13 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testPooledComponents_Throws() {
+                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class).with(new D1()))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "cannot implement Pooled");
+            }
+
+            @Test
             void testDuplicateComponents_Throws() {
                 assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class).with(new C1()))
                         .isInstanceOf(IllegalArgumentException.class)
@@ -1157,10 +1220,12 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             @Test
             void testDuplicateInstances() {
                 assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, C1.class))
-                        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Detected duplicate component types");
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("C1", "already defined");
 
                 assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D1.class))
-                        .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Detected duplicate component types");
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("D1", "already defined");
             }
 
             @Test

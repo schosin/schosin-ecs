@@ -89,6 +89,8 @@ public class ArchetypeManager implements Archetype.Creator {
         private final ComponentData<?>[] dataLookup;
 
         protected AbstractArchetypeImpl(Object[] fixed, AbstractArchetypeImpl parent) {
+            validateNoPooledComponents(fixed);
+
             // Create components from parent, validate no duplicates
             var components = Stream.concat(Arrays.stream(parent.dataLookup).map(ComponentData::clazz), Arrays.stream(fixed).map(Object::getClass))
                     .toArray(Class<?>[]::new);
@@ -104,6 +106,25 @@ public class ArchetypeManager implements Archetype.Creator {
                     .toArray(ComponentData[]::new);
         }
 
+        private void validateNoPooledComponents(Object[] components) {
+            for (var component : components) {
+                if (component instanceof Pooled) {
+                    throw new IllegalArgumentException("Component '%s' passed via 'with(...)' cannot implement Pooled.".formatted(component.getClass().getSimpleName()));
+                }
+            }
+        }
+
+        protected AbstractArchetypeImpl(Class<?>... components) {
+            validateNoDuplicateComponents(components);
+
+            this.componentMask = componentMaskManager.getComponentMask(components);
+
+            this.fixed = null;
+            this.dataLookup = Arrays.stream(components)
+                    .map(componentManager::getData)
+                    .toArray(ComponentData[]::new);
+        }
+
         private void validateNoDuplicateComponents(Class<?>[] components) {
             var set = new HashSet<Class<?>>(components.length);
             for (var component : components) {
@@ -113,15 +134,6 @@ public class ArchetypeManager implements Archetype.Creator {
 
                 set.add(component);
             }
-        }
-
-        protected AbstractArchetypeImpl(Class<?>... components) {
-            this.componentMask = componentMaskManager.getComponentMask(components);
-
-            this.fixed = null;
-            this.dataLookup = Arrays.stream(components)
-                    .map(componentManager::getData)
-                    .toArray(ComponentData[]::new);
         }
 
         @Override
