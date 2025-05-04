@@ -60,7 +60,7 @@ public class EntityManager {
 
         for (var component : components) {
             var metadata = (ComponentData) componentManager.getData(component.getClass());
-            metadata.addComponent(entity.id, component);
+            metadata.addComponentUnsafe(entity.id, component);
         }
 
         // Add entity

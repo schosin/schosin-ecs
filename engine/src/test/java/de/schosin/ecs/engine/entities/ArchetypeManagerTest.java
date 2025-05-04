@@ -121,6 +121,14 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null)))
+                        .isInstanceOf(NullPointerException.class);
+            }
+
+            @Test
             @SuppressWarnings("unchecked")
             void testBatchInitializeNotCalled() {
                 var archetype = createArchetype(C1.class);
@@ -245,6 +253,16 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 for (var entityId : entityIds) {
                     assertThat(inserted).contains(entityId);
                 }
+            }
+
+            @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null)))
+                        .isInstanceOf(NullPointerException.class);
             }
 
             @Test
@@ -378,6 +396,18 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class, C3.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null, new C3())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), null)))
+                        .isInstanceOf(NullPointerException.class);
+            }
+
+            @Test
             @SuppressWarnings("unchecked")
             void testBatchInitializeNotCalled() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class);
@@ -508,6 +538,20 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 for (var entityId : entityIds) {
                     assertThat(inserted).contains(entityId);
                 }
+            }
+
+            @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null, new C3(), new C4())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), null, new C4())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), null)))
+                        .isInstanceOf(NullPointerException.class);
             }
 
             @Test
@@ -650,6 +694,22 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4(), new C5())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null, new C3(), new C4(), new C5())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), null, new C4(), new C5())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), null, new C5())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), null)))
+                        .isInstanceOf(NullPointerException.class);
+            }
+
+            @Test
             @SuppressWarnings("unchecked")
             void testBatchInitializeNotCalled() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
@@ -789,6 +849,24 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 for (var entityId : entityIds) {
                     assertThat(inserted).contains(entityId);
                 }
+            }
+
+            @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4(), new C5(), new C6())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null, new C3(), new C4(), new C5(), new C6())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), null, new C4(), new C5(), new C6())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), null, new C5(), new C6())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), null, new C6())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), null)))
+                        .isInstanceOf(NullPointerException.class);
             }
 
             @Test
@@ -937,6 +1015,26 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null)))
+                        .isInstanceOf(NullPointerException.class);
+            }
+
+            @Test
             @SuppressWarnings("unchecked")
             void testBatchInitializeNotCalled() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
@@ -1082,6 +1180,28 @@ class ArchetypeManagerTest extends AbstractWorldTest {
                 for (var entityId : entityIds) {
                     assertThat(inserted).contains(entityId);
                 }
+            }
+
+            @Test
+            void testBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7(), new C8())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7(), new C8())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7(), new C8())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7(), new C8())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7(), new C8())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null, new C8())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), null)))
+                        .isInstanceOf(NullPointerException.class);
             }
 
             @Test
@@ -1268,65 +1388,40 @@ class ArchetypeManagerTest extends AbstractWorldTest {
             }
 
             @Test
-            void testBatchLessAdditionalComponents_LargestFirst() {
+            void testBatch_NullInstances() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
 
-                var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(),
-                        i == 0 ? new Object[] { new D1(), new D2() } : new Object[] { new D1() }));
-
-                assertThat(entityIds).hasSize(10);
-
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
-                    verifyHasComponent(entityId, C1.class);
-                    verifyHasComponent(entityId, C2.class);
-                    verifyHasComponent(entityId, C3.class);
-                    verifyHasComponent(entityId, C4.class);
-                    verifyHasComponent(entityId, C5.class);
-                    verifyHasComponent(entityId, C6.class);
-                    verifyHasComponent(entityId, C7.class);
-                    verifyHasComponent(entityId, C8.class);
-                    verifyHasComponent(entityId, D1.class);
-
-                    if (i == 0) {
-                        verifyHasComponent(entityId, D2.class);
-                    } else {
-                        verifyDoesNotHaveComponent(entityId, D2.class);
-                    }
-
-                    verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
-                }
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7(), new C8(), new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7(), new C8(), new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7(), new C8(), new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null, new C8(), new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), null, new D1(), new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), null, new D2())))
+                        .isInstanceOf(NullPointerException.class);
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1(), null)))
+                        .isInstanceOf(NullPointerException.class);
             }
 
             @Test
-            void testBatchLessAdditionalComponents_LargestLast() {
+            void testBatch_WhenLessAdditionalComponents_ThrowsBecauseOfNull() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class);
 
-                var entityIds = archetype.createBatch(10, (i, init) -> init.initialize(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(),
-                        i == 9 ? new Object[] { new D1(), new D2() } : new Object[] { new D1() }));
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new D1())))
+                        .isInstanceOf(NullPointerException.class);
 
-                assertThat(entityIds).hasSize(10);
-
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
-                    verifyHasComponent(entityId, C1.class);
-                    verifyHasComponent(entityId, C2.class);
-                    verifyHasComponent(entityId, C3.class);
-                    verifyHasComponent(entityId, C4.class);
-                    verifyHasComponent(entityId, C5.class);
-                    verifyHasComponent(entityId, C6.class);
-                    verifyHasComponent(entityId, C7.class);
-                    verifyHasComponent(entityId, C8.class);
-                    verifyHasComponent(entityId, D1.class);
-
-                    if (i == 9) {
-                        verifyHasComponent(entityId, D2.class);
-                    } else {
-                        verifyDoesNotHaveComponent(entityId, D2.class);
-                    }
-
-                    verifyHasComposition(entityId, Composition.all(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, D1.class, D2.class));
-                }
+                assertThatThrownBy(() -> archetype.createBatch(10, (i, init) -> init.initialize(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8())))
+                        .isInstanceOf(NullPointerException.class);
             }
 
             @Test

@@ -2,6 +2,8 @@ package de.schosin.ecs.engine.components;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.NonNull;
+
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
@@ -16,7 +18,11 @@ public sealed interface ComponentData<T> {
 
     T getComponent(int entityId);
 
-    void addComponent(int entityId, T component);
+    default void addComponent(int entityId, @NonNull T component) {
+        addComponentUnsafe(entityId, Objects.requireNonNull(component, "component cannot be null"));
+    }
+
+    void addComponentUnsafe(int entityId, @NonNull T component);
 
     void markRemoved(int entityId);
 
@@ -49,10 +55,7 @@ record ComponentDataImpl<T>(int id, Class<T> clazz, Bag<T> components, BitVector
     }
 
     @Override
-    public void addComponent(int entityId, T component) {
-        if (component == null) {
-            return;
-        }
+    public void addComponentUnsafe(int entityId, @NonNull T component) {
         this.components.set(entityId, component);
     }
 

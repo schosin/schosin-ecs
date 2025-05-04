@@ -373,6 +373,42 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyDoesNotHaveComposition(entityId, Composition.all(C1.class, C2.class));
         }
 
+        @Test
+        void testAddNull_Throws() {
+            // Setup
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+
+            // Call
+            assertThatThrownBy(() -> add1.apply(entityId, null))
+                    .isExactlyInstanceOf(NullPointerException.class)
+                    .hasMessageContainingAll("Cannot invoke", "getClass()", "is null");
+
+            // Verify
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+        }
+
+        @Test
+        void testAddNull_WhenWorldProcessed_DoesNotAlterComposition() {
+            // Setup
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+
+            assertThatThrownBy(() -> add1.apply(entityId, null))
+                    .isExactlyInstanceOf(NullPointerException.class)
+                    .hasMessageContainingAll("Cannot invoke", "getClass()", "is null");
+
+            // Call
+            world.process();
+
+            // Verify
+            verifyDoesNotHaveComponent(entityId, C1.class);
+            verifyDoesNotHaveComposition(entityId, Composition.all(C1.class));
+        }
+
         abstract class AbstractAddTest {
 
             protected abstract Transmuter.Add getTransmuter();
