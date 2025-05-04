@@ -3,6 +3,7 @@ package de.schosin.ecs.engine.components;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
     Transmuter.Add1<C1> add1;
     Transmuter.Add2<C1, C2> add1add2;
 
+    Transmuter.Remove remove1;
     Transmuter.Remove remove2;
     Transmuter.Remove remove1remove2;
 
@@ -29,6 +31,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
     @BeforeEach
     void setupTransmuters() {
         this.add1 = world.createTransmuter(Transmuter.add(C1.class));
+        this.remove1 = world.createTransmuter(Transmuter.remove(C1.class));
         this.remove2 = world.createTransmuter(Transmuter.remove(C2.class));
 
         this.add1remove2 = world.createTransmuter(Transmuter.add(C1.class).remove(C2.class));
@@ -189,6 +192,77 @@ class TransmutationManagerTest extends AbstractWorldTest {
             world.process();
 
             // Verify
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+        }
+
+        @Test
+        void testAdd_WhenComponentPresent_ReplacesExisting() {
+            // Setup
+            var oldC1 = new C1();
+            var newC1 = new C1();
+
+            var entityId = world.createEntity(oldC1);
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+
+            // Call
+            add1.apply(entityId, newC1);
+            world.process();
+
+            // Verify
+            assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+        }
+
+        @Test
+        void testAdd_WhenPresentComponentMarkedForRemoval_ReplacesExisting() {
+            // Setup
+            var oldC1 = new C1();
+            var newC1 = new C1();
+
+            var entityId = world.createEntity(oldC1);
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+
+            remove1.apply(entityId);
+
+            // Call
+            add1.apply(entityId, newC1);
+            world.process();
+
+            // Verify
+            assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+        }
+
+        @Test
+        void testAdd_WhenPresentComponentMarkedForRemoval_DoesNotTriggerCompositionChanges() {
+            // Setup
+            var oldC1 = new C1();
+            var newC1 = new C1();
+
+            var entityId = world.createEntity(oldC1);
+            verifyHasComponent(entityId, C1.class);
+            verifyHasComposition(entityId, Composition.all(C1.class));
+
+            var changed = new ArrayList<Integer>();
+            var composition = world.createComposition(Composition.all(C1.class));
+            composition.inserted(changed::add);
+            composition.removed(changed::add);
+
+            remove1.apply(entityId);
+
+            // Call
+            add1.apply(entityId, newC1);
+            world.process();
+
+            // Verify
+            assertThat(changed).as("no composition changes triggered").isEmpty();
+
+            assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
             verifyHasComponent(entityId, C1.class);
             verifyHasComposition(entityId, Composition.all(C1.class));
         }

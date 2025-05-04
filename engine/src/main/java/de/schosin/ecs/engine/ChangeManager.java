@@ -79,14 +79,14 @@ public class ChangeManager {
         while (updatedEntities.get(entityId) && --loops > 0) {
             var componentMaskId = fromLookup(updatedEntityMasks.get(entityId));
             var componentMask = componentMaskManager.getComponentMask(componentMaskId);
-            
+
             flushCompositionUpdate(entityId, componentMask);
         }
 
         if (loops == 0) {
             System.err.println("Flushing updates for entity %d caused too many recursive updates while processing compositions.".formatted(entityId));
         }
-        
+
         return !updatedEntities.get(entityId);
     }
 
@@ -204,16 +204,16 @@ public class ChangeManager {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public boolean addComponent(int entityId, ComponentData component, @NonNull Object instance) {
-        if (component.hasComponent(entityId)) {
-            return false;
-        }
+        var changed = !component.hasComponent(entityId);
 
         component.addComponent(entityId, instance);
         component.unmarkRemoved(entityId);
 
-        this.updatedEntities.set(entityId);
+        if (changed) {
+            this.updatedEntities.set(entityId);
+        }
 
-        return true;
+        return changed;
     }
 
     public boolean removeComponent(int entityId, ComponentData<?> component) {
