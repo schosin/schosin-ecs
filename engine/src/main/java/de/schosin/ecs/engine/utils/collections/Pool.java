@@ -24,13 +24,12 @@ public sealed interface Pool<T> {
         return new BoundedPoolImpl<>(limit, clazz, constructor, reset);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     static <T> Pool<T> unbounded(Class<? super T> clazz, Supplier<T> constructor) {
         if (Pooled.class.isAssignableFrom(clazz)) {
             return new PoolImpl<>(clazz, constructor, instance -> ((Pooled) instance).reset());
         }
 
-        return new PoolImpl(clazz, constructor, null);
+        return new PoolImpl<>(clazz, constructor, null);
     }
 
     static <T> Pool<T> unbounded(Class<? super T> clazz, Supplier<T> constructor, Consumer<T> reset) {
