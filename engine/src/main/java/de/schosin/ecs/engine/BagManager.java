@@ -54,12 +54,12 @@ public class BagManager {
         }
     }
 
-    public <T> Bag<T> createEntityBag(Class<T> clazz) {
+    public <T> Bag<T> createEntityBag(Class<? super T> clazz) {
         return createEntityBag(clazz, entitySize);
     }
 
-    public <T> Bag<T> createEntityBag(Class<T> clazz, int size) {
-        var bag = new Bag<>(clazz, size);
+    public <T> Bag<T> createEntityBag(Class<? super T> clazz, int size) {
+        var bag = new Bag<T>(clazz, size);
         this.entityBags.add(bag);
 
         return bag;
@@ -76,12 +76,12 @@ public class BagManager {
         return bag;
     }
 
-    public <T> Bag<T> createComponentBag(Class<T> clazz) {
+    public <T> Bag<T> createComponentBag(Class<? super T> clazz) {
         return createComponentBag(clazz, componentSize);
     }
 
-    public <T> Bag<T> createComponentBag(Class<T> clazz, int size) {
-        var bag = new Bag<>(clazz, size);
+    public <T> Bag<T> createComponentBag(Class<? super T> clazz, int size) {
+        var bag = new Bag<T>(clazz, size);
         this.componentBags.add(bag);
 
         return bag;

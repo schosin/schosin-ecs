@@ -16,7 +16,7 @@ public class Bag<T> {
     }
 
     @SuppressWarnings("unchecked")
-    public Bag(Class<T> clazz, int size) {
+    public Bag(Class<? super T> clazz, int size) {
         this.data = (T[]) Array.newInstance(clazz, size);
         this.size = 0;
     }

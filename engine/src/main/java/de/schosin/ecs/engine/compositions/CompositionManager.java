@@ -51,8 +51,7 @@ public class CompositionManager extends AbstractSpecManager {
 
     private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private final Bag<Bag<CompositionImpl>> compositionsByMask = (Bag) new Bag<>(Bag.class, 64);
+    private final Bag<Bag<CompositionImpl>> compositionsByMask = new Bag<>(Bag.class, 64);
 
     private final Pool<BitVector> bitVectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
     private final Bag<ComponentMask> fill = new Bag<>(ComponentMask.class, 64);
