@@ -24,7 +24,7 @@ public class BagManager {
 
     public void ensureEntitySize(int size) {
         if (size > this.entitySize) {
-            this.entitySize = Math.max(this.entitySize * 2, size);
+            this.entitySize = Math.max(this.entitySize * 2, Integer.highestOneBit(size) * 2);
 
             for (int i = 0, s = this.entityBags.getSize(); i < s; i++) {
                 this.entityBags.get(i).ensureCapacity(this.entitySize);
@@ -42,7 +42,7 @@ public class BagManager {
 
     public void ensureComponentSize(int size) {
         if (size > this.componentSize) {
-            this.componentSize = Math.max(this.componentSize * 2, size);
+            this.componentSize = Math.max(this.componentSize * 2, Integer.highestOneBit(size) * 2);
 
             for (int i = 0, s = this.componentBags.getSize(); i < s; i++) {
                 this.componentBags.get(i).ensureCapacity(this.componentSize);

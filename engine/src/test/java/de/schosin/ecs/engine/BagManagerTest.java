@@ -1,10 +1,13 @@
 package de.schosin.ecs.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class BagManagerTest {
 
@@ -34,11 +37,18 @@ class BagManagerTest {
         assertThat(componentIntBag.getCapacity()).isEqualTo(componentCapacity);
     }
 
-    @Test
-    void testEnsureEntityCapacity() {
+    @ParameterizedTest
+    @CsvSource({
+            "2000, 2048",
+            "2047, 2048",
+            "2048, 4096"
+    })
+    void testEnsureEntityCapacity(int size, int expectedCapacity) {
         // Setup
         var entityCapacity = this.bagManager.getEntitySize();
         var componentCapacity = this.bagManager.getComponentSize();
+
+        assumeThat(size).isGreaterThan(entityCapacity);
 
         var entityBag = this.bagManager.createEntityBag(Object.class);
         var entityIntBag = this.bagManager.createEntityIntBag();
@@ -53,21 +63,29 @@ class BagManagerTest {
         assertThat(componentIntBag.getCapacity()).isEqualTo(componentCapacity);
 
         // Increase entity capacity
-        this.bagManager.ensureEntitySize(entityCapacity * 2);
+        this.bagManager.ensureEntitySize(size);
 
         // Verify only entity capacity increased
-        assertThat(entityBag.getCapacity()).isGreaterThanOrEqualTo(entityCapacity * 2);
-        assertThat(entityIntBag.getCapacity()).isGreaterThanOrEqualTo(entityCapacity * 2);
+        assertThat(entityBag.getCapacity()).isGreaterThanOrEqualTo(expectedCapacity);
+        assertThat(entityIntBag.getCapacity()).isGreaterThanOrEqualTo(expectedCapacity);
 
         assertThat(componentBag.getCapacity()).isEqualTo(componentCapacity);
         assertThat(componentIntBag.getCapacity()).isEqualTo(componentCapacity);
     }
 
-    @Test
-    void testEnsureComponentCapacity() {
+    @ParameterizedTest
+    @CsvSource({
+            "100, 128",
+            "2000, 2048",
+            "2047, 2048",
+            "2048, 4096"
+    })
+    void testEnsureComponentCapacity(int size, int expectedCapacity) {
         // Setup
         var entityCapacity = this.bagManager.getEntitySize();
         var componentCapacity = this.bagManager.getComponentSize();
+
+        assumeThat(size).isGreaterThan(componentCapacity);
 
         var entityBag = this.bagManager.createEntityBag(Object.class);
         var entityIntBag = this.bagManager.createEntityIntBag();
@@ -82,14 +100,14 @@ class BagManagerTest {
         assertThat(componentIntBag.getCapacity()).isEqualTo(componentCapacity);
 
         // Increate component capacity
-        this.bagManager.ensureComponentSize(componentCapacity * 3);
+        this.bagManager.ensureComponentSize(size);
 
         // Verify only entity capacity increased
         assertThat(entityBag.getCapacity()).isEqualTo(entityCapacity);
         assertThat(entityIntBag.getCapacity()).isEqualTo(entityCapacity);
 
-        assertThat(componentBag.getCapacity()).isEqualTo(componentCapacity * 3 + 1);
-        assertThat(componentIntBag.getCapacity()).isEqualTo(componentCapacity * 3 + 1);
+        assertThat(componentBag.getCapacity()).isGreaterThanOrEqualTo(expectedCapacity);
+        assertThat(componentIntBag.getCapacity()).isGreaterThanOrEqualTo(expectedCapacity);
     }
 
     @Test
