@@ -34,17 +34,19 @@ class EntityManagerTest extends AbstractWorldTest {
 
     @Test
     void testIsActive() {
-        var entityId = entityManager.createEntity();
-        assertThat(world.isActive(entityId)).isTrue();
-        assertThat(world.isActive(entityId + 1)).isFalse();
+        var entity1 = entityManager.createEntity();
+        var entity2 = entityManager.createEntity();
 
-        world.deleteEntity(entityId);
-        assertThat(world.isActive(entityId)).isTrue();
-        assertThat(world.isActive(entityId + 1)).isFalse();
+        assertThat(world.isActive(entity1)).isTrue();
+        assertThat(world.isActive(entity2)).isTrue();
+
+        world.deleteEntity(entity1);
+        assertThat(world.isActive(entity1)).isTrue();
+        assertThat(world.isActive(entity2)).isTrue();
 
         world.process();
-        assertThat(world.isActive(entityId)).isFalse();
-        assertThat(world.isActive(entityId + 1)).isFalse();
+        assertThat(world.isActive(entity1)).isFalse();
+        assertThat(world.isActive(entity2)).isTrue();
     }
 
     @Nested
@@ -240,20 +242,6 @@ class EntityManagerTest extends AbstractWorldTest {
             var entities = entityManager.getEntities(spec);
 
             assertThat(entityManager.getEntities(spec)).isNotSameAs(entities);
-        }
-
-        @Test
-        void testResultSizeSynchronized() {
-            var spec = EngineSpec.create(null, null, null);
-            var entities = entityManager.getEntities(spec);
-
-            var capacity = entities.getCapacity();
-
-            // Call
-            bagManager.ensureEntitySize(capacity * 2);
-
-            // Verify
-            assertThat(entities.getCapacity()).isGreaterThanOrEqualTo(capacity * 2);
         }
 
     }

@@ -42,6 +42,7 @@ public class EngineWorld implements World {
 
     private final SingletonManager singletonManager;
     private final BagManager bagManager;
+    private final IdManager idManager;
     private final StateManager stateManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
@@ -59,11 +60,12 @@ public class EngineWorld implements World {
 
         this.singletonManager = new SingletonManager(this);
         this.bagManager = addSingleton(new BagManager());
+        this.idManager = addSingleton(new IdManager(bagManager));
         this.stateManager = addSingleton(new StateManager(bagManager, classes));
-        this.componentManager = addSingleton(new ComponentManager(bagManager, classes));
+        this.componentManager = addSingleton(new ComponentManager(bagManager, idManager, classes));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
         this.compositionManager = addSingleton(new CompositionManager(bagManager, componentManager, componentMaskManager));
-        this.entityManager = addSingleton(new EntityManager(this, bagManager, componentManager, componentMaskManager, compositionManager));
+        this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager, compositionManager));
         this.specManager = addSingleton(new SpecManager(componentManager, entityManager));
         this.archetypeManager = addSingleton(new ArchetypeManager(componentManager, componentMaskManager, entityManager));
         this.changeManager = addSingleton(new ChangeManager(bagManager, componentManager, componentMaskManager, compositionManager, entityManager));

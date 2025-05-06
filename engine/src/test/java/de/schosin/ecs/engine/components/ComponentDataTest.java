@@ -5,10 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 
-class ComponentDataTest {
+class ComponentDataTest extends AbstractWorldTest {
 
     @Nested
     class ComponentDataImplTest {
@@ -16,7 +17,7 @@ class ComponentDataTest {
         @Test
         void testAdd() {
             var removals = new BitVector();
-            var data = new ComponentDataImpl<>(0, C1.class, new Bag<>(C1.class, 64), removals, null);
+            var data = new ComponentDataImpl<>(idManager.createComponentId(), C1.class, new Bag<>(C1.class, 64), removals, null);
 
             assertThat(data.hasComponent(42)).isFalse();
             assertThat(data.getComponent(42)).isNull();
@@ -35,7 +36,7 @@ class ComponentDataTest {
             var removals = new BitVector();
             var component = new C1();
 
-            var data = new ComponentDataImpl<>(0, C1.class, new Bag<>(C1.class, 64), removals, null);
+            var data = new ComponentDataImpl<>(idManager.createComponentId(), C1.class, new Bag<>(C1.class, 64), removals, null);
             data.addComponent(42, component);
             data.markRemoved(42);
 
@@ -58,7 +59,7 @@ class ComponentDataTest {
             var removals = new BitVector();
             var component = new C1();
 
-            var data = new ComponentDataImpl<>(0, C1.class, new Bag<>(C1.class, 64), removals, null);
+            var data = new ComponentDataImpl<>(idManager.createComponentId(), C1.class, new Bag<>(C1.class, 64), removals, null);
             data.addComponent(42, component);
 
             assertThat(data.hasComponent(42)).isTrue();
@@ -79,7 +80,7 @@ class ComponentDataTest {
             var removals = new BitVector();
             var component = new C1();
 
-            var data = new ComponentDataImpl<>(0, C1.class, new Bag<>(C1.class, 64), removals, null);
+            var data = new ComponentDataImpl<>(idManager.createComponentId(), C1.class, new Bag<>(C1.class, 64), removals, null);
             data.addComponent(42, component);
             data.markRemoved(42);
 
@@ -102,7 +103,7 @@ class ComponentDataTest {
             var component1 = new C1();
             var component42 = new C1();
 
-            var data = new ComponentDataImpl<>(0, C1.class, new Bag<>(C1.class, 64), removals, null);
+            var data = new ComponentDataImpl<>(idManager.createComponentId(), C1.class, new Bag<>(C1.class, 64), removals, null);
             data.addComponent(1, component1);
             data.addComponent(42, component42);
 
@@ -134,7 +135,7 @@ class ComponentDataTest {
             var component2 = new C1();
             var component42 = new C1();
 
-            var data = new ComponentDataImpl<>(0, C1.class, new Bag<>(C1.class, 64), removals, null);
+            var data = new ComponentDataImpl<>(idManager.createComponentId(), C1.class, new Bag<>(C1.class, 64), removals, null);
             data.addComponent(1, component1);
             data.addComponent(2, component2);
             data.addComponent(42, component42);
@@ -172,7 +173,7 @@ class ComponentDataTest {
             var component1 = new C1();
             var component42 = new C1();
 
-            var data = new ComponentDataImpl<>(0, C1.class, new Bag<>(C1.class, 64), removals, null);
+            var data = new ComponentDataImpl<>(idManager.createComponentId(), C1.class, new Bag<>(C1.class, 64), removals, null);
             data.addComponent(1, component1);
             data.addComponent(42, component42);
 

@@ -52,11 +52,12 @@ class SingletonManagerTest extends AbstractWorldTest {
         static Stream<Arguments> managers() {
             var singletonManager = new SingletonManager(null);
             var bagManager = new BagManager();
+            var idManager = new IdManager(bagManager);
             var stateManager = new StateManager(bagManager, null);
-            var componentManager = new ComponentManager(bagManager, null);
+            var componentManager = new ComponentManager(bagManager, idManager, null);
             var componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
             var compositionManager = new CompositionManager(bagManager, componentManager, componentMaskManager);
-            var entityManager = new EntityManager(null, bagManager, componentManager, componentMaskManager, compositionManager);
+            var entityManager = new EntityManager(null, idManager, componentManager, componentMaskManager, compositionManager);
             var archetypeManager = new ArchetypeManager(componentManager, componentMaskManager, entityManager);
             var changeManager = new ChangeManager(bagManager, componentManager, componentMaskManager, compositionManager, entityManager);
             var transmutationManager = new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager);
@@ -65,6 +66,7 @@ class SingletonManagerTest extends AbstractWorldTest {
             return Stream.of(
                     Arguments.of(Named.of("singletonManager", singletonManager)),
                     Arguments.of(Named.of("bagManager", bagManager)),
+                    Arguments.of(Named.of("idManager", idManager)),
                     Arguments.of(Named.of("stateManager", stateManager)),
                     Arguments.of(Named.of("componentManager", componentManager)),
                     Arguments.of(Named.of("componentMaskManager", componentMaskManager)),

@@ -3,11 +3,12 @@ package de.schosin.ecs.engine.components;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
+import de.schosin.ecs.engine.IdManager;
+import de.schosin.ecs.engine.IdManager.Id.ComponentId;
 import de.schosin.ecs.engine.utils.ClassUtils;
 import de.schosin.ecs.engine.utils.ClassUtils.ClassType;
 import de.schosin.ecs.engine.utils.collections.Bag;
@@ -30,16 +31,16 @@ public class ComponentManager {
     private static final int POOL_LIMIT = 1000000; // TODO configuration or per-class (default method in interface? Annotation? config per-class?)
 
     private final BagManager bagManager;
+    private final IdManager idManager;
     private final Classes classes;
-
-    final AtomicInteger nextId = new AtomicInteger(0);
 
     @SuppressWarnings("rawtypes")
     private final Bag<ComponentDataImpl> byId = new Bag<>(ComponentDataImpl.class, 64);
     private final Map<Class<?>, ComponentDataImpl<?>> byClass = new ConcurrentHashMap<>();
 
-    public ComponentManager(BagManager bagManager, Classes classes) {
+    public ComponentManager(BagManager bagManager, IdManager idManager, Classes classes) {
         this.bagManager = bagManager;
+        this.idManager = idManager;
         this.classes = classes;
     }
 
@@ -72,18 +73,20 @@ public class ComponentManager {
     private <T> ComponentDataImpl<T> createMetadata(Class<T> clazz, int bagSize) {
         validateComponentHierarchy(clazz);
 
-        this.bagManager.ensureComponentSize(this.byId.getCapacity() + 1);
-
         var components = bagManager.createEntityBag(clazz, bagSize);
         var removals = new BitVector(bagSize);
         var pool = Pooled.class.isAssignableFrom(clazz)
                 ? Pool.bounded(POOL_LIMIT, clazz, () -> ReflectionUtils.createComponentInstance(clazz))
                 : null;
 
-        var metadata = new ComponentDataImpl(nextId.getAndIncrement(), clazz, components, removals, pool);
+        var metadata = new ComponentDataImpl(createComponentId(), clazz, components, removals, pool);
         byId.set(metadata.id(), metadata);
 
         return metadata;
+    }
+
+    private ComponentId createComponentId() {
+        return idManager.createComponentId();
     }
 
     @SuppressWarnings("unchecked")

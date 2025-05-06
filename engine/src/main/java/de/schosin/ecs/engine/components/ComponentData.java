@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.engine.IdManager.Id.ComponentId;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
@@ -42,7 +43,12 @@ public sealed interface ComponentData<T> {
 
 }
 
-record ComponentDataImpl<T>(int id, Class<T> clazz, Bag<T> components, BitVector removals, Pool<T> pool) implements ComponentData<T> {
+record ComponentDataImpl<T>(ComponentId componentId, Class<T> clazz, Bag<T> components, BitVector removals, Pool<T> pool) implements ComponentData<T> {
+
+    @Override
+    public int id() {
+        return componentId.id();
+    }
 
     @Override
     public boolean hasComponent(int entityId) {
@@ -107,7 +113,7 @@ record ComponentDataImpl<T>(int id, Class<T> clazz, Bag<T> components, BitVector
 
     @Override
     public int hashCode() {
-        return Objects.hash(id);
+        return Objects.hash(componentId.id());
     }
 
     @Override
@@ -120,7 +126,7 @@ record ComponentDataImpl<T>(int id, Class<T> clazz, Bag<T> components, BitVector
         if (getClass() != obj.getClass())
             return false;
         ComponentDataImpl other = (ComponentDataImpl) obj;
-        return id == other.id;
+        return componentId.id() == other.componentId.id();
     }
 
 }

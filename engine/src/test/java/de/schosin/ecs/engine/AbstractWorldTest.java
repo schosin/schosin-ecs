@@ -22,6 +22,7 @@ public abstract class AbstractWorldTest {
     protected EngineWorld world;
 
     protected SingletonManager singletonManager;
+    protected IdManager idManager;
     protected BagManager bagManager;
     protected StateManager stateManager;
     protected ComponentManager componentManager;
@@ -40,6 +41,7 @@ public abstract class AbstractWorldTest {
 
         this.singletonManager = world.getSingleton(SingletonManager.class);
         this.bagManager = world.getSingleton(BagManager.class);
+        this.idManager = world.getSingleton(IdManager.class);
         this.stateManager = world.getSingleton(StateManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);

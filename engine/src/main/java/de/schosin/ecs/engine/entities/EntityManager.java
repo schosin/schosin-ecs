@@ -1,13 +1,13 @@
 package de.schosin.ecs.engine.entities;
 
 import java.util.Arrays;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
+import de.schosin.ecs.engine.IdManager;
+import de.schosin.ecs.engine.IdManager.Id.EntityId;
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
@@ -24,22 +24,20 @@ public class EntityManager {
 
     private final World world;
 
-    private final BagManager bagManager;
+    private final IdManager idManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
     private final CompositionManager compositionManager;
 
-    private final AtomicInteger nextId = new AtomicInteger(1); // don't use 0, as it is pseudo-null in IntBag using entity id as the value
-
     private final Bag<Entity> entities = new Bag<>(Entity.class, 64);
-    private final Pool<Entity> pool = Pool.unbounded(Entity.class, () -> new Entity(getEntityId()), Entity::reset);
+    private final Pool<Entity> pool = Pool.unbounded(Entity.class, () -> new Entity(createEntityId()), Entity::reset);
 
     private ChangeManager changeManager;
 
-    public EntityManager(World world, BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, CompositionManager compositionManager) {
+    public EntityManager(World world, IdManager idManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, CompositionManager compositionManager) {
         this.world = world;
 
-        this.bagManager = bagManager;
+        this.idManager = idManager;
         this.componentManager = componentManager;
         this.componentMaskManager = componentMaskManager;
         this.compositionManager = compositionManager;
@@ -65,7 +63,6 @@ public class EntityManager {
 
         // Add entity
         this.entities.set(entity.id, entity);
-        ensureEntityBagCapacity();
 
         // Notify compositions
         compositionManager.inserted(componentMask, entity.id);
@@ -97,8 +94,6 @@ public class EntityManager {
 
             this.entities.set(entity.id, entity);
         }
-
-        ensureEntityBagCapacity();
 
         // Add components
         for (int c = 0; c < componentSize; c++) {
@@ -150,8 +145,8 @@ public class EntityManager {
         return entity;
     }
 
-    private int getEntityId() {
-        return nextId.getAndIncrement();
+    private EntityId createEntityId() {
+        return idManager.createEntityId();
     }
 
     public boolean isActive(int entityId) {
@@ -159,7 +154,7 @@ public class EntityManager {
     }
 
     public IntBag getEntities(EngineSpec spec) {
-        var result = bagManager.createEntityIntBag();
+        var result = new IntBag(1024);
 
         synchronized (this.entities) {
             for (int i = 0, s = this.entities.getSize(); i < s; i++) {
@@ -233,18 +228,14 @@ public class EntityManager {
         return entity.setComponentMask(componentMask);
     }
 
-    private void ensureEntityBagCapacity() {
-        this.bagManager.ensureEntitySize(this.entities.getCapacity());
-    }
-
     private class Entity implements Pooled {
 
         private final int id;
 
         private ComponentMask componentMask;
 
-        private Entity(int id) {
-            this.id = id;
+        private Entity(EntityId entityId) {
+            this.id = entityId.id();
         }
 
         /**
