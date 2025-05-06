@@ -14,8 +14,8 @@ public class BitVector {
     public BitVector() {
     }
 
-    public BitVector(int nbits) {
-        checkCapacity(nbits >>> ADDRESS_BITS_PER_WORD);
+    public BitVector(int length) {
+        checkCapacity(1 + (length >>> ADDRESS_BITS_PER_WORD));
     }
 
     public BitVector(BitVector copyFrom) {

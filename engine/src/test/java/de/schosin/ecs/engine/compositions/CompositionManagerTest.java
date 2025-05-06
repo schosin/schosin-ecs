@@ -501,7 +501,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -516,7 +516,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(mismatchingAll));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -531,7 +531,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll).one(matchingOne));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -546,7 +546,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(mismatchingAll).one(matchingOne));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -561,7 +561,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll).one(mismatchingOne));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -576,7 +576,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
@@ -591,7 +591,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(mismatchingAll).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -606,7 +606,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll).none(mismatchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -621,7 +621,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.one(matchingOne));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -636,7 +636,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.one(mismatchingOne));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -651,7 +651,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.one(matchingOne).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -666,7 +666,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.one(mismatchingOne).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -681,7 +681,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.one(matchingOne).none(mismatchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -696,7 +696,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -711,7 +711,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.none(mismatchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -726,7 +726,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll).one(matchingOne).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
@@ -741,7 +741,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(mismatchingAll).one(matchingOne).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
@@ -756,7 +756,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll).one(mismatchingOne).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isTrue();
@@ -771,7 +771,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.all(matchingAll).one(matchingOne).none(mismatchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, one, null)))).isTrue();
                         assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();

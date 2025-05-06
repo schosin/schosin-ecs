@@ -1,5 +1,6 @@
 package de.schosin.ecs.engine.entities;
 
+import static de.schosin.ecs.engine.compositions.EngineSpecTest.create;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -15,7 +16,6 @@ import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentData;
-import de.schosin.ecs.engine.compositions.EngineSpec;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
@@ -114,7 +114,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity2 = world.createEntity(new Component2());
             var entity23 = world.createEntity(new Component2(), new Component3());
 
-            var spec = EngineSpec.create(null, null, null);
+            var spec = create(null, null, null);
 
             // Call
             var entities = entityManager.getEntities(spec);
@@ -140,7 +140,7 @@ class EntityManagerTest extends AbstractWorldTest {
             all.set(component1.id());
             all.set(component2.id());
 
-            var spec = EngineSpec.create(all, null, null);
+            var spec = create(all, null, null);
 
             // Call
             var entities = entityManager.getEntities(spec);
@@ -166,7 +166,7 @@ class EntityManagerTest extends AbstractWorldTest {
             one.set(component1.id());
             one.set(component3.id());
 
-            var spec = EngineSpec.create(null, Set.of(one), null);
+            var spec = create(null, Set.of(one), null);
 
             // Call
             var entities = entityManager.getEntities(spec);
@@ -193,7 +193,7 @@ class EntityManagerTest extends AbstractWorldTest {
             none.set(component1.id());
             none.set(component3.id());
 
-            var spec = EngineSpec.create(null, null, none);
+            var spec = create(null, null, none);
 
             // Call
             var entities = entityManager.getEntities(spec);
@@ -222,7 +222,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var none = new BitVector();
             none.set(component3.id());
 
-            var spec = EngineSpec.create(all, null, none);
+            var spec = create(all, null, none);
 
             // Call
             var entities = entityManager.getEntities(spec);
@@ -238,7 +238,7 @@ class EntityManagerTest extends AbstractWorldTest {
 
         @Test
         void testResultInstanceNotReused() {
-            var spec = EngineSpec.create(null, null, null);
+            var spec = create(null, null, null);
             var entities = entityManager.getEntities(spec);
 
             assertThat(entityManager.getEntities(spec)).isNotSameAs(entities);

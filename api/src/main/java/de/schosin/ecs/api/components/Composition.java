@@ -3,6 +3,7 @@ package de.schosin.ecs.api.components;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.IntConsumer;
+import java.util.function.UnaryOperator;
 import java.util.stream.IntStream;
 
 import org.jspecify.annotations.NonNull;
@@ -10,6 +11,7 @@ import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.archetype.Transmuter.Builder.AbstractBuilder;
+import de.schosin.ecs.api.components.Composition.Builder.Group;
 
 /**
  * A composition describes the component composition for entities. Entities can be limited by the following aspects:
@@ -97,6 +99,13 @@ public interface Composition extends Spec {
     }
 
     /**
+     * Creates a builder matching all compositions.
+     */
+    static Builder all() {
+        return builder();
+    }
+
+    /**
      * Creates a composition builder. 
      * 
      * @see AbstractBuilder#all(Class...)
@@ -104,6 +113,14 @@ public interface Composition extends Spec {
      */
     static Builder all(Class<?>... classes) {
         return builder().all(classes);
+    }
+
+    static Builder all(Builder... builders) {
+        return builder().all(builders);
+    }
+
+    static Builder all(UnaryOperator<Group> consumer) {
+        return builder().all(consumer);
     }
 
     /**
@@ -116,6 +133,14 @@ public interface Composition extends Spec {
         return builder().one(classes);
     }
 
+    static Builder one(Builder... builders) {
+        return builder().one(builders);
+    }
+
+    static Builder one(UnaryOperator<Group> consumer) {
+        return builder().one(consumer);
+    }
+
     /**
      * Creates a composition builder.
      * 
@@ -124,6 +149,14 @@ public interface Composition extends Spec {
      */
     static Builder none(Class<?>... classes) {
         return builder().none(classes);
+    }
+
+    static Builder none(Builder... builders) {
+        return builder().none(builders);
+    }
+
+    static Builder none(UnaryOperator<Group> consumer) {
+        return builder().none(consumer);
     }
 
     private static Builder builder() {
@@ -236,10 +269,33 @@ public interface Composition extends Spec {
 
     class Builder {
 
-        private final Set<Class<?>> all = new HashSet<>();
+        public record Group(Set<Class<?>> classes, Set<Builder> builders) {
 
-        private final Set<Set<Class<?>>> ones = new HashSet<>();
-        private final Set<Class<?>> none = new HashSet<>();
+            private Group() {
+                this(new HashSet<>(), new HashSet<>());
+            }
+
+            public Group add(Class<?>... classes) {
+                for (var clazz : classes) {
+                    this.classes.add(clazz);
+                }
+
+                return this;
+            }
+
+            public Group add(Builder... builders) {
+                for (var builder : builders) {
+                    this.builders.add(builder);
+                }
+
+                return this;
+            }
+
+        }
+
+        private final Group all = new Group();
+        private final Set<Group> ones = new HashSet<>();
+        private final Group none = new Group();
 
         /**
          * Limits this composition to entities having all of the given components.
@@ -248,10 +304,17 @@ public interface Composition extends Spec {
          * @return this builder instance
          */
         public Builder all(Class<?>... classes) {
-            for (var clazz : classes) {
-                this.all.add(clazz);
-            }
+            all.add(classes);
+            return this;
+        }
 
+        public Builder all(Builder... builders) {
+            all.add(builders);
+            return this;
+        }
+
+        public Builder all(UnaryOperator<Group> consumer) {
+            consumer.apply(all);
             return this;
         }
 
@@ -273,7 +336,30 @@ public interface Composition extends Spec {
                 return this;
             }
 
-            this.ones.add(Set.of(classes));
+            var group = new Group();
+            group.add(classes);
+
+            this.ones.add(group);
+            return this;
+        }
+
+        public Builder one(Builder... builders) {
+            if (builders.length == 0) {
+                return this;
+            }
+
+            var group = new Group();
+            group.add(builders);
+
+            this.ones.add(group);
+            return this;
+        }
+
+        public Builder one(UnaryOperator<Group> consumer) {
+            var group = new Group();
+            consumer.apply(group);
+
+            this.ones.add(group);
             return this;
         }
 
@@ -284,38 +370,41 @@ public interface Composition extends Spec {
          * @return this builder instance
          */
         public Builder none(Class<?>... classes) {
-            for (var clazz : classes) {
-                this.none.add(clazz);
-            }
-
+            none.add(classes);
             return this;
         }
 
-        public Set<Class<?>> getAll() {
-            return all;
+        public Builder none(Builder... builders) {
+            none.add(builders);
+            return this;
         }
 
-        public Set<Set<Class<?>>> getOnes() {
+        public Builder none(UnaryOperator<Group> consumer) {
+            consumer.apply(none);
+            return this;
+        }
+
+        public Group getAll() {
+            return this.all;
+        }
+
+        public Set<Group> getOnes() {
             return this.ones;
         }
 
-        public Set<Class<?>> getNone() {
-            return none;
+        public Group getNone() {
+            return this.none;
         }
 
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
             builder.append("Composition [");
-            if (!all.isEmpty()) {
-                builder.append("all=").append(all).append(", ");
-            }
+            builder.append("all=").append(all).append(", ");
             if (!ones.isEmpty()) {
                 builder.append("ones=").append(ones).append(", ");
             }
-            if (!none.isEmpty()) {
-                builder.append("none=").append(none);
-            }
+            builder.append("none=").append(none);
             builder.append("]");
             return builder.toString();
         }
