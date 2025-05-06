@@ -60,9 +60,9 @@ public class ComponentMaskManager {
         });
     }
 
-    private ComponentData<?>[] componentDataFromClasses(Class<?>[] components) {
+    private Component[] componentDataFromClasses(Class<?>[] components) {
         // deduplicate using set
-        var result = HashSet.<ComponentData<?>>newHashSet(components.length);
+        var result = HashSet.<Component>newHashSet(components.length);
         for (int i = 0, s = components.length; i < s; i++) {
             var metadata = componentManager.getData(components[i]);
             result.add(metadata);
@@ -72,7 +72,7 @@ public class ComponentMaskManager {
             throw new IllegalArgumentException("Detected duplicate component types. %d component types contained %d unique types.".formatted(components.length, result.size()));
         }
 
-        return result.toArray(ComponentData<?>[]::new);
+        return result.toArray(Component[]::new);
     }
 
     /**
@@ -102,9 +102,9 @@ public class ComponentMaskManager {
         });
     }
 
-    private ComponentData<?>[] componentDataFromObjects(Object[] components) {
+    private Component[] componentDataFromObjects(Object[] components) {
         // deduplicate using set
-        var result = HashSet.<ComponentData<?>>newHashSet(components.length);
+        var result = HashSet.<Component>newHashSet(components.length);
         for (int i = 0, s = components.length; i < s; i++) {
             var metadata = componentManager.getData(components[i].getClass());
             result.add(metadata);
@@ -114,10 +114,10 @@ public class ComponentMaskManager {
             throw new IllegalArgumentException("Detected duplicate component types. %d components contained %d unique types.".formatted(components.length, result.size()));
         }
 
-        return result.toArray(ComponentData<?>[]::new);
+        return result.toArray(Component[]::new);
     }
 
-    private ComponentMask createComponentMask(BitVector componentMask, ComponentData<?>[] components) {
+    private ComponentMask createComponentMask(BitVector componentMask, Component[] components) {
         var lookup = bagManager.createComponentIntBag();
         componentMask.iterate(componentId -> lookup.set(componentId, 1));
 
@@ -138,7 +138,7 @@ public class ComponentMaskManager {
      * @param componentId
      * @return new component mask
      */
-    public ComponentMask addComponent(ComponentMask componentMask, ComponentData<?> metadata) {
+    public ComponentMask addComponent(ComponentMask componentMask, Component metadata) {
         // Return this if unchanged
         var componentId = metadata.id();
         if (componentMask.contains(componentId)) {
@@ -182,12 +182,12 @@ public class ComponentMaskManager {
      * @param componentId
      * @return new component mask
      */
-    public ComponentMask removeComponent(ComponentMask componentMask, ComponentData<?> metadata) {
-        if (!componentMask.contains(metadata.id())) {
+    public ComponentMask removeComponent(ComponentMask componentMask, Component metadata) {
+        var componentId = metadata.id();
+        if (!componentMask.contains(componentId)) {
             return componentMask;
         }
 
-        var componentId = metadata.id();
         var mapping = componentMask.getRemoveMapping();
 
         var result = mapping.get(componentId);
@@ -207,7 +207,7 @@ public class ComponentMaskManager {
 
             var newComponents = Arrays.stream(componentMask.getComponents())
                     .filter(existing -> !existing.equals(metadata))
-                    .toArray(ComponentData<?>[]::new);
+                    .toArray(Component[]::new);
 
             result = componentMasks.computeIfAbsent(newMask, key -> createComponentMask(newMask, newComponents));
             mapping.set(componentId, result);

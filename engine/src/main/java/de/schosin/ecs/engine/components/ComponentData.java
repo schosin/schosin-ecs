@@ -9,13 +9,9 @@ import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
 
-public sealed interface ComponentData<T> {
-
-    int id();
+public sealed interface ComponentData<T> extends Component {
 
     Class<T> clazz();
-
-    boolean hasComponent(int entityId);
 
     T getComponent(int entityId);
 
@@ -24,20 +20,6 @@ public sealed interface ComponentData<T> {
     }
 
     void addComponentUnsafe(int entityId, @NonNull T component);
-
-    void markRemoved(int entityId);
-
-    void unmarkRemoved(int entityId);
-
-    /**
-     * Applies pending removals of components.
-     */
-    void applyRemovals();
-
-    /**
-     * Applies pending removal of component for entity.
-     */
-    void applyRemoval(int entityId);
 
     T getInstance();
 
@@ -90,7 +72,8 @@ record ComponentDataImpl<T>(ComponentId componentId, Class<T> clazz, Bag<T> comp
         removeComponent(entityId);
     }
 
-    void removeComponent(int entityId) {
+    @Override
+    public void removeComponent(int entityId) {
         // Non-pooled
         if (pool == null) {
             this.components.set(entityId, null);

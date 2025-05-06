@@ -34,8 +34,7 @@ public class ComponentManager {
     private final IdManager idManager;
     private final Classes classes;
 
-    @SuppressWarnings("rawtypes")
-    private final Bag<ComponentDataImpl> byId = new Bag<>(ComponentDataImpl.class, 64);
+    private final Bag<Component> byId = new Bag<>(Component.class, 64);
     private final Map<Class<?>, ComponentDataImpl<?>> byClass = new ConcurrentHashMap<>();
 
     public ComponentManager(BagManager bagManager, IdManager idManager, Classes classes) {
@@ -44,7 +43,7 @@ public class ComponentManager {
         this.classes = classes;
     }
 
-    public ComponentData<?> getData(int componentId) {
+    public Component getData(int componentId) {
         return byId.get(componentId);
     }
 
@@ -89,7 +88,7 @@ public class ComponentManager {
         return idManager.createComponentId();
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("unused") // I really want exhaustive switch statements
     private void validateComponentHierarchy(Class<?> clazz) {
         // Validate invalid types
         var type = ClassUtils.detectType(clazz);
@@ -100,14 +99,21 @@ public class ComponentManager {
         // Validate no extends/super of existing component type
         var data = byId.getData();
         for (int i = 0, s = byId.getSize(); i < s; i++) {
-            var existingClass = data[i].clazz();
-
-            if (existingClass.isAssignableFrom(clazz)) {
-                throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(clazz.getSimpleName(), existingClass.getSimpleName()));
-            } else if (clazz.isAssignableFrom(existingClass)) {
-                throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(existingClass.getSimpleName(), clazz.getSimpleName()));
-            }
+            var valid = switch (data[i]) {
+                case ComponentData<?> c -> validateComponentHierarchy(clazz, c.clazz());
+                case null -> true;
+            };
         }
+    }
+
+    private boolean validateComponentHierarchy(Class<?> clazz, Class<?> existingClass) {
+        if (existingClass.isAssignableFrom(clazz)) {
+            throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(clazz.getSimpleName(), existingClass.getSimpleName()));
+        } else if (clazz.isAssignableFrom(existingClass)) {
+            throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(existingClass.getSimpleName(), clazz.getSimpleName()));
+        }
+
+        return true;
     }
 
     public void removed(int entityId, ComponentMask componentMask) {

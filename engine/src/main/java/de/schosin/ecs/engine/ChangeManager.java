@@ -2,6 +2,7 @@ package de.schosin.ecs.engine;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
@@ -216,7 +217,7 @@ public class ChangeManager {
         return changed;
     }
 
-    public boolean removeComponent(int entityId, ComponentData<?> component) {
+    public boolean removeComponent(int entityId, Component component) {
         if (!component.hasComponent(entityId)) {
             return false;
         }

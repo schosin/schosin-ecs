@@ -27,13 +27,13 @@ public class ComponentMask {
 
     private final int id;
     private final BitVector mask;
-    private final ComponentData<?>[] components;
+    private final Component[] components;
 
     private final IntBag lookup;
     private final Bag<ComponentMask> add;
     private final Bag<ComponentMask> remove;
 
-    public ComponentMask(int id, BitVector mask, ComponentData<?>[] components, IntBag lookup, Bag<ComponentMask> add, Bag<ComponentMask> remove) {
+    public ComponentMask(int id, BitVector mask, Component[] components, IntBag lookup, Bag<ComponentMask> add, Bag<ComponentMask> remove) {
         this.id = id;
         this.mask = mask;
         this.components = components;
@@ -55,7 +55,7 @@ public class ComponentMask {
         return mask;
     }
 
-    public ComponentData<?>[] getComponents() {
+    public Component[] getComponents() {
         return components;
     }
 

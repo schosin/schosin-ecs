@@ -283,14 +283,18 @@ public class TransmutationManager implements Transmuter.Creator {
 
     private abstract class AbstractTransmuter implements Transmuter {
 
-        protected final Class<?>[] add;
-        protected final Class<?>[] remove;
+        protected final Component[] add;
+        protected final Component[] remove;
 
         protected final Bag<ComponentMask> cache = new Bag<>(ComponentMask.class, 64);
 
         protected AbstractTransmuter(Set<Class<?>> add, Set<Class<?>> remove) {
-            this.add = add.toArray(Class<?>[]::new);
-            this.remove = remove.toArray(Class<?>[]::new);
+            this(add.stream().map(componentManager::getData).toArray(Component[]::new), remove.stream().map(componentManager::getData).toArray(Component[]::new));
+        }
+
+        protected AbstractTransmuter(Component[] add, Component[] remove) {
+            this.add = add;
+            this.remove = remove;
         }
 
         protected boolean apply(int entityId, Object... added) {
@@ -330,8 +334,7 @@ public class TransmutationManager implements Transmuter.Creator {
         }
 
         private final void removeComponents(int entityId) {
-            for (var clazz : remove) {
-                var metadata = componentManager.getData(clazz);
+            for (var metadata : remove) {
                 changeManager.removeComponent(entityId, metadata);
             }
         }
@@ -353,12 +356,10 @@ public class TransmutationManager implements Transmuter.Creator {
         private ComponentMask computeNewComponentMask(ComponentMask componentMask) {
             var result = componentMask;
 
-            for (var clazz : add) {
-                var metadata = componentManager.getData(clazz);
+            for (var metadata : add) {
                 result = componentMaskManager.addComponent(result, metadata);
             }
-            for (var clazz : remove) {
-                var metadata = componentManager.getData(clazz);
+            for (var metadata : remove) {
                 result = componentMaskManager.removeComponent(result, metadata);
             }
 
