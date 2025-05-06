@@ -14,7 +14,7 @@ import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.Pool;
 import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 
-public class StateManager {
+public class StateManager implements State.Creator {
 
     private static final int POOL_LIMIT = 1000000; // TODO configuration or per-class (default method in interface? Annotation? config per-class?)
 
@@ -28,6 +28,7 @@ public class StateManager {
         this.classes = classes;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T> State<T> getState(@NonNull Class<T> clazz) {
         var result = (State<T>) byClass.get(clazz);
@@ -52,6 +53,7 @@ public class StateManager {
                 : new StateImpl<>(clazz, bagManager.createEntityBag(clazz));
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <T extends Pooled> PooledState<T> getPooledState(Class<T> clazz) {
         var result = (PooledState<T>) byClass.get(clazz);

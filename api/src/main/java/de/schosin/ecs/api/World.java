@@ -12,9 +12,8 @@ import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Spec;
 import de.schosin.ecs.api.state.State;
-import de.schosin.ecs.api.state.State.PooledState;
 
-public interface World extends Components.Creator, Archetype.Creator, Transmuter.Creator, Spec.Creator, Composition.Creator {
+public interface World extends Components.Creator, State.Creator, Archetype.Creator, Transmuter.Creator, Spec.Creator, Composition.Creator {
 
     String DEFAULT_IMPLEMENTATION = "de.schosin.ecs.engine.WorldBuilder";
 
@@ -131,30 +130,6 @@ public interface World extends Components.Creator, Archetype.Creator, Transmuter
      */
     @NonNull
     <T> T getSingleton(@NonNull Class<T> clazz) throws UnsupportedOperationException;
-
-    /**
-     * Retrieves the mapper of the given state class. This can be used to access state and
-     * to add or remove state from entities.
-     * 
-     * <p>
-     * <b>Note:</b> If T extends Pooled, the returned instance will also implement and
-     * can be cast to {@link PooledState}. Prefer using {@link #getPooledState(Class)}
-     * for pooled state.
-     * </p>
-     *  
-     * @param clazz {@link Class} of the state
-     * @return class to manage the state defined by the clazz argument 
-     */
-    <T> State<T> getState(@NonNull Class<T> clazz);
-
-    /**
-     * Retrieves the mapper of the given state class. This can be used to access state and 
-     * to add or remove state from entities.
-     * 
-     * @param clazz {@link Class} of the state
-     * @return class to manage the state defined by the clazz argument 
-     */
-    <T extends Pooled> PooledState<T> getPooledState(@NonNull Class<T> clazz);
 
     /**
      * Processes deletions of entities and removals of components. Depending on the implementation additional work may be done in this step.
