@@ -19,6 +19,7 @@ import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.compositions.CompositionManager;
+import de.schosin.ecs.engine.compositions.SpecManager;
 import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.entities.StateManager;
@@ -58,6 +59,7 @@ class SingletonManagerTest extends AbstractWorldTest {
             var componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
             var compositionManager = new CompositionManager(bagManager, componentManager, componentMaskManager);
             var entityManager = new EntityManager(null, idManager, componentManager, componentMaskManager, compositionManager);
+            var specManager = new SpecManager(componentManager, entityManager);
             var archetypeManager = new ArchetypeManager(componentManager, componentMaskManager, entityManager);
             var changeManager = new ChangeManager(bagManager, componentManager, componentMaskManager, compositionManager, entityManager);
             var transmutationManager = new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager);
@@ -72,6 +74,7 @@ class SingletonManagerTest extends AbstractWorldTest {
                     Arguments.of(Named.of("componentMaskManager", componentMaskManager)),
                     Arguments.of(Named.of("compositionManager", compositionManager)),
                     Arguments.of(Named.of("entityManager", entityManager)),
+                    Arguments.of(Named.of("specManager", specManager)),
                     Arguments.of(Named.of("archetypeManager", archetypeManager)),
                     Arguments.of(Named.of("changeManager", changeManager)),
                     Arguments.of(Named.of("transmutationManager", transmutationManager)),
