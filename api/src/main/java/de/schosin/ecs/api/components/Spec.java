@@ -1,7 +1,6 @@
 package de.schosin.ecs.api.components;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.archetype.Transmuter.Builder.AbstractBuilder;
 import de.schosin.ecs.api.components.Composition.Builder;
 
 public interface Spec {
@@ -38,7 +37,7 @@ public interface Spec {
 
     boolean isInterested(int entityId);
 
-    interface Creator {
+    interface SpecCreator {
 
         /**
          * Creates a {@link Spec} from a builder.

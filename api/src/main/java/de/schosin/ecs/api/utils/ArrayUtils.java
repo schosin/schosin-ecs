@@ -1,4 +1,4 @@
-package de.schosin.ecs.engine.utils.collections;
+package de.schosin.ecs.api.utils;
 
 import java.lang.reflect.Array;
 

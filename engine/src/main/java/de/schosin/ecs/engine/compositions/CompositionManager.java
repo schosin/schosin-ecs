@@ -11,10 +11,11 @@ import java.util.stream.StreamSupport;
 
 import org.jspecify.annotations.NonNull;
 
-import de.schosin.ecs.api.archetype.Transmuter.Builder.AbstractBuilder;
+import de.schosin.ecs.api.components.BaseComposition;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Composition.Builder;
 import de.schosin.ecs.api.components.Spec;
+import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
@@ -43,6 +44,7 @@ import de.schosin.ecs.engine.utils.collections.Pool;
  * {@link Composition#removed(IntConsumer)} callbacks will be processed.
  * </p>
  */
+@EcsCodegen
 public class CompositionManager extends AbstractSpecManager {
 
     private final BagManager bagManager;
@@ -64,98 +66,7 @@ public class CompositionManager extends AbstractSpecManager {
         this.componentMaskManager = componentMaskManager;
     }
 
-    public <T1> Composition.Of1<T1> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1) {
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition1<>(create(builder, entities), component1));
-        });
-    }
-
-    public <T1, T2> Composition.Of2<T1, T2> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2) {
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1, component2);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition2<>(create(builder, entities), component1, component2));
-        });
-    }
-
-    public <T1, T2, T3> Composition.Of3<T1, T2, T3> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3) {
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1, component2, component3);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition3<>(create(builder, entities), component1, component2, component3));
-        });
-    }
-
-    public <T1, T2, T3, T4> Composition.Of4<T1, T2, T3, T4> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3,
-            Class<T4> component4) {
-
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1, component2, component3, component4);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition4<>(create(builder, entities), component1, component2, component3, component4));
-        });
-    }
-
-    public <T1, T2, T3, T4, T5> Composition.Of5<T1, T2, T3, T4, T5> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2, Class<T3> component3,
-            Class<T4> component4, Class<T5> component5) {
-
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1, component2, component3, component4, component5);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition5<>(create(builder, entities), component1, component2, component3, component4, component5));
-        });
-    }
-
-    public <T1, T2, T3, T4, T5, T6> Composition.Of6<T1, T2, T3, T4, T5, T6> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2,
-            Class<T3> component3,
-            Class<T4> component4, Class<T5> component5, Class<T6> component6) {
-
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1, component2, component3, component4, component5, component6);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition6<>(create(builder, entities), component1, component2, component3, component4, component5, component6));
-        });
-    }
-
-    public <T1, T2, T3, T4, T5, T6, T7> Composition.Of7<T1, T2, T3, T4, T5, T6, T7> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2,
-            Class<T3> component3, Class<T4> component4, Class<T5> component5, Class<T6> component6, Class<T7> component7) {
-
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1, component2, component3, component4, component5, component6, component7);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition7<>(create(builder, entities), component1, component2, component3, component4, component5, component6, component7));
-        });
-    }
-
-    public <T1, T2, T3, T4, T5, T6, T7, T8> Composition.Of8<T1, T2, T3, T4, T5, T6, T7, T8> create(Builder builder, Function<EngineSpec, IntBag> entities, Class<T1> component1, Class<T2> component2,
-            Class<T3> component3, Class<T4> component4, Class<T5> component5, Class<T6> component6, Class<T7> component7, Class<T8> component8) {
-
-        var composition = (CompositionImpl) create(builder, entities);
-
-        return bitVectorPool.withInstance(vector -> {
-            componentManager.fillVector(vector, component1, component2, component3, component4, component5, component6, component7, component8);
-
-            return composition.getRetrieveComposition(vector, () -> new Composition8<>(composition, component1, component2, component3, component4, component5, component6, component7, component8));
-        });
-    }
-
-    public Composition create(Composition.Builder builder, Function<EngineSpec, IntBag> entities) {
+    public Composition create(Builder builder, Function<EngineSpec, IntBag> entities) {
         var spec = buildSpec(builder);
 
         return this.compositions.computeIfAbsent(spec, ignore -> buildComposition(spec, entities));
@@ -268,301 +179,7 @@ public class CompositionManager extends AbstractSpecManager {
         }
     }
 
-    private final class Composition1<T1> extends AbstractRetrieveComposition implements Composition.Of1<T1> {
-
-        private Composition1(Composition composition, Class<T1> component1) {
-            super(composition, component1);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of1.@NonNull Consumer<T1> callback) {
-            callback.consume(entityId, get(entityId, 0));
-        }
-
-        @Override
-        public void process(Composition.Of1.@NonNull Consumer<T1> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of1.@NonNull Consumer<T1> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of1.@NonNull Consumer<T1> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private final class Composition2<T1, T2> extends AbstractRetrieveComposition implements Composition.Of2<T1, T2> {
-
-        private Composition2(Composition composition, Class<T1> component1, Class<T2> component2) {
-            super(composition, component1, component2);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of2.@NonNull Consumer<T1, T2> callback) {
-            callback.consume(entityId, get(entityId, 0), get(entityId, 1));
-        }
-
-        @Override
-        public void process(Composition.Of2.@NonNull Consumer<T1, T2> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of2.@NonNull Consumer<T1, T2> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of2.@NonNull Consumer<T1, T2> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private final class Composition3<T1, T2, T3> extends AbstractRetrieveComposition implements Composition.Of3<T1, T2, T3> {
-
-        private Composition3(Composition composition, Class<T1> component1, Class<T2> component2, Class<T3> component3) {
-            super(composition, component1, component2, component3);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
-            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2));
-        }
-
-        @Override
-        public void process(Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of3.@NonNull Consumer<T1, T2, T3> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private final class Composition4<T1, T2, T3, T4> extends AbstractRetrieveComposition implements Composition.Of4<T1, T2, T3, T4> {
-
-        private Composition4(Composition composition, Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4) {
-            super(composition, component1, component2, component3, component4);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
-            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3));
-        }
-
-        @Override
-        public void process(Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of4.@NonNull Consumer<T1, T2, T3, T4> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private final class Composition5<T1, T2, T3, T4, T5> extends AbstractRetrieveComposition implements Composition.Of5<T1, T2, T3, T4, T5> {
-
-        private Composition5(Composition composition, Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4, Class<T5> component5) {
-            super(composition, component1, component2, component3, component4, component5);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
-            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4));
-        }
-
-        @Override
-        public void process(Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of5.@NonNull Consumer<T1, T2, T3, T4, T5> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private final class Composition6<T1, T2, T3, T4, T5, T6> extends AbstractRetrieveComposition implements Composition.Of6<T1, T2, T3, T4, T5, T6> {
-
-        private Composition6(Composition composition, Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4, Class<T5> component5, Class<T6> component6) {
-            super(composition, component1, component2, component3, component4, component5, component6);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
-            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5));
-        }
-
-        @Override
-        public void process(Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of6.@NonNull Consumer<T1, T2, T3, T4, T5, T6> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private final class Composition7<T1, T2, T3, T4, T5, T6, T7> extends AbstractRetrieveComposition implements Composition.Of7<T1, T2, T3, T4, T5, T6, T7> {
-
-        private Composition7(Composition composition, Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4, Class<T5> component5, Class<T6> component6,
-                Class<T7> component7) {
-
-            super(composition, component1, component2, component3, component4, component5, component6, component7);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
-            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6));
-        }
-
-        @Override
-        public void process(Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of7.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private final class Composition8<T1, T2, T3, T4, T5, T6, T7, T8> extends AbstractRetrieveComposition implements Composition.Of8<T1, T2, T3, T4, T5, T6, T7, T8> {
-
-        private Composition8(Composition composition, Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4, Class<T5> component5, Class<T6> component6,
-                Class<T7> component7, Class<T8> component8) {
-
-            super(composition, component1, component2, component3, component4, component5, component6, component7, component8);
-        }
-
-        @Override
-        public void process(int entityId, Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
-            callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6), get(entityId, 7));
-        }
-
-        @Override
-        public void process(Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
-            super.process(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void inserted(Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
-            super.inserted(entityId -> process(entityId, callback));
-        }
-
-        @Override
-        public void removed(Composition.Of8.@NonNull Consumer<T1, T2, T3, T4, T5, T6, T7, T8> callback) {
-            super.removed(entityId -> process(entityId, callback));
-        }
-
-    }
-
-    private abstract sealed class AbstractRetrieveComposition implements Composition {
-
-        private final CompositionImpl composition;
-        protected final ComponentData<?>[] components;
-
-        private AbstractRetrieveComposition(Composition composition, Class<?>... components) {
-            this.composition = (CompositionImpl) composition; // no endless recursion please
-
-            this.components = new ComponentData<?>[components.length];
-            for (int i = 0, s = components.length; i < s; i++) {
-                this.components[i] = componentManager.getData(components[i]);
-            }
-        }
-
-        @SuppressWarnings("unchecked")
-        protected <T> T get(int entityId, int component) {
-            return (T) components[component].getComponent(entityId);
-        }
-
-        @Override
-        public boolean isInterested(int entityId) {
-            return composition.isInterested(entityId);
-        }
-
-        @Override
-        public boolean matches(Spec spec) {
-            return composition.matches(spec);
-        }
-
-        @Override
-        public void inserted(@NonNull IntConsumer inserted) {
-            composition.inserted(inserted);
-        }
-
-        @Override
-        public void removed(@NonNull IntConsumer removed) {
-            composition.removed(removed);
-        }
-
-        @Override
-        public int getCount() {
-            return composition.getCount();
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return composition.isEmpty();
-        }
-
-        @Override
-        public void process(@NonNull IntConsumer process) {
-            composition.process(process);
-        }
-
-        @Override
-        public IntStream stream() {
-            return composition.stream();
-        }
-
-        @Override
-        public IntStream parallelStream() {
-            return composition.parallelStream();
-        }
-
-    }
-
-    private final class CompositionImpl implements Composition {
+    private final class CompositionImpl extends BaseCompositionImpl implements Composition {
 
         private final EngineSpec spec;
 
@@ -577,7 +194,7 @@ public class CompositionManager extends AbstractSpecManager {
         private IntConsumer removed;
         private Bag<IntConsumer> moreRemoved;
 
-        private final Map<BitVector, AbstractRetrieveComposition> retrieves = new ConcurrentHashMap<>();
+        private final Map<BitVector, Composition.Of<?>> retrieves = new ConcurrentHashMap<>();
 
         private CompositionImpl(@NonNull EngineSpec spec, @NonNull IntBag entities, @NonNull IntBag lookup) {
             this.spec = spec;
@@ -593,8 +210,22 @@ public class CompositionManager extends AbstractSpecManager {
             this.maskCache = new IntBag(64);
         }
 
+        @Override
+        protected <T extends Of<?>> T retrieve(Supplier<T> constructor, Class<?>... components) {
+            return bitVectorPool.withInstance(vector -> {
+                componentManager.fillVector(vector, components);
+
+                return getRetrieveComposition(vector, constructor);
+            });
+        }
+
+        @Override
+        protected <T> ComponentData<T> getComponent(Class<T> clazz) {
+            return componentManager.getData(clazz);
+        }
+
         @SuppressWarnings("unchecked")
-        <T extends AbstractRetrieveComposition> T getRetrieveComposition(BitVector vector, Supplier<T> constructor) {
+        <T extends Composition.Of<?>> T getRetrieveComposition(BitVector vector, Supplier<T> constructor) {
             // Lookup cached
             var result = retrieves.get(vector);
             if (result != null) {
@@ -695,8 +326,8 @@ public class CompositionManager extends AbstractSpecManager {
                 return this.spec.matches(composition.spec);
             }
 
-            if (spec instanceof AbstractRetrieveComposition composition) {
-                return this.spec.matches(composition.composition.spec);
+            if (spec instanceof AbstractCompositionN composition) {
+                return this.spec.matches(((CompositionImpl) composition.composition).spec);
             }
 
             if (spec instanceof SpecImpl impl) {
@@ -767,6 +398,72 @@ public class CompositionManager extends AbstractSpecManager {
         @Override
         public String toString() {
             return "CompositionImpl [spec=" + this.spec + ", entities=" + this.entities.getSize() + "]";
+        }
+
+    }
+
+    abstract static class AbstractCompositionN implements BaseComposition, Spec {
+
+        protected final BaseCompositionImpl composition;
+
+        private final ComponentData<?>[] components;
+
+        protected AbstractCompositionN(BaseCompositionImpl composition, Class<?>... components) {
+            this.composition = composition;
+            this.components = new ComponentData<?>[components.length];
+            for (int i = 0, s = components.length; i < s; i++) {
+                this.components[i] = composition.getComponent(components[i]);
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        protected <T> T get(int entityId, int component) {
+            return (T) components[component].getComponent(entityId);
+        }
+
+        @Override
+        public boolean isInterested(int entityId) {
+            return composition.isInterested(entityId);
+        }
+
+        @Override
+        public boolean matches(Spec spec) {
+            return composition.matches(spec);
+        }
+
+        @Override
+        public void inserted(IntConsumer inserted) {
+            composition.inserted(inserted);
+        }
+
+        @Override
+        public void removed(IntConsumer removed) {
+            composition.removed(removed);
+        }
+
+        @Override
+        public int getCount() {
+            return composition.getCount();
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return composition.isEmpty();
+        }
+
+        @Override
+        public void process(IntConsumer process) {
+            composition.process(process);
+        }
+
+        @Override
+        public IntStream stream() {
+            return composition.stream();
+        }
+
+        @Override
+        public IntStream parallelStream() {
+            return composition.parallelStream();
         }
 
     }

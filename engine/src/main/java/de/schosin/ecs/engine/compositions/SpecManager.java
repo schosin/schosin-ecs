@@ -5,7 +5,7 @@ import de.schosin.ecs.api.components.Spec;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 
-public class SpecManager extends AbstractSpecManager implements Spec.Creator {
+public class SpecManager extends AbstractSpecManager implements Spec.SpecCreator {
 
     private final EntityManager entityManager;
 

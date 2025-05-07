@@ -10,14 +10,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.archetype.Transmuter;
 import de.schosin.ecs.api.archetype.Transmuter.Remove;
 import de.schosin.ecs.api.components.Composition;
-import de.schosin.ecs.engine.AbstractWorldTest;
+import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
-class TransmutationManagerTest extends AbstractWorldTest {
+@EcsCodegen
+class TransmutationManagerTest extends BaseTransmutationManagerTest {
 
     Transmuter.Add1<C1> add1;
     Transmuter.Add2<C1, C2> add1add2;
@@ -87,7 +87,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class CachedTransmuterTest {
+    class CachedTransmuterTest extends BaseCachedTransmuterTest {
 
         abstract class AbstractCachedTransmuterTest {
 
@@ -171,14 +171,14 @@ class TransmutationManagerTest extends AbstractWorldTest {
         class AddNTransmuter extends AbstractCachedTransmuterTest {
             @Override
             protected Transmuter getTransmuter() {
-                return world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, C9.class, C10.class));
+                return getTransmuterN();
             }
         }
 
     }
 
     @Nested
-    class AddTest {
+    class AddTest extends BaseAddTest {
 
         @Test
         void testAdd() {
@@ -576,23 +576,20 @@ class TransmutationManagerTest extends AbstractWorldTest {
         @Nested
         class AddNRemove extends AbstractAddTest {
             @Override
-            protected Transmuter.AddN<C1, C2, C3, C4, C5, C6, C7, C8> getTransmuter() {
-                return world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, C9.class, C10.class));
+            protected Transmuter.Add getTransmuter() {
+                return getTransmuterN();
             }
 
             @Override
             protected Class<?>[] apply(int entityId) {
-                var transmuter = getTransmuter();
-                transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new C9(), new C10());
-
-                return new Class<?>[] { C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, C9.class, C10.class };
+                return applyTransmuterN(entityId);
             }
         }
 
     }
 
     @Nested
-    class RemoveTest {
+    class RemoveTest extends BaseRemoveTest {
 
         @Test
         void testRemove() {
@@ -821,10 +818,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
         class AddNRemove extends AbstractRemoveByAddTest {
             @Override
             protected int apply(int entityId, Class<?>... remove) {
-                var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class, C9.class, C10.class).remove(remove));
-                transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8(), new C9(), new C10());
-
-                return 10;
+                return applyTransmuterN(entityId, remove);
             }
         }
 
@@ -1025,42 +1019,6 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyDoesNotHaveComposition(entityId, composition3);
         }
 
-    }
-
-    private record C1() {
-    }
-
-    private record C2() {
-    }
-
-    private record C3() {
-    }
-
-    private record C4() {
-    }
-
-    private record C5() {
-    }
-
-    private record C6() {
-    }
-
-    private record C7() {
-    }
-
-    private record C8() {
-    }
-
-    private record C9() {
-    }
-
-    private record C10() {
-    }
-
-    public record D1() implements Pooled {
-    }
-
-    public record D2() implements Pooled {
     }
 
 }

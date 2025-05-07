@@ -13,7 +13,7 @@ import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Spec;
 import de.schosin.ecs.api.state.State;
 
-public interface World extends Components.Creator, State.Creator, Archetype.Creator, Transmuter.Creator, Spec.Creator, Composition.Creator {
+public interface World extends Components.Creator, State.Creator, Archetype.Creator, Transmuter.Creator, Spec.SpecCreator, Composition.Creator {
 
     String DEFAULT_IMPLEMENTATION = "de.schosin.ecs.engine.WorldBuilder";
 

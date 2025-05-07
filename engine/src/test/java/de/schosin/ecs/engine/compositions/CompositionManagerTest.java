@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.archetype.Archetype;
+import de.schosin.ecs.api.components.BaseComposition;
 import de.schosin.ecs.api.components.Composition;
 import de.schosin.ecs.api.components.Composition.Builder;
 import de.schosin.ecs.api.components.Spec;
@@ -30,7 +31,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     static final BitVector EMPTY_VECTOR = new BitVector();
     static final ComponentMask EMPTY_MASK = mask(EMPTY_VECTOR);
 
-    static final Composition.Builder EMPTY = Composition.all();
+    static final Builder EMPTY = Composition.all();
 
     int component1Id;
     int component2Id;
@@ -460,7 +461,7 @@ class CompositionManagerTest extends AbstractWorldTest {
                     }
                 }
 
-                abstract class AbstractCompositionTest<C extends Composition> {
+                abstract class AbstractCompositionTest<C extends BaseComposition> {
 
                     protected abstract C createComposition(Composition.Builder builder);
 
@@ -666,14 +667,14 @@ class CompositionManagerTest extends AbstractWorldTest {
                         var composition = createComposition(Composition.one(mismatchingOne).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                       // assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
-                       // assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
-                       // assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
-                       // assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        // assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
+                        // assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        // assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        // assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
-                       // assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                       // assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
-                       // assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                        // assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        // assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
+                        // assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -1136,7 +1137,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition1Test extends AbstractCompositionNTest {
+    class Composition1Test extends AbstractCompositionNTest<Composition.Of1<C1>> {
 
         @Override
         Composition.Of1<C1> composition(Composition.Builder builder) {
@@ -1240,7 +1241,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition2Test extends AbstractCompositionNTest {
+    class Composition2Test extends AbstractCompositionNTest<Composition.Of2<C1, C2>> {
 
         @Override
         Composition.Of2<C1, C2> composition(Composition.Builder builder) {
@@ -1350,7 +1351,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition3Test extends AbstractCompositionNTest {
+    class Composition3Test extends AbstractCompositionNTest<Composition.Of3<C1, C2, C3>> {
 
         @Override
         Composition.Of3<C1, C2, C3> composition(Composition.Builder builder) {
@@ -1466,7 +1467,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition4Test extends AbstractCompositionNTest {
+    class Composition4Test extends AbstractCompositionNTest<Composition.Of4<C1, C2, C3, C4>> {
 
         @Override
         Composition.Of4<C1, C2, C3, C4> composition(Composition.Builder builder) {
@@ -1588,7 +1589,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition5Test extends AbstractCompositionNTest {
+    class Composition5Test extends AbstractCompositionNTest<Composition.Of5<C1, C2, C3, C4, C5>> {
 
         @Override
         Composition.Of5<C1, C2, C3, C4, C5> composition(Composition.Builder builder) {
@@ -1716,7 +1717,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition6Test extends AbstractCompositionNTest {
+    class Composition6Test extends AbstractCompositionNTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
 
         @Override
         Composition.Of6<C1, C2, C3, C4, C5, C6> composition(Composition.Builder builder) {
@@ -1850,7 +1851,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition7Test extends AbstractCompositionNTest {
+    class Composition7Test extends AbstractCompositionNTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
 
         @Override
         Composition.Of7<C1, C2, C3, C4, C5, C6, C7> composition(Composition.Builder builder) {
@@ -1990,7 +1991,7 @@ class CompositionManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class Composition8Test extends AbstractCompositionNTest {
+    class Composition8Test extends AbstractCompositionNTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
 
         @Override
         Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> composition(Composition.Builder builder) {
@@ -2135,7 +2136,7 @@ class CompositionManagerTest extends AbstractWorldTest {
 
     }
 
-    abstract class AbstractCompositionNTest {
+    abstract class AbstractCompositionNTest<C extends BaseComposition> {
 
         final Composition.Builder builder1 = Composition.all(C1.class).none(C8.class);
         final Composition.Builder builder8 = Composition.all(C8.class);
@@ -2158,7 +2159,7 @@ class CompositionManagerTest extends AbstractWorldTest {
             world.process();
         }
 
-        abstract Composition composition(Composition.Builder builder);
+        abstract C composition(Composition.Builder builder);
 
         @Test
         void testCachedInstance() {

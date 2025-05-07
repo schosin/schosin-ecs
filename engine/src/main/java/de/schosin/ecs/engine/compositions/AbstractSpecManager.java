@@ -40,7 +40,7 @@ public abstract class AbstractSpecManager {
         return new EngineSpecImpl(all, ones, none);
     }
 
-    private EngineSpec buildSpec(Composition.Builder.Group group, BiFunction<BitVector, Set<EngineSpec>, EngineSpec> constructor) {
+    private EngineSpec buildSpec(Composition.Group group, BiFunction<BitVector, Set<EngineSpec>, EngineSpec> constructor) {
         var components = buildComponents(group);
         var specs = buildSpecs(group);
 
@@ -49,7 +49,7 @@ public abstract class AbstractSpecManager {
                 : null;
     }
 
-    private BitVector buildComponents(Composition.Builder.Group group) {
+    private BitVector buildComponents(Composition.Group group) {
         var classes = group.classes();
 
         if (classes.isEmpty()) {
@@ -65,7 +65,7 @@ public abstract class AbstractSpecManager {
         return vector;
     }
 
-    private Set<EngineSpec> buildSpecs(Composition.Builder.Group group) {
+    private Set<EngineSpec> buildSpecs(Composition.Group group) {
         var builders = group.builders();
         if (builders.isEmpty()) {
             return null;
