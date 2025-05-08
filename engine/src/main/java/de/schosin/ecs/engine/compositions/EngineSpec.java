@@ -45,15 +45,15 @@ record OneSpec(BitVector one, Set<EngineSpec> specs) implements EngineSpec {
 
     @Override
     public boolean isInterested(BitVector components) {
-        return (one == null || components.containsSome(one))
-                && (specs == null || specs.stream().anyMatch(spec -> spec.isInterested(components)));
+        return (one != null && components.containsSome(one)) || (specs != null && specs.stream().anyMatch(spec -> spec.isInterested(components)));
     }
 
     @Override
+    @SuppressWarnings("null") // JDT bug 
     public boolean matches(EngineSpec other) {
         return switch (other) {
             case AllSpec(BitVector otherAll, Set<EngineSpec> otherSpecs) -> false;
-            case OneSpec(BitVector otherOne, Set<EngineSpec> otherSpecs) -> matchesComponents(one, otherOne) && matchesSpec(specs, otherSpecs);
+            case OneSpec(BitVector otherOne, Set<EngineSpec> otherSpecs) -> (otherOne != null && matchesComponents(one, otherOne)) || (otherSpecs != null && matchesSpec(specs, otherSpecs));
             case NoneSpec(BitVector otherNone, Set<EngineSpec> otherSpecs) -> false;
             case MatchAll m -> true;
             case EngineSpecImpl e -> false;

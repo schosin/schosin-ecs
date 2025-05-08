@@ -3,6 +3,7 @@ package de.schosin.ecs.engine.compositions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -55,6 +56,22 @@ public class EngineSpecTest {
         }
 
         @Test
+        void testAll_ClassesAndSpecs() {
+            var nested = new OneSpec(mask(3, 4), null);
+            var spec = new AllSpec(mask(1, 2), Set.of(nested));
+
+            assertThat(spec.isInterested(mask())).isFalse();
+            assertThat(spec.isInterested(mask(1))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 3))).isTrue();
+            assertThat(spec.isInterested(mask(1, 3))).isFalse();
+            assertThat(spec.isInterested(mask(4))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 4))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 4, 5))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 3, 6))).isTrue();
+        }
+
+        @Test
         void testAllOne() {
             all.set(1);
             all.set(2);
@@ -71,6 +88,37 @@ public class EngineSpecTest {
             assertThat(spec.isInterested(mask(1, 3))).isFalse();
             assertThat(spec.isInterested(mask(4))).isFalse();
             assertThat(spec.isInterested(mask(1, 2, 4))).isTrue();
+        }
+
+        @Test
+        void testAllOne_ClassesAndSpecs() {
+            var nestedAll = new OneSpec(mask(3, 4), null);
+            var all = new AllSpec(mask(1, 2), Set.of(nestedAll));
+
+            var nestedOne = new AllSpec(mask(7, 8), null);
+            var one = new OneSpec(mask(5, 6), Set.of(nestedOne));
+
+            var spec = new EngineSpecImpl(all, Set.of(one), null);
+
+            assertThat(spec.isInterested(mask())).isFalse();
+
+            var allMatches = List.of(mask(1, 2, 3), mask(1, 2, 4), mask(1, 2, 3, 4));
+            var allMismatches = List.of(mask(3), mask(4), mask(1, 3), mask(1, 4), mask(2, 3), mask(2, 4), mask(1, 2));
+
+            var oneMatches = List.of(mask(5), mask(6), mask(7, 8));
+            var oneMismatches = List.of(mask(7), mask(8));
+
+            allMatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("allMatch(%s)", mask).isFalse());
+            allMismatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("allMismatch(%s)", mask).isFalse());
+
+            oneMatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("oneMatch(%s)", mask).isFalse());
+            oneMismatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("oneMismatch(%s)", mask).isFalse());
+
+            allMatches.forEach(a -> oneMatches.forEach(o -> assertThat(spec.isInterested(merge(a, o))).as("allMatch(%s) | oneMatch(%s): ", a, o).isTrue()));
+            allMatches.forEach(a -> oneMismatches.forEach(o -> assertThat(spec.isInterested(merge(a, o))).as("allMatch(%s) | oneMismatch(%s): ", a, o).isFalse()));
+
+            allMismatches.forEach(a -> oneMatches.forEach(o -> assertThat(spec.isInterested(merge(a, o))).as("allMismatch(%s) | oneMatch(%s): ", a, o).isFalse()));
+            allMismatches.forEach(a -> oneMismatches.forEach(o -> assertThat(spec.isInterested(merge(a, o))).as("allMismatch(%s) | oneMismatch(%s): ", a, o).isFalse()));
         }
 
         @Test
@@ -95,27 +143,34 @@ public class EngineSpecTest {
         }
 
         @Test
-        void testDefault() {
-            all.set(1);
-            all.set(2);
+        void testAllNone_ClassesAndSpecs() {
+            var nestedAll = new OneSpec(mask(3, 4), null);
+            var all = new AllSpec(mask(1, 2), Set.of(nestedAll));
 
-            one.set(3);
-            one.set(4);
+            var nestedNone = new AllSpec(mask(7, 8), null);
+            var none = new NoneSpec(mask(5, 6), Set.of(nestedNone));
 
-            none.set(5);
-            none.set(6);
-
-            var spec = create(all, Set.of(one), none);
+            var spec = new EngineSpecImpl(all, null, none);
 
             assertThat(spec.isInterested(mask())).isFalse();
-            assertThat(spec.isInterested(mask(1))).isFalse();
-            assertThat(spec.isInterested(mask(1, 2))).isFalse();
-            assertThat(spec.isInterested(mask(1, 2, 3))).isTrue();
-            assertThat(spec.isInterested(mask(1, 3))).isFalse();
-            assertThat(spec.isInterested(mask(4))).isFalse();
-            assertThat(spec.isInterested(mask(1, 2, 4))).isTrue();
-            assertThat(spec.isInterested(mask(1, 2, 4, 5))).isFalse();
-            assertThat(spec.isInterested(mask(1, 2, 3, 6))).isFalse();
+
+            var allMatches = List.of(mask(1, 2, 3), mask(1, 2, 4), mask(1, 2, 3, 4));
+            var allMismatches = List.of(mask(3), mask(4), mask(1, 3), mask(1, 4), mask(2, 3), mask(2, 4), mask(1, 2));
+
+            var noneMatches = List.of(mask(7), mask(8));
+            var noneMismatches = List.of(mask(5, 7, 8), mask(6, 7, 8), mask(5, 6, 7, 8));
+
+            allMatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("allMatch(%s)", mask).isTrue());
+            allMismatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("allMismatch(%s)", mask).isFalse());
+
+            noneMatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("noneMatch(%s)", mask).isFalse());
+            noneMismatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("noneMismatch(%s)", mask).isFalse());
+
+            allMatches.forEach(a -> noneMatches.forEach(n -> assertThat(spec.isInterested(merge(a, n))).as("allMatch(%s) | noneMatch(%s): ", a, n).isTrue()));
+            allMatches.forEach(a -> noneMismatches.forEach(n -> assertThat(spec.isInterested(merge(a, n))).as("allMatch(%s) | noneMismatch(%s): ", a, n).isFalse()));
+
+            allMismatches.forEach(a -> noneMatches.forEach(n -> assertThat(spec.isInterested(merge(a, n))).as("allMismatch(%s) | noneMatch(%s): ", a, n).isFalse()));
+            allMismatches.forEach(a -> noneMismatches.forEach(n -> assertThat(spec.isInterested(merge(a, n))).as("allMismatch(%s) | noneMismatch(%s): ", a, n).isFalse()));
         }
 
         @Test
@@ -131,6 +186,40 @@ public class EngineSpecTest {
             assertThat(spec.isInterested(mask(1, 2, 3))).isTrue();
             assertThat(spec.isInterested(mask(1, 3))).isTrue();
             assertThat(spec.isInterested(mask(4))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 4))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 4, 5))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 3, 6))).isTrue();
+        }
+
+        @Test
+        void testOne_ClassesAndSpecs() {
+            var nested = new AllSpec(mask(3, 4), null);
+            var spec = new OneSpec(mask(1, 2), Set.of(nested));
+
+            assertThat(spec.isInterested(mask())).isFalse();
+            assertThat(spec.isInterested(mask(1))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 3))).isTrue();
+            assertThat(spec.isInterested(mask(1, 3))).isTrue();
+            assertThat(spec.isInterested(mask(4))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 4))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 4, 5))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 3, 6))).isTrue();
+        }
+
+        @Test
+        void testMultipleOnes() {
+            var one = mask(1, 2);
+            var otherOne = mask(3, 4);
+
+            var spec = create(null, Set.of(one, otherOne), null);
+
+            assertThat(spec.isInterested(mask())).isFalse();
+            assertThat(spec.isInterested(mask(1))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 3))).isTrue();
+            assertThat(spec.isInterested(mask(1, 3))).isTrue();
+            assertThat(spec.isInterested(mask(4))).isFalse();
             assertThat(spec.isInterested(mask(1, 2, 4))).isTrue();
             assertThat(spec.isInterested(mask(1, 2, 4, 5))).isTrue();
             assertThat(spec.isInterested(mask(1, 2, 3, 6))).isTrue();
@@ -158,6 +247,37 @@ public class EngineSpecTest {
         }
 
         @Test
+        void testOneNone_ClassesAndSpecs() {
+            var nestedOne = new AllSpec(mask(3, 4), null);
+            var one = new OneSpec(mask(1, 2), Set.of(nestedOne));
+
+            var nestedNone = new AllSpec(mask(7, 8), null);
+            var none = new NoneSpec(mask(5, 6), Set.of(nestedNone));
+
+            var spec = new EngineSpecImpl(null, Set.of(one), none);
+
+            assertThat(spec.isInterested(mask())).isFalse();
+
+            var oneMatches = List.of(mask(1), mask(2), mask(3, 4));
+            var oneMismatches = List.of(mask(3), mask(4));
+
+            var noneMatches = List.of(mask(7), mask(8));
+            var noneMismatches = List.of(mask(5, 7, 8), mask(6, 7, 8), mask(5, 6, 7, 8));
+
+            oneMatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("oneMatch(%s)", mask).isTrue());
+            oneMismatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("oneMismatch(%s)", mask).isFalse());
+
+            noneMatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("noneMatch(%s)", mask).isFalse());
+            noneMismatches.forEach(mask -> assertThat(spec.isInterested(mask)).as("noneMismatch(%s)", mask).isFalse());
+
+            oneMatches.forEach(o -> noneMatches.forEach(n -> assertThat(spec.isInterested(merge(o, n))).as("oneMatch(%s) | noneMatch(%s): ", o, n).isTrue()));
+            oneMatches.forEach(o -> noneMismatches.forEach(n -> assertThat(spec.isInterested(merge(o, n))).as("oneMatch(%s) | noneMismatch(%s): ", o, n).isFalse()));
+
+            oneMismatches.forEach(o -> noneMatches.forEach(n -> assertThat(spec.isInterested(merge(o, n))).as("oneMismatch(%s) | noneMatch(%s): ", o, n).isFalse()));
+            oneMismatches.forEach(o -> noneMismatches.forEach(n -> assertThat(spec.isInterested(merge(o, n))).as("oneMismatch(%s) | noneMismatch(%s): ", o, n).isFalse()));
+        }
+
+        @Test
         void testNone() {
             none.set(5);
             none.set(6);
@@ -176,21 +296,82 @@ public class EngineSpecTest {
         }
 
         @Test
-        void testMultipleOnes() {
-            var one = mask(1, 2);
-            var otherOne = mask(3, 4);
+        void testNone_ClassesAndSpecs() {
+            var nested = new OneSpec(mask(3, 4), null);
+            var spec = new NoneSpec(mask(1, 2), Set.of(nested));
 
-            var spec = create(null, Set.of(one, otherOne), null);
+            assertThat(spec.isInterested(mask())).isTrue();
+            assertThat(spec.isInterested(mask(1))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 3))).isFalse();
+            assertThat(spec.isInterested(mask(1, 3))).isFalse();
+            assertThat(spec.isInterested(mask(3))).isFalse();
+            assertThat(spec.isInterested(mask(4))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 4))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 4, 5))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 3, 6))).isFalse();
+            assertThat(spec.isInterested(mask(3, 4, 5))).isFalse();
+            assertThat(spec.isInterested(mask(3, 5))).isFalse();
+            assertThat(spec.isInterested(mask(4, 5))).isFalse();
+            assertThat(spec.isInterested(mask(5))).isTrue();
+        }
+
+        @Test
+        void testDefault() {
+            all.set(1);
+            all.set(2);
+
+            one.set(3);
+            one.set(4);
+
+            none.set(5);
+            none.set(6);
+
+            var spec = create(all, Set.of(one), none);
 
             assertThat(spec.isInterested(mask())).isFalse();
             assertThat(spec.isInterested(mask(1))).isFalse();
             assertThat(spec.isInterested(mask(1, 2))).isFalse();
             assertThat(spec.isInterested(mask(1, 2, 3))).isTrue();
-            assertThat(spec.isInterested(mask(1, 3))).isTrue();
+            assertThat(spec.isInterested(mask(1, 3))).isFalse();
             assertThat(spec.isInterested(mask(4))).isFalse();
             assertThat(spec.isInterested(mask(1, 2, 4))).isTrue();
-            assertThat(spec.isInterested(mask(1, 2, 4, 5))).isTrue();
-            assertThat(spec.isInterested(mask(1, 2, 3, 6))).isTrue();
+            assertThat(spec.isInterested(mask(1, 2, 4, 5))).isFalse();
+            assertThat(spec.isInterested(mask(1, 2, 3, 6))).isFalse();
+        }
+
+        @Test
+        void testDefault_ClassesAndSpecs() {
+            var nestedAll = new OneSpec(mask(3, 4), null);
+            var all = new AllSpec(mask(1, 2), Set.of(nestedAll));
+
+            var nestedOne = new AllSpec(mask(7, 8), null);
+            var one = new OneSpec(mask(5, 6), Set.of(nestedOne));
+
+            var nestedNone = new AllSpec(mask(11, 12), null);
+            var none = new NoneSpec(mask(9, 10), Set.of(nestedNone));
+
+            var spec = new EngineSpecImpl(all, Set.of(one), none);
+
+            assertThat(spec.isInterested(mask())).isFalse();
+
+            var allMatches = List.of(mask(1, 2, 3), mask(1, 2, 4), mask(1, 2, 3, 4));
+            var allMismatches = List.of(mask(1), mask(2), mask(1, 3), mask(1, 4));
+
+            var oneMatches = List.of(mask(5), mask(6), mask(7, 8));
+            var oneMismatches = List.of(mask(7), mask(8));
+
+            var noneMatches = List.of(mask(11), mask(12));
+            var noneMismatches = List.of(mask(9, 11, 12), mask(10, 11, 12), mask(9, 10, 11, 12));
+
+            allMatches.forEach(a -> oneMatches
+                    .forEach(o -> noneMatches.forEach(n -> assertThat(spec.isInterested(merge(merge(a, o), n))).as("allMatch(%s) | oneMatch(%s) | noneMatch(%s): ", a, o, n).isTrue())));
+            allMismatches.forEach(a -> oneMatches
+                    .forEach(o -> noneMatches.forEach(n -> assertThat(spec.isInterested(merge(merge(a, o), n))).as("allMismatch(%s) | oneMatch(%s) | noneMatch(%s): ", a, o, n).isFalse())));
+            allMatches.forEach(a -> oneMismatches
+                    .forEach(o -> noneMatches.forEach(n -> assertThat(spec.isInterested(merge(merge(a, o), n))).as("allMatch(%s) | oneMismatch(%s) | noneMatch(%s): ", a, o, n).isFalse())));
+            allMatches.forEach(a -> oneMatches
+                    .forEach(o -> noneMismatches.forEach(n -> assertThat(spec.isInterested(merge(merge(a, o), n))).as("allMatch(%s) | oneMatch(%s) | noneMismatch(%s): ", a, o, n).isFalse())));
         }
 
     }
@@ -772,8 +953,11 @@ public class EngineSpecTest {
             return new OneSpec(ones.iterator().next(), null);
         }
 
+        var allSpec = all != null ? new AllSpec(all, null) : null;
         var oneSpecs = ones != null ? ones.stream().map(one -> new OneSpec(one, null)).collect(Collectors.toSet()) : null;
-        return new EngineSpecImpl(new AllSpec(all, null), oneSpecs, new NoneSpec(none, null));
+        var noneSpec = none != null ? new NoneSpec(none, null) : null;
+
+        return new EngineSpecImpl(allSpec, oneSpecs, noneSpec);
     }
 
     private BitVector mask(int... set) {
@@ -781,6 +965,13 @@ public class EngineSpecTest {
         for (int index : set) {
             mask.set(index);
         }
+
+        return mask;
+    }
+
+    private BitVector merge(BitVector first, BitVector second) {
+        var mask = new BitVector(first);
+        second.iterate(mask::set);
 
         return mask;
     }

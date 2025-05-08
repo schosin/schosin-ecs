@@ -96,17 +96,17 @@ public class EngineWorldTest extends AbstractWorldTest {
 
             @Override
             Composition createComposition() {
-                return world.createComposition(Composition.one(Component1.class));
+                return world.createComposition(Composition.none(Component1.class));
             }
 
             @Override
             int createInterestedEntity() {
-                return world.createEntity(new Component1(1), new Component3(1));
+                return world.createEntity(new Component2(1), new Component3(1));
             }
 
             @Override
             int createUninterestedEntity() {
-                return world.createEntity(new Component3(1));
+                return world.createEntity(new Component1(1));
             }
 
         }
