@@ -4,9 +4,6 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.archetype.Archetype;
-import de.schosin.ecs.api.archetype.Transmuter;
-import de.schosin.ecs.api.state.State;
 
 /**
  *  Component mapper for accessing and modifying components of an entity.
@@ -26,17 +23,17 @@ import de.schosin.ecs.api.state.State;
  *  
  *  <p>
  *  When adding and removing multiple components for an entity, consider
- *  using {@link Transmuter Transmuters}. These reduce the number of 
+ *  using Transmuters. These reduce the number of 
  *  calculations for the composition changes when compared to adding
  *  and removing components sequentially.
  *  </p> 
  *  
  *  <p>
  *  When state is required for an entity that is not needed by any 
- *  {@link Composition compositions}, use {@link State} instead. 
+ *  {@link Composition compositions}, use State from the state plugin instead. 
  *  While such state could be managed as components, adding and removing
  *  components causes an overhead in notifying compositions.
- *  {@link State} does not incur this overhead.
+ *  State does not incur this overhead.
  *  </p>
  * 
  * @param <T> component type
@@ -94,7 +91,7 @@ public interface Components<T> {
         /**
          * Returns an unused component from a pool or creates a new instance. 
          * Can be used for {@link Components#add(int, Object)},
-         * {@link Archetype}, {@link Transmuter}, or {@link World#createEntity(Object...)}.
+         * Archetype, {@link Transmuter}, or {@link World#createEntity(Object...)}.
          * 
          * <p>
          * <b>Attention:</b> Using this method requires a public default constructor.

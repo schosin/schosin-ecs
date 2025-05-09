@@ -12,7 +12,7 @@
     <dependencies>
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>worlds</artifactId>
             <version>${project.version}</version>
         </dependency>
         

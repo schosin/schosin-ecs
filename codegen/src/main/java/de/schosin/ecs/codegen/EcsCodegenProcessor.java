@@ -16,15 +16,14 @@ import javax.tools.Diagnostic;
 import com.google.auto.service.AutoService;
 import com.palantir.javapoet.JavaFile;
 
-import de.schosin.ecs.codegen.generators.ArchetypeGenerator;
-import de.schosin.ecs.codegen.generators.ArchetypeManagerGenerator;
-import de.schosin.ecs.codegen.generators.CompositionGenerator;
-import de.schosin.ecs.codegen.generators.CompositionManagerGenerator;
-import de.schosin.ecs.codegen.generators.EngineWorldGenerator;
-import de.schosin.ecs.codegen.generators.TransmutationManagerGenerator;
-import de.schosin.ecs.codegen.generators.TransmuterGenerator;
-import de.schosin.ecs.codegen.tests.ArchetypeManagerTestGenerator;
-import de.schosin.ecs.codegen.tests.TransmutationManagerTestGenerator;
+import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeGenerator;
+import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeManagerGenerator;
+import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeManagerTestGenerator;
+import de.schosin.ecs.codegen.generators.plugins.composition.CompositionGenerator;
+import de.schosin.ecs.codegen.generators.plugins.composition.CompositionManagerGenerator;
+import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmutationManagerGenerator;
+import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmutationManagerTestGenerator;
+import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmuterGenerator;
 
 @AutoService(Processor.class)
 @SupportedOptions({ EcsCodegenProcessor.COMPOSITION_PARAMS, EcsCodegenProcessor.ARCHETYPE_PARAMS, EcsCodegenProcessor.TRANSMUTER_PARAMS })
@@ -38,16 +37,16 @@ public class EcsCodegenProcessor extends AbstractProcessor {
 
     private static final String DEFAULT_PARAMS = "8";
 
-    private static final String BASE_COMPOSITION = "de.schosin.ecs.api.components.BaseComposition";
-    private static final String BASE_ARCHETYPE = "de.schosin.ecs.api.archetype.BaseArchetype";
-    private static final String BASE_TRANSMUTER = "de.schosin.ecs.api.archetype.BaseTransmuter";
-    private static final String COMPOSITION_MANAGER = "de.schosin.ecs.engine.compositions.CompositionManager";
-    private static final String ARCHETYPE_MANAGER = "de.schosin.ecs.engine.entities.ArchetypeManager";
-    private static final String TRANSMUTATION_MANAGER = "de.schosin.ecs.engine.components.TransmutationManager";
-    private static final String ENGINE_WORLD = "de.schosin.ecs.engine.EngineWorld";
+    private static final String ARCHETYPE_PLUGIN = "de.schosin.ecs.plugins.archetype.BaseArchetype";
+    private static final String ARCHETYPE_PLUGIN_MANAGER = "de.schosin.ecs.plugins.archetype.ArchetypeManager";
+    private static final String ARCHETYPE_PLUGIN_MANAGER_TEST = "de.schosin.ecs.plugins.archetype.ArchetypeManagerTest";
 
-    private static final String TRANSMUTATION_MANAGER_TEST = "de.schosin.ecs.engine.components.TransmutationManagerTest";
-    private static final String ARCHETYPE_MANAGER_TEST = "de.schosin.ecs.engine.entities.ArchetypeManagerTest";
+    private static final String TRANSMUTER_PLUGIN = "de.schosin.ecs.plugins.transmuter.BaseTransmuter";
+    private static final String TRANSMUTER_PLUGIN_MANAGER = "de.schosin.ecs.plugins.transmuter.TransmuterManager";
+    private static final String TRANSMUTER_PLUGIN_MANAGER_TEST = "de.schosin.ecs.plugins.transmuter.TransmuterManagerTest";
+
+    private static final String COMPOSIITON_PLUGIN = "de.schosin.ecs.plugins.composition.BaseComposition";
+    private static final String COMPOSIITON_PLUGIN_MANAGER = "de.schosin.ecs.plugins.composition.manager.CompositionManager";
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -60,20 +59,17 @@ public class EcsCodegenProcessor extends AbstractProcessor {
                 var name = type.getQualifiedName().toString();
 
                 switch (name) {
-                    // api
-                    case BASE_COMPOSITION -> writeFile(CompositionGenerator.generateFile(type, compositionParams));
-                    case BASE_ARCHETYPE -> writeFile(ArchetypeGenerator.generateFile(type, archetypeParams));
-                    case BASE_TRANSMUTER -> writeFile(TransmuterGenerator.generateFile(type, transmuterParams));
+                    // plugins
+                    case ARCHETYPE_PLUGIN -> writeFile(ArchetypeGenerator.generateFile(type, archetypeParams));
+                    case ARCHETYPE_PLUGIN_MANAGER -> writeFile(ArchetypeManagerGenerator.generateFile(type, archetypeParams));
+                    case ARCHETYPE_PLUGIN_MANAGER_TEST -> writeFile(ArchetypeManagerTestGenerator.generateFile(type, archetypeParams));
 
-                    // core
-                    case COMPOSITION_MANAGER -> writeFile(CompositionManagerGenerator.generateFile(type, compositionParams));
-                    case ARCHETYPE_MANAGER -> writeFile(ArchetypeManagerGenerator.generateFile(type, archetypeParams));
-                    case TRANSMUTATION_MANAGER -> writeFile(TransmutationManagerGenerator.generateFile(type, transmuterParams));
-                    case ENGINE_WORLD -> writeFile(EngineWorldGenerator.generateFile(type, archetypeParams, transmuterParams));
+                    case TRANSMUTER_PLUGIN -> writeFile(TransmuterGenerator.generateFile(type, transmuterParams));
+                    case TRANSMUTER_PLUGIN_MANAGER -> writeFile(TransmutationManagerGenerator.generateFile(type, transmuterParams));
+                    case TRANSMUTER_PLUGIN_MANAGER_TEST -> writeFile(TransmutationManagerTestGenerator.generateFile(type, transmuterParams));
 
-                    // core tests
-                    case TRANSMUTATION_MANAGER_TEST -> writeFile(TransmutationManagerTestGenerator.generateFile(type, transmuterParams));
-                    case ARCHETYPE_MANAGER_TEST -> writeFile(ArchetypeManagerTestGenerator.generateFile(type, archetypeParams));
+                    case COMPOSIITON_PLUGIN -> writeFile(CompositionGenerator.generateFile(type, compositionParams));
+                    case COMPOSIITON_PLUGIN_MANAGER -> writeFile(CompositionManagerGenerator.generateFile(type, compositionParams));
 
                     default -> throw new IllegalArgumentException("@%s used on %s: not supported".formatted(EcsCodegen.class.getSimpleName(), name));
                 }

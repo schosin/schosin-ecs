@@ -22,6 +22,38 @@
                 <artifactId>engine</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs</groupId>
+                <artifactId>test</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>de.schosin.ecs.plugins</groupId>
+                <artifactId>state</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs.plugins</groupId>
+                <artifactId>archetype</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs.plugins</groupId>
+                <artifactId>transmuter</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs.plugins</groupId>
+                <artifactId>composition</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>de.schosin.ecs</groupId>
+                <artifactId>worlds</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>

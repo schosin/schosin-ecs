@@ -9,9 +9,12 @@
     <modules>
         <module>codegen</module>
         <module>api</module>
-        <module>engine</module>
+        <module>core</module>
+        <module>test</module>
+        <module>plugins</module>
+        <module>worlds</module>
         <module>benchmark</module>
-	<module>bom</module>
+	    <module>bom</module>
     </modules>
   
     <properties>
@@ -30,6 +33,8 @@
         
         <hibernate.validator.version>8.0.2.Final</hibernate.validator.version>
         <glassfish.expressly.version>5.0.0</glassfish.expressly.version>
+        
+        <bytebuddy.version>1.17.5</bytebuddy.version>
         
         <junit.version>5.12.2</junit.version>
         <junit-pironeer.version>2.3.0</junit-pironeer.version>
@@ -69,6 +74,12 @@
                 <groupId>org.glassfish.expressly</groupId>
                 <artifactId>expressly</artifactId>
                 <version>${glassfish.expressly.version}</version>
+            </dependency>
+                
+            <dependency>
+              <groupId>net.bytebuddy</groupId>
+              <artifactId>byte-buddy</artifactId>
+              <version>${bytebuddy.version}</version>
             </dependency>
             
             <dependency>

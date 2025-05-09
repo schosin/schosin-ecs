@@ -13,18 +13,17 @@ import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import de.schosin.ecs.api.World;
 import de.schosin.ecs.benchmark.utils.collections.BitVectorBenchmark;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.EngineWorld;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
-import de.schosin.ecs.engine.compositions.CompositionManager;
-import de.schosin.ecs.engine.entities.ArchetypeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.plugins.archetype.ArchetypeManager;
+import de.schosin.ecs.plugins.composition.manager.CompositionManager;
+import de.schosin.ecs.worlds.DefaultWorld;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -34,7 +33,7 @@ import de.schosin.ecs.engine.entities.EntityManager;
 @Measurement(iterations = 3, timeUnit = TimeUnit.MILLISECONDS, time = 5000)
 public abstract class EcsBenchmark {
 
-    protected EngineWorld world;
+    protected DefaultWorld world;
 
     protected BagManager bagManager;
     protected ComponentManager componentManager;
@@ -47,29 +46,21 @@ public abstract class EcsBenchmark {
     protected ComponentMapperManager componentMapperManager;
 
     protected void setupWorld() {
-        this.world = (EngineWorld) World.builder().build();
+        this.world = DefaultWorld.create();
 
         try {
-            this.bagManager = getField("bagManager");
-            this.componentManager = getField("componentManager");
-            this.componentMaskManager = getField("componentMaskManager");
-            this.compositionManager = getField("compositionManager");
-            this.entityManager = getField("entityManager");
-            this.archetypeManager = getField("archetypeManager");
-            this.changeManager = getField("changeManager");
-            this.transmutationManager = getField("transmutationManager");
-            this.componentMapperManager = getField("componentMapperManager");
+            this.bagManager = world.getSingleton(BagManager.class);
+            this.componentManager = world.getSingleton(ComponentManager.class);
+            this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
+            this.compositionManager = world.getSingleton(CompositionManager.class);
+            this.entityManager = world.getSingleton(EntityManager.class);
+            this.archetypeManager = world.getSingleton(ArchetypeManager.class);
+            this.changeManager = world.getSingleton(ChangeManager.class);
+            this.transmutationManager = world.getSingleton(TransmutationManager.class);
+            this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
         } catch (Exception ex) {
             throw new UnsupportedOperationException("Failed to get managers via reflection: " + ex.getMessage(), ex);
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T> T getField(String name) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-        var field = EngineWorld.class.getDeclaredField(name);
-        field.setAccessible(true);
-
-        return (T) field.get(this.world);
     }
 
     public static String benchmarkName(Class<?> clazz) {

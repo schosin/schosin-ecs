@@ -14,16 +14,10 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.archetype.Archetype;
-import de.schosin.ecs.api.archetype.Transmuter;
-import de.schosin.ecs.api.archetype.Transmuter.Add1;
-import de.schosin.ecs.api.archetype.Transmuter.Add2;
-import de.schosin.ecs.api.archetype.Transmuter.Add3;
-import de.schosin.ecs.api.archetype.Transmuter.Add4;
-import de.schosin.ecs.api.archetype.Transmuter.Add5;
-import de.schosin.ecs.api.archetype.Transmuter.Add6;
 import de.schosin.ecs.api.components.Components;
-import de.schosin.ecs.api.components.Composition;
+import de.schosin.ecs.plugins.archetype.Archetype;
+import de.schosin.ecs.plugins.composition.Composition;
+import de.schosin.ecs.plugins.transmuter.Transmuter;
 
 public class EngineWorldBenchmark {
 
@@ -320,12 +314,12 @@ public class EngineWorldBenchmark {
         private Components<Component5> component5;
         private Components<Component6> component6;
 
-        private Add1<Component1> transmuter1;
-        private Add2<Component1, Component2> transmuter2;
-        private Add3<Component1, Component2, Component3> transmuter3;
-        private Add4<Component1, Component2, Component3, Component4> transmuter4;
-        private Add5<Component1, Component2, Component3, Component4, Component5> transmuter5;
-        private Add6<Component1, Component2, Component3, Component4, Component5, Component6> transmuter6;
+        private Transmuter.Add1<Component1> transmuter1;
+        private Transmuter.Add2<Component1, Component2> transmuter2;
+        private Transmuter.Add3<Component1, Component2, Component3> transmuter3;
+        private Transmuter.Add4<Component1, Component2, Component3, Component4> transmuter4;
+        private Transmuter.Add5<Component1, Component2, Component3, Component4, Component5> transmuter5;
+        private Transmuter.Add6<Component1, Component2, Component3, Component4, Component5, Component6> transmuter6;
 
         @Param({ "1000000" })
         private int entityCount;

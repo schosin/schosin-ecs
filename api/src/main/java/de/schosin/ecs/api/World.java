@@ -1,45 +1,35 @@
 package de.schosin.ecs.api;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.NoSuchElementException;
-import java.util.ServiceLoader;
 
 import org.jspecify.annotations.NonNull;
 
-import de.schosin.ecs.api.archetype.Archetype;
-import de.schosin.ecs.api.archetype.Transmuter;
 import de.schosin.ecs.api.components.Components;
-import de.schosin.ecs.api.components.Composition;
-import de.schosin.ecs.api.components.Spec;
-import de.schosin.ecs.api.state.State;
 
-public interface World extends Components.Creator, State.Creator, Archetype.Creator, Transmuter.Creator, Spec.SpecCreator, Composition.Creator {
+public interface World extends Components.Creator {
 
     String DEFAULT_IMPLEMENTATION = "de.schosin.ecs.engine.WorldBuilder";
 
-    static World.Builder builder() {
-        return builder(DEFAULT_IMPLEMENTATION);
+    static World.Builder<World> builder() {
+        return builder(World.class);
     }
 
-    static World.Builder builder(String implementation) {
+    @SuppressWarnings("unchecked")
+    static <T extends World> World.Builder<T> builder(Class<T> clazz) {
         try {
-            return ServiceLoader.load(World.Builder.class)
-                    .stream()
-                    .filter(p -> p.get().getClass().getName().contains(implementation))
-                    .findFirst()
-                    .orElseThrow(() -> new NoSuchElementException("Unable to load " + implementation))
-                    .get();
-        } catch (NoSuchElementException e) {
-            try {
-                return (Builder) Class.forName(implementation).getDeclaredConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException ex) {
-                e.printStackTrace();
-                throw new IllegalArgumentException("Exception creating builder '%s' instance".formatted(implementation), ex);
+            return (Builder<T>) Class.forName(DEFAULT_IMPLEMENTATION).getDeclaredConstructor(Class.class).newInstance(clazz);
+        } catch (InvocationTargetException ex) {
+            if (ex.getTargetException() != null && ex.getTargetException().getClass().getName().startsWith("de.schosin")) {
+                throw (RuntimeException) ex.getTargetException();
             }
+
+            throw new IllegalArgumentException("Exception creating builder '%s' instance with class '%s': %s".formatted(DEFAULT_IMPLEMENTATION, clazz, ex.getMessage()), ex);
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException ex) {
+            throw new IllegalArgumentException("Exception creating builder '%s' instance with class '%s': %s".formatted(DEFAULT_IMPLEMENTATION, clazz, ex.getMessage()), ex);
         }
     }
 
-    interface Builder {
+    interface Builder<T extends World> {
 
         /**
          * Default loop count used by {@link World#process()} when delegating to {@link World#process(int)}.
@@ -47,7 +37,7 @@ public interface World extends Components.Creator, State.Creator, Archetype.Crea
          * @param loops default value
          * @return this instance
          */
-        Builder processLoops(int loops);
+        Builder<T> processLoops(int loops);
 
         /**
          * Singletons to add to this world. Can be retrieved by systems with
@@ -56,9 +46,9 @@ public interface World extends Components.Creator, State.Creator, Archetype.Crea
          * @param singletons singletons to add
          * @return this instance
          */
-        Builder singletons(Object... singletons);
+        Builder<T> singletons(Object... singletons);
 
-        World build();
+        T build();
 
     }
 

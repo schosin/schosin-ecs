@@ -1,0 +1,122 @@
+package de.schosin.ecs.engine;
+
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.jspecify.annotations.NonNull;
+
+import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.Components.EnumComponents;
+import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.engine.components.ComponentManager;
+import de.schosin.ecs.engine.components.ComponentMapperManager;
+import de.schosin.ecs.engine.components.ComponentMaskManager;
+import de.schosin.ecs.engine.components.TransmutationManager;
+import de.schosin.ecs.engine.entities.EntityManager;
+
+public class EngineWorld implements World {
+
+    private record Config(int processLoops) {
+        public Config(WorldBuilder<?> builder) {
+            this(builder.processLoops);
+        }
+    }
+
+    public record Classes(Set<Class<?>> components, Set<Class<?>> states) {
+    }
+
+    private final Config config;
+
+    private final SingletonManager singletonManager;
+    private final BagManager bagManager;
+    private final IdManager idManager;
+    private final ComponentManager componentManager;
+    private final ComponentMaskManager componentMaskManager;
+    private final EntityManager entityManager;
+    private final ChangeManager changeManager;
+    private final TransmutationManager transmutationManager;
+    private final ComponentMapperManager componentMapperManager;
+
+    public EngineWorld(WorldBuilder<?> builder) {
+        this.config = new Config(builder);
+
+        this.singletonManager = new SingletonManager(this);
+
+        var classes = addSingleton(new Classes(ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet()));
+
+        this.bagManager = addSingleton(new BagManager());
+        this.idManager = addSingleton(new IdManager(bagManager));
+        this.componentManager = addSingleton(new ComponentManager(bagManager, idManager, classes));
+        this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
+        this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
+        this.changeManager = addSingleton(new ChangeManager(bagManager, componentManager, componentMaskManager, entityManager));
+        this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
+        this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, transmutationManager));
+
+        // Initialized configured singletons
+        if (builder.singletons != null) {
+            for (var singleton : builder.singletons.values()) {
+                addSingleton(singleton);
+            }
+        }
+    }
+
+    @Override
+    public int createEntity(Object... components) {
+        return entityManager.createEntity(components);
+    }
+
+    @Override
+    public void deleteEntity(int entityId) {
+        changeManager.deleteEntity(entityId);
+    }
+
+    @Override
+    public boolean isActive(int entityId) {
+        return entityManager.isActive(entityId);
+    }
+
+    @Override
+    public <T> T addSingleton(@NonNull T singleton) {
+        return singletonManager.addSingleton(singleton);
+    }
+
+    @Override
+    public <T> @NonNull T getSingleton(@NonNull Class<T> clazz) throws NoSuchElementException {
+        return singletonManager.getSingleton(clazz);
+    }
+
+    @Override
+    public <T> Components<T> getComponents(Class<T> clazz) {
+        return componentMapperManager.getComponents(clazz);
+    }
+
+    @Override
+    public <T extends Enum<T>> @NonNull EnumComponents<T> getEnumComponents(@NonNull T defaultComponent) {
+        return componentMapperManager.getEnumComponents(defaultComponent);
+    }
+
+    @Override
+    public <T extends Pooled> PooledComponents<T> getPooledComponents(@NonNull Class<T> clazz) {
+        return componentMapperManager.getPooledComponents(clazz);
+    }
+
+    @Override
+    public boolean process() {
+        return process(config.processLoops);
+    }
+
+    @Override
+    public boolean process(int loops) {
+        return changeManager.process(loops);
+    }
+
+    @Override
+    public boolean flushEntityUpdates(int entityId) {
+        return changeManager.flushEntityUpdates(entityId, config.processLoops);
+    }
+
+}
