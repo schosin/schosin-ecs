@@ -9,11 +9,11 @@ public class BagManager {
     private static final int ENTITY_SIZE = 1024;
     private static final int COMPONENT_SIZE = 64;
 
-    private final Bag<Bag> entityBags = new Bag<>(Bag.class, ENTITY_SIZE);
-    private final Bag<IntBag> entityIntBags = new Bag<>(IntBag.class, ENTITY_SIZE);
+    private final Bag<Bag> entityBags = new Bag<>(Bag.class, 32);
+    private final Bag<IntBag> entityIntBags = new Bag<>(IntBag.class, 32);
 
-    private final Bag<Bag> componentBags = new Bag<>(Bag.class, COMPONENT_SIZE);
-    private final Bag<IntBag> componentIntBags = new Bag<>(IntBag.class, COMPONENT_SIZE);
+    private final Bag<Bag> componentBags = new Bag<>(Bag.class, 32);
+    private final Bag<IntBag> componentIntBags = new Bag<>(IntBag.class, 32);
 
     private volatile int entitySize = ENTITY_SIZE;
     private volatile int componentSize = COMPONENT_SIZE;
