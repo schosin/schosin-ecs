@@ -10,14 +10,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class IdManagerTest extends AbstractWorldTest {
 
-    @Test
-    void testSharedIdSpace() {
-        var entityId = idManager.createEntityId();
-        var componentId = idManager.createComponentId();
-
-        assertThat(entityId.id()).isNotEqualTo(componentId.id());
-    }
-
     @Nested
     class EntityIdTest {
 

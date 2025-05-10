@@ -32,7 +32,8 @@ public class IdManager {
 
     private final Bag<Id> ids = new Bag<>(Id.class, 1 << 12);
 
-    private final AtomicInteger nextId = new AtomicInteger(1);
+    private final AtomicInteger nextEntityId = new AtomicInteger(1);
+    private final AtomicInteger nextComponentId = new AtomicInteger(1);
     private final IntBag reservedComponentIds = createReservedComponentIds();
 
     public IdManager(BagManager bagManager) {
@@ -66,7 +67,7 @@ public class IdManager {
     }
 
     private int getNextEntityId() {
-        var id = nextId.getAndIncrement();
+        var id = nextEntityId.getAndIncrement();
 
         this.bagManager.ensureEntitySize(id);
         return id;
@@ -76,7 +77,7 @@ public class IdManager {
         int id = -1;
 
         if (reservedComponentIds.isEmpty()) {
-            id = nextId.getAndIncrement();
+            id = nextComponentId.getAndIncrement();
         } else {
             id = reservedComponentIds.removeLast();
         }
@@ -88,7 +89,7 @@ public class IdManager {
     private IntBag createReservedComponentIds() {
         var reservedComponentIds = new IntBag(RESERVED_COMPONENT_IDS_COUNT);
         for (int i = 0; i < RESERVED_COMPONENT_IDS_COUNT; i++) {
-            var componentId = nextId.getAndIncrement();
+            var componentId = nextComponentId.getAndIncrement();
 
             reservedComponentIds.set(i, RESERVED_COMPONENT_IDS_COUNT - componentId);
         }
