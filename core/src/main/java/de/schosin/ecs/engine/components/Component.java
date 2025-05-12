@@ -1,12 +1,28 @@
 package de.schosin.ecs.engine.components;
 
-public sealed interface Component permits ComponentData {
+import java.util.Objects;
+
+import org.jspecify.annotations.NonNull;
+
+public sealed interface Component<T> permits ComponentData {
+
+    interface PooledComponent<T> {
+        T getInstance();
+    }
 
     int id();
 
     String display();
 
     boolean hasComponent(int entityId);
+
+    T getComponent(int entityId);
+
+    default void addComponent(int entityId, @NonNull T component) {
+        addComponentUnsafe(entityId, Objects.requireNonNull(component, "component cannot be null"));
+    }
+
+    void addComponentUnsafe(int id, T component);
 
     void markRemoved(int entityId);
 

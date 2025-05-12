@@ -307,7 +307,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             var updated = new IntBag(1);
             changeManager.registerUpdated((id, prevMask, mask) -> {
                 assertThat(prevMask.getComponents()).isEmpty();
-                assertThat(mask.getComponents()).containsExactly(componentManager.getData(C1.class));
+                assertThat(mask.getComponents()).containsExactly(componentManager.getComponent(C1.class));
 
                 updated.add(id);
             });

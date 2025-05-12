@@ -19,7 +19,7 @@ import de.schosin.ecs.engine.utils.collections.IntBag;
  * when {@link ComponentMaskManager#addComponent(ComponentMask, int)} adding} 
  * or {@link ComponentMaskManager#removeComponent(ComponentMask, int) removing} 
  * a component from this current composition. 
- * The {@link ComponentData#id()} is used as an index into the bag for a fast 
+ * The {@link Component#id()} is used as an index into the bag for a fast 
  * look up.
  * </p>
  */
@@ -27,7 +27,7 @@ public class ComponentMask {
 
     private final int id;
     private final BitVector mask;
-    private final Component[] components;
+    private final Component<?>[] components;
 
     private final IntBag lookup;
     private final Bag<ComponentMask> add;
@@ -35,7 +35,7 @@ public class ComponentMask {
 
     private String toString;
 
-    public ComponentMask(int id, BitVector mask, Component[] components, IntBag lookup, Bag<ComponentMask> add, Bag<ComponentMask> remove) {
+    public ComponentMask(int id, BitVector mask, Component<?>[] components, IntBag lookup, Bag<ComponentMask> add, Bag<ComponentMask> remove) {
         this.id = id;
         this.mask = mask;
         this.components = components;
@@ -57,7 +57,7 @@ public class ComponentMask {
         return mask;
     }
 
-    public Component[] getComponents() {
+    public Component<?>[] getComponents() {
         return components;
     }
 

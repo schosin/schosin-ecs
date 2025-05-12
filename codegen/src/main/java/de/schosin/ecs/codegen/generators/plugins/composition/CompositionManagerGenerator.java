@@ -31,7 +31,7 @@ public class CompositionManagerGenerator {
     private static final ClassName BASE_COMPOSITION_IMPL = ClassName.get("", "BaseCompositionImpl");
 
     // TODO should be Component only on the other branch
-    private static final ClassName COMPONENT_DATA = ClassName.get("de.schosin.ecs.engine.components", "ComponentData");
+    private static final ClassName COMPONENT = ClassName.get("de.schosin.ecs.engine.components", "Component");
 
     private static final String OF_PREFIX = CompositionGenerator.OF_PREFIX;
     private static final ParameterizedTypeName OF_WILDCARD = ParameterizedTypeName.get(ClassName.get("", OF_PREFIX), WildcardTypeName.subtypeOf(Object.class));
@@ -69,11 +69,11 @@ public class CompositionManagerGenerator {
                     .addParameter(Utils.WILDCARD_CLASS_ARRAY, "components").varargs()
                     .build();
 
-            var componentDataT = ParameterizedTypeName.get(COMPONENT_DATA, Utils.T);
+            var componentT = ParameterizedTypeName.get(COMPONENT, Utils.T);
             var abstractGetComponent = MethodSpec.methodBuilder(METHOD_GET_COMPONENT)
                     .addModifiers(Modifier.PROTECTED, Modifier.ABSTRACT)
                     .addTypeVariable(Utils.T)
-                    .returns(componentDataT)
+                    .returns(componentT)
                     .addParameter(Utils.clazz(Utils.T), "clazz")
                     .build();
 

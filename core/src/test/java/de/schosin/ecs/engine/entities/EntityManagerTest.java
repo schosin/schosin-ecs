@@ -11,20 +11,20 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.components.ComponentData;
+import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 
 class EntityManagerTest extends AbstractWorldTest {
 
-    ComponentData<Component1> component1;
-    ComponentData<Component2> component2;
-    ComponentData<Component3> component3;
+    Component<Component1> component1;
+    Component<Component2> component2;
+    Component<Component3> component3;
 
     @BeforeEach
     void setupComponents() {
-        this.component1 = componentManager.getData(Component1.class);
-        this.component2 = componentManager.getData(Component2.class);
-        this.component3 = componentManager.getData(Component3.class);
+        this.component1 = componentManager.getComponent(Component1.class);
+        this.component2 = componentManager.getComponent(Component2.class);
+        this.component3 = componentManager.getComponent(Component3.class);
     }
 
     @Test
@@ -363,9 +363,9 @@ class EntityManagerTest extends AbstractWorldTest {
             this.pooled2 = world.getPooledComponents(C2.class);
             this.pooled3 = world.getPooledComponents(C3.class);
 
-            this.id1 = componentManager.getData(C1.class).id();
-            this.id2 = componentManager.getData(C2.class).id();
-            this.id3 = componentManager.getData(C3.class).id();
+            this.id1 = componentManager.getComponent(C1.class).id();
+            this.id2 = componentManager.getComponent(C2.class).id();
+            this.id3 = componentManager.getComponent(C3.class).id();
         }
 
         @Test

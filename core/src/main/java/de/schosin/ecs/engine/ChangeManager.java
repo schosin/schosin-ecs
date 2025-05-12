@@ -3,7 +3,6 @@ package de.schosin.ecs.engine;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.engine.components.Component;
-import de.schosin.ecs.engine.components.ComponentData;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -280,7 +279,7 @@ public class ChangeManager {
     }
 
     private void processRemovedComponent(int componentId) {
-        var metadata = componentManager.getData(componentId);
+        var metadata = componentManager.getComponent(componentId);
         metadata.applyRemovals();
     }
 
@@ -313,8 +312,7 @@ public class ChangeManager {
         this.updatedEntityMasks.set(entityId, fromLookup(componentMask.getId()));
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public boolean addComponent(int entityId, ComponentData component, @NonNull Object instance) {
+    public <T> boolean addComponent(int entityId, Component<T> component, @NonNull T instance) {
         var changed = !component.hasComponent(entityId);
 
         component.addComponentUnsafe(entityId, instance);
@@ -327,7 +325,7 @@ public class ChangeManager {
         return changed;
     }
 
-    public boolean removeComponent(int entityId, Component component) {
+    public boolean removeComponent(int entityId, Component<?> component) {
         if (!component.hasComponent(entityId)) {
             return false;
         }

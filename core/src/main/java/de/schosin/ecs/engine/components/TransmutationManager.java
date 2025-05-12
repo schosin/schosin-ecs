@@ -23,7 +23,7 @@ public class TransmutationManager {
         int hashCode();
     }
 
-    private static final Component[] EMPTY = new Component[0];
+    private static final Component<?>[] EMPTY = new Component[0];
 
     private final ChangeManager changeManager;
     private final ComponentManager componentManager;
@@ -41,11 +41,11 @@ public class TransmutationManager {
 
     @SuppressWarnings("unchecked")
     public <T> Add<T> getAddTransmuter(Class<T> component) {
-        return (Add<T>) getTransmuter(ImmutableBuilder.add(component), () -> new Add<>(componentManager.getData(component)));
+        return (Add<T>) getTransmuter(ImmutableBuilder.add(component), () -> new Add<>(componentManager.getComponent(component)));
     }
 
     public Remove getRemoveTransmuter(Class<?> component) {
-        return getTransmuter(ImmutableBuilder.remove(component), () -> new Remove(componentManager.getData(component)));
+        return getTransmuter(ImmutableBuilder.remove(component), () -> new Remove(componentManager.getComponent(component)));
     }
 
     @SuppressWarnings("unchecked")
@@ -60,14 +60,14 @@ public class TransmutationManager {
 
     public class Add<T> extends AbstractTransmuter {
 
-        public Add(Component add) {
+        public Add(Component<?> add) {
             super(TransmutationManager.this, new Component[] { add }, EMPTY);
         }
 
         public boolean apply(int entityId, T component) {
             return super.apply(entityId, component);
         }
-        
+
         @Override
         protected final boolean apply(int entityId, Object... added) {
             throw new UnsupportedOperationException("use public apply");
@@ -77,14 +77,14 @@ public class TransmutationManager {
 
     public class Remove extends AbstractTransmuter {
 
-        public Remove(Component remove) {
+        public Remove(Component<?> remove) {
             super(TransmutationManager.this, EMPTY, new Component[] { remove });
         }
 
         public boolean apply(int entityId) {
             return super.apply(entityId);
         }
-        
+
         @Override
         protected final boolean apply(int entityId, Object... added) {
             throw new UnsupportedOperationException("use public apply");
@@ -96,8 +96,8 @@ public class TransmutationManager {
 
         private final TransmutationManager manager;
 
-        private final Component[] add;
-        private final Component[] remove;
+        private final Component<?>[] add;
+        private final Component<?>[] remove;
 
         private final Bag<ComponentMask> cache = new Bag<>(ComponentMask.class, 64);
 
@@ -105,11 +105,11 @@ public class TransmutationManager {
             this(manager, convert(manager, builder.getAdd()), convert((TransmutationManager) manager, builder.getRemove()));
         }
 
-        private static Component[] convert(TransmutationManager manager, Set<Class<?>> classes) {
-            return classes.stream().map(manager.componentManager::getData).toArray(Component[]::new);
+        private static Component<?>[] convert(TransmutationManager manager, Set<Class<?>> classes) {
+            return classes.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
         }
 
-        protected AbstractTransmuter(TransmutationManager manager, Component[] add, Component[] remove) {
+        protected AbstractTransmuter(TransmutationManager manager, Component<?>[] add, Component<?>[] remove) {
             this.manager = manager;
 
             this.add = add;
@@ -145,9 +145,10 @@ public class TransmutationManager {
             return true;
         }
 
+        @SuppressWarnings({ "rawtypes", "unchecked" })
         private final void addComponents(int entityId, Object... components) {
             for (var component : components) {
-                var metadata = manager.componentManager.getData(component.getClass());
+                var metadata = (Component) manager.componentManager.getComponent(component.getClass());
                 manager.changeManager.addComponent(entityId, metadata, component);
             }
         }

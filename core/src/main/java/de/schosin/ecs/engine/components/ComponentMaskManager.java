@@ -56,15 +56,15 @@ public class ComponentMaskManager {
 
             // Compute compute mask
             componentMask = new BitVector(componentMask);
-            return componentMasks.computeIfAbsent(componentMask, mask -> createComponentMask(mask, componentDataFromClasses(components)));
+            return componentMasks.computeIfAbsent(componentMask, mask -> createComponentMask(mask, componentsFromClasses(components)));
         });
     }
 
-    private Component[] componentDataFromClasses(Class<?>[] components) {
+    private Component<?>[] componentsFromClasses(Class<?>[] components) {
         // deduplicate using set
-        var result = HashSet.<Component>newHashSet(components.length);
+        var result = HashSet.<Component<?>>newHashSet(components.length);
         for (int i = 0, s = components.length; i < s; i++) {
-            var metadata = componentManager.getData(components[i]);
+            var metadata = componentManager.getComponent(components[i]);
             result.add(metadata);
         }
 
@@ -86,7 +86,7 @@ public class ComponentMaskManager {
         return pool.withInstance(componentMask -> {
             // Build component bitmask
             for (int i = 0, s = components.length; i < s; i++) {
-                var componentId = componentManager.getData(components[i].getClass()).id();
+                var componentId = componentManager.getComponent(components[i].getClass()).id();
                 componentMask.set(componentId);
             }
 
@@ -98,15 +98,42 @@ public class ComponentMaskManager {
 
             // Compute mask if still absent
             componentMask = new BitVector(componentMask);
-            return componentMasks.computeIfAbsent(componentMask, mask -> createComponentMask(mask, componentDataFromObjects(components)));
+            return componentMasks.computeIfAbsent(componentMask, mask -> createComponentMask(mask, componentsFromObjects(components)));
         });
     }
 
-    private Component[] componentDataFromObjects(Object[] components) {
+    /**
+     * Creates a bitmask for the given components and uses that to lookup or create
+     * a unique {@link ComponentMask} for that mask.
+     * 
+     * @param components components
+     * @return unique {@link ComponentMask}
+     */
+    public ComponentMask getComponentMask(Component<?>... components) {
+        return pool.withInstance(componentMask -> {
+            // Build component bitmask
+            for (int i = 0, s = components.length; i < s; i++) {
+                var componentId = components[i].id();
+                componentMask.set(componentId);
+            }
+
+            // Lookup cached mask
+            var result = componentMasks.get(componentMask);
+            if (result != null) {
+                return result;
+            }
+
+            // Compute mask if still absent
+            componentMask = new BitVector(componentMask);
+            return componentMasks.computeIfAbsent(componentMask, mask -> createComponentMask(mask, components));
+        });
+    }
+
+    private Component<?>[] componentsFromObjects(Object[] components) {
         // deduplicate using set
-        var result = HashSet.<Component>newHashSet(components.length);
+        var result = HashSet.<Component<?>>newHashSet(components.length);
         for (int i = 0, s = components.length; i < s; i++) {
-            var metadata = componentManager.getData(components[i].getClass());
+            var metadata = componentManager.getComponent(components[i].getClass());
             result.add(metadata);
         }
 
@@ -117,7 +144,7 @@ public class ComponentMaskManager {
         return result.toArray(Component[]::new);
     }
 
-    private ComponentMask createComponentMask(BitVector componentMask, Component[] components) {
+    private ComponentMask createComponentMask(BitVector componentMask, Component<?>[] components) {
         var lookup = bagManager.createComponentIntBag();
         componentMask.iterate(componentId -> lookup.set(componentId, 1));
 
@@ -138,7 +165,7 @@ public class ComponentMaskManager {
      * @param componentId
      * @return new component mask
      */
-    public ComponentMask addComponent(ComponentMask componentMask, Component metadata) {
+    public ComponentMask addComponent(ComponentMask componentMask, Component<?> metadata) {
         // Return this if unchanged
         var componentId = metadata.id();
         if (componentMask.contains(componentId)) {
@@ -182,7 +209,7 @@ public class ComponentMaskManager {
      * @param componentId
      * @return new component mask
      */
-    public ComponentMask removeComponent(ComponentMask componentMask, Component metadata) {
+    public ComponentMask removeComponent(ComponentMask componentMask, Component<?> metadata) {
         var componentId = metadata.id();
         if (!componentMask.contains(componentId)) {
             return componentMask;

@@ -17,11 +17,11 @@ import de.schosin.ecs.engine.utils.collections.Pool;
 import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 
 /**
- * Manages {@link ComponentData component data} for every component class
+ * Manages {@link Component component data} for every component class
  * encountered. 
  * 
  * <p>
- * Each new component class is assigned an {@link ComponentData#id}
+ * Each new component class is assigned an {@link Component#id}
  * that is used in several places, including as an index into a Bags,
  * or for optimizing modifications in {@link ComponentMaskManager}.
  * </p>
@@ -34,8 +34,8 @@ public class ComponentManager {
     private final IdManager idManager;
     private final Classes classes;
 
-    private final Bag<Component> byId = new Bag<>(Component.class, 64);
-    private final Map<Class<?>, ComponentDataImpl<?>> byClass = new ConcurrentHashMap<>();
+    private final Bag<Component<?>> byId = new Bag<>(Component.class, 64);
+    private final Map<Class<?>, ComponentData<?>> byClass = new ConcurrentHashMap<>();
 
     public ComponentManager(BagManager bagManager, IdManager idManager, Classes classes) {
         this.bagManager = bagManager;
@@ -43,16 +43,16 @@ public class ComponentManager {
         this.classes = classes;
     }
 
-    public Component getData(int componentId) {
+    public Component<?> getComponent(int componentId) {
         return byId.get(componentId);
     }
 
-    public <T> ComponentData<T> getData(Class<T> clazz) {
-        return getData(clazz, bagManager.getEntitySize());
+    public <T> Component<T> getComponent(Class<T> clazz) {
+        return getData(clazz);
     }
 
     @SuppressWarnings("unchecked")
-    public <T> ComponentData<T> getData(Class<T> clazz, int bagSize) {
+    private <T> ComponentData<T> getData(Class<T> clazz) {
         var result = (ComponentData<T>) byClass.get(clazz);
         if (result != null) {
             return result;
@@ -64,7 +64,7 @@ public class ComponentManager {
             }
 
             classes.components().add(clazz);
-            return (ComponentData<T>) byClass.computeIfAbsent(clazz, ignore -> createMetadata(clazz, bagSize));
+            return (ComponentData<T>) byClass.computeIfAbsent(clazz, ignore -> createMetadata(clazz, bagManager.getEntitySize()));
         }
     }
 
@@ -118,20 +118,20 @@ public class ComponentManager {
 
     public void removed(int entityId, ComponentMask componentMask) {
         for (var data : componentMask.getComponents()) {
-            ((ComponentDataImpl<?>) data).removeComponent(entityId);
+            data.removeComponent(entityId);
         }
     }
 
     public void fillVector(BitVector vector, Class<?>... components) {
         for (int i = 0, s = components.length; i < s; i++) {
-            var componentId = getData(components[i]).id();
+            var componentId = getComponent(components[i]).id();
             vector.set(componentId);
         }
     }
 
     // public api
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public Collection<ComponentData<?>> getComponents() {
+    public Collection<Component<?>> getComponents() {
         return (Collection) this.byClass.values();
     }
 

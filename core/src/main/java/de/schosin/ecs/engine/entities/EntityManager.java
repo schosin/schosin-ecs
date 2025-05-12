@@ -5,7 +5,7 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.IdManager;
 import de.schosin.ecs.engine.IdManager.Id.EntityId;
-import de.schosin.ecs.engine.components.ComponentData;
+import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -53,7 +53,7 @@ public class EntityManager {
         var entity = createEntity(componentMask);
 
         for (var component : components) {
-            var metadata = (ComponentData) componentManager.getData(component.getClass());
+            var metadata = (Component) componentManager.getComponent(component.getClass());
             metadata.addComponentUnsafe(entity.id, component);
         }
 
@@ -71,11 +71,11 @@ public class EntityManager {
      * 
      * @param componentMask component mask for the entities
      * @param data component data for the entities (outer array for components, inner array for entities) 
-     * @param lookup lookup for {@link ComponentData} matching the index of the outer array of data (component index)
+     * @param lookup lookup for {@link Component} matching the index of the outer array of data (component index)
      * @return array of entity ids
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public int[] createEntities(ComponentMask componentMask, Object[][] data, ComponentData[] lookup) {
+    public int[] createEntities(ComponentMask componentMask, Object[][] data, Component<?>[] lookup) {
         var componentSize = data.length;
         var count = data[0].length;
 
@@ -95,7 +95,7 @@ public class EntityManager {
 
             for (int i = 0; i < count; i++) {
                 var entityId = entityIds[i];
-                metadata.addComponent(entityId, components[i]);
+                ((Component) metadata).addComponent(entityId, components[i]);
             }
         }
 

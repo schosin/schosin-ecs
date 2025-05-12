@@ -18,7 +18,7 @@ import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.ChangeManager.EntityInsertedHandler;
 import de.schosin.ecs.engine.ChangeManager.EntityRemovedHandler;
 import de.schosin.ecs.engine.ChangeManager.EntityUpdatedHandler;
-import de.schosin.ecs.engine.components.ComponentData;
+import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
@@ -225,8 +225,8 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
-        protected <T> ComponentData<T> getComponent(Class<T> clazz) {
-            return componentManager.getData(clazz);
+        protected <T> Component<T> getComponent(Class<T> clazz) {
+            return componentManager.getComponent(clazz);
         }
 
         @SuppressWarnings("unchecked")
@@ -411,11 +411,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         protected final BaseCompositionImpl composition;
 
-        private final ComponentData<?>[] components;
+        private final Component<?>[] components;
 
         protected AbstractCompositionN(BaseCompositionImpl composition, Class<?>... components) {
             this.composition = composition;
-            this.components = new ComponentData<?>[components.length];
+            this.components = new Component<?>[components.length];
             for (int i = 0, s = components.length; i < s; i++) {
                 this.components[i] = composition.getComponent(components[i]);
             }

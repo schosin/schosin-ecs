@@ -5,23 +5,14 @@ import java.util.Objects;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.engine.IdManager.Id.ComponentId;
+import de.schosin.ecs.engine.components.Component.PooledComponent;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
 
-public sealed interface ComponentData<T> extends Component {
+sealed interface ComponentData<T> extends Component<T>, PooledComponent<T> {
 
     Class<T> clazz();
-
-    T getComponent(int entityId);
-
-    default void addComponent(int entityId, @NonNull T component) {
-        addComponentUnsafe(entityId, Objects.requireNonNull(component, "component cannot be null"));
-    }
-
-    void addComponentUnsafe(int entityId, @NonNull T component);
-
-    T getInstance();
 
 }
 

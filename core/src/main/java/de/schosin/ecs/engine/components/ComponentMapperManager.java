@@ -30,7 +30,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> Components<T> getComponents(Class<T> clazz) {
-        var metadata = componentManager.getData(clazz);
+        var metadata = (ComponentData<T>) componentManager.getComponent(clazz);
 
         var result = this.components.get(metadata.id());
         if (result != null) {
@@ -79,7 +79,7 @@ public class ComponentMapperManager implements Components.Creator {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Pooled> PooledComponents<T> getPooledComponents(Class<T> clazz) {
-        var metadata = componentManager.getData(clazz);
+        var metadata = (ComponentData<T>) componentManager.getComponent(clazz);
 
         var result = (PooledComponents<T>) this.components.get(metadata.id());
         if (result != null) {

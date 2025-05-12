@@ -7,6 +7,7 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.Component;
+import de.schosin.ecs.engine.components.Component.PooledComponent;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
@@ -59,13 +60,15 @@ public class TransmuterManager extends BaseTransmuterManager implements Transmut
             this.manager = manager;
         }
 
-        private static Component[] convert(TransmuterManager manager, Set<Class<?>> classes) {
-            return classes.stream().map(manager.componentManager::getData).toArray(Component[]::new);
+        private static Component<?>[] convert(TransmuterManager manager, Set<Class<?>> classes) {
+            return classes.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public <T extends Pooled> T getInstance(Class<T> clazz) {
-            return manager.componentManager.getData(clazz).getInstance();
+            var component = (PooledComponent<T>) manager.componentManager.getComponent(clazz);
+            return component.getInstance();
         }
 
     }

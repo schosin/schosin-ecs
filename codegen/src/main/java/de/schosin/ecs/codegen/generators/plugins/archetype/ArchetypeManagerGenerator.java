@@ -259,11 +259,12 @@ public class ArchetypeManagerGenerator {
         private static MethodSpec getComponent() {
             return MethodSpec.methodBuilder("get")
                     .addAnnotation(Override.class)
+                    .addAnnotation(Utils.SUPPRESS_UNCHECKED)
                     .addModifiers(Modifier.PUBLIC)
                     .addTypeVariable(Utils.T)
                     .returns(Utils.T)
-                    .addParameter(Utils.clazz(Utils.T), "component")
-                    .addStatement("var component = ($1T<T>) componentManager.getData(component)", POOLED_COMPONENT)
+                    .addParameter(Utils.clazz(Utils.T), "clazz")
+                    .addStatement("var component = ($1T<T>) componentManager.getComponent(clazz)", POOLED_COMPONENT)
                     .addStatement("return component.getInstance()")
                     .build();
         }

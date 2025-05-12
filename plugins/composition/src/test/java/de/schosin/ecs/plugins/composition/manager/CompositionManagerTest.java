@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.PooledComponents;
-import de.schosin.ecs.engine.components.ComponentData;
+import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.utils.collections.Bag;
@@ -46,8 +46,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         this.compositionManager = world.getSingleton(CompositionManager.class);
 
-        this.component1Id = componentManager.getData(C1.class).id();
-        this.C2Id = componentManager.getData(C2.class).id();
+        this.component1Id = componentManager.getComponent(C1.class).id();
+        this.C2Id = componentManager.getComponent(C2.class).id();
     }
 
     @Test
@@ -2915,7 +2915,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         var lookup = new IntBag(64);
         mask.iterate(componentId -> lookup.set(componentId, 1));
 
-        return new ComponentMask(MASK_ID.getAndIncrement(), mask, new ComponentData<?>[0], lookup, new Bag<>(ComponentMask.class), new Bag<>(ComponentMask.class));
+        return new ComponentMask(MASK_ID.getAndIncrement(), mask, new Component<?>[0], lookup, new Bag<>(ComponentMask.class), new Bag<>(ComponentMask.class));
     }
 
     private record C1() {

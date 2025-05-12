@@ -71,7 +71,7 @@ public abstract class AbstractSpecManager implements Spec.SpecCreator {
 
         var vector = new BitVector(classes.size());
         for (var clazz : classes) {
-            var componentId = componentManager.getData(clazz).id();
+            var componentId = componentManager.getComponent(clazz).id();
             vector.set(componentId);
         }
 

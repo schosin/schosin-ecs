@@ -72,31 +72,31 @@ class ComponentManagerTest extends AbstractWorldTest {
     @ParameterizedTest
     @EnumSource(value = TypeTest.class, names = "valid_.+", mode = Mode.MATCH_ALL)
     void testValid(TypeTest test) {
-        assertThatCode(() -> componentManager.getData(test.component)).doesNotThrowAnyException();
+        assertThatCode(() -> componentManager.getComponent(test.component)).doesNotThrowAnyException();
     }
 
     @ParameterizedTest
     @EnumSource(value = TypeTest.class, names = "valid_.+", mode = Mode.MATCH_NONE)
     void testInvalid(TypeTest test) {
-        assertThatThrownBy(() -> componentManager.getData(test.component))
+        assertThatThrownBy(() -> componentManager.getComponent(test.component))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(test.component.getSimpleName(), "Invalid component", "Allowed types");
     }
 
     @Test
     void testExtendedComponent_ParentFirst() {
-        componentManager.getData(ValidClass.class);
+        componentManager.getComponent(ValidClass.class);
 
-        assertThatThrownBy(() -> componentManager.getData(ExtendedClass.class))
+        assertThatThrownBy(() -> componentManager.getComponent(ExtendedClass.class))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll("Extending ", "not supported", ValidClass.class.getSimpleName(), ExtendedClass.class.getSimpleName());
     }
 
     @Test
     void testExtendedComponent_ParentSecond() {
-        componentManager.getData(ExtendedClass.class);
+        componentManager.getComponent(ExtendedClass.class);
 
-        assertThatThrownBy(() -> componentManager.getData(ValidClass.class))
+        assertThatThrownBy(() -> componentManager.getComponent(ValidClass.class))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll("Extending ", "not supported", ValidClass.class.getSimpleName(), ExtendedClass.class.getSimpleName());
     }

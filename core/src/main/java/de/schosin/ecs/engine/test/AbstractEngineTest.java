@@ -43,7 +43,7 @@ public abstract class AbstractEngineTest {
     }
 
     protected <T> T getComponent(int entityId, Class<T> clazz) {
-        return componentManager.getData(clazz).getComponent(entityId);
+        return componentManager.getComponent(clazz).getComponent(entityId);
     }
 
     protected <T> T verifyHasComponent(int entityId, Class<T> clazz) {
@@ -60,7 +60,7 @@ public abstract class AbstractEngineTest {
     }
 
     protected void verifyDoesNotHaveComponent(int entityId, Class<?> clazz) {
-        var components = componentManager.getData(clazz);
+        var components = componentManager.getComponent(clazz);
         assertThat(components.hasComponent(entityId)).as("does not have %s", clazz.getSimpleName()).isFalse();
     }
 
@@ -74,7 +74,7 @@ public abstract class AbstractEngineTest {
         var componentMask = entityManager.getComponentMask(entityId);
 
         for (var clazz : classes) {
-            var component = componentManager.getData(clazz);
+            var component = componentManager.getComponent(clazz);
             assertThat(componentMask.getComponents()).as("has %s", clazz.getSimpleName()).contains(component);
         }
     }
@@ -83,7 +83,7 @@ public abstract class AbstractEngineTest {
         var componentMask = entityManager.getComponentMask(entityId);
 
         for (var clazz : classes) {
-            var component = componentManager.getData(clazz);
+            var component = componentManager.getComponent(clazz);
             assertThat(componentMask.getComponents()).as("does not have %s", clazz.getSimpleName()).doesNotContain(component);
         }
     }
@@ -140,7 +140,7 @@ public abstract class AbstractEngineTest {
 
         @Override
         public Verify expectInserted(Class<?>... classes) {
-            var components = Arrays.stream(classes).map(componentManager::getData).map(Component.class::cast).collect(Collectors.toSet());
+            var components = Arrays.stream(classes).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
 
             this.inserted.add(new Inserted(components));
             return this;
@@ -154,7 +154,7 @@ public abstract class AbstractEngineTest {
 
         @Override
         public Verify expectUpdated(int entityId, Class<?>... classes) {
-            var components = Arrays.stream(classes).map(componentManager::getData).map(Component.class::cast).collect(Collectors.toSet());
+            var components = Arrays.stream(classes).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
 
             this.updated.add(new Updated(entityId, components));
             return this;
@@ -290,11 +290,11 @@ public abstract class AbstractEngineTest {
             softly.assertAll();
         }
 
-        private static Set<Component> set(ComponentMask componentMask) {
+        private static Set<Component<?>> set(ComponentMask componentMask) {
             return Arrays.stream(componentMask.getComponents()).collect(Collectors.toSet());
         }
 
-        private static String components(Set<Component> components) {
+        private static String components(Set<Component<?>> components) {
             if (components.isEmpty()) {
                 return "<no components>";
             }
@@ -302,10 +302,10 @@ public abstract class AbstractEngineTest {
             return components.stream().map(Component::display).collect(Collectors.joining(", "));
         }
 
-        private record Inserted(Set<Component> components) {
+        private record Inserted(Set<Component<?>> components) {
         }
 
-        private record Updated(int entityId, Set<Component> components) {
+        private record Updated(int entityId, Set<Component<?>> components) {
         }
 
         private record Removed(int entityId) {

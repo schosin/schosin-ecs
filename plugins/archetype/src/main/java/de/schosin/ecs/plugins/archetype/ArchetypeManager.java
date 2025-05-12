@@ -7,7 +7,8 @@ import java.util.stream.Stream;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.codegen.EcsCodegen;
-import de.schosin.ecs.engine.components.ComponentData;
+import de.schosin.ecs.engine.components.Component;
+import de.schosin.ecs.engine.components.Component.PooledComponent;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -26,7 +27,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
     public ArchetypeManager(World world) {
         world.addSingleton(this);
-        
+
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
@@ -43,7 +44,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         private final ComponentMask componentMask;
 
         private final Object[] fixed;
-        private final ComponentData<?>[] dataLookup;
+        private final Component<?>[] dataLookup;
 
         protected AbstractArchetypeImpl(BaseArchetypeManager manager, Object[] fixed, AbstractArchetypeImpl parent) {
             this.manager = (ArchetypeManager) manager;
@@ -51,8 +52,8 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             validateNoPooledComponents(fixed);
 
             // Create components from parent, validate no duplicates
-            var components = Stream.concat(Arrays.stream(parent.dataLookup).map(ComponentData::clazz), Arrays.stream(fixed).map(Object::getClass))
-                    .toArray(Class<?>[]::new);
+            var components = Stream.concat(Arrays.stream(parent.dataLookup), Arrays.stream(fixed).map(Object::getClass).map(this.manager.componentManager::getComponent))
+                    .toArray(Component<?>[]::new);
 
             validateNoDuplicateComponents(components);
 
@@ -60,9 +61,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             this.componentMask = this.manager.componentMaskManager.getComponentMask(components);
 
             this.fixed = parent.fixed != null ? ArrayUtils.concat(Object.class, parent.fixed, fixed) : fixed;
-            this.dataLookup = Arrays.stream(components)
-                    .map(this.manager.componentManager::getData)
-                    .toArray(ComponentData[]::new);
+            this.dataLookup = Arrays.stream(components).toArray(Component<?>[]::new);
         }
 
         private void validateNoPooledComponents(Object[] components) {
@@ -82,8 +81,19 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             this.fixed = null;
             this.dataLookup = Arrays.stream(components)
-                    .map(this.manager.componentManager::getData)
-                    .toArray(ComponentData[]::new);
+                    .map(this.manager.componentManager::getComponent)
+                    .toArray(Component<?>[]::new);
+        }
+
+        private void validateNoDuplicateComponents(Component<?>[] components) {
+            var set = new HashSet<Component<?>>(components.length);
+            for (var component : components) {
+                if (set.contains(component)) {
+                    throw new IllegalArgumentException("Component '%s' already defined, cannot add duplicates.".formatted(component.display()));
+                }
+
+                set.add(component);
+            }
         }
 
         private void validateNoDuplicateComponents(Class<?>[] components) {
@@ -98,8 +108,10 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public <T extends Pooled> T getInstance(Class<T> clazz) {
-            return manager.componentManager.getData(clazz).getInstance();
+            var component = (PooledComponent<T>) manager.componentManager.getComponent(clazz);
+            return component.getInstance();
         }
 
         protected final int createEntity(Object... components) {
