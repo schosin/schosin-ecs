@@ -14,14 +14,15 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.SoftAssertions;
 
-import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.ChangeManager.EntityInsertedHandler;
-import de.schosin.ecs.engine.ChangeManager.EntityRemovedHandler;
-import de.schosin.ecs.engine.ChangeManager.EntityUpdatedHandler;
 import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 
 /**
  * Abstract class providing assertions for testing engine functionality.
@@ -34,12 +35,12 @@ public abstract class AbstractEngineTest {
 
     protected ComponentManager componentManager;
     protected EntityManager entityManager;
-    protected ChangeManager changeManager;
+    protected EventManager eventManager;
 
-    protected final void initializeEngineTest(ComponentManager componentManager, EntityManager entityManager, ChangeManager changeManager) {
+    protected final void initializeEngineTest(ComponentManager componentManager, EntityManager entityManager, EventManager eventManager) {
         this.componentManager = componentManager;
         this.entityManager = entityManager;
-        this.changeManager = changeManager;
+        this.eventManager = eventManager;
     }
 
     protected <T> T getComponent(int entityId, Class<T> clazz) {
@@ -96,7 +97,7 @@ public abstract class AbstractEngineTest {
     }
 
     protected Verify createVerify() {
-        return new VerifyImpl(componentManager, changeManager);
+        return new VerifyImpl(componentManager, eventManager);
     }
 
     public interface Verify extends AutoCloseable {
@@ -125,17 +126,18 @@ public abstract class AbstractEngineTest {
             List<Inserted> inserted, AtomicBoolean noMoreInserted, List<Updated> unexpectedInserted,
             List<Updated> updated, AtomicBoolean noMoreUpdated, List<Updated> unexpectedUpdated,
             List<Removed> removed, AtomicBoolean noMoreRemoved, List<Updated> unexpectedRemoved)
-            implements Verify, EntityInsertedHandler, EntityUpdatedHandler, EntityRemovedHandler {
+            implements Verify {
 
-        private VerifyImpl(ComponentManager componentManager, ChangeManager changeManager) {
+        private VerifyImpl(ComponentManager componentManager, EventManager eventManager) {
             this(new SoftAssertions(), componentManager,
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>(),
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>(),
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>());
 
-            changeManager.registerInserted(this);
-            changeManager.registerUpdated(this);
-            changeManager.registerRemoved(this);
+            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.componentMask()));
+            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.componentMask()));
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.componentMask()));
+            eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.componentMask()));
         }
 
         @Override
@@ -178,8 +180,13 @@ public abstract class AbstractEngineTest {
             return this;
         }
 
-        @Override
-        public void handleInserted(int entityId, ComponentMask componentMask) {
+        private void handleInserted(int[] entityIds, ComponentMask componentMask) {
+            for (var entityId : entityIds) {
+                handleInserted(entityId, componentMask);
+            }
+        }
+
+        private void handleInserted(int entityId, ComponentMask componentMask) {
             var mask = componentMask.getMask();
             expected: for (var iter = inserted.iterator(); iter.hasNext();) {
                 var expected = iter.next();
@@ -197,8 +204,7 @@ public abstract class AbstractEngineTest {
             unexpectedInserted.add(new Updated(entityId, set(componentMask)));
         }
 
-        @Override
-        public void handleUpdated(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
+        private void handleUpdated(int entityId, ComponentMask componentMask) {
             for (var iter = updated.iterator(); iter.hasNext();) {
                 var expected = iter.next();
 
@@ -234,8 +240,7 @@ public abstract class AbstractEngineTest {
             unexpectedUpdated.add(new Updated(entityId, set(componentMask)));
         }
 
-        @Override
-        public void handleRemoved(int entityId, ComponentMask componentMask) {
+        private void handleRemoved(int entityId, ComponentMask componentMask) {
             for (var iter = removed.iterator(); iter.hasNext();) {
                 var expected = iter.next();
 

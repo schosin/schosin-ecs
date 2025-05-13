@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.codegen.EcsCodegen;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 import de.schosin.ecs.plugins.transmuter.Transmuter.Remove;
@@ -247,9 +250,9 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyComponentMaskHasComponents(entityId, C1.class);
 
             var changed = new ArrayList<Integer>();
-            changeManager.registerInserted((id, mask) -> changed.add(id));
-            changeManager.registerUpdated((id, prevMask, mask) -> changed.add(id));
-            changeManager.registerRemoved((id, mask) -> changed.add(id));
+            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> changed.add(event.entityId()));
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> changed.add(event.entityId()));
+            eventManager.registerEventHandler(EntityRemovedEvent.class, event -> changed.add(event.entityId()));
 
             remove1.apply(entityId);
 
@@ -305,11 +308,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             var updated = new IntBag(1);
-            changeManager.registerUpdated((id, prevMask, mask) -> {
-                assertThat(prevMask.getComponents()).isEmpty();
-                assertThat(mask.getComponents()).containsExactly(componentManager.getComponent(C1.class));
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                assertThat(event.previousComponentMask().getComponents()).isEmpty();
+                assertThat(event.componentMask().getComponents()).containsExactly(componentManager.getComponent(C1.class));
 
-                updated.add(id);
+                updated.add(event.entityId());
             });
 
             // Call
@@ -327,7 +330,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             var entityId = world.createEntity(new C1());
 
             var updated = new IntBag(1);
-            changeManager.registerUpdated((id, prevMask, mask) -> updated.add(id));
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
 
             // Call
             add1.apply(entityId, new C1());

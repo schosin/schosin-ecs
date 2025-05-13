@@ -14,15 +14,16 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.ChangeManager.EntityInsertedHandler;
-import de.schosin.ecs.engine.ChangeManager.EntityRemovedHandler;
-import de.schosin.ecs.engine.ChangeManager.EntityUpdatedHandler;
 import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
+import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.IntBag;
@@ -34,7 +35,7 @@ import de.schosin.ecs.plugins.composition.CompositionPlugin;
 import de.schosin.ecs.plugins.composition.Spec;
 
 @EcsCodegen
-public class CompositionManager extends AbstractSpecManager implements CompositionPlugin, EntityInsertedHandler, EntityUpdatedHandler, EntityRemovedHandler {
+public class CompositionManager extends AbstractSpecManager implements CompositionPlugin {
 
     private final BagManager bagManager;
     private final ComponentMaskManager componentMaskManager;
@@ -56,10 +57,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
 
-        var changeManager = world.getSingleton(ChangeManager.class);
-        changeManager.registerInserted(this);
-        changeManager.registerUpdated(this);
-        changeManager.registerRemoved(this);
+        var eventManager = world.getSingleton(EventManager.class);
+        eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.componentMask()));
+        eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.componentMask()));
+        eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.previousComponentMask(), event.componentMask()));
+        eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.componentMask()));
     }
 
     @Override
@@ -94,8 +96,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         return composition;
     }
 
-    @Override
-    public void handleInserted(int entityId, ComponentMask componentMask) {
+    private void handleInserted(int entityId, ComponentMask componentMask) {
         var maskCompositions = getCompositions(componentMask);
 
         var data = maskCompositions.getData();
@@ -107,8 +108,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    @Override
-    public void handleInserted(int[] entityIds, ComponentMask componentMask) {
+    private void handleInserted(int[] entityIds, ComponentMask componentMask) {
         var maskCompositions = getCompositions(componentMask);
 
         var data = maskCompositions.getData();
@@ -122,8 +122,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    @Override
-    public void handleUpdated(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
+    private void handleUpdated(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
         // Remove from previous composition if no longer interested
         var previousCompositions = getCompositions(previousComponentMask);
 
@@ -151,8 +150,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    @Override
-    public void handleRemoved(int entityId, ComponentMask componentMask) {
+    private void handleRemoved(int entityId, ComponentMask componentMask) {
         var maskCompositions = getCompositions(componentMask);
 
         var data = maskCompositions.getData();

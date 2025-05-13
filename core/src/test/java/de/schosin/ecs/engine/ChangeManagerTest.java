@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
 class ChangeManagerTest extends AbstractWorldTest {
@@ -94,18 +96,21 @@ class ChangeManagerTest extends AbstractWorldTest {
                 var entityId = world.createEntity();
                 var updated = new IntBag(1);
 
-                changeManager.registerInserted((id, mask) -> {
-                    if (mask.contains(id1)) {
-                        component2.add(id);
-                    }
-                });
-                changeManager.registerUpdated((id, prevMask, mask) -> {
-                    if (!prevMask.contains(id1) && mask.contains(id1)) {
-                        component2.add(id);
+                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
+                    if (event.componentMask().contains(id1)) {
+                        component2.add(event.entityId());
                     }
                 });
 
-                changeManager.registerUpdated((id, prevMask, mask) -> {
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var mask = event.componentMask();
+                    var prevMask = event.previousComponentMask();
+                    var id = event.entityId();
+
+                    if (!prevMask.contains(id1) && mask.contains(id1)) {
+                        component2.add(id);
+                    }
+
                     if (!prevMask.contains(id2) && mask.contains(id2)) {
                         updated.add(id);
                     }
@@ -126,18 +131,21 @@ class ChangeManagerTest extends AbstractWorldTest {
                 var entityId = world.createEntity();
                 var updated = new IntBag(1);
 
-                changeManager.registerUpdated((id, prevMask, mask) -> {
-                    if (!prevMask.contains(id1) && mask.contains(id1)) {
-                        updated.add(id);
+                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
+                    if (event.componentMask().contains(id2)) {
+                        component1.add(event.entityId());
                     }
                 });
 
-                changeManager.registerInserted((id, mask) -> {
-                    if (mask.contains(id2)) {
-                        component1.add(id);
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var mask = event.componentMask();
+                    var prevMask = event.previousComponentMask();
+                    var id = event.entityId();
+
+                    if (!prevMask.contains(id1) && mask.contains(id1)) {
+                        updated.add(id);
                     }
-                });
-                changeManager.registerUpdated((id, prevMask, mask) -> {
+
                     if (!prevMask.contains(id2) && mask.contains(id2)) {
                         component1.add(id);
                     }
@@ -161,8 +169,8 @@ class ChangeManagerTest extends AbstractWorldTest {
 
                 var mapper = world.getComponents(Resetting.class);
 
-                changeManager.registerUpdated((id, prevMask, mask) -> {
-                    var component = mapper.get(id);
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var component = mapper.get(event.entityId());
                     removed.add(component.data.length());
                 });
 

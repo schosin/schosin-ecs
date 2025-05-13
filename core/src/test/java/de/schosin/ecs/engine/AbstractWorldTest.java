@@ -8,12 +8,14 @@ import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.test.AbstractEngineTest;
 
 public abstract class AbstractWorldTest extends AbstractEngineTest {
 
     protected EngineWorld world;
 
+    protected EventManager eventManager;
     protected SingletonManager singletonManager;
     protected IdManager idManager;
     protected BagManager bagManager;
@@ -28,6 +30,7 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
     final void setupWorld() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         this.world = (EngineWorld) World.builder().build();
 
+        this.eventManager = world.getSingleton(EventManager.class);
         this.singletonManager = world.getSingleton(SingletonManager.class);
         this.bagManager = world.getSingleton(BagManager.class);
         this.idManager = world.getSingleton(IdManager.class);
@@ -38,7 +41,7 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
         this.transmutationManager = world.getSingleton(TransmutationManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
-        initializeEngineTest(componentManager, entityManager, changeManager);
+        initializeEngineTest(componentManager, entityManager, eventManager);
     }
 
     @SuppressWarnings("unchecked")

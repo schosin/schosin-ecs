@@ -7,39 +7,22 @@ import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.engine.utils.collections.Bag;
+import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
 public class ChangeManager {
 
-    public interface EntityInsertedHandler {
-        default void handleInserted(int[] entityIds, ComponentMask componentMask) {
-            for (var entityId : entityIds) {
-                handleInserted(entityId, componentMask);
-            }
-        }
-
-        void handleInserted(int entityId, ComponentMask componentMask);
-    }
-
-    public interface EntityUpdatedHandler {
-        void handleUpdated(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask);
-    }
-
-    public interface EntityRemovedHandler {
-        void handleRemoved(int entityId, ComponentMask componentMask);
-    }
-
     private static final int MAX_PROCESS_REPITITIONS = 10;
 
+    private final EventManager eventManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
-
-    private Bag<EntityInsertedHandler> entityInsertedHandlers;
-    private Bag<EntityUpdatedHandler> entityUpdatedHandlers;
-    private Bag<EntityRemovedHandler> entityRemovedHandlers;
 
     private BitVector deletedEntities;
     private BitVector deletedEntitiesOverflow;
@@ -53,7 +36,8 @@ public class ChangeManager {
     private BitVector removedComponents;
     private BitVector removedComponentsOverflow;
 
-    public ChangeManager(BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, EntityManager entityManager) {
+    public ChangeManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, EntityManager entityManager) {
+        this.eventManager = eventManager;
         this.componentManager = componentManager;
         this.componentMaskManager = componentMaskManager;
         this.entityManager = entityManager;
@@ -71,39 +55,10 @@ public class ChangeManager {
         this.removedComponentsOverflow = new BitVector(64);
     }
 
-    public void registerInserted(EntityInsertedHandler handler) {
-        if (entityInsertedHandlers == null) {
-            this.entityInsertedHandlers = new Bag<>(EntityInsertedHandler.class, 4);
-        }
-
-        this.entityInsertedHandlers.add(handler);
-    }
-
-    public void registerUpdated(EntityUpdatedHandler handler) {
-        if (entityUpdatedHandlers == null) {
-            this.entityUpdatedHandlers = new Bag<>(EntityUpdatedHandler.class, 4);
-        }
-
-        this.entityUpdatedHandlers.add(handler);
-    }
-
-    public void registerRemoved(EntityRemovedHandler handler) {
-        if (entityRemovedHandlers == null) {
-            this.entityRemovedHandlers = new Bag<>(EntityRemovedHandler.class, 4);
-        }
-
-        this.entityRemovedHandlers.add(handler);
-    }
-
     public void inserted(int entityId, ComponentMask componentMask) {
-        if (entityInsertedHandlers == null) {
+        // Dispatch event, return early if no handlers
+        if (!eventManager.dispatchEvent(EntityInsertedEvent.get(entityId, componentMask))) {
             return;
-        }
-
-        // Notify handlers
-        var data = entityInsertedHandlers.getData();
-        for (int i = 0, s = entityInsertedHandlers.getSize(); i < s; i++) {
-            data[i].handleInserted(entityId, componentMask);
         }
 
         // Process composition updates
@@ -111,15 +66,9 @@ public class ChangeManager {
     }
 
     public void inserted(int[] entityIds, ComponentMask componentMask) {
-        if (entityInsertedHandlers == null) {
+        // Dispatch event, skip if no handlers
+        if (!eventManager.dispatchEvent(EntitiesInsertedEvent.get(entityIds, componentMask))) {
             return;
-        }
-
-        // Notify handlers
-        var data = entityInsertedHandlers.getData();
-
-        for (int i = 0, s = entityInsertedHandlers.getSize(); i < s; i++) {
-            data[i].handleInserted(entityIds, componentMask);
         }
 
         // Process composition updates
@@ -267,12 +216,7 @@ public class ChangeManager {
         }
 
         // Notify handlers
-        if (entityRemovedHandlers != null) {
-            var data = entityRemovedHandlers.getData();
-            for (int i = 0, s = entityRemovedHandlers.getSize(); i < s; i++) {
-                data[i].handleRemoved(entityId, componentMask);
-            }
-        }
+        eventManager.dispatchEvent(EntityRemovedEvent.get(entityId, componentMask));
 
         // Delete entity
         entityManager.deleteEntity(entityId);
@@ -293,13 +237,7 @@ public class ChangeManager {
         // Update entity
         var componentMask = componentMaskManager.getComponentMask(componentMaskId);
         if (entityManager.updateComponentMask(entityId, componentMask)) {
-            // Notify handlers
-            if (entityUpdatedHandlers != null) {
-                var data = entityUpdatedHandlers.getData();
-                for (int i = 0, s = entityUpdatedHandlers.getSize(); i < s; i++) {
-                    data[i].handleUpdated(entityId, previousComponentMask, componentMask);
-                }
-            }
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(entityId, previousComponentMask, componentMask));
         }
     }
 

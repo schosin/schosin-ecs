@@ -8,16 +8,15 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.ChangeManager.EntityRemovedHandler;
 import de.schosin.ecs.engine.EngineWorld.Classes;
-import de.schosin.ecs.engine.components.ComponentMask;
+import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.Pool;
 import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 import de.schosin.ecs.plugins.state.State.PooledState;
 
-public class StateManager implements StatePlugin, EntityRemovedHandler {
+public class StateManager implements StatePlugin {
 
     private static final int POOL_LIMIT = 1000000;
 
@@ -33,12 +32,11 @@ public class StateManager implements StatePlugin, EntityRemovedHandler {
         this.bagManager = world.getSingleton(BagManager.class);
         this.classes = world.getSingleton(Classes.class);
 
-        var changeManager = world.getSingleton(ChangeManager.class);
-        changeManager.registerRemoved(this);
+        var eventManager = world.getSingleton(EventManager.class);
+        eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId()));
     }
 
-    @Override
-    public void handleRemoved(int entityId, ComponentMask componentMask) {
+    private void handleRemoved(int entityId) {
         var data = this.states.getData();
         for (int i = 0, s = this.states.getSize(); i < s; i++) {
             data[i].remove(entityId);

@@ -18,6 +18,7 @@ import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.utils.collections.IntBag;
 
 class SingletonManagerTest extends AbstractWorldTest {
@@ -46,17 +47,19 @@ class SingletonManagerTest extends AbstractWorldTest {
         }
 
         static Stream<Arguments> managers() {
+            var eventManager = new EventManager();
             var singletonManager = new SingletonManager(null);
             var bagManager = new BagManager();
             var idManager = new IdManager(bagManager);
             var componentManager = new ComponentManager(bagManager, idManager, null);
             var componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
             var entityManager = new EntityManager(null, idManager, componentManager, componentMaskManager);
-            var changeManager = new ChangeManager(bagManager, componentManager, componentMaskManager, entityManager);
+            var changeManager = new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager);
             var transmutationManager = new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager);
             var componentMapperManager = new ComponentMapperManager(bagManager, componentManager, transmutationManager);
 
             return Stream.of(
+                    Arguments.of(Named.of("eventManager", eventManager)),
                     Arguments.of(Named.of("singletonManager", singletonManager)),
                     Arguments.of(Named.of("bagManager", bagManager)),
                     Arguments.of(Named.of("idManager", idManager)),

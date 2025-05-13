@@ -17,6 +17,9 @@ import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.IntBag;
@@ -939,9 +942,9 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = compositionManager.create(EMPTY, spec -> new IntBag(4));
 
             // Insert entity
-            compositionManager.handleInserted(42, EMPTY_MASK);
-            compositionManager.handleInserted(1337, EMPTY_MASK);
-            compositionManager.handleInserted(9001, EMPTY_MASK);
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, EMPTY_MASK));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, EMPTY_MASK));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, EMPTY_MASK));
 
             // Verify
             var entities = new IntBag(3);
@@ -968,8 +971,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = compositionManager.create(all, spec -> new IntBag(4));
 
             // Insert entity
-            compositionManager.handleInserted(42, mask(components42));
-            compositionManager.handleInserted(1337, mask(components1337));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask(components42)));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask(components1337)));
 
             // Verify
             var entities = new IntBag(1);
@@ -992,9 +995,9 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(inserted.getSize()).as("size").isZero();
 
             // Insert entity
-            compositionManager.handleInserted(42, EMPTY_MASK);
-            compositionManager.handleInserted(1337, EMPTY_MASK);
-            compositionManager.handleInserted(9001, EMPTY_MASK);
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, EMPTY_MASK));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, EMPTY_MASK));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, EMPTY_MASK));
 
             // Verify
             assertThat(inserted.getSize()).as("size").isEqualTo(3);
@@ -1024,9 +1027,9 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(inserted3).isEmpty();
 
             // Insert entity
-            compositionManager.handleInserted(42, EMPTY_MASK);
-            compositionManager.handleInserted(1337, EMPTY_MASK);
-            compositionManager.handleInserted(9001, EMPTY_MASK);
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, EMPTY_MASK));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, EMPTY_MASK));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, EMPTY_MASK));
 
             // Verify
             assertThat(inserted1.getSize()).as("size").isEqualTo(3);
@@ -1061,8 +1064,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(inserted.getSize()).as("size").isZero();
 
             // Insert entity
-            compositionManager.handleInserted(42, mask(components42));
-            compositionManager.handleInserted(1337, mask(components1337));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask(components42)));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask(components1337)));
 
             // Verify
             assertThat(inserted.getSize()).as("size").isEqualTo(1);
@@ -1077,15 +1080,17 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Test
         void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
             var componentMask = componentMaskManager.getComponentMask(C1.class);
+            var event = EntityUpdatedEvent.get(42, null, componentMask);
 
-            assertThatThrownBy(() -> compositionManager.handleUpdated(42, null, componentMask)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void testUpdatedEntities_WhenNullNewComposition_Throws() {
             var componentMask = componentMaskManager.getComponentMask(C1.class);
+            var event = EntityUpdatedEvent.get(42, componentMask, null);
 
-            assertThatThrownBy(() -> compositionManager.handleUpdated(42, componentMask, null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
@@ -1105,14 +1110,14 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var mask1337 = componentMask2;
             var mask9001 = componentMask1;
 
-            compositionManager.handleInserted(42, mask42);
-            compositionManager.handleInserted(1337, mask1337);
-            compositionManager.handleInserted(9001, mask9001);
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask42));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask1337));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, mask9001));
 
-            // Insert entity
-            compositionManager.handleUpdated(42, mask42, componentMask12);
-            compositionManager.handleUpdated(1337, mask1337, componentMask12);
-            compositionManager.handleUpdated(9001, mask9001, componentMask2);
+            // Update entity
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(42, mask42, componentMask12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, mask1337, componentMask12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, mask9001, componentMask2));
 
             // Verify
             composition1.process(entities::add);
@@ -1142,10 +1147,10 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var mask1337 = componentMask2;
             var mask9001 = componentMask12;
 
-            compositionManager.handleInserted(7, mask7);
-            compositionManager.handleInserted(42, mask42);
-            compositionManager.handleInserted(1337, mask1337);
-            compositionManager.handleInserted(9001, mask9001);
+            eventManager.dispatchEvent(EntityInsertedEvent.get(7, mask7));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask42));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask1337));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, mask9001));
 
             var removed1 = new HashSet<Integer>();
             composition1.removed(removed1::add);
@@ -1156,11 +1161,11 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var removed3 = new HashSet<Integer>();
             composition3.removed(removed3::add);
 
-            // Insert entity
-            compositionManager.handleUpdated(7, mask7, componentMask1);
-            compositionManager.handleUpdated(42, mask42, componentMask12);
-            compositionManager.handleUpdated(1337, mask1337, componentMask12);
-            compositionManager.handleUpdated(9001, mask9001, componentMask3);
+            // Update entity
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(7, mask7, componentMask1));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(42, mask42, componentMask12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, mask1337, componentMask12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, mask9001, componentMask3));
 
             // Verify
             assertThat(removed1).containsExactlyInAnyOrder(9001);
@@ -1185,11 +1190,11 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var componentMask = componentMaskManager.getComponentMask(C1.class);
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
-            // Insert entity
-            compositionManager.handleRemoved(42, componentMask);
-            compositionManager.handleRemoved(1337, componentMask);
-            compositionManager.handleRemoved(9001, componentMask);
-            compositionManager.handleRemoved(9002, componentMask);
+            // Remove entity
+            eventManager.dispatchEvent(EntityRemovedEvent.get(42, componentMask));
+            eventManager.dispatchEvent(EntityRemovedEvent.get(1337, componentMask));
+            eventManager.dispatchEvent(EntityRemovedEvent.get(9001, componentMask));
+            eventManager.dispatchEvent(EntityRemovedEvent.get(9002, componentMask));
 
             // Verify
             var entities = new IntBag(4);
@@ -1216,10 +1221,10 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             composition.removed(removed::add);
             assertThat(removed.getSize()).as("size").isZero();
 
-            // Insert entity
-            compositionManager.handleRemoved(42, componentMask);
-            compositionManager.handleRemoved(1337, componentMask);
-            compositionManager.handleRemoved(9001, componentMask);
+            // Remove entity
+            eventManager.dispatchEvent(EntityRemovedEvent.get(42, componentMask));
+            eventManager.dispatchEvent(EntityRemovedEvent.get(1337, componentMask));
+            eventManager.dispatchEvent(EntityRemovedEvent.get(9001, componentMask));
 
             // Verify
             assertThat(removed.getSize()).as("size").isEqualTo(2);
@@ -1252,10 +1257,10 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             composition.removed(removed3::add);
             assertThat(removed3).isEmpty();
 
-            // Insert entity
-            compositionManager.handleRemoved(42, componentMask);
-            compositionManager.handleRemoved(1337, componentMask);
-            compositionManager.handleRemoved(9001, componentMask);
+            // Remove entity
+            eventManager.dispatchEvent(EntityRemovedEvent.get(42, componentMask));
+            eventManager.dispatchEvent(EntityRemovedEvent.get(1337, componentMask));
+            eventManager.dispatchEvent(EntityRemovedEvent.get(9001, componentMask));
 
             // Verify
             assertThat(removed1.getSize()).as("size").isEqualTo(2);

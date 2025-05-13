@@ -12,6 +12,8 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.Component;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 
 class EntityManagerTest extends AbstractWorldTest {
@@ -371,19 +373,20 @@ class EntityManagerTest extends AbstractWorldTest {
         @Test
         void testDeletionDuringCreation() {
             // Setup listeners
-            changeManager.registerInserted((entityId, mask) -> {
-                if (mask.getMask().get(id1)) {
-                    pooled2.add(entityId);
+            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
+                if (event.componentMask().getMask().get(id1)) {
+                    pooled2.add(event.entityId());
                 }
             });
 
-            changeManager.registerUpdated((entityId, prevMask, mask) -> {
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                var mask = event.componentMask();
+                var entityId = event.entityId();
+
                 if (mask.getMask().get(id2)) {
                     pooled3.add(entityId);
                 }
-            });
 
-            changeManager.registerUpdated((entityId, prevMask, mask) -> {
                 if (mask.getMask().get(id3)) {
                     world.deleteEntity(entityId);
                 }
@@ -408,17 +411,19 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                changeManager.registerInserted((entityId, mask) -> {
-                    pooled2.add(entityId);
+                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
+                    pooled2.add(event.entityId());
                 });
 
-                changeManager.registerUpdated((entityId, prevMask, mask) -> {
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var mask = event.componentMask();
+                    var prevMask = event.previousComponentMask();
+                    var entityId = event.entityId();
+
                     if (!prevMask.getMask().get(id2) && mask.getMask().get(id2)) {
                         pooled3.add(entityId);
                     }
-                });
 
-                changeManager.registerUpdated((entityId, prevMask, mask) -> {
                     if (!prevMask.getMask().get(id3) && mask.getMask().get(id3)) {
                         pooled1.remove(entityId);
                     }
@@ -448,17 +453,19 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                changeManager.registerInserted((entityId, mask) -> {
-                    pooled2.add(entityId);
+                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
+                    pooled2.add(event.entityId());
                 });
 
-                changeManager.registerUpdated((entityId, prevMask, mask) -> {
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var mask = event.componentMask();
+                    var prevMask = event.previousComponentMask();
+                    var entityId = event.entityId();
+
                     if (!prevMask.getMask().get(id2) && mask.getMask().get(id2)) {
                         pooled3.add(entityId);
                     }
-                });
 
-                changeManager.registerUpdated((entityId, prevMask, mask) -> {
                     if (!prevMask.getMask().get(id3) && mask.getMask().get(id3)) {
                         pooled1.remove(entityId);
                     }
@@ -488,19 +495,18 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                changeManager.registerUpdated((id, prevMask, mask) -> {
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var mask = event.componentMask();
+                    var prevMask = event.previousComponentMask();
+                    var id = event.entityId();
+                    
                     if (!prevMask.getMask().get(id1) && mask.getMask().get(id1)) {
                         pooled2.add(id);
                     }
-                });
-
-                changeManager.registerUpdated((id, prevMask, mask) -> {
                     if (!prevMask.getMask().get(id2) && mask.getMask().get(id2)) {
                         pooled3.add(id);
                     }
-                });
 
-                changeManager.registerUpdated((id, prevMask, mask) -> {
                     if (!prevMask.getMask().get(id3) && mask.getMask().get(id3)) {
                         pooled1.remove(id);
                     }
@@ -547,17 +553,19 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                changeManager.registerInserted((id, mask) -> {
-                    pooled2.add(id);
+                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
+                    pooled2.add(event.entityId());
                 });
 
-                changeManager.registerUpdated((id, prevMask, mask) -> {
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var mask = event.componentMask();
+                    var prevMask = event.previousComponentMask();
+                    var id = event.entityId();
+
                     if (!prevMask.getMask().get(id2) && mask.getMask().get(id2)) {
                         pooled3.add(id);
                     }
-                });
 
-                changeManager.registerUpdated((id, prevMask, mask) -> {
                     if (!prevMask.getMask().get(id3) && mask.getMask().get(id3)) {
                         pooled1.remove(id);
                     }

@@ -16,6 +16,7 @@ import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.events.EventManager;
 
 public class EngineWorld implements World {
 
@@ -30,6 +31,7 @@ public class EngineWorld implements World {
 
     private final Config config;
 
+    private final EventManager eventManager;
     private final SingletonManager singletonManager;
     private final BagManager bagManager;
     private final IdManager idManager;
@@ -47,12 +49,13 @@ public class EngineWorld implements World {
 
         var classes = addSingleton(new Classes(ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet()));
 
+        this.eventManager = addSingleton(new EventManager());
         this.bagManager = addSingleton(new BagManager());
         this.idManager = addSingleton(new IdManager(bagManager));
         this.componentManager = addSingleton(new ComponentManager(bagManager, idManager, classes));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
         this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
-        this.changeManager = addSingleton(new ChangeManager(bagManager, componentManager, componentMaskManager, entityManager));
+        this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
         this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, transmutationManager));
 
