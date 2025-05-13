@@ -15,6 +15,7 @@
         <module>archetype</module>
         <module>transmuter</module>
         <module>composition</module>
+        <module>events</module>
     </modules>
   
 </project>

@@ -48,6 +48,11 @@
                 <artifactId>composition</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs.plugins</groupId>
+                <artifactId>events</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             
             <dependency>
                 <groupId>de.schosin.ecs</groupId>
