@@ -28,6 +28,7 @@
             <groupId>com.google.auto.service</groupId>
             <artifactId>auto-service</artifactId>
             <version>${autoservice.version}</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
     

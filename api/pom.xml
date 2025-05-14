@@ -11,12 +11,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>de.schosin.ecs</groupId>
-            <artifactId>codegen</artifactId>
-            <optional>true</optional>
-        </dependency>
-    
-        <dependency>
             <groupId>org.jspecify</groupId>
             <artifactId>jspecify</artifactId>
         </dependency>
