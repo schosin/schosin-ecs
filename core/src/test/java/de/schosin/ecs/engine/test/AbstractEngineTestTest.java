@@ -11,6 +11,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import com.sun.jdi.ClassType;
+
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.AbstractWorldTest;
@@ -39,16 +41,16 @@ class AbstractEngineTestTest {
         void testHasComponent() {
             var entityId = world.createEntity(new C1());
 
-            assertThatCode(() -> verifyHasComponent(entityId, C1.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyHasComponents(entityId, C1.class)).doesNotThrowAnyException();
         }
 
         @Test
         void testHasComponent_WhenNotPresent_Throws() {
             var entityId = world.createEntity();
 
-            assertThatThrownBy(() -> verifyHasComponent(entityId, C1.class))
+            assertThatThrownBy(() -> verifyHasComponents(entityId, C1.class))
                     .isInstanceOf(AssertionError.class)
-                    .hasMessageContaining("has C1");
+                    .message().containsSubsequence("entity has", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
         @Test
@@ -64,25 +66,34 @@ class AbstractEngineTestTest {
         void testHasComponents_WhenNotPresent_Throws() {
             var entityId = world.createEntity();
 
-            assertThatThrownBy(() -> verifyHasComponents(entityId, C1.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C1");
-            assertThatThrownBy(() -> verifyHasComponents(entityId, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C2");
-            assertThatThrownBy(() -> verifyHasComponents(entityId, C1.class, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C1");
+            assertThatThrownBy(() -> verifyHasComponents(entityId, C1.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("entity has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyHasComponents(entityId, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("entity has ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyHasComponents(entityId, C1.class, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("entity has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+
         }
 
         @Test
         void testDoesNotHaveComponent() {
             var entityId = world.createEntity();
 
-            assertThatCode(() -> verifyDoesNotHaveComponent(entityId, C1.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyDoesNotHaveComponents(entityId, C1.class)).doesNotThrowAnyException();
         }
 
         @Test
         void testDoesNotHaveComponent_WhenPresent_Throws() {
             var entityId = world.createEntity(new C1());
 
-            assertThatThrownBy(() -> verifyDoesNotHaveComponent(entityId, C1.class))
+            assertThatThrownBy(() -> verifyDoesNotHaveComponents(entityId, C1.class))
                     .isInstanceOf(AssertionError.class)
-                    .hasMessageContaining("does not have C1");
+                    .message().containsSubsequence("entity does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
         @Test
@@ -98,9 +109,17 @@ class AbstractEngineTestTest {
         void testDoesNotHaveComponents_WhenPresent_Throws() {
             var entityId = world.createEntity(new C1(), new C2());
 
-            assertThatThrownBy(() -> verifyDoesNotHaveComponents(entityId, C1.class)).isInstanceOf(AssertionError.class).hasMessageContaining("does not have C1");
-            assertThatThrownBy(() -> verifyDoesNotHaveComponents(entityId, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("does not have C2");
-            assertThatThrownBy(() -> verifyDoesNotHaveComponents(entityId, C1.class, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("does not have C1");
+            assertThatThrownBy(() -> verifyDoesNotHaveComponents(entityId, C1.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("entity does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyDoesNotHaveComponents(entityId, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("entity does not have ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyDoesNotHaveComponents(entityId, C1.class, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("entity does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
     }
@@ -133,18 +152,34 @@ class AbstractEngineTestTest {
             mapper1.add(entityId);
             mapper2.add(entityId);
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C1");
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C2");
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C1");
+            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
         @Test
         void testComponentMaskHasComponents_WhenNotPresent_Throws() {
             var entityId = world.createEntity();
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C1");
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C2");
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("has C1");
+            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
         @Test
@@ -172,9 +207,17 @@ class AbstractEngineTestTest {
         void testComponentMaskDoesNotHaveComponents_WhenPresent_Throws() {
             var entityId = world.createEntity(new C1(), new C2());
 
-            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class)).isInstanceOf(AssertionError.class).hasMessageContaining("does not have C1");
-            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("does not have C2");
-            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class)).isInstanceOf(AssertionError.class).hasMessageContaining("does not have C1");
+            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask does not have ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+
+            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class))
+                    .isInstanceOf(AssertionError.class)
+                    .message().containsSubsequence("component mask does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
     }

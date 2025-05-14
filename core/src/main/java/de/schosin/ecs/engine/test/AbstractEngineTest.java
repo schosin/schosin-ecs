@@ -14,6 +14,9 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.SoftAssertions;
 
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
@@ -43,49 +46,61 @@ public abstract class AbstractEngineTest {
         this.eventManager = eventManager;
     }
 
-    protected <T> T getComponent(int entityId, Class<T> clazz) {
-        return componentManager.getComponent(clazz).getComponent(entityId);
+    protected <T> ClassType<T> component(Class<T> clazz) {
+        return ComponentType.component(clazz);
     }
 
-    protected <T> T verifyHasComponent(int entityId, Class<T> clazz) {
-        var component = getComponent(entityId, clazz);
-        assertThat(component).as("has %s", clazz.getSimpleName()).isNotNull();
+    protected <T> T getComponent(int entityId, Class<T> clazz) {
+        return getComponent(entityId, ComponentType.component(clazz));
+    }
 
-        return component;
+    protected <T> T getComponent(int entityId, RegularComponentType<T> type) {
+        return componentManager.getComponent(type).getComponent(entityId);
     }
 
     protected void verifyHasComponents(int entityId, Class<?>... classes) {
-        for (var clazz : classes) {
-            verifyHasComponent(entityId, clazz);
+        verifyHasComponents(entityId, convert(classes));
+    }
+
+    protected void verifyHasComponents(int entityId, RegularComponentType<?>... types) {
+        for (var type : types) {
+            assertThat(getComponent(entityId, type)).as("entity has %s", type).isNotNull();
         }
     }
 
-    protected void verifyDoesNotHaveComponent(int entityId, Class<?> clazz) {
-        var components = componentManager.getComponent(clazz);
-        assertThat(components.hasComponent(entityId)).as("does not have %s", clazz.getSimpleName()).isFalse();
+    protected void verifyDoesNotHaveComponents(int entityId, Class<?>... classes) {
+        verifyDoesNotHaveComponents(entityId, convert(classes));
     }
 
-    protected void verifyDoesNotHaveComponents(int entityId, Class<?>... classes) {
-        for (var clazz : classes) {
-            verifyDoesNotHaveComponent(entityId, clazz);
+    protected void verifyDoesNotHaveComponents(int entityId, RegularComponentType<?>... types) {
+        for (var type : types) {
+            assertThat(getComponent(entityId, type)).as("entity does not have %s", type).isNull();
         }
     }
 
     protected void verifyComponentMaskHasComponents(int entityId, Class<?>... classes) {
+        verifyComponentMaskHasComponents(entityId, convert(classes));
+    }
+
+    protected void verifyComponentMaskHasComponents(int entityId, RegularComponentType<?>... types) {
         var componentMask = entityManager.getComponentMask(entityId);
 
-        for (var clazz : classes) {
-            var component = componentManager.getComponent(clazz);
-            assertThat(componentMask.getComponents()).as("has %s", clazz.getSimpleName()).contains(component);
+        for (var type : types) {
+            var component = componentManager.getComponent(type);
+            assertThat(componentMask.getComponents()).as("component mask has %s", type).contains(component);
         }
     }
 
     protected void verifyComponentMaskDoesNotHaveComponents(int entityId, Class<?>... classes) {
+        verifyComponentMaskDoesNotHaveComponents(entityId, convert(classes));
+    }
+
+    protected void verifyComponentMaskDoesNotHaveComponents(int entityId, RegularComponentType<?>... types) {
         var componentMask = entityManager.getComponentMask(entityId);
 
-        for (var clazz : classes) {
-            var component = componentManager.getComponent(clazz);
-            assertThat(componentMask.getComponents()).as("does not have %s", clazz.getSimpleName()).doesNotContain(component);
+        for (var type : types) {
+            var component = componentManager.getComponent(type);
+            assertThat(componentMask.getComponents()).as("component mask does not have %s", type).doesNotContain(component);
         }
     }
 
@@ -102,15 +117,25 @@ public abstract class AbstractEngineTest {
 
     public interface Verify extends AutoCloseable {
 
-        Verify expectInserted(Class<?>... components);
+        Verify expectInserted(Class<?>... classes);
+
+        Verify expectInserted(RegularComponentType<?>... types);
 
         Verify expectNoMoreInserted();
 
-        default Verify expectUpdated(Class<?>... components) {
-            return expectUpdated(-1, components);
+        default Verify expectUpdated(Class<?>... classes) {
+            return expectUpdated(-1, classes);
         }
 
-        Verify expectUpdated(int entityId, Class<?>... components);
+        default Verify expectUpdated(RegularComponentType<?>... types) {
+            return expectUpdated(-1, types);
+        }
+
+        Verify expectUpdated(int entityId);
+
+        Verify expectUpdated(int entityId, Class<?>... classes);
+
+        Verify expectUpdated(int entityId, RegularComponentType<?>... types);
 
         Verify expectNoMoreUpdated();
 
@@ -142,7 +167,12 @@ public abstract class AbstractEngineTest {
 
         @Override
         public Verify expectInserted(Class<?>... classes) {
-            var components = Arrays.stream(classes).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
+            return expectInserted(convert(classes));
+        }
+
+        @Override
+        public Verify expectInserted(RegularComponentType<?>... types) {
+            var components = Arrays.stream(types).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
 
             this.inserted.add(new Inserted(components));
             return this;
@@ -155,8 +185,19 @@ public abstract class AbstractEngineTest {
         }
 
         @Override
+        public Verify expectUpdated(int entityId) {
+            this.updated.add(new Updated(entityId, Set.of()));
+            return this;
+        }
+
+        @Override
         public Verify expectUpdated(int entityId, Class<?>... classes) {
-            var components = Arrays.stream(classes).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
+            return expectUpdated(entityId, convert(classes));
+        }
+
+        @Override
+        public Verify expectUpdated(int entityId, RegularComponentType<?>... types) {
+            var components = Arrays.stream(types).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
 
             this.updated.add(new Updated(entityId, components));
             return this;
@@ -316,6 +357,10 @@ public abstract class AbstractEngineTest {
         private record Removed(int entityId) {
         }
 
+    }
+
+    private static RegularComponentType<?>[] convert(Class<?>... classes) {
+        return Arrays.stream(classes).map(ComponentType::component).toArray(RegularComponentType<?>[]::new);
     }
 
 }

@@ -3,12 +3,14 @@ package de.schosin.ecs.engine.components;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 
+import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.utils.ClassUtils;
 import de.schosin.ecs.engine.utils.ClassUtils.ClassType;
@@ -21,7 +23,6 @@ class ComponentManagerTest extends AbstractWorldTest {
         valid_record(ValidRecord.class),
         valid_enum(ValidEnum.class),
 
-        invalid_generic_class(InvalidGenericClass.class),
         invalid_abstract(InvalidAbstractClass.class),
         invalid_interface(InvalidInterface.class),
         invalid_annotation(InvalidAnnotation.class),
@@ -48,10 +49,10 @@ class ComponentManagerTest extends AbstractWorldTest {
         invalid_double_wrapper(Double.class),
         invalid_String(String.class);
 
-        private final Class<?> component;
+        private final ComponentType.ClassType<?> component;
 
         private TypeTest(Class<?> component) {
-            this.component = component;
+            this.component = ComponentType.component(component);
         }
 
     }
@@ -59,8 +60,10 @@ class ComponentManagerTest extends AbstractWorldTest {
     @ParameterizedTest
     @EnumSource(ClassType.class)
     void verityTypeTest(ClassType type) {
+        assumeThat(type).as("not possible due to type system").isNotIn(ClassType.GENERIC);
+
         for (var test : TypeTest.values()) {
-            var testType = ClassUtils.detectType(test.component);
+            var testType = ClassUtils.detectType(test.component.clazz());
             if (testType == type) {
                 return;
             }
@@ -80,23 +83,23 @@ class ComponentManagerTest extends AbstractWorldTest {
     void testInvalid(TypeTest test) {
         assertThatThrownBy(() -> componentManager.getComponent(test.component))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll(test.component.getSimpleName(), "Invalid component", "Allowed types");
+                .hasMessageContainingAll(test.component.clazz().getSimpleName(), "Invalid component", "Allowed types");
     }
 
     @Test
     void testExtendedComponent_ParentFirst() {
-        componentManager.getComponent(ValidClass.class);
+        componentManager.getComponent(component(ValidClass.class));
 
-        assertThatThrownBy(() -> componentManager.getComponent(ExtendedClass.class))
+        assertThatThrownBy(() -> componentManager.getComponent(component(ExtendedClass.class)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll("Extending ", "not supported", ValidClass.class.getSimpleName(), ExtendedClass.class.getSimpleName());
     }
 
     @Test
     void testExtendedComponent_ParentSecond() {
-        componentManager.getComponent(ExtendedClass.class);
+        componentManager.getComponent(component(ExtendedClass.class));
 
-        assertThatThrownBy(() -> componentManager.getComponent(ValidClass.class))
+        assertThatThrownBy(() -> componentManager.getComponent(component(ValidClass.class)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContainingAll("Extending ", "not supported", ValidClass.class.getSimpleName(), ExtendedClass.class.getSimpleName());
     }
@@ -108,10 +111,6 @@ class ComponentManagerTest extends AbstractWorldTest {
     }
 
     public static class ExtendedClass extends ValidClass {
-    }
-
-    @SuppressWarnings("unused")
-    public static class InvalidGenericClass<T> {
     }
 
     public static abstract class InvalidAbstractClass {

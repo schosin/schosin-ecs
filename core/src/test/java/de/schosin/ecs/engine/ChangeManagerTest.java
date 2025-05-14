@@ -25,8 +25,8 @@ class ChangeManagerTest extends AbstractWorldTest {
         this.component1 = world.getPooledComponents(C1.class);
         this.component2 = world.getPooledComponents(C2.class);
 
-        this.id1 = componentManager.getComponent(C1.class).id();
-        this.id2 = componentManager.getComponent(C2.class).id();
+        this.id1 = componentManager.getComponent(component(C1.class)).id();
+        this.id2 = componentManager.getComponent(component(C2.class)).id();
     }
 
     @Nested

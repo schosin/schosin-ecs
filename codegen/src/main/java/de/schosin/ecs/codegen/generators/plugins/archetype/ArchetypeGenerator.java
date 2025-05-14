@@ -2,6 +2,7 @@ package de.schosin.ecs.codegen.generators.plugins.archetype;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -10,6 +11,7 @@ import javax.lang.model.element.TypeElement;
 
 import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
+import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.ParameterSpec;
@@ -36,128 +38,158 @@ public class ArchetypeGenerator {
                 .addTypes(buildTypes(maxParams));
 
         return JavaFile.builder(className.packageName(), interfaceBuilder.build())
+                .addStaticImport(Utils.ARRAY_UTILS, "concat")
+                .addStaticImport(Utils.COMPONENT_TYPE, "component")
                 .skipJavaLangImports(true)
                 .indent(Utils.INDENT)
                 .build();
     }
 
     private static Iterable<TypeSpec> buildTypes(int maxParams) {
-        var archetypes = IntStream.range(1, maxParams + 1).mapToObj(idx -> buildArchetypeX(idx)).toList();
+        var archetypes = IntStream.range(1, maxParams + 1).mapToObj(idx -> OfN.buildArchetypeX(idx)).toList();
 
         var types = new ArrayList<TypeSpec>(maxParams + 2);
         types.addAll(archetypes);
-        types.add(buildArchetypeN(maxParams));
-        types.add(buildCreator(maxParams));
-        types.add(buildInitialize());
+        types.add(OfN.buildArchetypeN(maxParams));
+        types.add(Creator.buildCreator(maxParams));
+        types.add(Initialize.buildInitialize());
 
         return types;
     }
 
-    private static TypeSpec buildArchetypeX(int n) {
-        var name = OF_PREFIX + n;
+    private static class OfN {
 
-        var typeVariables = Utils.generateTypeVariables("T", n);
-        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
-        var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(typeVariables.get(idx - 1), "component" + idx).build()).toList();
+        private static TypeSpec buildArchetypeX(int n) {
+            var name = OF_PREFIX + n;
 
-        var self = ParameterizedTypeName.get(ClassName.get("", name), typeVariablesArray);
-
-        var init = buildInit(typeVariables, parameters, false);
-
-        var with = buildWith(self);
-        var create = buildCreate(parameters, false);
-        var createBatch = createBatch(typeVariablesArray);
-
-        return TypeSpec.interfaceBuilder(name)
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addSuperinterface(ARCHETYPE)
-                .addTypeVariables(typeVariables)
-                .addType(init)
-                .addMethods(List.of(with, create, createBatch))
-                .build();
-    }
-
-    private static TypeSpec buildArchetypeN(int maxParams) {
-        var name = OF_PREFIX + "N";
-
-        var typeVariables = Utils.generateTypeVariables("T", maxParams);
-        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
-
-        var varargs = ParameterSpec.builder(Object[].class, "components").build();
-
-        var parameters = IntStream.range(1, maxParams + 1).mapToObj(idx -> ParameterSpec.builder(typeVariables.get(idx - 1), "component" + idx).build()).collect(Collectors.toList());
-        parameters.add(varargs);
-
-        var self = ParameterizedTypeName.get(ClassName.get("", name), typeVariablesArray);
-
-        var init = buildInit(typeVariables, parameters, true);
-
-        var with = buildWith(self);
-        var create = buildCreate(parameters, true);
-        var createBatch = createBatch(typeVariablesArray);
-
-        return TypeSpec.interfaceBuilder(name)
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addSuperinterface(ARCHETYPE)
-                .addTypeVariables(typeVariables)
-                .addType(init)
-                .addMethods(List.of(with, create, createBatch))
-                .build();
-    }
-
-    private static TypeSpec buildInit(List<TypeVariableName> typeVariables, List<ParameterSpec> parameters, boolean varargs) {
-        var initialize = MethodSpec.methodBuilder("initialize")
-                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addParameters(parameters).varargs(varargs)
-                .build();
-
-        return TypeSpec.interfaceBuilder("Init")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addSuperinterface(ARCHETYPE.nestedClass("Initialize").nestedClass("Init"))
-                .addTypeVariables(typeVariables)
-                .addMethods(List.of(initialize))
-                .build();
-    }
-
-    private static MethodSpec buildWith(TypeName self) {
-        return MethodSpec.methodBuilder("with")
-                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addAnnotation(Override.class)
-                .addParameter(Object[].class, "components").varargs()
-                .returns(self)
-                .build();
-    }
-
-    private static MethodSpec buildCreate(List<ParameterSpec> parameters, boolean varargs) {
-        return MethodSpec.methodBuilder("create")
-                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addParameters(parameters).varargs(varargs)
-                .returns(TypeName.INT)
-                .build();
-    }
-
-    private static MethodSpec createBatch(TypeVariableName[] typeVariablesArray) {
-        var parameterizedInit = ParameterizedTypeName.get(ClassName.get("", "Init"), typeVariablesArray);
-        var parameterizedInitialize = ParameterizedTypeName.get(ClassName.get("", "Initialize"), parameterizedInit);
-
-        return MethodSpec.methodBuilder("createBatch")
-                .addJavadoc(Javadoc.CREATE_BATCH)
-                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addParameter(TypeName.INT, "count")
-                .addParameter(parameterizedInitialize, "init")
-                .returns(ArrayTypeName.get(int[].class))
-                .build();
-    }
-
-    private static TypeSpec buildCreator(int maxParams) {
-        var interfaceBuilder = TypeSpec.interfaceBuilder("Creator")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC);
-
-        for (int i = 1; i <= maxParams + 1; i++) {
-            var types = Math.min(i, maxParams);
-
-            var typeVariables = Utils.generateTypeVariables("T", types);
+            var typeVariables = Utils.generateTypeVariables("T", n);
             var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(typeVariables.get(idx - 1), "component" + idx).build()).toList();
+
+            var self = ParameterizedTypeName.get(ClassName.get("", name), typeVariablesArray);
+
+            var init = buildInit(typeVariables, parameters, false);
+
+            var with = buildWith(self);
+            var create = buildCreate(parameters, false);
+            var createBatch = createBatch(typeVariablesArray);
+
+            return TypeSpec.interfaceBuilder(name)
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addSuperinterface(ARCHETYPE)
+                    .addTypeVariables(typeVariables)
+                    .addType(init)
+                    .addMethods(List.of(with, create, createBatch))
+                    .build();
+        }
+
+        private static TypeSpec buildArchetypeN(int maxParams) {
+            var name = OF_PREFIX + "N";
+
+            var typeVariables = Utils.generateTypeVariables("T", maxParams);
+            var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+
+            var varargs = ParameterSpec.builder(Object[].class, "components").build();
+
+            var parameters = IntStream.range(1, maxParams + 1).mapToObj(idx -> ParameterSpec.builder(typeVariables.get(idx - 1), "component" + idx).build()).collect(Collectors.toList());
+            parameters.add(varargs);
+
+            var self = ParameterizedTypeName.get(ClassName.get("", name), typeVariablesArray);
+
+            var init = buildInit(typeVariables, parameters, true);
+
+            var with = buildWith(self);
+            var create = buildCreate(parameters, true);
+            var createBatch = createBatch(typeVariablesArray);
+
+            return TypeSpec.interfaceBuilder(name)
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addSuperinterface(ARCHETYPE)
+                    .addTypeVariables(typeVariables)
+                    .addType(init)
+                    .addMethods(List.of(with, create, createBatch))
+                    .build();
+        }
+
+        private static TypeSpec buildInit(List<TypeVariableName> typeVariables, List<ParameterSpec> parameters, boolean varargs) {
+            var initialize = MethodSpec.methodBuilder("initialize")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addParameters(parameters).varargs(varargs)
+                    .build();
+
+            return TypeSpec.interfaceBuilder("Init")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addSuperinterface(ARCHETYPE.nestedClass("Initialize").nestedClass("Init"))
+                    .addTypeVariables(typeVariables)
+                    .addMethods(List.of(initialize))
+                    .build();
+        }
+
+        private static MethodSpec buildWith(TypeName self) {
+            return MethodSpec.methodBuilder("with")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addAnnotation(Override.class)
+                    .addParameter(Object[].class, "components").varargs()
+                    .returns(self)
+                    .build();
+        }
+
+        private static MethodSpec buildCreate(List<ParameterSpec> parameters, boolean varargs) {
+            return MethodSpec.methodBuilder("create")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addParameters(parameters).varargs(varargs)
+                    .returns(TypeName.INT)
+                    .build();
+        }
+
+        private static MethodSpec createBatch(TypeVariableName[] typeVariablesArray) {
+            var parameterizedInit = ParameterizedTypeName.get(ClassName.get("", "Init"), typeVariablesArray);
+            var parameterizedInitialize = ParameterizedTypeName.get(ClassName.get("", "Initialize"), parameterizedInit);
+
+            return MethodSpec.methodBuilder("createBatch")
+                    .addJavadoc(Javadoc.CREATE_BATCH)
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addParameter(TypeName.INT, "count")
+                    .addParameter(parameterizedInitialize, "init")
+                    .returns(ArrayTypeName.get(int[].class))
+                    .build();
+        }
+
+    }
+
+    private static class Creator {
+
+        private static TypeSpec buildCreator(int maxParams) {
+            var methods = new ArrayList<MethodSpec>(2 * maxParams);
+
+            for (int i = 1; i <= maxParams + 1; i++) {
+                var types = Math.min(i, maxParams);
+
+                var typeVariables = Utils.generateTypeVariables("T", types);
+                var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+
+                methods.add(createArchetypeClass(i, maxParams, types, typeVariables, typeVariablesArray));
+                methods.add(createArchetypeComponentType(i, maxParams, types, typeVariables, typeVariablesArray));
+            }
+
+            methods.add(Utils.CONVERT_REGULAR_COMPONENT_TYPE);
+
+            return TypeSpec.interfaceBuilder("Creator")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addMethods(methods)
+                    .build();
+        }
+
+        private static MethodSpec createArchetypeClass(int i, int maxParams, int types, List<TypeVariableName> typeVariables, TypeVariableName[] typeVariablesArray) {
+            return createArchetype(i, maxParams, types, typeVariables, typeVariablesArray, Utils::clazz, Utils.WILDCARD_CLASS_ARRAY, true);
+        }
+
+        private static MethodSpec createArchetypeComponentType(int i, int maxParams, int types, List<TypeVariableName> typeVariables, TypeVariableName[] typeVariablesArray) {
+            return createArchetype(i, maxParams, types, typeVariables, typeVariablesArray, Utils::regularComponentType, Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, false);
+        }
+
+        private static MethodSpec createArchetype(int i, int maxParams, int types, List<TypeVariableName> typeVariables, TypeVariableName[] typeVariablesArray,
+                Function<TypeName, ParameterizedTypeName> type, ArrayTypeName varargsType, boolean defaultImpl) {
 
             var returnType = i <= maxParams
                     ? ParameterizedTypeName.get(ClassName.get("", OF_PREFIX + i), typeVariablesArray)
@@ -165,63 +197,92 @@ public class ArchetypeGenerator {
 
             var methodBuilder = MethodSpec.methodBuilder("createArchetype")
                     .addJavadoc(Javadoc.CREATE_ARCHETYPE)
-                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addModifiers(Modifier.PUBLIC)
                     .addTypeVariables(typeVariables)
                     .returns(returnType);
 
             for (int j = 1; j < types + 1; j++) {
                 var typeVariable = typeVariables.get(j - 1);
-                var type = Utils.clazz(typeVariable);
+                var parameterType = type.apply(typeVariable);
 
-                var param = ParameterSpec.builder(type, "component" + j)
+                var param = ParameterSpec.builder(parameterType, "component" + j)
                         .build();
 
                 methodBuilder.addParameter(param);
             }
 
             if (i == maxParams + 1) {
-                var varargs = ParameterSpec.builder(Utils.WILDCARD_CLASS_ARRAY, "components").build();
+                var varargs = ParameterSpec.builder(varargsType, "components").build();
                 methodBuilder.addParameter(varargs).varargs();
             }
 
-            interfaceBuilder.addMethod(methodBuilder.build());
+            if (defaultImpl) {
+                methodBuilder.addModifiers(Modifier.DEFAULT);
+
+                var body = CodeBlock.builder();
+
+                body.add("return createArchetype(");
+
+                for (int j = 1; j < types + 1; j++) {
+                    if (j > 1) {
+                        body.add(", ");
+                    }
+                    body.add("component(component%s)".formatted(j));
+                }
+
+                if (i == maxParams + 1) {
+                    body.add(", convert(components)");
+                }
+
+                body.addStatement(")");
+
+                methodBuilder.addCode(body.build());
+            } else {
+                methodBuilder.addModifiers(Modifier.ABSTRACT);
+            }
+
+            return methodBuilder.build();
         }
 
-        return interfaceBuilder.build();
     }
 
-    private static TypeSpec buildInitialize() {
-        var typeT = TypeVariableName.get("T");
+    private static class Initialize {
 
-        var init = TypeSpec.interfaceBuilder("Init")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addMethod(buildGet("get"))
-                .build();
+        private static TypeSpec buildInitialize() {
+            var typeT = TypeVariableName.get("T");
 
-        var initialize = MethodSpec.methodBuilder("initialize")
-                .addJavadoc(Javadoc.INITIALIZE)
-                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addParameter(TypeName.INT, "index")
-                .addParameter(typeT, "init")
-                .build();
+            var init = TypeSpec.interfaceBuilder("Init")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addMethod(buildGet("get"))
+                    .build();
 
-        return TypeSpec.interfaceBuilder("Initialize")
-                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                .addTypeVariable(typeT)
-                .addType(init)
-                .addMethod(initialize)
-                .build();
-    }
+            var initialize = MethodSpec.methodBuilder("initialize")
+                    .addJavadoc(Javadoc.INITIALIZE)
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addParameter(TypeName.INT, "index")
+                    .addParameter(typeT, "init")
+                    .build();
 
-    static MethodSpec buildGet(String name) {
-        var classT = Utils.clazz(Utils.T);
+            return TypeSpec.interfaceBuilder("Initialize")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addTypeVariable(typeT)
+                    .addType(init)
+                    .addMethod(initialize)
+                    .build();
+        }
 
-        return MethodSpec.methodBuilder(name)
-                .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                .addTypeVariable(Utils.T)
-                .addParameter(classT, "component")
-                .returns(Utils.T)
-                .build();
+        static MethodSpec buildGet(String name) {
+            var pooledType = TypeVariableName.get("T", Utils.POOLED);
+            var classT = Utils.clazz(Utils.T);
+
+            return MethodSpec.methodBuilder(name)
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addTypeVariable(pooledType)
+                    .addParameter(classT, "component")
+                    .returns(Utils.T)
+                    .build();
+        }
+
     }
 
     private static class Javadoc {

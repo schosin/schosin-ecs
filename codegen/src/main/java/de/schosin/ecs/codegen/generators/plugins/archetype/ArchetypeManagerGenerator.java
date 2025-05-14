@@ -27,7 +27,6 @@ public class ArchetypeManagerGenerator {
     private static final ClassName ARCHETYPE_CREATOR = ARCHETYPE.nestedClass("Creator");
 
     private static final ClassName ARCHETYPE_MANAGER = ClassName.get("de.schosin.ecs.plugins.archetype", "ArchetypeManager");
-    private static final ClassName COMPONENT_MANAGER = ClassName.get("de.schosin.ecs.engine.components", "ComponentManager");
 
     public static JavaFile generateFile(TypeElement type, int maxParams) {
         System.out.println("Process ArchetypeManager with %d parameters: %s".formatted(maxParams, type));
@@ -80,11 +79,11 @@ public class ArchetypeManagerGenerator {
             var archetypeOf = ARCHETYPE.nestedClass(ArchetypeGenerator.OF_PREFIX + suffix);
             var parameterizedArchetypeOf = ParameterizedTypeName.get(archetypeOf, typeVariablesArray);
 
-            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(Utils.clazz(typeVariables.get(idx - 1)), "component" + idx).build()).collect(Collectors.toList());
+            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build()).collect(Collectors.toList());
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
 
             if (varargs) {
-                parameters.add(ParameterSpec.builder(Utils.WILDCARD_CLASS_ARRAY, "components").build());
+                parameters.add(ParameterSpec.builder(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").build());
                 parameterNames = parameterNames + ", components";
             }
 
@@ -110,18 +109,25 @@ public class ArchetypeManagerGenerator {
             var archetypeOf = ARCHETYPE.nestedClass(ArchetypeGenerator.OF_PREFIX + suffix);
             var parameterizedArchetypeOf = ParameterizedTypeName.get(archetypeOf, typeVariablesArray);
 
-            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(Utils.clazz(typeVariables.get(idx - 1)), "component" + idx).build()).collect(Collectors.toList());
+            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build()).collect(Collectors.toList());
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
 
             if (varargs) {
-                parameters.add(ParameterSpec.builder(Utils.WILDCARD_CLASS_ARRAY, "components").build());
-                parameterNames = "concat(Class.class, new Class<?>[] { %s }, components)".formatted(parameterNames.toString());
+                parameters.add(ParameterSpec.builder(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").build());
+                parameterNames = "concat($1T.class, new $1T<?>[] { %s }, components)".formatted(parameterNames.toString());
+            }
+
+            var constructorBody = CodeBlock.builder();
+            if (varargs) {
+                constructorBody.addStatement("super(manager, %s)".formatted(parameterNames), Utils.REGULAR_COMPONENT_TYPE);
+            } else {
+                constructorBody.addStatement("super(manager, %s)".formatted(parameterNames));
             }
 
             var constructor = MethodSpec.constructorBuilder()
                     .addParameter(NAME, "manager")
                     .addParameters(parameters).varargs(varargs)
-                    .addStatement("super(manager, %s)".formatted(parameterNames))
+                    .addCode(constructorBody.build())
                     .build();
 
             var parentParameterized = ParameterizedTypeName.get(name, typeVariablesArray);
@@ -129,7 +135,7 @@ public class ArchetypeManagerGenerator {
                     .addParameter(NAME, "manager")
                     .addParameter(Object[].class, "fixed")
                     .addParameter(parentParameterized, "parent")
-                    .addStatement("super(manager, fixed, parent)".formatted(parameterNames))
+                    .addStatement("super(manager, fixed, parent)")
                     .build();
 
             return TypeSpec.classBuilder(name)
@@ -205,7 +211,7 @@ public class ArchetypeManagerGenerator {
     private static class Initialize {
 
         private static final ClassName INITIALIZE = ClassName.get("", "InitializeImpl");
-        private static final ClassName POOLED_COMPONENT = ClassName.get("de.schosin.ecs.engine.components", "Component").nestedClass("PooledComponent");
+        private static final ClassName ABSTRACT_INIT_IMPL = ARCHETYPE_MANAGER.nestedClass("AbstractInitImpl");
 
         public static TypeSpec create(int maxParams) {
             var superinterfaces = IntStream.range(1, maxParams + 1)
@@ -219,24 +225,23 @@ public class ArchetypeManagerGenerator {
                     .build();
 
             var constructor = MethodSpec.constructorBuilder()
-                    .addParameter(COMPONENT_MANAGER, "componentManager")
-                    .addStatement("this.componentManager = componentManager")
+                    .addParameter(ARCHETYPE_MANAGER, "manager")
+                    .addStatement("super(manager)")
                     .build();
 
             return TypeSpec.classBuilder(INITIALIZE)
                     .addAnnotation(Utils.SUPPRESS_RAWTYPES)
                     .addModifiers(Modifier.STATIC, Modifier.FINAL)
+                    .superclass(ABSTRACT_INIT_IMPL)
                     .addSuperinterface(Utils.POOLED)
                     .addSuperinterfaces(superinterfaces)
                     .addSuperinterface(superinterfaceN)
-                    .addField(COMPONENT_MANAGER, "componentManager", Modifier.PRIVATE, Modifier.FINAL)
                     .addField(componentsField)
                     .addField(TypeName.INT, "size", Modifier.PROTECTED)
                     .addField(TypeName.INT, "added", Modifier.PROTECTED)
                     .addField(TypeName.BOOLEAN, "valid", Modifier.PROTECTED)
                     .addMethod(constructor)
                     .addMethod(reset())
-                    .addMethod(getComponent())
                     .addMethods(initializeMethods(maxParams))
                     .build();
         }
@@ -253,19 +258,6 @@ public class ArchetypeManagerGenerator {
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
                     .addCode(body)
-                    .build();
-        }
-
-        private static MethodSpec getComponent() {
-            return MethodSpec.methodBuilder("get")
-                    .addAnnotation(Override.class)
-                    .addAnnotation(Utils.SUPPRESS_UNCHECKED)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addTypeVariable(Utils.T)
-                    .returns(Utils.T)
-                    .addParameter(Utils.clazz(Utils.T), "clazz")
-                    .addStatement("var component = ($1T<T>) componentManager.getComponent(clazz)", POOLED_COMPONENT)
-                    .addStatement("return component.getInstance()")
                     .build();
         }
 

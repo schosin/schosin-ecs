@@ -2,14 +2,18 @@ package de.schosin.ecs.plugins.archetype;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.Component;
-import de.schosin.ecs.engine.components.Component.PooledComponent;
 import de.schosin.ecs.engine.components.ComponentManager;
+import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
@@ -22,7 +26,9 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
+    private final ComponentMapperManager componentMapperManager;
 
+    private final Map<Class<?>, PooledComponents<?>> mappers = new ConcurrentHashMap<>();
     private final Pool<InitializeImpl> initializePool = Pool.unbounded(InitializeImpl.class, this::createInitialize);
 
     public ArchetypeManager(World world) {
@@ -31,10 +37,28 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
+        this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
     }
 
     private InitializeImpl createInitialize() {
-        return new InitializeImpl(componentManager);
+        return new InitializeImpl(this);
+    }
+
+    static abstract class AbstractInitImpl implements Archetype.Initialize.Init {
+
+        private final ArchetypeManager manager;
+
+        protected AbstractInitImpl(ArchetypeManager manager) {
+            this.manager = manager;
+        }
+
+        @Override
+        public <T extends Pooled> T get(Class<T> component) {
+            var mapper = manager.mappers.computeIfAbsent(component, key -> manager.componentMapperManager.getPooledComponents(component));
+
+            return component.cast(mapper.getInstance());
+        }
+
     }
 
     static abstract class AbstractArchetypeImpl implements Archetype {
@@ -51,17 +75,13 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             validateNoPooledComponents(fixed);
 
-            // Create components from parent, validate no duplicates
-            var components = Stream.concat(Arrays.stream(parent.dataLookup), Arrays.stream(fixed).map(Object::getClass).map(this.manager.componentManager::getComponent))
+            this.dataLookup = Stream.concat(Arrays.stream(parent.dataLookup), Arrays.stream(fixed).map(this.manager.componentManager::getComponent))
                     .toArray(Component<?>[]::new);
 
-            validateNoDuplicateComponents(components);
-
-            // Set fields
-            this.componentMask = this.manager.componentMaskManager.getComponentMask(components);
+            validateNoDuplicateComponents(this.dataLookup);
 
             this.fixed = parent.fixed != null ? ArrayUtils.concat(Object.class, parent.fixed, fixed) : fixed;
-            this.dataLookup = Arrays.stream(components).toArray(Component<?>[]::new);
+            this.componentMask = this.manager.componentMaskManager.getComponentMask(this.dataLookup);
         }
 
         private void validateNoPooledComponents(Object[] components) {
@@ -72,17 +92,17 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             }
         }
 
-        protected AbstractArchetypeImpl(BaseArchetypeManager manager, Class<?>... components) {
+        protected AbstractArchetypeImpl(BaseArchetypeManager manager, RegularComponentType<?>... components) {
             this.manager = (ArchetypeManager) manager;
 
-            validateNoDuplicateComponents(components);
-
-            this.componentMask = this.manager.componentMaskManager.getComponentMask(components);
-
-            this.fixed = null;
             this.dataLookup = Arrays.stream(components)
                     .map(this.manager.componentManager::getComponent)
                     .toArray(Component<?>[]::new);
+
+            validateNoDuplicateComponents(this.dataLookup);
+
+            this.fixed = null;
+            this.componentMask = this.manager.componentMaskManager.getComponentMask(this.dataLookup);
         }
 
         private void validateNoDuplicateComponents(Component<?>[] components) {
@@ -96,22 +116,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             }
         }
 
-        private void validateNoDuplicateComponents(Class<?>[] components) {
-            var set = new HashSet<Class<?>>(components.length);
-            for (var component : components) {
-                if (set.contains(component)) {
-                    throw new IllegalArgumentException("Component '%s' already defined, cannot add duplicates.".formatted(component.getSimpleName()));
-                }
-
-                set.add(component);
-            }
-        }
-
         @Override
-        @SuppressWarnings("unchecked")
         public <T extends Pooled> T getInstance(Class<T> clazz) {
-            var component = (PooledComponent<T>) manager.componentManager.getComponent(clazz);
-            return component.getInstance();
+            var mapper = manager.mappers.computeIfAbsent(clazz, key -> manager.componentMapperManager.getPooledComponents(clazz));
+
+            return clazz.cast(mapper.getInstance());
         }
 
         protected final int createEntity(Object... components) {

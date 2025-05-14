@@ -53,7 +53,7 @@ public class EntityManager {
         var entity = createEntity(componentMask);
 
         for (var component : components) {
-            var metadata = (Component) componentManager.getComponent(component.getClass());
+            var metadata = (Component) componentManager.getComponent(component);
             metadata.addComponentUnsafe(entity.id, component);
         }
 

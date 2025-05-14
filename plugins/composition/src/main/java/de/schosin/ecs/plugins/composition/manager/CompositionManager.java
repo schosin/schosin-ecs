@@ -12,6 +12,7 @@ import java.util.stream.StreamSupport;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.Component;
@@ -199,7 +200,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         private final Map<BitVector, Composition.Of<?>> retrieves = new ConcurrentHashMap<>();
 
-        private CompositionImpl(@NonNull EngineSpec spec, @NonNull IntBag entities, @NonNull IntBag lookup) {
+        private CompositionImpl(EngineSpec spec, IntBag entities, IntBag lookup) {
             this.spec = spec;
 
             this.entities = entities;
@@ -214,7 +215,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
-        protected <T extends Composition.Of<?>> T retrieve(Supplier<T> constructor, Class<?>... components) {
+        protected <T extends Composition.Of<?>> T retrieve(Supplier<T> constructor, RegularComponentType<?>... components) {
             return bitVectorPool.withInstance(vector -> {
                 componentManager.fillVector(vector, components);
 
@@ -223,8 +224,8 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
-        protected <T> Component<T> getComponent(Class<T> clazz) {
-            return componentManager.getComponent(clazz);
+        protected Component<?> getComponent(RegularComponentType<?> type) {
+            return componentManager.getComponent(type);
         }
 
         @SuppressWarnings("unchecked")
@@ -411,7 +412,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         private final Component<?>[] components;
 
-        protected AbstractCompositionN(BaseCompositionImpl composition, Class<?>... components) {
+        protected AbstractCompositionN(BaseCompositionImpl composition, RegularComponentType<?>... components) {
             this.composition = composition;
             this.components = new Component<?>[components.length];
             for (int i = 0, s = components.length; i < s; i++) {

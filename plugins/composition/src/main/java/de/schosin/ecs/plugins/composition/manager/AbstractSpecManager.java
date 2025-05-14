@@ -5,11 +5,11 @@ import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.plugins.composition.Composition;
-import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.Spec;
 
 public abstract class AbstractSpecManager implements Spec.SpecCreator {
@@ -23,7 +23,7 @@ public abstract class AbstractSpecManager implements Spec.SpecCreator {
     }
 
     @Override
-    public final Spec createSpec(Builder builder) {
+    public final Spec createSpec(Composition.Builder builder) {
         var spec = buildSpec(builder);
 
         return new SpecImpl(spec);
@@ -63,17 +63,14 @@ public abstract class AbstractSpecManager implements Spec.SpecCreator {
     }
 
     private BitVector buildComponents(Composition.Group group) {
-        var classes = group.classes();
+        var components = group.components();
 
-        if (classes.isEmpty()) {
+        if (components.isEmpty()) {
             return null;
         }
 
-        var vector = new BitVector(classes.size());
-        for (var clazz : classes) {
-            var componentId = componentManager.getComponent(clazz).id();
-            vector.set(componentId);
-        }
+        var vector = new BitVector(components.size());
+        componentManager.fillVector(vector, components.toArray(RegularComponentType<?>[]::new));
 
         return vector;
     }

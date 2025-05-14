@@ -5,6 +5,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.collections.Bag;
@@ -12,15 +13,17 @@ import de.schosin.ecs.engine.utils.collections.Bag;
 public class TransmutationManager {
 
     public interface Builder {
-        Set<Class<?>> getAdd();
 
-        Set<Class<?>> getRemove();
+        Set<RegularComponentType<?>> getAdd();
+
+        Set<RegularComponentType<?>> getRemove();
 
         @Override
         boolean equals(Object obj);
 
         @Override
         int hashCode();
+
     }
 
     private static final Component<?>[] EMPTY = new Component[0];
@@ -40,11 +43,11 @@ public class TransmutationManager {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Add<T> getAddTransmuter(Class<T> component) {
+    public <T> Add<T> getAddTransmuter(RegularComponentType<T> component) {
         return (Add<T>) getTransmuter(ImmutableBuilder.add(component), () -> new Add<>(componentManager.getComponent(component)));
     }
 
-    public Remove getRemoveTransmuter(Class<?> component) {
+    public Remove getRemoveTransmuter(RegularComponentType<?> component) {
         return getTransmuter(ImmutableBuilder.remove(component), () -> new Remove(componentManager.getComponent(component)));
     }
 
@@ -105,7 +108,7 @@ public class TransmutationManager {
             this(manager, convert(manager, builder.getAdd()), convert((TransmutationManager) manager, builder.getRemove()));
         }
 
-        private static Component<?>[] convert(TransmutationManager manager, Set<Class<?>> classes) {
+        private static Component<?>[] convert(TransmutationManager manager, Set<RegularComponentType<?>> classes) {
             return classes.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
         }
 
@@ -148,7 +151,7 @@ public class TransmutationManager {
         @SuppressWarnings({ "rawtypes", "unchecked" })
         private final void addComponents(int entityId, Object... components) {
             for (var component : components) {
-                var metadata = (Component) manager.componentManager.getComponent(component.getClass());
+                var metadata = (Component) manager.componentManager.getComponent(component);
                 manager.changeManager.addComponent(entityId, metadata, component);
             }
         }
@@ -188,13 +191,13 @@ public class TransmutationManager {
 
     }
 
-    private record ImmutableBuilder(Set<Class<?>> add, Set<Class<?>> remove) implements Builder {
+    private record ImmutableBuilder(Set<RegularComponentType<?>> add, Set<RegularComponentType<?>> remove) implements Builder {
 
-        private static ImmutableBuilder add(Class<?> component) {
+        private static ImmutableBuilder add(RegularComponentType<?> component) {
             return new ImmutableBuilder(Set.of(component), Set.of());
         }
 
-        private static ImmutableBuilder remove(Class<?> component) {
+        private static ImmutableBuilder remove(RegularComponentType<?> component) {
             return new ImmutableBuilder(Set.of(), Set.of(component));
         }
 
@@ -207,12 +210,12 @@ public class TransmutationManager {
         }
 
         @Override
-        public Set<Class<?>> getAdd() {
+        public Set<RegularComponentType<?>> getAdd() {
             return add;
         }
 
         @Override
-        public Set<Class<?>> getRemove() {
+        public Set<RegularComponentType<?>> getRemove() {
             return remove;
         }
 

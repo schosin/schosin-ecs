@@ -1,14 +1,18 @@
 package de.schosin.ecs.plugins.transmuter;
 
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.Component;
-import de.schosin.ecs.engine.components.Component.PooledComponent;
 import de.schosin.ecs.engine.components.ComponentManager;
+import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
 
@@ -17,10 +21,14 @@ public class TransmuterManager extends BaseTransmuterManager implements Transmut
 
     private final ComponentManager componentManager;
     private final TransmutationManager transmutationManager;
+    private final ComponentMapperManager componentMapperManager;
+
+    private final Map<Class<?>, PooledComponents<?>> mappers = new ConcurrentHashMap<>();
 
     public TransmuterManager(World world) {
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.transmutationManager = world.getSingleton(TransmutationManager.class);
+        this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
     }
 
     @Override
@@ -60,15 +68,15 @@ public class TransmuterManager extends BaseTransmuterManager implements Transmut
             this.manager = manager;
         }
 
-        private static Component<?>[] convert(TransmuterManager manager, Set<Class<?>> classes) {
+        private static Component<?>[] convert(TransmuterManager manager, Set<RegularComponentType<?>> classes) {
             return classes.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public <T extends Pooled> T getInstance(Class<T> clazz) {
-            var component = (PooledComponent<T>) manager.componentManager.getComponent(clazz);
-            return component.getInstance();
+            var mapper = manager.mappers.computeIfAbsent(clazz, key -> manager.componentMapperManager.getPooledComponents(clazz));
+
+            return clazz.cast(mapper.getInstance());
         }
 
     }

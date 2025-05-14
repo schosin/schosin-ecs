@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.utils.collections.Bag;
@@ -43,7 +44,7 @@ public class ComponentMaskManager {
         return componentMasksById.get(componentMaskId);
     }
 
-    public ComponentMask getComponentMask(Class<?>... components) {
+    public ComponentMask getComponentMask(RegularComponentType<?>... components) {
         return pool.withInstance(componentMask -> {
             // Build component bitmask
             componentManager.fillVector(componentMask, components);
@@ -56,23 +57,8 @@ public class ComponentMaskManager {
 
             // Compute compute mask
             componentMask = new BitVector(componentMask);
-            return componentMasks.computeIfAbsent(componentMask, mask -> createComponentMask(mask, componentsFromClasses(components)));
+            return componentMasks.computeIfAbsent(componentMask, mask -> createComponentMask(mask, componentsFromTypes(components)));
         });
-    }
-
-    private Component<?>[] componentsFromClasses(Class<?>[] components) {
-        // deduplicate using set
-        var result = HashSet.<Component<?>>newHashSet(components.length);
-        for (int i = 0, s = components.length; i < s; i++) {
-            var metadata = componentManager.getComponent(components[i]);
-            result.add(metadata);
-        }
-
-        if (result.size() != components.length) {
-            throw new IllegalArgumentException("Detected duplicate component types. %d component types contained %d unique types.".formatted(components.length, result.size()));
-        }
-
-        return result.toArray(Component[]::new);
     }
 
     /**
@@ -86,7 +72,7 @@ public class ComponentMaskManager {
         return pool.withInstance(componentMask -> {
             // Build component bitmask
             for (int i = 0, s = components.length; i < s; i++) {
-                var componentId = componentManager.getComponent(components[i].getClass()).id();
+                var componentId = componentManager.getComponent(components[i]).id();
                 componentMask.set(componentId);
             }
 
@@ -129,11 +115,26 @@ public class ComponentMaskManager {
         });
     }
 
+    private Component<?>[] componentsFromTypes(RegularComponentType<?>[] components) {
+        // deduplicate using set
+        var result = HashSet.<Component<?>>newHashSet(components.length);
+        for (int i = 0, s = components.length; i < s; i++) {
+            var metadata = componentManager.getComponent(components[i]);
+            result.add(metadata);
+        }
+
+        if (result.size() != components.length) {
+            throw new IllegalArgumentException("Detected duplicate component types. %d component types contained %d unique types.".formatted(components.length, result.size()));
+        }
+
+        return result.toArray(Component[]::new);
+    }
+
     private Component<?>[] componentsFromObjects(Object[] components) {
         // deduplicate using set
         var result = HashSet.<Component<?>>newHashSet(components.length);
         for (int i = 0, s = components.length; i < s; i++) {
-            var metadata = componentManager.getComponent(components[i].getClass());
+            var metadata = componentManager.getComponent(components[i]);
             result.add(metadata);
         }
 

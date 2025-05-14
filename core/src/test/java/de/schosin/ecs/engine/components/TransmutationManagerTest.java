@@ -20,12 +20,12 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
     @BeforeEach
     void setupTransmuters() {
-        this.add1 = transmutationManager.getAddTransmuter(C1.class);
-        this.add2 = transmutationManager.getAddTransmuter(C2.class);
+        this.add1 = transmutationManager.getAddTransmuter(component(C1.class));
+        this.add2 = transmutationManager.getAddTransmuter(component(C2.class));
 
-        this.remove1 = transmutationManager.getRemoveTransmuter(C1.class);
-        this.remove2 = transmutationManager.getRemoveTransmuter(C2.class);
-        this.remove3 = transmutationManager.getRemoveTransmuter(C3.class);
+        this.remove1 = transmutationManager.getRemoveTransmuter(component(C1.class));
+        this.remove2 = transmutationManager.getRemoveTransmuter(component(C2.class));
+        this.remove3 = transmutationManager.getRemoveTransmuter(component(C3.class));
     }
 
     @Test
@@ -40,8 +40,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
     void testAddRemove() {
         // Setup
         var entityId = world.createEntity(new C2());
-        verifyDoesNotHaveComponent(entityId, C1.class);
-        verifyHasComponent(entityId, C2.class);
+        verifyDoesNotHaveComponents(entityId, C1.class);
+        verifyHasComponents(entityId, C2.class);
 
         verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
         verifyComponentMaskHasComponents(entityId, C2.class);
@@ -52,8 +52,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
         world.process();
 
         // Verify
-        verifyHasComponent(entityId, C1.class);
-        verifyDoesNotHaveComponent(entityId, C2.class);
+        verifyHasComponents(entityId, C1.class);
+        verifyDoesNotHaveComponents(entityId, C2.class);
 
         verifyComponentMaskHasComponents(entityId, C1.class);
         verifyComponentMaskDoesNotHaveComponents(entityId, C2.class);
@@ -61,10 +61,10 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
     @Test
     void testCachedTransmuter() {
-        var transmuter = transmutationManager.getAddTransmuter(C1.class);
+        var transmuter = transmutationManager.getAddTransmuter(component(C1.class));
 
         // Call
-        assertThat(transmutationManager.getAddTransmuter(C1.class)).isSameAs(transmuter);
+        assertThat(transmutationManager.getAddTransmuter(component(C1.class))).isSameAs(transmuter);
     }
 
     @Nested
@@ -161,7 +161,9 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
 
             // Call
-            assertThatThrownBy(() -> add1.apply(entityId, (C1) null)).isInstanceOf(NullPointerException.class);
+            assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -238,8 +240,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isExactlyInstanceOf(NullPointerException.class)
-                    .hasMessageContainingAll("Cannot invoke", "getClass()", "is null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -254,8 +256,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
 
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isExactlyInstanceOf(NullPointerException.class)
-                    .hasMessageContainingAll("Cannot invoke", "getClass()", "is null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Call
             world.process();
@@ -292,8 +294,6 @@ class TransmutationManagerTest extends AbstractWorldTest {
         @Test
         void testRemoveMultiple() {
             // Setup
-            var remove3 = transmutationManager.getRemoveTransmuter(C3.class);
-
             var entityId = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entityId, C1.class, C2.class, C3.class);
             verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);

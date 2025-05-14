@@ -70,6 +70,13 @@ public class CompositionGenerator {
                     .addStatement("return builder()")
                     .build();
 
+            var allComponents = MethodSpec.methodBuilder("all")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
+                    .returns(BUILDER)
+                    .addStatement("return builder().all(components)")
+                    .build();
+
             var allClasses = MethodSpec.methodBuilder("all")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .addParameter(Utils.WILDCARD_CLASS_ARRAY, "classes").varargs()
@@ -91,6 +98,13 @@ public class CompositionGenerator {
                     .addStatement("return builder().all(consumer)")
                     .build();
 
+            var oneComponents = MethodSpec.methodBuilder("one")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
+                    .returns(BUILDER)
+                    .addStatement("return builder().one(components)")
+                    .build();
+
             var oneClasses = MethodSpec.methodBuilder("one")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .addParameter(Utils.WILDCARD_CLASS_ARRAY, "classes").varargs()
@@ -110,6 +124,13 @@ public class CompositionGenerator {
                     .addParameter(UNARY_GROUP, "consumer")
                     .returns(BUILDER)
                     .addStatement("return builder().one(consumer)")
+                    .build();
+
+            var noneComponents = MethodSpec.methodBuilder("none")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
+                    .returns(BUILDER)
+                    .addStatement("return builder().none(components)")
                     .build();
 
             var noneClasses = MethodSpec.methodBuilder("none")
@@ -140,9 +161,9 @@ public class CompositionGenerator {
                     .build();
 
             return List.of(
-                    all, allClasses, allBuilders, allUnary,
-                    oneClasses, oneBuilders, oneUnary,
-                    noneClasses, noneBuilders, noneUnary,
+                    all, allComponents, allClasses, allBuilders, allUnary,
+                    oneComponents, oneClasses, oneBuilders, oneUnary,
+                    noneComponents, noneClasses, noneBuilders, noneUnary,
                     builder);
         }
 
@@ -228,10 +249,35 @@ public class CompositionGenerator {
                 return List.of();
             }
 
-            return IntStream.range(start, maxParams + 1).mapToObj(idx -> createRetrieveMethod(name, start, idx)).toList();
+            var methods = new ArrayList<MethodSpec>(2 * (maxParams - start));
+            methods.addAll(IntStream.range(start, maxParams + 1).mapToObj(idx -> createComponentRetrieveMethod(name, start, idx)).toList());
+            methods.addAll(IntStream.range(start, maxParams + 1).mapToObj(idx -> createClassRetrieveMethod(name, start, idx)).toList());
+
+            return methods;
         }
 
-        private static MethodSpec createRetrieveMethod(String name, int start, int n) {
+        private static MethodSpec createComponentRetrieveMethod(String name, int start, int n) {
+            var typeVariables = Utils.generateTypeVariables("T", start, n);
+
+            var returnTypeVariablesArray = Utils.generateTypeVariables("T", 1, n).toArray(TypeVariableName[]::new);
+
+            var returnName = start == 1 ? OF_PREFIX + (start + n - 1) : OF_PREFIX + (n);
+            var returnType = ClassName.get("", returnName);
+            var returnTypeParameterized = ParameterizedTypeName.get(returnType, returnTypeVariablesArray);
+
+            var parameters = IntStream.range(0, typeVariables.size())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx)), "component" + (start + idx)).build())
+                    .toList();
+
+            return MethodSpec.methodBuilder(name)
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addTypeVariables(typeVariables)
+                    .addParameters(parameters)
+                    .returns(returnTypeParameterized)
+                    .build();
+        }
+
+        private static MethodSpec createClassRetrieveMethod(String name, int start, int n) {
             var typeVariables = Utils.generateTypeVariables("T", start, n);
 
             var returnTypeVariablesArray = Utils.generateTypeVariables("T", 1, n).toArray(TypeVariableName[]::new);
@@ -273,22 +319,38 @@ public class CompositionGenerator {
 
                 var returnType = ParameterizedTypeName.get(ClassName.get("", OF_PREFIX + i), typeVariablesArray);
 
-                var parameters = IntStream.range(1, i + 1)
+                var componentParameters = IntStream.range(1, i + 1)
+                        .mapToObj(j -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(j - 1)), "component" + j).build())
+                        .toList();
+
+                var classParameters = IntStream.range(1, i + 1)
                         .mapToObj(j -> ParameterSpec.builder(Utils.clazz(typeVariables.get(j - 1)), "component" + j).build())
                         .toList();
 
-                var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
+                var parameterNames = classParameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
 
-                var methodBuilder = MethodSpec.methodBuilder("createComposition")
+                var classMethod = MethodSpec.methodBuilder("createComposition")
                         .addJavadoc(Javadoc.CREATE_COMPOSITION_OF)
                         .addTypeVariables(typeVariables)
                         .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
                         .addParameter(parameterBuilder)
-                        .addParameters(parameters)
+                        .addParameters(classParameters)
                         .returns(returnType)
-                        .addStatement("return createComposition(builder).retrieve(%s)".formatted(parameterNames));
+                        .addStatement("return createComposition(builder).retrieve(%s)".formatted(parameterNames))
+                        .build();
 
-                interfaceBuilder.addMethod(methodBuilder.build());
+                var componentMethod = MethodSpec.methodBuilder("createComposition")
+                        .addJavadoc(Javadoc.CREATE_COMPOSITION_OF)
+                        .addTypeVariables(typeVariables)
+                        .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
+                        .addParameter(parameterBuilder)
+                        .addParameters(componentParameters)
+                        .returns(returnType)
+                        .addStatement("return createComposition(builder).retrieve(%s)".formatted(parameterNames))
+                        .build();
+
+                interfaceBuilder.addMethod(classMethod);
+                interfaceBuilder.addMethod(componentMethod);
             }
 
             return interfaceBuilder.build();
@@ -332,15 +394,29 @@ public class CompositionGenerator {
 
         private static Iterable<MethodSpec> createAllMethods() {
             return List.of(
+                    createComponentMethod("all", Javadoc.ALL_COMPONENTS),
                     createClassMethod("all", Javadoc.ALL_CLASSES),
                     createBuilderMethod("all", Javadoc.ALL_BUILDERS),
                     createUnaryOperatorMethod("all", Javadoc.ALL_UNARY),
+                    createComponentOne(),
                     createClassOne(),
                     createBuilderOne(),
                     createUnaryOperatorOne(),
+                    createComponentMethod("none", Javadoc.NONE_COMPONENTS),
                     createClassMethod("none", Javadoc.NONE_CLASSES),
                     createBuilderMethod("none", Javadoc.NONE_BUILDERS),
                     createUnaryOperatorMethod("none", Javadoc.NONE_UNARY));
+        }
+
+        private static MethodSpec createComponentMethod(String name, String javadoc) {
+            return MethodSpec.methodBuilder(name)
+                    .addJavadoc(javadoc)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
+                    .returns(BUILDER)
+                    .addStatement("%s.add(components)".formatted(name))
+                    .addStatement("return this")
+                    .build();
         }
 
         private static MethodSpec createClassMethod(String name, String javadoc) {
@@ -373,6 +449,21 @@ public class CompositionGenerator {
                     .returns(BUILDER)
                     .addStatement("operator.apply(%s)".formatted(name))
                     .addStatement("return this")
+                    .build();
+        }
+
+        private static MethodSpec createComponentOne() {
+            return MethodSpec.methodBuilder("one")
+                    .addJavadoc(Javadoc.ONE_COMPONENTS)
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
+                    .returns(BUILDER)
+                    .addCode(CodeBlock.builder()
+                            .beginControlFlow("if (components.length == 0)")
+                            .addStatement("return this")
+                            .endControlFlow()
+                            .addStatement("return one(group -> group.add(components))")
+                            .build())
                     .build();
         }
 
@@ -486,6 +577,14 @@ public class CompositionGenerator {
                 Process the passed entity as if it was part of the {@code process} call.
                 """;
 
+        private static final String ALL_COMPONENTS = """
+                Adds the components to this builder, limiting the composition to entities that have
+                all of the passed components.
+
+                @param components types of components
+                @return this builder
+                """;
+
         private static final String ALL_CLASSES = """
                 Adds the classes to this builder, limiting the composition to entities that have
                 all of the passed components.
@@ -509,6 +608,14 @@ public class CompositionGenerator {
                 @param operator callback
                 @return this builder
                 """, GROUP);
+
+        private static final String ONE_COMPONENTS = """
+                Adds the components to this builder as a new group, limiting the composition to entities that have
+                any of the passed components.
+
+                @param components types of components
+                @return this builder
+                """;
 
         private static final String ONE_CLASSES = """
                 Adds the classes to this builder as a new group, limiting the composition to entities that have
@@ -534,6 +641,14 @@ public class CompositionGenerator {
                 @param operator callback
                 @return this builder
                 """, GROUP);
+
+        private static final String NONE_COMPONENTS = """
+                Adds the components to this builder, limiting the composition to entities that have
+                none of the passed components.
+
+                @param components types of components
+                @return this builder
+                """;
 
         private static final String NONE_CLASSES = """
                 Adds the classes to this builder, limiting the composition to entities that have

@@ -49,8 +49,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         this.compositionManager = world.getSingleton(CompositionManager.class);
 
-        this.component1Id = componentManager.getComponent(C1.class).id();
-        this.C2Id = componentManager.getComponent(C2.class).id();
+        this.component1Id = componentManager.getComponent(component(C1.class)).id();
+        this.C2Id = componentManager.getComponent(component(C2.class)).id();
     }
 
     @Test
@@ -1079,7 +1079,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
-            var componentMask = componentMaskManager.getComponentMask(C1.class);
+            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
             var event = EntityUpdatedEvent.get(42, null, componentMask);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
@@ -1087,7 +1087,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testUpdatedEntities_WhenNullNewComposition_Throws() {
-            var componentMask = componentMaskManager.getComponentMask(C1.class);
+            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
             var event = EntityUpdatedEvent.get(42, componentMask, null);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
@@ -1102,9 +1102,9 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
             var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
 
-            var componentMask1 = componentMaskManager.getComponentMask(C1.class);
-            var componentMask12 = componentMaskManager.getComponentMask(C1.class, C2.class);
-            var componentMask2 = componentMaskManager.getComponentMask(C2.class);
+            var componentMask1 = componentMaskManager.getComponentMask(component(C1.class));
+            var componentMask12 = componentMaskManager.getComponentMask(component(C1.class), component(C2.class));
+            var componentMask2 = componentMaskManager.getComponentMask(component(C2.class));
 
             var mask42 = componentMask1;
             var mask1337 = componentMask2;
@@ -1133,10 +1133,10 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             // Setup
             bagManager.ensureEntitySize(10000);
 
-            var componentMask1 = componentMaskManager.getComponentMask(C1.class);
-            var componentMask12 = componentMaskManager.getComponentMask(C1.class, C2.class);
-            var componentMask2 = componentMaskManager.getComponentMask(C2.class);
-            var componentMask3 = componentMaskManager.getComponentMask(C3.class);
+            var componentMask1 = componentMaskManager.getComponentMask(component(C1.class));
+            var componentMask12 = componentMaskManager.getComponentMask(component(C1.class), component(C2.class));
+            var componentMask2 = componentMaskManager.getComponentMask(component(C2.class));
+            var componentMask3 = componentMaskManager.getComponentMask(component(C3.class));
 
             var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
             var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
@@ -1187,7 +1187,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             initial.add(31337);
             initial.add(9001);
 
-            var componentMask = componentMaskManager.getComponentMask(C1.class);
+            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Remove entity
@@ -1214,7 +1214,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             var removed = new IntBag(2);
 
-            var componentMask = componentMaskManager.getComponentMask(C1.class);
+            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Add callback
@@ -1244,7 +1244,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var removed2 = new ArrayList<Integer>();
             var removed3 = new HashSet<Integer>();
 
-            var componentMask = componentMaskManager.getComponentMask(C1.class);
+            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Add callbacks
@@ -2808,7 +2808,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             // Verify
             verifyHasComposition(entityId, Composition.all(P2.class, P3.class).none(P1.class));
 
-            verifyDoesNotHaveComponent(entityId, P1.class);
+            verifyDoesNotHaveComponents(entityId, P1.class);
             verifyHasComponents(entityId, P2.class, P3.class);
         }
 
@@ -2830,7 +2830,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             // Verify
             verifyHasComposition(entityId, Composition.all(P2.class, P3.class).none(P1.class));
 
-            verifyDoesNotHaveComponent(entityId, P1.class);
+            verifyDoesNotHaveComponents(entityId, P1.class);
             verifyHasComponents(entityId, P2.class, P3.class);
         }
 
@@ -2855,33 +2855,33 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(world.process(1)).isFalse();
             verifyHasComposition(entityId, Composition.all(P1.class).none(P2.class, P3.class));
 
-            verifyHasComponent(entityId, P1.class);
-            verifyHasComponent(entityId, P2.class);
-            verifyDoesNotHaveComponent(entityId, P3.class);
+            verifyHasComponents(entityId, P1.class);
+            verifyHasComponents(entityId, P2.class);
+            verifyDoesNotHaveComponents(entityId, P3.class);
 
             // Verify second process
             assertThat(world.process(1)).isFalse();
             verifyHasComposition(entityId, Composition.all(P1.class, P2.class).none(P3.class));
 
-            verifyHasComponent(entityId, P1.class);
-            verifyHasComponent(entityId, P2.class);
-            verifyHasComponent(entityId, P3.class);
+            verifyHasComponents(entityId, P1.class);
+            verifyHasComponents(entityId, P2.class);
+            verifyHasComponents(entityId, P3.class);
 
             // Verify third process
             assertThat(world.process(1)).isFalse();
             verifyHasComposition(entityId, Composition.all(P1.class, P2.class, P3.class));
 
-            verifyHasComponent(entityId, P1.class);
-            verifyHasComponent(entityId, P2.class);
-            verifyHasComponent(entityId, P3.class);
+            verifyHasComponents(entityId, P1.class);
+            verifyHasComponents(entityId, P2.class);
+            verifyHasComponents(entityId, P3.class);
 
             // Verify last process
             assertThat(world.process(1)).isTrue();
             verifyHasComposition(entityId, Composition.all(P2.class, P3.class).none(P1.class));
 
-            verifyDoesNotHaveComponent(entityId, P1.class);
-            verifyHasComponent(entityId, P2.class);
-            verifyHasComponent(entityId, P3.class);
+            verifyDoesNotHaveComponents(entityId, P1.class);
+            verifyHasComponents(entityId, P2.class);
+            verifyHasComponents(entityId, P3.class);
         }
 
         @Test
@@ -2904,9 +2904,9 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             // Verify
             verifyHasComposition(entityId, Composition.none(P1.class, P2.class, P3.class));
 
-            verifyHasComponent(entityId, P1.class);
-            verifyDoesNotHaveComponent(entityId, P2.class);
-            verifyDoesNotHaveComponent(entityId, P3.class);
+            verifyHasComponents(entityId, P1.class);
+            verifyDoesNotHaveComponents(entityId, P2.class);
+            verifyDoesNotHaveComponents(entityId, P3.class);
         }
 
     }

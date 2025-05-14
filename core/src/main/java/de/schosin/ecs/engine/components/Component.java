@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+
 public sealed interface Component<T> permits ComponentData {
 
     interface PooledComponent<T> {
@@ -11,6 +13,8 @@ public sealed interface Component<T> permits ComponentData {
     }
 
     int id();
+    
+    RegularComponentType<T> type();
 
     String display();
 

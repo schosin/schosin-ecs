@@ -24,9 +24,9 @@ class EntityManagerTest extends AbstractWorldTest {
 
     @BeforeEach
     void setupComponents() {
-        this.component1 = componentManager.getComponent(Component1.class);
-        this.component2 = componentManager.getComponent(Component2.class);
-        this.component3 = componentManager.getComponent(Component3.class);
+        this.component1 = componentManager.getComponent(component(Component1.class));
+        this.component2 = componentManager.getComponent(component(Component2.class));
+        this.component3 = componentManager.getComponent(component(Component3.class));
     }
 
     @Test
@@ -259,7 +259,7 @@ class EntityManagerTest extends AbstractWorldTest {
             assertThat(componentMask.contains(component1.id())).isTrue();
             assertThat(componentMask.contains(component2.id())).isTrue();
 
-            var otherComponentMask = componentMaskManager.getComponentMask(Component3.class);
+            var otherComponentMask = componentMaskManager.getComponentMask(component(Component3.class));
             assertThat(otherComponentMask).isNotSameAs(componentMask).isNotEqualTo(componentMask);
 
             // Call
@@ -278,7 +278,7 @@ class EntityManagerTest extends AbstractWorldTest {
             assertThat(componentMask.contains(component1.id())).isTrue();
             assertThat(componentMask.contains(component2.id())).isTrue();
 
-            var sameComponentMask = componentMaskManager.getComponentMask(Component2.class, Component1.class);
+            var sameComponentMask = componentMaskManager.getComponentMask(component(Component2.class), component(Component1.class));
             assertThat(sameComponentMask).isSameAs(componentMask);
 
             // Call
@@ -290,7 +290,7 @@ class EntityManagerTest extends AbstractWorldTest {
 
         @Test
         void testUpdateComponentMask_UnknownEntity() {
-            var componentMask = componentMaskManager.getComponentMask(Component1.class);
+            var componentMask = componentMaskManager.getComponentMask(component(Component1.class));
 
             assertThat(entityManager.updateComponentMask(42, null)).isFalse();
             assertThat(entityManager.updateComponentMask(42, componentMask)).isFalse();
@@ -365,9 +365,9 @@ class EntityManagerTest extends AbstractWorldTest {
             this.pooled2 = world.getPooledComponents(C2.class);
             this.pooled3 = world.getPooledComponents(C3.class);
 
-            this.id1 = componentManager.getComponent(C1.class).id();
-            this.id2 = componentManager.getComponent(C2.class).id();
-            this.id3 = componentManager.getComponent(C3.class).id();
+            this.id1 = componentManager.getComponent(component(C1.class)).id();
+            this.id2 = componentManager.getComponent(component(C2.class)).id();
+            this.id3 = componentManager.getComponent(component(C3.class)).id();
         }
 
         @Test
@@ -499,7 +499,7 @@ class EntityManagerTest extends AbstractWorldTest {
                     var mask = event.componentMask();
                     var prevMask = event.previousComponentMask();
                     var id = event.entityId();
-                    
+
                     if (!prevMask.getMask().get(id1) && mask.getMask().get(id1)) {
                         pooled2.add(id);
                     }

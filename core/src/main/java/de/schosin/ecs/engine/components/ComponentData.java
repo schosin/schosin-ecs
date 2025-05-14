@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.engine.IdManager.Id.ComponentId;
 import de.schosin.ecs.engine.components.Component.PooledComponent;
 import de.schosin.ecs.engine.utils.collections.Bag;
@@ -16,7 +17,7 @@ sealed interface ComponentData<T> extends Component<T>, PooledComponent<T> {
 
 }
 
-record ComponentDataImpl<T>(ComponentId componentId, Class<T> clazz, Bag<T> components, BitVector removals, Pool<T> pool) implements ComponentData<T> {
+record ComponentDataImpl<T>(ComponentId componentId, ClassType<T> type, Bag<T> components, BitVector removals, Pool<T> pool) implements ComponentData<T> {
 
     @Override
     public int id() {
@@ -24,8 +25,13 @@ record ComponentDataImpl<T>(ComponentId componentId, Class<T> clazz, Bag<T> comp
     }
 
     @Override
+    public Class<T> clazz() {
+        return type.clazz();
+    }
+
+    @Override
     public String display() {
-        return "%s(%d)".formatted(clazz.getSimpleName(), id());
+        return "%s(%d)".formatted(type.clazz().getSimpleName(), id());
     }
 
     @Override

@@ -6,6 +6,7 @@ import java.util.Map;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.EnumComponents;
 import de.schosin.ecs.api.components.Components.PooledComponents;
@@ -30,7 +31,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> Components<T> getComponents(Class<T> clazz) {
-        var metadata = (ComponentData<T>) componentManager.getComponent(clazz);
+        var metadata = (ComponentData<T>) componentManager.getComponent(ComponentType.component(clazz));
 
         var result = this.components.get(metadata.id());
         if (result != null) {
@@ -79,7 +80,7 @@ public class ComponentMapperManager implements Components.Creator {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Pooled> PooledComponents<T> getPooledComponents(Class<T> clazz) {
-        var metadata = (ComponentData<T>) componentManager.getComponent(clazz);
+        var metadata = (ComponentData<T>) componentManager.getComponent(ComponentType.component(clazz));
 
         var result = (PooledComponents<T>) this.components.get(metadata.id());
         if (result != null) {
@@ -109,8 +110,8 @@ public class ComponentMapperManager implements Components.Creator {
         protected ComponentMapper(ComponentData<T> data) {
             this.data = data;
 
-            this.add = transmutationManager.getAddTransmuter(data.clazz());
-            this.remove = transmutationManager.getRemoveTransmuter(data.clazz());
+            this.add = transmutationManager.getAddTransmuter(data.type());
+            this.remove = transmutationManager.getRemoveTransmuter(data.type());
         }
 
         @Override

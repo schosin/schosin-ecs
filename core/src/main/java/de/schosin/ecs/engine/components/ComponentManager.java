@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.IdManager;
@@ -15,6 +17,7 @@ import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.engine.utils.collections.Pool;
 import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
+import de.schosin.ecs.engine.utils.exceptions.UnsupportedComponentTypeException;
 
 /**
  * Manages {@link Component component data} for every component class
@@ -47,38 +50,58 @@ public class ComponentManager {
         return byId.get(componentId);
     }
 
-    public <T> Component<T> getComponent(Class<T> clazz) {
-        return getData(clazz);
+    public <T> Component<T> getComponent(RegularComponentType<T> type) {
+        return switch (type) {
+            case ComponentType.ClassType<T> classType -> getData(classType);
+        };
+    }
+
+    /**
+     * Do no use {@link ComponentType} for accessing components. Use {@link #getComponent(RegularComponentType)} instead.
+     * 
+     * @throws UnsupportedComponentTypeException operation not supported
+     */
+    @Deprecated
+    public Component<?> getComponent(ComponentType<?> type) throws UnsupportedComponentTypeException {
+        throw new UnsupportedComponentTypeException(type, "ComponentType '%s' not allowed, must use RegularComponentType for accessing components.".formatted(type));
     }
 
     @SuppressWarnings("unchecked")
-    private <T> ComponentData<T> getData(Class<T> clazz) {
-        var result = (ComponentData<T>) byClass.get(clazz);
+    public <T> Component<T> getComponent(T component) {
+        return switch (component) {
+            case null -> throw new IllegalArgumentException("Cannot get component type for null instance");
+            default -> getComponent(ComponentType.component((Class<T>) component.getClass()));
+        };
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> ComponentData<T> getData(ComponentType.ClassType<T> type) {
+        var result = (ComponentData<T>) byClass.get(type.clazz());
         if (result != null) {
             return result;
         }
 
         synchronized (classes) {
-            if (classes.states().contains(clazz)) {
-                throw new IllegalArgumentException("Class %s is already used as a state.".formatted(clazz.getName()));
+            if (classes.states().contains(type.clazz())) {
+                throw new IllegalArgumentException("Class %s is already used as a state.".formatted(type.clazz().getName()));
             }
 
-            classes.components().add(clazz);
-            return (ComponentData<T>) byClass.computeIfAbsent(clazz, ignore -> createMetadata(clazz, bagManager.getEntitySize()));
+            classes.components().add(type.clazz());
+            return (ComponentData<T>) byClass.computeIfAbsent(type.clazz(), ignore -> createMetadata(type, bagManager.getEntitySize()));
         }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T> ComponentDataImpl<T> createMetadata(Class<T> clazz, int bagSize) {
-        validateComponentHierarchy(clazz);
+    private <T> ComponentDataImpl<T> createMetadata(ComponentType.ClassType<T> type, int bagSize) {
+        validateComponentHierarchy(type.clazz());
 
-        var components = bagManager.createEntityBag(clazz, bagSize);
+        var components = bagManager.createEntityBag(type.clazz(), bagSize);
         var removals = new BitVector(bagSize);
-        var pool = Pooled.class.isAssignableFrom(clazz)
-                ? Pool.bounded(POOL_LIMIT, clazz, () -> ReflectionUtils.createComponentInstance(clazz))
+        var pool = Pooled.class.isAssignableFrom(type.clazz())
+                ? Pool.bounded(POOL_LIMIT, type.clazz(), () -> ReflectionUtils.createComponentInstance(type.clazz()))
                 : null;
 
-        var metadata = new ComponentDataImpl(createComponentId(), clazz, components, removals, pool);
+        var metadata = new ComponentDataImpl(createComponentId(), type, components, removals, pool);
         byId.set(metadata.id(), metadata);
 
         return metadata;
@@ -122,7 +145,7 @@ public class ComponentManager {
         }
     }
 
-    public void fillVector(BitVector vector, Class<?>... components) {
+    public void fillVector(BitVector vector, RegularComponentType<?>... components) {
         for (int i = 0, s = components.length; i < s; i++) {
             var componentId = getComponent(components[i]).id();
             vector.set(componentId);

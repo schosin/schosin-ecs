@@ -1,11 +1,14 @@
 package de.schosin.ecs.plugins.transmuter;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
 import org.jspecify.annotations.NullMarked;
 
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 
 @NullMarked
@@ -15,16 +18,24 @@ public interface BaseTransmuter {
 
 abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
 
-    protected final Set<Class<?>> add;
-    protected final Set<Class<?>> remove;
+    protected final Set<RegularComponentType<?>> add;
+    protected final Set<RegularComponentType<?>> remove;
 
-    protected AbstractTransmuterBuilder(Class<?>... add) {
+    protected AbstractTransmuterBuilder(RegularComponentType<?>... add) {
         this.add = Set.of(add);
         this.remove = new HashSet<>();
     }
 
-    @SuppressWarnings("unchecked")
     public SELF remove(Class<?>... components) {
+        return remove(convert(components));
+    }
+
+    private static RegularComponentType<?>[] convert(Class<?>... classes) {
+        return Arrays.stream(classes).map(ComponentType::component).toArray(RegularComponentType<?>[]::new);
+    }
+
+    @SuppressWarnings("unchecked")
+    public SELF remove(RegularComponentType<?>... components) {
         for (var clazz : components) {
             if (this.add.contains(clazz)) {
                 throw new IllegalArgumentException("Cannot remove component marked for adding: " + clazz);
@@ -37,7 +48,7 @@ abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
     }
 
     @SuppressWarnings("unchecked")
-    protected SELF remove(Set<Class<?>> components) {
+    protected SELF remove(Set<RegularComponentType<?>> components) {
         for (var clazz : components) {
             if (this.add.contains(clazz)) {
                 throw new IllegalArgumentException("Cannot remove component marked for adding: " + clazz);
@@ -50,12 +61,12 @@ abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
     }
 
     @Override
-    public Set<Class<?>> getAdd() {
+    public Set<RegularComponentType<?>> getAdd() {
         return add;
     }
 
     @Override
-    public Set<Class<?>> getRemove() {
+    public Set<RegularComponentType<?>> getRemove() {
         return remove;
     }
 

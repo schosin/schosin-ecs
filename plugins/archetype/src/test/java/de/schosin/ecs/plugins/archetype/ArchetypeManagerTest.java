@@ -69,7 +69,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                 var archetype = createArchetype(C1.class);
 
                 var entityId = archetype.create(new C1());
-                verifyHasComponent(entityId, C1.class);
+                verifyHasComponents(entityId, C1.class);
                 verifyComponentMaskHasComponents(entityId, C1.class);
             }
 
@@ -89,7 +89,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                 for (int i = 0; i < 10; i++) {
                     var entityId = entityIds[i];
-                    verifyHasComponent(entityId, C1.class);
+                    verifyHasComponents(entityId, C1.class);
                     verifyComponentMaskHasComponents(entityId, C1.class);
                 }
             }

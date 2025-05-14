@@ -9,6 +9,8 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
@@ -145,7 +147,7 @@ public interface BaseComposition {
      */
     IntStream parallelStream();
 
-    public record Group(Set<Class<?>> classes, Set<Builder> builders) {
+    public record Group(Set<RegularComponentType<?>> components, Set<Builder> builders) {
 
         Group() {
             this(new HashSet<>(), new HashSet<>());
@@ -153,7 +155,7 @@ public interface BaseComposition {
 
         public Group copy() {
             var copy = new Group();
-            copy.classes.addAll(this.classes);
+            copy.components.addAll(this.components);
             copy.builders.addAll(this.builders);
 
             return copy;
@@ -161,7 +163,15 @@ public interface BaseComposition {
 
         public Group add(Class<?>... classes) {
             for (var clazz : classes) {
-                this.classes.add(clazz);
+                this.components.add(ComponentType.component(clazz));
+            }
+
+            return this;
+        }
+
+        public Group add(RegularComponentType<?>... components) {
+            for (var component : components) {
+                this.components.add(component);
             }
 
             return this;
@@ -176,7 +186,7 @@ public interface BaseComposition {
         }
 
         public boolean isEmpty() {
-            return classes.isEmpty() && builders.isEmpty();
+            return components.isEmpty() && builders.isEmpty();
         }
 
     }

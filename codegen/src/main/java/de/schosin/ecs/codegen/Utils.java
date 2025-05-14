@@ -1,8 +1,11 @@
 package de.schosin.ecs.codegen;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
+
+import javax.lang.model.element.Modifier;
 
 import com.palantir.javapoet.AnnotationSpec;
 import com.palantir.javapoet.ArrayTypeName;
@@ -32,13 +35,44 @@ public class Utils {
     public static final ClassName JUNIT_NESTED = ClassName.get("org.junit.jupiter.api", "Nested");
     public static final ClassName JUNIT_BEFORE_EACH = ClassName.get("org.junit.jupiter.api", "BeforeEach");
 
-    public static final ParameterizedTypeName WILDCARD_CLASS = ParameterizedTypeName.get(CLASS, WildcardTypeName.subtypeOf(Object.class));
+    public static final WildcardTypeName WILDCARD = WildcardTypeName.subtypeOf(Object.class);
+    public static final ParameterizedTypeName WILDCARD_CLASS = ParameterizedTypeName.get(CLASS, WILDCARD);
     public static final ArrayTypeName WILDCARD_CLASS_ARRAY = ArrayTypeName.of(WILDCARD_CLASS);
+
+    public static final ClassName COMPONENT_TYPE = ClassName.get("de.schosin.ecs.api.components", "ComponentType");
+    public static final ParameterizedTypeName COMPONENT_TYPE_WILDCARD = ParameterizedTypeName.get(COMPONENT_TYPE, WILDCARD);
+    public static final ArrayTypeName COMPONENT_TYPE_WILDCARD_ARRAY = ArrayTypeName.of(COMPONENT_TYPE_WILDCARD);
+
+    public static final ClassName REGULAR_COMPONENT_TYPE = COMPONENT_TYPE.nestedClass("RegularComponentType");
+    public static final ParameterizedTypeName REGULAR_COMPONENT_TYPE_WILDCARD = ParameterizedTypeName.get(REGULAR_COMPONENT_TYPE, WILDCARD);
+    public static final ArrayTypeName REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY = ArrayTypeName.of(REGULAR_COMPONENT_TYPE_WILDCARD);
 
     public static final TypeVariableName T = TypeVariableName.get("T");
 
     public static final AnnotationSpec SUPPRESS_UNCHECKED = AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build();
     public static final AnnotationSpec SUPPRESS_RAWTYPES = AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"rawtypes\"").build();
+
+    public static final MethodSpec CONVERT_COMPONENT_TYPE = MethodSpec.methodBuilder("convert")
+            .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
+            .addParameter(Utils.WILDCARD_CLASS_ARRAY, "classes")
+            .returns(Utils.COMPONENT_TYPE_WILDCARD_ARRAY)
+            .addStatement("return $1T.stream(classes).map($2T::component).toArray($2T<?>[]::new)", Arrays.class, Utils.COMPONENT_TYPE)
+            .build();
+
+    public static final MethodSpec CONVERT_REGULAR_COMPONENT_TYPE = MethodSpec.methodBuilder("convert")
+            .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
+            .addParameter(Utils.WILDCARD_CLASS_ARRAY, "classes")
+            .returns(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY)
+            .addStatement("return $1T.stream(classes).map($2T::component).toArray($3T<?>[]::new)", Arrays.class, Utils.COMPONENT_TYPE, Utils.REGULAR_COMPONENT_TYPE)
+            .build();
+
+    public static ParameterizedTypeName componentType(TypeName type) {
+        return ParameterizedTypeName.get(COMPONENT_TYPE, type);
+    }
+
+    public static ParameterizedTypeName regularComponentType(TypeName type) {
+        return ParameterizedTypeName.get(REGULAR_COMPONENT_TYPE, type);
+    }
 
     public static ParameterizedTypeName abstractEcsTest() {
         return abstractEcsTest(WORLD);

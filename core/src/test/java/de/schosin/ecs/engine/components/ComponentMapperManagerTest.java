@@ -215,7 +215,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 world.process();
 
                 // Verify
-                verifyHasComponent(entityId, EnumComponent.class);
+                verifyHasComponents(entityId, EnumComponent.class);
                 verifyComponentMaskHasComponents(entityId, EnumComponent.class);
             }
 
@@ -230,7 +230,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 world.process();
 
                 // Verify
-                verifyHasComponent(entityId, EnumComponent.class);
+                verifyHasComponents(entityId, EnumComponent.class);
                 verifyComponentMaskHasComponents(entityId, EnumComponent.class);
             }
 
@@ -250,7 +250,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 world.process();
 
                 // Verify
-                verifyHasComponent(entityId, PooledComponent.class);
+                verifyHasComponents(entityId, PooledComponent.class);
                 verifyComponentMaskHasComponents(entityId, PooledComponent.class);
             }
 
