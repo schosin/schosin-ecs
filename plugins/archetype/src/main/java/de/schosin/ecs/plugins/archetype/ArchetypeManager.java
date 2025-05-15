@@ -18,7 +18,7 @@ import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.ArrayUtils;
-import de.schosin.ecs.engine.utils.collections.Pool;
+import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen
 public class ArchetypeManager extends BaseArchetypeManager implements ArchetypePlugin {

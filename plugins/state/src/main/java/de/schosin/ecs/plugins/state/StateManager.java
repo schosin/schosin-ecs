@@ -11,10 +11,10 @@ import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.Pool;
-import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 import de.schosin.ecs.plugins.state.State.PooledState;
+import de.schosin.ecs.utils.ReflectionUtils;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.Pool;
 
 public class StateManager implements StatePlugin {
 

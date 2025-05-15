@@ -2,9 +2,9 @@ package de.schosin.ecs.engine.components;
 
 import java.util.Objects;
 
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.BitVector;
-import de.schosin.ecs.engine.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.IntBag;
 
 /**
  * Describes a component mask for the components an entity has.

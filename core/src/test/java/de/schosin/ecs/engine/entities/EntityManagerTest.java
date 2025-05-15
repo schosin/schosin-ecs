@@ -14,7 +14,7 @@ import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.engine.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.BitVector;
 
 class EntityManagerTest extends AbstractWorldTest {
 

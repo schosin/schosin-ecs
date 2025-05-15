@@ -12,9 +12,9 @@ import de.schosin.ecs.engine.WorldBuilderTest.MyPluginTest.MyPlugin;
 import de.schosin.ecs.engine.WorldBuilderTest.MyPluginTest.MyPluginImpl;
 import de.schosin.ecs.engine.WorldBuilderTest.SimplePluginTest.SimplePlugin;
 import de.schosin.ecs.engine.components.ComponentManager;
-import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
 import de.schosin.ecs.engine.utils.exceptions.EcsWorldCreationException;
+import de.schosin.ecs.utils.ReflectionUtils;
 
 public class WorldBuilderTest {
 

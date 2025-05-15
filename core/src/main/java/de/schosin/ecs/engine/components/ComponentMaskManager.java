@@ -9,9 +9,9 @@ import java.util.function.Predicate;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.BitVector;
-import de.schosin.ecs.engine.utils.collections.Pool;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.Pool;
 
 /**
  * Manages {@link ComponentMask component masks} and their transitions when 

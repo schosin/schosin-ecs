@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.engine.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.Bag;
 
 public class TransmutationManager {
 

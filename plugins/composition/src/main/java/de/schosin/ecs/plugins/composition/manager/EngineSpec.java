@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.engine.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.BitVector;
 
 public sealed interface EngineSpec extends EntityManager.ComponentsPredicate {
 

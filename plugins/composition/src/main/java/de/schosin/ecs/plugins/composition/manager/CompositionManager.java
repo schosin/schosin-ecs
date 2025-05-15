@@ -25,13 +25,13 @@ import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.BitVector;
-import de.schosin.ecs.engine.utils.collections.IntBag;
-import de.schosin.ecs.engine.utils.collections.Pool;
 import de.schosin.ecs.plugins.composition.BaseComposition;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.Pool;
 import de.schosin.ecs.plugins.composition.CompositionPlugin;
 import de.schosin.ecs.plugins.composition.Spec;
 

@@ -12,8 +12,8 @@ import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.engine.utils.collections.BitVector;
-import de.schosin.ecs.engine.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.IntBag;
 
 public class ChangeManager {
 

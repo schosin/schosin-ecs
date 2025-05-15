@@ -7,9 +7,9 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.engine.IdManager.Id.ComponentId;
 import de.schosin.ecs.engine.components.Component.PooledComponent;
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.BitVector;
-import de.schosin.ecs.engine.utils.collections.Pool;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.Pool;
 
 sealed interface ComponentData<T> extends Component<T>, PooledComponent<T> {
 

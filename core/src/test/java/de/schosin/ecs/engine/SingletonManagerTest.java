@@ -19,7 +19,7 @@ import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.IntBag;
 
 class SingletonManagerTest extends AbstractWorldTest {
 

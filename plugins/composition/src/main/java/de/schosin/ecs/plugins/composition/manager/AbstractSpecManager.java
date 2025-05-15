@@ -8,9 +8,9 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.engine.utils.collections.BitVector;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Spec;
+import de.schosin.ecs.utils.collections.BitVector;
 
 public abstract class AbstractSpecManager implements Spec.SpecCreator {
 

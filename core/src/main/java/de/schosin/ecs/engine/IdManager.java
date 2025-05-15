@@ -4,8 +4,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import de.schosin.ecs.engine.IdManager.Id.ComponentId;
 import de.schosin.ecs.engine.IdManager.Id.EntityId;
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.IntBag;
 
 public class IdManager {
 

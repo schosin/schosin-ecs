@@ -14,8 +14,8 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
-import de.schosin.ecs.engine.utils.collections.IntBag;
 import de.schosin.ecs.plugins.transmuter.Transmuter.Remove;
+import de.schosin.ecs.utils.collections.IntBag;
 
 @EcsCodegen
 class TransmuterManagerTest extends BaseTransmuterManagerTest {

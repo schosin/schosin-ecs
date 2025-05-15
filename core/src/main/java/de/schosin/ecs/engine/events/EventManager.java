@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.Set;
 
 import de.schosin.ecs.engine.events.builtin.Event;
-import de.schosin.ecs.engine.utils.collections.Bag;
 import de.schosin.ecs.engine.utils.exceptions.EcsEventHandlerException;
+import de.schosin.ecs.utils.collections.Bag;
 
 public class EventManager {
 

@@ -9,10 +9,10 @@ import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.BitVector;
-import de.schosin.ecs.engine.utils.collections.IntBag;
-import de.schosin.ecs.engine.utils.collections.Pool;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.Pool;
 
 public class EntityManager {
 

@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
+import de.schosin.ecs.utils.ReflectionUtils;
 
 public class SingletonManager {
 

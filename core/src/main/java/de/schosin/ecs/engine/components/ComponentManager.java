@@ -13,11 +13,11 @@ import de.schosin.ecs.engine.IdManager;
 import de.schosin.ecs.engine.IdManager.Id.ComponentId;
 import de.schosin.ecs.engine.utils.ClassUtils;
 import de.schosin.ecs.engine.utils.ClassUtils.ClassType;
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.BitVector;
-import de.schosin.ecs.engine.utils.collections.Pool;
-import de.schosin.ecs.engine.utils.collections.ReflectionUtils;
 import de.schosin.ecs.engine.utils.exceptions.UnsupportedComponentTypeException;
+import de.schosin.ecs.utils.ReflectionUtils;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.Pool;
 
 /**
  * Manages {@link Component component data} for every component class

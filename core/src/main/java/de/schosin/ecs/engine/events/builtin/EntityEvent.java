@@ -5,7 +5,7 @@ import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.engine.utils.collections.Pool;
+import de.schosin.ecs.utils.collections.Pool;
 
 public sealed interface EntityEvent extends Event {
 

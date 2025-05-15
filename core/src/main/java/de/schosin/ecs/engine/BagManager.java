@@ -1,7 +1,7 @@
 package de.schosin.ecs.engine;
 
-import de.schosin.ecs.engine.utils.collections.Bag;
-import de.schosin.ecs.engine.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.IntBag;
 
 @SuppressWarnings("rawtypes")
 public class BagManager {

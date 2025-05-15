@@ -10,7 +10,7 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.engine.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.IntBag;
 
 class ChangeManagerTest extends AbstractWorldTest {
 

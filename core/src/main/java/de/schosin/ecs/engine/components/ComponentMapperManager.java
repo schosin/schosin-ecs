@@ -11,7 +11,7 @@ import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.EnumComponents;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.Bag;
 
 public class ComponentMapperManager implements Components.Creator {
 

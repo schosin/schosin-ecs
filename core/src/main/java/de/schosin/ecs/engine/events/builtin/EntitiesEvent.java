@@ -3,7 +3,7 @@ package de.schosin.ecs.engine.events.builtin;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.utils.collections.Pool;
+import de.schosin.ecs.utils.collections.Pool;
 
 public sealed interface EntitiesEvent extends Event {
 
