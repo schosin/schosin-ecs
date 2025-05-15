@@ -8,6 +8,8 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.EnumComponents;
 import de.schosin.ecs.api.components.Components.PooledComponents;
@@ -17,8 +19,13 @@ import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ClassComponentAddedEvent;
+import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.StorageWorld;
+import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.utils.collections.Bag;
 
-public class EngineWorld implements World {
+public class EngineWorld implements World, StorageWorld {
 
     private record Config(int processLoops) {
         public Config(WorldBuilder<?> builder) {
@@ -42,17 +49,18 @@ public class EngineWorld implements World {
     private final TransmutationManager transmutationManager;
     private final ComponentMapperManager componentMapperManager;
 
-    public EngineWorld(WorldBuilder<?> builder) {
+    public EngineWorld(WorldBuilder<?> builder, StorageEngine storageEngine) {
         this.config = new Config(builder);
 
         this.singletonManager = new SingletonManager(this);
+        singletonManager.addSingleton(StorageEngine.class, storageEngine);
 
         var classes = addSingleton(new Classes(ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet()));
 
         this.eventManager = addSingleton(new EventManager());
         this.bagManager = addSingleton(new BagManager());
         this.idManager = addSingleton(new IdManager(bagManager));
-        this.componentManager = addSingleton(new ComponentManager(bagManager, idManager, classes));
+        this.componentManager = addSingleton(new ComponentManager(storageEngine, classes));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
         this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
         this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
@@ -120,6 +128,20 @@ public class EngineWorld implements World {
     @Override
     public boolean flushEntityUpdates(int entityId) {
         return changeManager.flushEntityUpdates(entityId, config.processLoops);
+    }
+
+    @Override
+    public <T> Bag<T> createEntityBag(Class<? super T> clazz) {
+        return bagManager.createEntityBag(clazz);
+    }
+
+    @Override
+    public <T> void dispatchComponentAddedEvent(RegularComponentType<T> type, Component<T> component) {
+        var event = switch (type) {
+            case ComponentType.ClassType<T> classType -> ClassComponentAddedEvent.get(classType, component);
+        };
+
+        eventManager.dispatchEvent(event);
     }
 
 }

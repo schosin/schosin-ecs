@@ -292,7 +292,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
         }
 
         @Test
-        void testRemoveMultiple() {
+        void testRemoveMultipleComponents() {
             // Setup
             var entityId = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entityId, C1.class, C2.class, C3.class);
@@ -310,6 +310,80 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             verifyComponentMaskHasComponents(entityId, C1.class);
             verifyComponentMaskDoesNotHaveComponents(entityId, C2.class, C3.class);
+        }
+
+        @Test
+        void testRemoveMultipleEntities() {
+            // Setup
+            var entity1 = world.createEntity(new C1(), new C2(), new C3());
+            verifyHasComponents(entity1, C1.class, C2.class, C3.class);
+            verifyComponentMaskHasComponents(entity1, C1.class, C2.class, C3.class);
+
+            var entity2 = world.createEntity(new C1(), new C2(), new C3());
+            verifyHasComponents(entity2, C1.class, C2.class, C3.class);
+            verifyComponentMaskHasComponents(entity2, C1.class, C2.class, C3.class);
+
+            // Remove 2
+            remove2.apply(entity1);
+            remove2.apply(entity2);
+
+            world.process();
+
+            // Verify
+            verifyHasComponents(entity1, C1.class, C3.class);
+            verifyDoesNotHaveComponents(entity1, C2.class);
+
+            verifyComponentMaskHasComponents(entity1, C1.class, C3.class);
+            verifyComponentMaskDoesNotHaveComponents(entity1, C2.class);
+
+            verifyHasComponents(entity2, C1.class, C3.class);
+            verifyDoesNotHaveComponents(entity2, C2.class);
+
+            verifyComponentMaskHasComponents(entity2, C1.class, C3.class);
+            verifyComponentMaskDoesNotHaveComponents(entity2, C2.class);
+        }
+
+        // Verifies "entities.clear()" in ChangeManager  
+        @Test
+        void testRemove_DoesNotRemoveOnProcessOfReusedEntityId() {
+            // Setup
+            var entity1 = world.createEntity(new C1(), new C2(), new C3());
+            verifyHasComponents(entity1, C1.class, C2.class, C3.class);
+            verifyComponentMaskHasComponents(entity1, C1.class, C2.class, C3.class);
+
+            // Remove 2 
+            remove2.apply(entity1);
+            world.process();
+
+            // Delete and create new entity
+            world.deleteEntity(entity1);
+            world.process();
+
+            var entity2 = world.createEntity(new C1(), new C2(), new C3());
+            assertThat(entity2).as("entityId reused").isEqualTo(entity1);
+
+            verifyHasComponents(entity2, C1.class, C2.class, C3.class);
+            verifyComponentMaskHasComponents(entity2, C1.class, C2.class, C3.class);
+
+            var entity3 = world.createEntity(new C1(), new C2(), new C3());
+
+            // Remove 3
+            remove2.apply(entity3); // trigger removals of C2
+            remove3.apply(entity2);
+            world.process();
+
+            // Verify
+            verifyHasComponents(entity2, C1.class, C2.class);
+            verifyDoesNotHaveComponents(entity2, C3.class);
+
+            verifyComponentMaskHasComponents(entity2, C1.class, C2.class);
+            verifyComponentMaskDoesNotHaveComponents(entity2, C3.class);
+         
+            verifyHasComponents(entity3, C1.class, C3.class);
+            verifyDoesNotHaveComponents(entity3, C2.class);
+
+            verifyComponentMaskHasComponents(entity3, C1.class, C3.class);
+            verifyComponentMaskDoesNotHaveComponents(entity3, C2.class);
         }
 
         @Test

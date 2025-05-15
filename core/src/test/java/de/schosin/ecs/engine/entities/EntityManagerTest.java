@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
+import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.BitVector;
 
 class EntityManagerTest extends AbstractWorldTest {

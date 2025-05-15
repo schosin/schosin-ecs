@@ -1,6 +1,8 @@
 package de.schosin.ecs.api;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ServiceLoader;
+import java.util.ServiceLoader.Provider;
 
 import org.jspecify.annotations.NonNull;
 
@@ -30,6 +32,23 @@ public interface World extends Components.Creator {
     }
 
     interface Builder<T extends World> {
+
+        /**
+         * Override the storage engine used by this world. The storage engine
+         * will be loaded via {@link ServiceLoader}.
+         * 
+         * <p>
+         * If this method is not called, a single {@link Provider} is expected
+         * to be returned by {@link ServiceLoader#stream()}. If multiple storage
+         * engines are present on the classpath, use this method to set the engine to
+         * use.
+         * </p>
+         * 
+         * @param storageEngine class of storage engine, must implement StorageEngine
+         * @return this instance
+         * @throws ClassCastException if class does not implement StorageEngine
+         */
+        Builder<T> storageEngine(Class<?> storageEngine);
 
         /**
          * Default loop count used by {@link World#process()} when delegating to {@link World#process(int)}.

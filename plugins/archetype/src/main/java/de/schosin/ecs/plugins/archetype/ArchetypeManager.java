@@ -11,13 +11,13 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.codegen.EcsCodegen;
-import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.ArrayUtils;
+import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen

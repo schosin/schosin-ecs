@@ -17,6 +17,9 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.World.Builder;
 import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
 import de.schosin.ecs.engine.utils.exceptions.EcsWorldCreationException;
+import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.StorageWorld;
+
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.ByteCodeElement;
 import net.bytebuddy.implementation.MethodDelegation;
@@ -27,6 +30,7 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
 
     private final Class<T> clazz;
 
+    Class<? extends StorageEngine> storageEngine;
     int processLoops = 3;
     Map<Class<?>, Object> singletons;
 
@@ -47,6 +51,12 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
         }
 
         this.clazz = clazz;
+    }
+
+    @Override
+    public Builder<T> storageEngine(Class<?> storageEngine) {
+        this.storageEngine = storageEngine.asSubclass(StorageEngine.class);
+        return this;
     }
 
     @Override
@@ -74,13 +84,18 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
     @Override
     @SuppressWarnings("unchecked")
     public T build() {
-        var world = new EngineWorld(this);
+        var storageEngine = this.storageEngine != null ? StorageEngine.load(this.storageEngine) : StorageEngine.load();
+        var world = new EngineWorld(this, storageEngine);
 
         if (World.class.equals(clazz)) {
+            storageEngine.setWorld(world);
             return (T) world;
         }
 
-        return DynamicWorldBuilder.createDynamicWorld(world, clazz);
+        var dynamicWorld = DynamicWorldBuilder.createDynamicWorld(world, clazz);
+        storageEngine.setWorld((StorageWorld) dynamicWorld);
+
+        return dynamicWorld;
     }
 
 }
@@ -98,7 +113,9 @@ class DynamicWorldBuilder {
                     .subclass(Object.class)
                     .name(clazz.getName() + "$Proxy")
                     .implement(clazz)
+                    .implement(StorageWorld.class)
                     .method(isMethodOf(World.class)).intercept(MethodDelegation.to(world))
+                    .method(isMethodOf(StorageWorld.class)).intercept(MethodDelegation.to(world))
                     .make()
                     .load(DynamicWorldBuilder.class.getClassLoader())
                     .getLoaded();
@@ -123,10 +140,12 @@ class DynamicWorldBuilder {
         var builder = new ByteBuddy()
                 .subclass(Object.class)
                 .name(clazz.getName() + "$Proxy")
-                .implement(clazz);
+                .implement(clazz)
+                .implement(StorageWorld.class);
 
         // Add world
         var definition = builder.method(isMethodOf(World.class)).intercept(MethodDelegation.to(world));
+        definition = definition.method(isMethodOf(StorageWorld.class)).intercept(MethodDelegation.to(world));
 
         // Add plugins
         for (var plugin : plugins) {

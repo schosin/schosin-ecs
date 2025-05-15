@@ -60,6 +60,22 @@
             </dependency>
             
             <dependency>
+                <groupId>de.schosin.ecs.storage</groupId>
+                <artifactId>api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs.storage</groupId>
+                <artifactId>test-suite</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs.storage</groupId>
+                <artifactId>default-storage</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <dependency>
                 <groupId>de.schosin.ecs</groupId>
                 <artifactId>worlds</artifactId>
                 <version>${project.version}</version>

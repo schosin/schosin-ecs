@@ -15,7 +15,6 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
@@ -28,12 +27,13 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.plugins.composition.BaseComposition;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
+import de.schosin.ecs.plugins.composition.CompositionPlugin;
+import de.schosin.ecs.plugins.composition.Spec;
+import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
-import de.schosin.ecs.plugins.composition.CompositionPlugin;
-import de.schosin.ecs.plugins.composition.Spec;
 
 @EcsCodegen
 public class CompositionManager extends AbstractSpecManager implements CompositionPlugin {

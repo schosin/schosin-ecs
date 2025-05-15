@@ -1,23 +1,19 @@
 package de.schosin.ecs.engine.components;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
-import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
-import de.schosin.ecs.engine.IdManager;
-import de.schosin.ecs.engine.IdManager.Id.ComponentId;
 import de.schosin.ecs.engine.utils.ClassUtils;
-import de.schosin.ecs.engine.utils.ClassUtils.ClassType;
 import de.schosin.ecs.engine.utils.exceptions.UnsupportedComponentTypeException;
-import de.schosin.ecs.utils.ReflectionUtils;
-import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.BitVector;
-import de.schosin.ecs.utils.collections.Pool;
 
 /**
  * Manages {@link Component component data} for every component class
@@ -31,29 +27,26 @@ import de.schosin.ecs.utils.collections.Pool;
  */
 public class ComponentManager {
 
-    private static final int POOL_LIMIT = 1000000; // TODO configuration or per-class (default method in interface? Annotation? config per-class?)
+    private final StorageEngine storageEngine;
 
-    private final BagManager bagManager;
-    private final IdManager idManager;
-    private final Classes classes;
+    private final Consumer<RegularComponentType<?>> validate;
 
-    private final Bag<Component<?>> byId = new Bag<>(Component.class, 64);
-    private final Map<Class<?>, ComponentData<?>> byClass = new ConcurrentHashMap<>();
+    public ComponentManager(StorageEngine storageEngine, Classes classes) {
+        this.storageEngine = storageEngine;
 
-    public ComponentManager(BagManager bagManager, IdManager idManager, Classes classes) {
-        this.bagManager = bagManager;
-        this.idManager = idManager;
-        this.classes = classes;
+        this.validate = type -> ComponentManager.validateComponent(type, classes);
     }
 
     public Component<?> getComponent(int componentId) {
-        return byId.get(componentId);
+        return storageEngine.getComponent(componentId);
     }
 
     public <T> Component<T> getComponent(RegularComponentType<T> type) {
-        return switch (type) {
-            case ComponentType.ClassType<T> classType -> getData(classType);
-        };
+        return storageEngine.getComponent(type, this.validate);
+    }
+
+    public <T extends Pooled> PooledComponentData<T> getPooledComponent(RegularComponentType<T> type) {
+        return storageEngine.getPooledComponent(type, this.validate);
     }
 
     /**
@@ -74,71 +67,6 @@ public class ComponentManager {
         };
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> ComponentData<T> getData(ComponentType.ClassType<T> type) {
-        var result = (ComponentData<T>) byClass.get(type.clazz());
-        if (result != null) {
-            return result;
-        }
-
-        synchronized (classes) {
-            if (classes.states().contains(type.clazz())) {
-                throw new IllegalArgumentException("Class %s is already used as a state.".formatted(type.clazz().getName()));
-            }
-
-            classes.components().add(type.clazz());
-            return (ComponentData<T>) byClass.computeIfAbsent(type.clazz(), ignore -> createMetadata(type, bagManager.getEntitySize()));
-        }
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T> ComponentDataImpl<T> createMetadata(ComponentType.ClassType<T> type, int bagSize) {
-        validateComponentHierarchy(type.clazz());
-
-        var components = bagManager.createEntityBag(type.clazz(), bagSize);
-        var removals = new BitVector(bagSize);
-        var pool = Pooled.class.isAssignableFrom(type.clazz())
-                ? Pool.bounded(POOL_LIMIT, type.clazz(), () -> ReflectionUtils.createComponentInstance(type.clazz()))
-                : null;
-
-        var metadata = new ComponentDataImpl(createComponentId(), type, components, removals, pool);
-        byId.set(metadata.id(), metadata);
-
-        return metadata;
-    }
-
-    private ComponentId createComponentId() {
-        return idManager.createComponentId();
-    }
-
-    @SuppressWarnings("unused") // I really want exhaustive switch statements
-    private void validateComponentHierarchy(Class<?> clazz) {
-        // Validate invalid types
-        var type = ClassUtils.detectType(clazz);
-        if (!type.isValidComponent()) {
-            throw new IllegalArgumentException("Invalid component '%s' of type '%s'. Allowed types: %s".formatted(clazz.getSimpleName(), type.name().toLowerCase(), ClassType.ALLOWED_COMPONENT_TYPES));
-        }
-
-        // Validate no extends/super of existing component type
-        var data = byId.getData();
-        for (int i = 0, s = byId.getSize(); i < s; i++) {
-            var valid = switch (data[i]) {
-                case ComponentData<?> c -> validateComponentHierarchy(clazz, c.clazz());
-                case null -> true;
-            };
-        }
-    }
-
-    private boolean validateComponentHierarchy(Class<?> clazz, Class<?> existingClass) {
-        if (existingClass.isAssignableFrom(clazz)) {
-            throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(clazz.getSimpleName(), existingClass.getSimpleName()));
-        } else if (clazz.isAssignableFrom(existingClass)) {
-            throw new IllegalStateException("Extending another component is not supported: %s extends %s".formatted(existingClass.getSimpleName(), clazz.getSimpleName()));
-        }
-
-        return true;
-    }
-
     public void removed(int entityId, ComponentMask componentMask) {
         for (var data : componentMask.getComponents()) {
             data.removeComponent(entityId);
@@ -152,10 +80,38 @@ public class ComponentManager {
         }
     }
 
-    // public api
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public Collection<Component<?>> getComponents() {
-        return (Collection) this.byClass.values();
+        return storageEngine.getComponents();
+    }
+
+    private static boolean validateComponent(RegularComponentType<?> type, Classes classes) {
+        return switch (type) {
+            case ComponentType.ClassType<?> classType -> validateComponent(classType, classes);
+        };
+    }
+
+    private static boolean validateComponent(ClassType<?> type, Classes classes) {
+        // Validate invalid types
+        var classType = ClassUtils.detectType(type.clazz());
+        if (!classType.isValidComponent()) {
+            throw new IllegalArgumentException("Invalid component '%s' of type '%s'. Allowed types: %s"
+                    .formatted(type.clazz().getSimpleName(), classType.name().toLowerCase(), ClassUtils.ClassType.ALLOWED_COMPONENT_TYPES));
+        }
+
+        // Validate not a state
+        synchronized (classes) {
+            if (classes.states().contains(type.clazz())) {
+                throw new IllegalArgumentException("Class %s is already used as a state.".formatted(type.clazz().getName()));
+            }
+
+            classes.components().add(type.clazz());
+        }
+
+        return true;
+    }
+
+    public void dispatchComponentAddedEvent(RegularComponentType<?> type, Component<?> component) {
+        
     }
 
 }

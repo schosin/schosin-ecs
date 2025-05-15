@@ -23,7 +23,7 @@ public class Utils {
 
     public static final ClassName ARRAY_UTILS = ClassName.get("de.schosin.ecs.engine.utils", "ArrayUtils");
     public static final ClassName POOLED = ClassName.get("de.schosin.ecs.api", "Pooled");
-    public static final ClassName BAG = ClassName.get("de.schosin.ecs.engine.utils.collections", "Bag");
+    public static final ClassName BAG = ClassName.get("de.schosin.ecs.utils.collections", "Bag");
     public static final ClassName WORLD = ClassName.get("de.schosin.ecs.api", "World");
     public static final ClassName ABSTRACT_WORLD_TEST = ClassName.get("de.schosin.ecs.engine", "AbstractWorldTest");
     private static final ClassName ABSTRACT_ECS_TEST = ClassName.get("de.schosin.ecs.test", "AbstractEcsTest");

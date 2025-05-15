@@ -2,6 +2,7 @@ package de.schosin.ecs.engine.components;
 
 import java.util.Objects;
 
+import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;

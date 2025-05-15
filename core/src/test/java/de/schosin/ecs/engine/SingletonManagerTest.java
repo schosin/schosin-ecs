@@ -19,6 +19,7 @@ import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.utils.collections.IntBag;
 
 class SingletonManagerTest extends AbstractWorldTest {
@@ -47,11 +48,13 @@ class SingletonManagerTest extends AbstractWorldTest {
         }
 
         static Stream<Arguments> managers() {
+            var storageEngine = StorageEngine.load();
+
             var eventManager = new EventManager();
             var singletonManager = new SingletonManager(null);
             var bagManager = new BagManager();
             var idManager = new IdManager(bagManager);
-            var componentManager = new ComponentManager(bagManager, idManager, null);
+            var componentManager = new ComponentManager(storageEngine, null);
             var componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
             var entityManager = new EntityManager(null, idManager, componentManager, componentMaskManager);
             var changeManager = new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager);

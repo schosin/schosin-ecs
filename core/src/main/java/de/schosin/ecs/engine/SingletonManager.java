@@ -21,6 +21,15 @@ public class SingletonManager {
         this.singletons.put(SingletonManager.class, this);
     }
 
+    public <T> T addSingleton(@NonNull Class<? super T> clazz, @NonNull T singleton) {
+        var existing = this.singletons.putIfAbsent(clazz, singleton);
+        if (existing != null) {
+            throw new IllegalArgumentException("This world already contains a singleton of type " + singleton.getClass());
+        }
+
+        return singleton;
+    }
+
     public <T> T addSingleton(@NonNull T singleton) {
         var existing = this.singletons.putIfAbsent(singleton.getClass(), singleton);
         if (existing != null) {

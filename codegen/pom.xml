@@ -11,7 +11,6 @@
     
     <properties>
         <palantir.javapoet.version>0.7.0</palantir.javapoet.version>
-        <autoservice.version>1.1.1</autoservice.version>
     </properties>
 
     <dependencies>
@@ -27,7 +26,6 @@
         <dependency>
             <groupId>com.google.auto.service</groupId>
             <artifactId>auto-service</artifactId>
-            <version>${autoservice.version}</version>
             <optional>true</optional>
         </dependency>
     </dependencies>

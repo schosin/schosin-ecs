@@ -11,6 +11,9 @@ import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.EnumComponents;
 import de.schosin.ecs.api.components.Components.PooledComponents;
 import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.ComponentData;
+import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.Bag;
 
 public class ComponentMapperManager implements Components.Creator {
@@ -31,7 +34,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> Components<T> getComponents(Class<T> clazz) {
-        var metadata = (ComponentData<T>) componentManager.getComponent(ComponentType.component(clazz));
+        var metadata = componentManager.getComponent(ComponentType.component(clazz));
 
         var result = this.components.get(metadata.id());
         if (result != null) {
@@ -44,9 +47,10 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = Pooled.class.isAssignableFrom(clazz)
-                    ? new PooledComponentMapper(metadata)
-                    : new ComponentMapper<>(metadata);
+            var mapper = switch (metadata) {
+                case Component.PooledComponentData<?> pooled -> (ComponentMapper<T>) new PooledComponentMapper(pooled);
+                case Component.ComponentData<T> data -> new ComponentMapper<>(data);
+            };
 
             this.components.set(metadata.id(), mapper);
 
@@ -80,7 +84,7 @@ public class ComponentMapperManager implements Components.Creator {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Pooled> PooledComponents<T> getPooledComponents(Class<T> clazz) {
-        var metadata = (ComponentData<T>) componentManager.getComponent(ComponentType.component(clazz));
+        var metadata = componentManager.getPooledComponent(ComponentType.component(clazz));
 
         var result = (PooledComponents<T>) this.components.get(metadata.id());
         if (result != null) {
@@ -182,8 +186,12 @@ public class ComponentMapperManager implements Components.Creator {
 
     private class PooledComponentMapper<T extends Pooled> extends ComponentMapper<T> implements PooledComponents<T> {
 
-        public PooledComponentMapper(ComponentData<T> data) {
+        private final PooledComponentData<T> data;
+
+        public PooledComponentMapper(PooledComponentData<T> data) {
             super(data);
+
+            this.data = data;
         }
 
         @Override

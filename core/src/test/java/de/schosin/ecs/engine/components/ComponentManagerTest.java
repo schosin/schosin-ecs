@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
@@ -84,24 +83,6 @@ class ComponentManagerTest extends AbstractWorldTest {
         assertThatThrownBy(() -> componentManager.getComponent(test.component))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(test.component.clazz().getSimpleName(), "Invalid component", "Allowed types");
-    }
-
-    @Test
-    void testExtendedComponent_ParentFirst() {
-        componentManager.getComponent(component(ValidClass.class));
-
-        assertThatThrownBy(() -> componentManager.getComponent(component(ExtendedClass.class)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll("Extending ", "not supported", ValidClass.class.getSimpleName(), ExtendedClass.class.getSimpleName());
-    }
-
-    @Test
-    void testExtendedComponent_ParentSecond() {
-        componentManager.getComponent(component(ExtendedClass.class));
-
-        assertThatThrownBy(() -> componentManager.getComponent(component(ValidClass.class)))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll("Extending ", "not supported", ValidClass.class.getSimpleName(), ExtendedClass.class.getSimpleName());
     }
 
     private static void invalidSynthethic() {

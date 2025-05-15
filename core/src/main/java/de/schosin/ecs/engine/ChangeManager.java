@@ -2,7 +2,6 @@ package de.schosin.ecs.engine;
 
 import org.jspecify.annotations.NonNull;
 
-import de.schosin.ecs.engine.components.Component;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -12,6 +11,8 @@ import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
+import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
 
@@ -24,6 +25,8 @@ public class ChangeManager {
     private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
 
+    private final Bag<IntBag> removedComponentsBags;
+
     private BitVector deletedEntities;
     private BitVector deletedEntitiesOverflow;
 
@@ -33,14 +36,16 @@ public class ChangeManager {
     private IntBag updatedEntityMasks;
     private IntBag updatedEntityMasksOverflow;
 
-    private BitVector removedComponents;
-    private BitVector removedComponentsOverflow;
+    private Bag<IntBag> removedComponents;
+    private Bag<IntBag> removedComponentsOverflow;
 
     public ChangeManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, EntityManager entityManager) {
         this.eventManager = eventManager;
         this.componentManager = componentManager;
         this.componentMaskManager = componentMaskManager;
         this.entityManager = entityManager;
+
+        this.removedComponentsBags = bagManager.createComponentBag(IntBag.class);
 
         this.deletedEntities = new BitVector(64);
         this.deletedEntitiesOverflow = new BitVector(64);
@@ -51,8 +56,8 @@ public class ChangeManager {
         this.updatedEntityMasks = bagManager.createEntityIntBag();
         this.updatedEntityMasksOverflow = bagManager.createEntityIntBag();
 
-        this.removedComponents = new BitVector(64);
-        this.removedComponentsOverflow = new BitVector(64);
+        this.removedComponents = new Bag<>(IntBag.class);
+        this.removedComponentsOverflow = new Bag<>(IntBag.class);
     }
 
     public void inserted(int entityId, ComponentMask componentMask) {
@@ -151,8 +156,8 @@ public class ChangeManager {
                 }
             }
 
-            // Apply removal if component not in new component mask
-            component.applyRemoval(entityId);
+            // Remove component if component not in new component mask
+            component.removeComponent(entityId);
         }
     }
 
@@ -198,7 +203,15 @@ public class ChangeManager {
         updated.clear();
         masks.clear();
 
-        removed.iterate(this::processRemovedComponent);
+        var removedData = removed.getData();
+        for (int i = 0, s = removed.getSize(); i < s; i++) {
+            var entities = removedData[i];
+
+            var componentId = this.removedComponentsBags.indexOfIdentity(entities);
+            processRemovedComponent(componentId, removedData[i]);
+
+            entities.clear();
+        }
         removed.clear();
 
         return !isDirty();
@@ -222,9 +235,13 @@ public class ChangeManager {
         entityManager.deleteEntity(entityId);
     }
 
-    private void processRemovedComponent(int componentId) {
+    private void processRemovedComponent(int componentId, IntBag entities) {
         var metadata = componentManager.getComponent(componentId);
-        metadata.applyRemovals();
+
+        var data = entities.getData();
+        for (int i = 0, s = entities.getSize(); i < s; i++) {
+            metadata.removeComponent(data[i]);
+        }
     }
 
     private void processUpdatedEntity(int entityId, int componentMaskId) {
@@ -254,7 +271,7 @@ public class ChangeManager {
         var changed = !component.hasComponent(entityId);
 
         component.addComponentUnsafe(entityId, instance);
-        component.unmarkRemoved(entityId);
+        unmarkRemoved(entityId, component);
 
         if (changed) {
             this.updatedEntities.set(entityId);
@@ -268,12 +285,39 @@ public class ChangeManager {
             return false;
         }
 
-        component.markRemoved(entityId);
-
         this.updatedEntities.set(entityId);
-        this.removedComponents.set(component.id());
+        markRemoved(entityId, component);
 
         return true;
+    }
+
+    private void markRemoved(int entityId, Component<?> component) {
+        var removed = this.removedComponentsBags.get(component.id());
+        if (removed == null) {
+            synchronized (this.removedComponentsBags) {
+                removed = this.removedComponentsBags.get(component.id());
+                if (removed == null) {
+                    removed = new IntBag(64);
+
+                    this.removedComponentsBags.set(component.id(), removed);
+                }
+            }
+        }
+
+        removed.add(entityId);
+
+        if (!this.removedComponents.containsIdentity(removed)) {
+            this.removedComponents.add(removed);
+        }
+    }
+
+    private void unmarkRemoved(int entityId, Component<?> component) {
+        var removed = this.removedComponentsBags.get(component.id());
+        if (removed == null || removed.isEmpty()) {
+            return;
+        }
+
+        removed.removeValue(entityId);
     }
 
     /**

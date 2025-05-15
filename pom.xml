@@ -10,6 +10,7 @@
         <module>codegen</module>
         <module>api</module>
         <module>utils</module>
+        <module>storage</module>
         <module>core</module>
         <module>test</module>
         <module>plugins</module>
@@ -36,6 +37,7 @@
         <glassfish.expressly.version>5.0.0</glassfish.expressly.version>
         
         <bytebuddy.version>1.17.5</bytebuddy.version>
+        <autoservice.version>1.1.1</autoservice.version>
         
         <junit.version>5.12.2</junit.version>
         <junit-pironeer.version>2.3.0</junit-pironeer.version>
@@ -92,6 +94,12 @@
                 <groupId>org.openjdk.jmh</groupId>
                 <artifactId>jmh-generator-annprocess</artifactId>
                 <version>${jmh.version}</version>
+            </dependency>
+        
+            <dependency>
+                <groupId>com.google.auto.service</groupId>
+                <artifactId>auto-service</artifactId>
+                <version>${autoservice.version}</version>
             </dependency>
         
             <dependency>
