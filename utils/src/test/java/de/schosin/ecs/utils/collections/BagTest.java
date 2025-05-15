@@ -1,4 +1,4 @@
-package de.schosin.ecs.engine.utils.collections;
+package de.schosin.ecs.utils.collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;

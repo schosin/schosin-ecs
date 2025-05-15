@@ -1,4 +1,4 @@
-package de.schosin.ecs.engine.utils.collections;
+package de.schosin.ecs.utils.collections;
 
 import java.util.Arrays;
 
