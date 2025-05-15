@@ -16,9 +16,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>de.schosin.ecs</groupId>
-            <artifactId>codegen</artifactId>
-            <optional>true</optional>
+            <groupId>de.schosin.ecs.storage</groupId>
+            <artifactId>api</artifactId>
+            <version>${project.version}</version>
         </dependency>
             
         <dependency>
@@ -38,27 +38,4 @@
             <optional>true</optional>
         </dependency>
     </dependencies>
-    
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <annotationProcessorPath>
-                            <groupId>de.schosin.ecs</groupId>
-                            <artifactId>codegen</artifactId>
-                            <version>${project.version}</version>
-                        </annotationProcessorPath>
-                    </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-AcompositionParams=${codegen.compositionParams}</arg>
-                        <arg>-AarchetypeParams=${codegen.archetypeParams}</arg>
-                        <arg>-AtransmuterParams=${codegen.transmuterParams}</arg>
-                    </compilerArgs>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>
