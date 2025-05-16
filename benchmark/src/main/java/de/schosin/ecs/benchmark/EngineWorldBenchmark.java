@@ -14,7 +14,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.Components.ComponentMapper;
 import de.schosin.ecs.plugins.archetype.Archetype;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.transmuter.Transmuter;
@@ -307,12 +307,12 @@ public class EngineWorldBenchmark {
             new Runner(options).run();
         }
 
-        private Components<Component1> component1;
-        private Components<Component2> component2;
-        private Components<Component3> component3;
-        private Components<Component4> component4;
-        private Components<Component5> component5;
-        private Components<Component6> component6;
+        private ComponentMapper<Component1> component1;
+        private ComponentMapper<Component2> component2;
+        private ComponentMapper<Component3> component3;
+        private ComponentMapper<Component4> component4;
+        private ComponentMapper<Component5> component5;
+        private ComponentMapper<Component6> component6;
 
         private Transmuter.Add1<Component1> transmuter1;
         private Transmuter.Add2<Component1, Component2> transmuter2;

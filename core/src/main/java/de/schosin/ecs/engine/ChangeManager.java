@@ -304,7 +304,9 @@ public class ChangeManager {
             }
         }
 
-        removed.add(entityId);
+        if (!removed.contains(entityId)) {
+            removed.add(entityId);
+        }
 
         if (!this.removedComponents.containsIdentity(removed)) {
             this.removedComponents.add(removed);

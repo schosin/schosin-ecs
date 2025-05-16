@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 
 /**
  *  Component mapper for accessing and modifying components of an entity.
@@ -40,13 +41,27 @@ import de.schosin.ecs.api.World;
  */
 public interface Components<T> {
 
+    interface ComponentMapper<T> extends Components<T> {
+
+        /**
+         * Adds the component to the entity. Overwrites any existing component of the same class. 
+         * 
+         * @param entityId id of entity
+         * @param component component instance
+         * @return same component instance as the parameter
+         */
+        @NonNull
+        T add(int entityId, @NonNull T component);
+
+    }
+
     /**
      * Specialized variant of {@link Components} for {@link Enum enums} supporting
      * adding a default instance defined at {@link Creator#getEnumComponents(Enum) creation}.
      * 
      * @param <T> type of enum
      */
-    interface EnumComponents<T extends Enum<T>> extends Components<T> {
+    interface EnumComponentMapper<T extends Enum<T>> extends ComponentMapper<T> {
 
         /**
          * Returns the current component or adds the enum instance defined
@@ -68,7 +83,7 @@ public interface Components<T> {
 
     }
 
-    interface PooledComponents<T extends Pooled> extends Components<T> {
+    interface PooledComponentMapper<T extends Pooled> extends ComponentMapper<T> {
 
         /**
          * Returns the current component or adds a new component from a pool. 
@@ -133,16 +148,6 @@ public interface Components<T> {
     T get(int entityId);
 
     /**
-     * Adds the component to the entity. Overwrites any existing component of the same class. 
-     * 
-     * @param entityId id of entity
-     * @param component component instance
-     * @return same component instance as the parameter
-     */
-    @NonNull
-    T add(int entityId, @NonNull T component);
-
-    /**
      * Marks the component for removal. The component will be removed during the {@link #process()} call.
      * 
      * <p>
@@ -157,35 +162,62 @@ public interface Components<T> {
     interface Creator {
 
         /**
+         * Retrieves the {@link Components} instance for the given {@link ComponentType}.
+         * 
+         * @param <T> type of result
+         * @param type component type
+         * @return class to access components defined by the type argument
+         */
+        @NonNull
+        <T> Components<T> getComponents(@NonNull ComponentType<T> type);
+
+        /**
          * Retrieves the mapper of the given component class. This can be used to access components and 
          * to add or remove components from entities.
          * 
          * <p>
          * <b>Note:</b> If T extends Pooled, the returned instance will also implement and
-         * can be cast to {@link PooledComponents}. Prefer using {@link #getPooledComponents(Class)}
+         * can be cast to {@link PooledComponentMapper}. Prefer using {@link #getPooledComponents(Class)}
          * for pooled components.
          * </p>
          *  
          * @param clazz {@link Class} of the component
          * @return class to manage the components defined by the clazz argument 
          */
+        default <T> ComponentMapper<T> getComponents(@NonNull Class<T> clazz) {
+            return getComponents(ComponentType.component(clazz));
+        }
+
+        /**
+         * Retrieves the mapper of the given component type. This can be used to access components and 
+         * to add or remove components from entities.
+         * 
+         * <p>
+         * <b>Note:</b> If T extends Pooled, the returned instance will also implement and
+         * can be cast to {@link PooledComponentMapper}. Prefer using {@link #getPooledComponents(Class)}
+         * for pooled components.
+         * </p>
+         *  
+         * @param type {@link RegularComponentType} of the component
+         * @return class to manage the components defined by the type argument 
+         */
         @NonNull
-        <T> Components<T> getComponents(@NonNull Class<T> clazz);
+        <T> ComponentMapper<T> getComponents(@NonNull RegularComponentType<T> type);
 
         /**
          * Retrieves the mapper of the given enum class defined by the {@literal defaultComponent}.
          * This can be used to access components and to add or remove components from entities.
          * 
          * <p>
-         * {@link EnumComponents#add(int)} will add the default component to the entity an can be
+         * {@link EnumComponentMapper#add(int)} will add the default component to the entity an can be
          * used for marker components (singletons) that require no starte.
          * </p>
          * 
-         * @param defaultComponent default component for {@link EnumComponents#add(int)}
+         * @param defaultComponent default component for {@link EnumComponentMapper#add(int)}
          * @return class to manage the components defined by the class of {@literal defaultComponent}
          */
         @NonNull
-        <T extends Enum<T>> EnumComponents<T> getEnumComponents(@NonNull T defaultComponent);
+        <T extends Enum<T>> EnumComponentMapper<T> getEnumComponents(@NonNull T defaultComponent);
 
         /**
          * Retrieves the mapper of the given component class. This can be used to access components and 
@@ -194,7 +226,18 @@ public interface Components<T> {
          * @param clazz {@link Class} of the component
          * @return class to manage the components defined by the clazz argument 
          */
-        <T extends Pooled> PooledComponents<T> getPooledComponents(@NonNull Class<T> clazz);
+        default <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull Class<T> clazz) {
+            return getPooledComponents(ComponentType.component(clazz));
+        }
+
+        /**
+         * Retrieves the mapper of the given component type. This can be used to access components and 
+         * to add or remove components from entities.
+         * 
+         * @param type {@link RegularComponentType} of the component
+         * @return class to manage the components defined by the type argument
+         */
+        <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull RegularComponentType<T> type);
 
     }
 

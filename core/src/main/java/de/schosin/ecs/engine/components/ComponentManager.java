@@ -1,6 +1,5 @@
 package de.schosin.ecs.engine.components;
 
-import java.util.Collection;
 import java.util.function.Consumer;
 
 import de.schosin.ecs.api.Pooled;
@@ -8,12 +7,15 @@ import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.EngineWorld.Classes;
+import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ClassComponentAddedEvent;
 import de.schosin.ecs.engine.utils.ClassUtils;
 import de.schosin.ecs.engine.utils.exceptions.UnsupportedComponentTypeException;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 /**
  * Manages {@link Component component data} for every component class
@@ -28,11 +30,13 @@ import de.schosin.ecs.utils.collections.BitVector;
 public class ComponentManager {
 
     private final StorageEngine storageEngine;
+    private final EventManager eventManager;
 
     private final Consumer<RegularComponentType<?>> validate;
 
-    public ComponentManager(StorageEngine storageEngine, Classes classes) {
+    public ComponentManager(StorageEngine storageEngine, EventManager eventManager, Classes classes) {
         this.storageEngine = storageEngine;
+        this.eventManager = eventManager;
 
         this.validate = type -> ComponentManager.validateComponent(type, classes);
     }
@@ -80,8 +84,12 @@ public class ComponentManager {
         }
     }
 
-    public Collection<Component<?>> getComponents() {
+    public ImmutableBag<Component<?>> getComponents() {
         return storageEngine.getComponents();
+    }
+
+    public <T> ImmutableBag<Component<? extends T>> getComponents(ComponentType<T> bound) {
+        return storageEngine.getComponents(bound);
     }
 
     private static boolean validateComponent(RegularComponentType<?> type, Classes classes) {
@@ -110,8 +118,12 @@ public class ComponentManager {
         return true;
     }
 
-    public void dispatchComponentAddedEvent(RegularComponentType<?> type, Component<?> component) {
-        
+    public <T> void dispatchComponentAddedEvent(RegularComponentType<T> type, Component<T> component) {
+        var event = switch (type) {
+            case ComponentType.ClassType<T> clazzType -> ClassComponentAddedEvent.get(clazzType, component);
+        };
+
+        eventManager.dispatchEvent(event);
     }
 
 }

@@ -115,7 +115,7 @@ public class WorldBuilderTest {
 
             @Override
             public int getComponentCount() {
-                return componentManager.getComponents().size();
+                return componentManager.getComponents().getSize();
             }
 
             @Override

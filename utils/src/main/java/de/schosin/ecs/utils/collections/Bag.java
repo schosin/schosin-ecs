@@ -6,7 +6,7 @@ import java.util.Arrays;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-public class Bag<T> {
+public class Bag<T> implements ImmutableBag<T> {
 
     private T[] data;
     private int size;
@@ -30,18 +30,22 @@ public class Bag<T> {
         return data;
     }
 
+    @Override
     public boolean isEmpty() {
         return size == 0;
     }
 
+    @Override
     public int getSize() {
         return size;
     }
 
+    @Override
     public int getCapacity() {
         return data.length;
     }
 
+    @Override
     public T get(int index) {
         return data[index];
     }
@@ -102,14 +106,17 @@ public class Bag<T> {
         this.size = 0;
     }
 
+    @Override
     public boolean contains(@NonNull T item) {
         return indexOf(item) > -1;
     }
 
+    @Override
     public boolean containsIdentity(@NonNull T item) {
         return indexOfIdentity(item) > -1;
     }
 
+    @Override
     public int indexOf(@NonNull T item) {
         for (int i = 0; i < size; i++) {
             if (data[i].equals(item)) {
@@ -120,6 +127,7 @@ public class Bag<T> {
         return -1;
     }
 
+    @Override
     public int indexOfIdentity(@NonNull T item) {
         for (int i = 0; i < size; i++) {
             if (data[i] == item) {

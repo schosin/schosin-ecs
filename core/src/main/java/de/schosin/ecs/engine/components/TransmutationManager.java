@@ -5,11 +5,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public class TransmutationManager {
 
@@ -17,7 +19,7 @@ public class TransmutationManager {
 
         Set<RegularComponentType<?>> getAdd();
 
-        Set<RegularComponentType<?>> getRemove();
+        Set<ComponentType<?>> getRemove();
 
         @Override
         boolean equals(Object obj);
@@ -26,8 +28,6 @@ public class TransmutationManager {
         int hashCode();
 
     }
-
-    private static final Component<?>[] EMPTY = new Component[0];
 
     private final ChangeManager changeManager;
     private final ComponentManager componentManager;
@@ -43,13 +43,12 @@ public class TransmutationManager {
         this.entityManager = entityManager;
     }
 
-    @SuppressWarnings("unchecked")
     public <T> Add<T> getAddTransmuter(RegularComponentType<T> component) {
-        return (Add<T>) getTransmuter(ImmutableBuilder.add(component), () -> new Add<>(componentManager.getComponent(component)));
+        return getTransmuter(ImmutableBuilder.add(component), () -> new Add<>(component));
     }
 
-    public Remove getRemoveTransmuter(RegularComponentType<?> component) {
-        return getTransmuter(ImmutableBuilder.remove(component), () -> new Remove(componentManager.getComponent(component)));
+    public Remove getRemoveTransmuter(ComponentType<?> component) {
+        return getTransmuter(ImmutableBuilder.remove(component), () -> new Remove(component));
     }
 
     @SuppressWarnings("unchecked")
@@ -64,8 +63,8 @@ public class TransmutationManager {
 
     public class Add<T> extends AbstractTransmuter {
 
-        public Add(Component<?> add) {
-            super(TransmutationManager.this, new Component[] { add }, EMPTY);
+        public Add(RegularComponentType<T> add) {
+            super(TransmutationManager.this, Set.of(add), Set.of());
         }
 
         public boolean apply(int entityId, T component) {
@@ -81,8 +80,8 @@ public class TransmutationManager {
 
     public class Remove extends AbstractTransmuter {
 
-        public Remove(Component<?> remove) {
-            super(TransmutationManager.this, EMPTY, new Component[] { remove });
+        public Remove(ComponentType<?> remove) {
+            super(TransmutationManager.this, Set.of(), Set.of(remove));
         }
 
         public boolean apply(int entityId) {
@@ -98,22 +97,44 @@ public class TransmutationManager {
 
     public abstract static class AbstractTransmuter {
 
+        private static final Bag<ImmutableBag<Component<?>>> EMPTY_BAG = new Bag<>(ImmutableBag.class, 0);
+
         private final TransmutationManager manager;
 
         private final Component<?>[] add;
-        private final Component<?>[] remove;
+        private final ImmutableBag<ImmutableBag<Component<?>>> remove;
 
         private final Bag<ComponentMask> cache = new Bag<>(ComponentMask.class, 64);
 
         protected AbstractTransmuter(TransmutationManager manager, Builder builder) {
-            this(manager, convert(manager, builder.getAdd()), convert((TransmutationManager) manager, builder.getRemove()));
+            this(manager, builder.getAdd(), builder.getRemove());
         }
 
-        private static Component<?>[] convert(TransmutationManager manager, Set<RegularComponentType<?>> classes) {
-            return classes.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
+        protected AbstractTransmuter(TransmutationManager manager, Set<RegularComponentType<?>> add, Set<ComponentType<?>> remove) {
+            this(manager, convert(manager, add), convertRemove(manager, remove));
         }
 
-        protected AbstractTransmuter(TransmutationManager manager, Component<?>[] add, Component<?>[] remove) {
+        private static Component<?>[] convert(TransmutationManager manager, Set<RegularComponentType<?>> types) {
+            return types.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
+        }
+
+        @SuppressWarnings("unchecked")
+        private static ImmutableBag<ImmutableBag<Component<?>>> convertRemove(TransmutationManager manager, Set<ComponentType<?>> types) {
+            if (types.isEmpty()) {
+                return EMPTY_BAG;
+            }
+
+            var bag = new Bag<ImmutableBag<Component<?>>>(ImmutableBag.class, 64);
+
+            for (var type : types) {
+                var components = manager.componentManager.getComponents(type);
+                bag.add((ImmutableBag<Component<?>>) components);
+            }
+
+            return ImmutableBag.create(bag);
+        }
+
+        private AbstractTransmuter(TransmutationManager manager, Component<?>[] add, ImmutableBag<ImmutableBag<Component<?>>> remove) {
             this.manager = manager;
 
             this.add = add;
@@ -158,8 +179,12 @@ public class TransmutationManager {
         }
 
         private final void removeComponents(int entityId) {
-            for (var metadata : remove) {
-                manager.changeManager.removeComponent(entityId, metadata);
+            for (int i = 0, s = remove.getSize(); i < s; i++) {
+                var bags = remove.get(i);
+
+                for (int j = 0, js = bags.getSize(); j < js; j++) {
+                    manager.changeManager.removeComponent(entityId, bags.get(j));
+                }
             }
         }
 
@@ -183,8 +208,13 @@ public class TransmutationManager {
             for (var metadata : add) {
                 result = manager.componentMaskManager.addComponent(result, metadata);
             }
-            for (var metadata : remove) {
-                result = manager.componentMaskManager.removeComponent(result, metadata);
+
+            for (int i = 0, s = remove.getSize(); i < s; i++) {
+                var bags = remove.get(i);
+
+                for (int j = 0, js = bags.getSize(); j < js; j++) {
+                    result = manager.componentMaskManager.removeComponent(result, bags.get(j));
+                }
             }
 
             return result;
@@ -192,13 +222,13 @@ public class TransmutationManager {
 
     }
 
-    private record ImmutableBuilder(Set<RegularComponentType<?>> add, Set<RegularComponentType<?>> remove) implements Builder {
+    private record ImmutableBuilder(Set<RegularComponentType<?>> add, Set<ComponentType<?>> remove) implements Builder {
 
         private static ImmutableBuilder add(RegularComponentType<?> component) {
             return new ImmutableBuilder(Set.of(component), Set.of());
         }
 
-        private static ImmutableBuilder remove(RegularComponentType<?> component) {
+        private static ImmutableBuilder remove(ComponentType<?> component) {
             return new ImmutableBuilder(Set.of(), Set.of(component));
         }
 
@@ -216,7 +246,7 @@ public class TransmutationManager {
         }
 
         @Override
-        public Set<RegularComponentType<?>> getRemove() {
+        public Set<ComponentType<?>> getRemove() {
             return remove;
         }
 

@@ -266,7 +266,7 @@ public class CompositionGenerator {
             var returnTypeParameterized = ParameterizedTypeName.get(returnType, returnTypeVariablesArray);
 
             var parameters = IntStream.range(0, typeVariables.size())
-                    .mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx)), "component" + (start + idx)).build())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.componentType(typeVariables.get(idx)), "component" + (start + idx)).build())
                     .toList();
 
             return MethodSpec.methodBuilder(name)
@@ -320,7 +320,7 @@ public class CompositionGenerator {
                 var returnType = ParameterizedTypeName.get(ClassName.get("", OF_PREFIX + i), typeVariablesArray);
 
                 var componentParameters = IntStream.range(1, i + 1)
-                        .mapToObj(j -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(j - 1)), "component" + j).build())
+                        .mapToObj(j -> ParameterSpec.builder(Utils.componentType(typeVariables.get(j - 1)), "component" + j).build())
                         .toList();
 
                 var classParameters = IntStream.range(1, i + 1)

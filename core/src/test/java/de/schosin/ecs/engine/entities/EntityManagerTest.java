@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
@@ -351,9 +351,9 @@ class EntityManagerTest extends AbstractWorldTest {
     @Nested
     class CreateEntityMutationsTest {
 
-        PooledComponents<C1> pooled1;
-        PooledComponents<C2> pooled2;
-        PooledComponents<C3> pooled3;
+        PooledComponentMapper<C1> pooled1;
+        PooledComponentMapper<C2> pooled2;
+        PooledComponentMapper<C3> pooled3;
 
         int id1;
         int id2;

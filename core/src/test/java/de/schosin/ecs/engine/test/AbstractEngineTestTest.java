@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import com.sun.jdi.ClassType;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.engine.AbstractWorldTest;
 
 class AbstractEngineTestTest {
@@ -127,8 +127,8 @@ class AbstractEngineTestTest {
     @Nested
     class ComponentMaskTest extends AbstractWorldTest {
 
-        PooledComponents<C1> mapper1;
-        PooledComponents<C2> mapper2;
+        PooledComponentMapper<C1> mapper1;
+        PooledComponentMapper<C2> mapper2;
 
         @BeforeEach
         void setupMappers() {
@@ -290,7 +290,7 @@ class AbstractEngineTestTest {
 
                         world.createEntity();
                     })).isInstanceOf(AssertionError.class)
-                            .hasMessageContainingAll("Expected no more inserted", "<no components>");
+                            .hasMessageContainingAll("Expected no more inserted", "<any components>");
                 }
 
                 @Test
@@ -412,8 +412,8 @@ class AbstractEngineTestTest {
             @Nested
             class UpdatedTest {
 
-                PooledComponents<C1> mapper1;
-                PooledComponents<C2> mapper2;
+                PooledComponentMapper<C1> mapper1;
+                PooledComponentMapper<C2> mapper2;
 
                 @BeforeEach
                 void setupMappers() {

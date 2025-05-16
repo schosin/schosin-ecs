@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -28,7 +28,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
     private final EntityManager entityManager;
     private final ComponentMapperManager componentMapperManager;
 
-    private final Map<Class<?>, PooledComponents<?>> mappers = new ConcurrentHashMap<>();
+    private final Map<Class<?>, PooledComponentMapper<?>> mappers = new ConcurrentHashMap<>();
     private final Pool<InitializeImpl> initializePool = Pool.unbounded(InitializeImpl.class, this::createInitialize);
 
     public ArchetypeManager(World world) {

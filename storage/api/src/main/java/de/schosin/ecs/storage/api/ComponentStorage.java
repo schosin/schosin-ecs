@@ -1,15 +1,17 @@
 package de.schosin.ecs.storage.api;
 
-import java.util.Collection;
 import java.util.function.Consumer;
 
 import javax.management.openmbean.CompositeData;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public interface ComponentStorage {
 
@@ -77,16 +79,39 @@ public interface ComponentStorage {
     <T extends Pooled> PooledComponentData<T> getPooledComponent(RegularComponentType<T> type, Consumer<RegularComponentType<?>> validate);
 
     /**
-     * Returns a collection of the known components. This must be a live collection,
-     * meaning that it will be updated automatically when new components are created.
+     * Returns a bag of the known components. 
      * 
      * <p>
-     * Implementation should not be affected by modifying the returned collection. Either by returning a defensive
-     * copy, or by throws {@link UnsupportedOperationException}.
+     * This must be a live bag, meaning that it will be updated automatically when new components are created.
+     * </p>
+     * 
+     * <p>
+     * Implementation should not be affected by modifying the returned bag by using 
+     * {@link ImmutableBag#create(de.schosin.ecs.utils.collections.Bag)} or implementing
+     * their own class. Implementations must not return a {@link Bag}.
      * </p>
      * 
      * @return known components
      */
-    Collection<Component<?>> getComponents();
+    ImmutableBag<Component<?>> getComponents();
+
+    /**
+     * Returns a bag of the known components that are {@link Class#isAssignableFrom(Class) assignable too}
+     * the bound argument.
+     * 
+     * <p>
+     * This must be a live bag, meaning that it will be updated automatically when new components are created.
+     * </p>
+     * 
+     * <p>
+     * Implementation should not be affected by modifying the returned bag by using 
+     * {@link ImmutableBag#create(de.schosin.ecs.utils.collections.Bag)} or implementing
+     * their own class. Implementations must not return a {@link Bag}.
+     * </p>
+     * 
+     * @param bound component type bound
+     * @return known components matching the bound
+     */
+    <T> ImmutableBag<Component<? extends T>> getComponents(ComponentType<T> bound);
 
 }

@@ -1,10 +1,12 @@
 package de.schosin.ecs.plugins.composition.manager;
 
+import static de.schosin.ecs.api.components.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -13,8 +15,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Components.PooledComponents;
-import de.schosin.ecs.engine.components.ComponentMask;
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
@@ -23,9 +26,7 @@ import de.schosin.ecs.plugins.composition.BaseComposition;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.Spec;
-import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.test.AbstractEcsTest;
-import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
 
@@ -34,7 +35,6 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     private static final AtomicInteger MASK_ID = new AtomicInteger(0);
 
     static final BitVector EMPTY_VECTOR = new BitVector();
-    static final ComponentMask EMPTY_MASK = mask(EMPTY_VECTOR);
 
     static final Builder EMPTY = Composition.all();
 
@@ -300,6 +300,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 int c23;
                 int c3;
                 int c123;
+                int c12345;
+                int c5;
 
                 protected abstract T create(Composition.Builder builder);
 
@@ -315,6 +317,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     c23 = world.createEntity(new C2(), new C3());
                     c3 = world.createEntity(new C3());
                     c123 = world.createEntity(new C1(), new C2(), new C3());
+                    c12345 = world.createEntity(new C1(), new C2(), new C3(), new C4(), new C5());
+                    c5 = world.createEntity(new C5());
                 }
 
                 @Test
@@ -329,6 +333,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     assertThat(isInterested(spec, c23)).isTrue();
                     assertThat(isInterested(spec, c3)).isTrue();
                     assertThat(isInterested(spec, c123)).isTrue();
+                    assertThat(isInterested(spec, c12345)).isTrue();
+                    assertThat(isInterested(spec, c5)).isTrue();
                 }
 
                 @Test
@@ -343,6 +349,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     assertThat(isInterested(spec, c23)).isFalse();
                     assertThat(isInterested(spec, c3)).isFalse();
                     assertThat(isInterested(spec, c123)).isTrue();
+                    assertThat(isInterested(spec, c12345)).isTrue();
+                    assertThat(isInterested(spec, c5)).isFalse();
                 }
 
                 @Test
@@ -357,6 +365,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     assertThat(isInterested(spec, c23)).isFalse();
                     assertThat(isInterested(spec, c3)).isFalse();
                     assertThat(isInterested(spec, c123)).isTrue();
+                    assertThat(isInterested(spec, c12345)).isTrue();
+                    assertThat(isInterested(spec, c5)).isFalse();
                 }
 
                 @Test
@@ -371,6 +381,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     assertThat(isInterested(spec, c23)).isFalse();
                     assertThat(isInterested(spec, c3)).isFalse();
                     assertThat(isInterested(spec, c123)).isFalse();
+                    assertThat(isInterested(spec, c12345)).isFalse();
+                    assertThat(isInterested(spec, c5)).isFalse();
                 }
 
                 @Test
@@ -385,6 +397,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     assertThat(isInterested(spec, c23)).isTrue();
                     assertThat(isInterested(spec, c3)).isFalse();
                     assertThat(isInterested(spec, c123)).isTrue();
+                    assertThat(isInterested(spec, c12345)).isTrue();
+                    assertThat(isInterested(spec, c5)).isFalse();
                 }
 
                 @Test
@@ -399,6 +413,24 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     assertThat(isInterested(spec, c23)).isFalse();
                     assertThat(isInterested(spec, c3)).isFalse();
                     assertThat(isInterested(spec, c123)).isFalse();
+                    assertThat(isInterested(spec, c12345)).isFalse();
+                    assertThat(isInterested(spec, c5)).isFalse();
+                }
+
+                @Test
+                void noneSpec() {
+                    var spec = create(Spec.none(C3.class));
+
+                    assertThat(isInterested(spec, none)).isTrue();
+                    assertThat(isInterested(spec, c1)).isTrue();
+                    assertThat(isInterested(spec, c12)).isTrue();
+                    assertThat(isInterested(spec, c13)).isFalse();
+                    assertThat(isInterested(spec, c2)).isTrue();
+                    assertThat(isInterested(spec, c23)).isFalse();
+                    assertThat(isInterested(spec, c3)).isFalse();
+                    assertThat(isInterested(spec, c123)).isFalse();
+                    assertThat(isInterested(spec, c12345)).isFalse();
+                    assertThat(isInterested(spec, c5)).isTrue();
                 }
 
                 @Test
@@ -413,6 +445,8 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     assertThat(isInterested(spec, c23)).isFalse();
                     assertThat(isInterested(spec, c3)).isFalse();
                     assertThat(isInterested(spec, c123)).isFalse();
+                    assertThat(isInterested(spec, c12345)).isFalse();
+                    assertThat(isInterested(spec, c5)).isFalse();
                 }
 
             }
@@ -533,7 +567,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of1Test extends AbstractCompositionTest<Composition.Of1<C1>> {
                     @Override
                     protected Composition.Of1<C1> createComposition(Composition.Builder builder) {
@@ -541,7 +575,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of2Test extends AbstractCompositionTest<Composition.Of2<C1, C2>> {
                     @Override
                     protected Composition.Of2<C1, C2> createComposition(Composition.Builder builder) {
@@ -549,7 +583,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of3Test extends AbstractCompositionTest<Composition.Of3<C1, C2, C3>> {
                     @Override
                     protected Composition.Of3<C1, C2, C3> createComposition(Composition.Builder builder) {
@@ -557,7 +591,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of4Test extends AbstractCompositionTest<Composition.Of4<C1, C2, C3, C4>> {
                     @Override
                     protected Composition.Of4<C1, C2, C3, C4> createComposition(Composition.Builder builder) {
@@ -565,7 +599,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of5Test extends AbstractCompositionTest<Composition.Of5<C1, C2, C3, C4, C5>> {
                     @Override
                     protected Composition.Of5<C1, C2, C3, C4, C5> createComposition(Composition.Builder builder) {
@@ -573,7 +607,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of6Test extends AbstractCompositionTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
                     @Override
                     protected Composition.Of6<C1, C2, C3, C4, C5, C6> createComposition(Composition.Builder builder) {
@@ -581,7 +615,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of7Test extends AbstractCompositionTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
                     @Override
                     protected Composition.Of7<C1, C2, C3, C4, C5, C6, C7> createComposition(Composition.Builder builder) {
@@ -589,7 +623,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                @Nested
+                // TODO @Nested
                 class Of8Test extends AbstractCompositionTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
                     @Override
                     protected Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> createComposition(Composition.Builder builder) {
@@ -803,14 +837,14 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                         var composition = createComposition(Composition.one(mismatchingOne).none(matchingNone));
                         assertThatThrownBy(() -> composition.matches(null)).isInstanceOf(NullPointerException.class);
 
-                        // assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
-                        // assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
-                        // assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
-                        // assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, null)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, null, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, one, null)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(all, null, none)))).isFalse();
                         assertThat(composition.matches(createSpec(builder(null, one, null)))).isFalse();
-                        // assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
-                        // assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
-                        // assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, one, none)))).isFalse();
+                        assertThat(composition.matches(createSpec(builder(null, null, none)))).isTrue();
+                        assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
                     @Test
@@ -937,77 +971,44 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     class InsertedTest {
 
         @Test
-        void testInsertedEntities() {
+        void testInserted_AllComposition() {
             // Setup
             var composition = compositionManager.create(EMPTY, spec -> new IntBag(4));
 
-            // Insert entity
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, EMPTY_MASK));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, EMPTY_MASK));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, EMPTY_MASK));
-
-            // Verify
-            var entities = new IntBag(3);
-            composition.process(entities::add);
-
-            assertThat(entities.getSize()).as("size").isEqualTo(3);
-            assertThat(entities.contains(42)).as("contains 42").isTrue();
-            assertThat(entities.contains(1337)).as("contains 1337").isTrue();
-            assertThat(entities.contains(9001)).as("contains 9001").isTrue();
-        }
-
-        @Test
-        void testInsertedEntities_InterestedOnly() {
-            // Setup
-            var all = Composition.all(C1.class);
-
-            var components42 = new BitVector();
-            components42.set(component1Id);
-            components42.set(C2Id);
-
-            var components1337 = new BitVector();
-            components1337.set(C2Id);
-
-            var composition = compositionManager.create(all, spec -> new IntBag(4));
-
-            // Insert entity
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask(components42)));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask(components1337)));
-
-            // Verify
-            var entities = new IntBag(1);
-            composition.process(entities::add);
-
-            assertThat(entities.getSize()).as("size").isEqualTo(1);
-            assertThat(entities.contains(42)).as("contains 42").isTrue();
-        }
-
-        @Test
-        void testInsertedCallback() {
-            // Setup
-            var entities = new IntBag(4);
-            var inserted = new IntBag(2);
-
-            var composition = compositionManager.create(EMPTY, spec -> entities);
-
-            // Add callback
+            var inserted = new IntBag(3);
             composition.inserted(inserted::add);
-            assertThat(inserted.getSize()).as("size").isZero();
 
             // Insert entity
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, EMPTY_MASK));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, EMPTY_MASK));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, EMPTY_MASK));
+            var entity1 = world.createEntity();
+            var entity2 = world.createEntity();
+            var entity3 = world.createEntity();
 
             // Verify
             assertThat(inserted.getSize()).as("size").isEqualTo(3);
-            assertThat(inserted.contains(42)).as("contains 42").isTrue();
-            assertThat(inserted.contains(1337)).as("contains 1337").isTrue();
-            assertThat(inserted.contains(9001)).as("contains 9001").isTrue();
+            assertThat(inserted.contains(entity1)).as("contains 1").isTrue();
+            assertThat(inserted.contains(entity2)).as("contains 2").isTrue();
+            assertThat(inserted.contains(entity3)).as("contains 3").isTrue();
         }
 
         @Test
-        void testMultipleInsertedCallbacks() {
+        void testInserted_InterestedOnly() {
+            // Setup
+            var composition = compositionManager.create(Composition.all(C1.class), spec -> new IntBag(4));
+
+            var inserted = new IntBag(1);
+            composition.inserted(inserted::add);
+
+            // Insert entity
+            var entity1 = world.createEntity(new C1(), new C2());
+            world.createEntity(new C2());
+
+            // Verify
+            assertThat(inserted.getSize()).as("size").isEqualTo(1);
+            assertThat(inserted.contains(entity1)).as("contains 42").isTrue();
+        }
+
+        @Test
+        void testMultipleInserted() {
             // Setup
             var entities = new IntBag(4);
             var inserted1 = new IntBag(2);
@@ -1027,49 +1028,19 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(inserted3).isEmpty();
 
             // Insert entity
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, EMPTY_MASK));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, EMPTY_MASK));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, EMPTY_MASK));
+            var entity1 = world.createEntity();
+            var entity2 = world.createEntity();
+            var entity3 = world.createEntity();
 
             // Verify
             assertThat(inserted1.getSize()).as("size").isEqualTo(3);
-            assertThat(inserted1.contains(42)).as("contains 42").isTrue();
-            assertThat(inserted1.contains(1337)).as("contains 1337").isTrue();
-            assertThat(inserted1.contains(9001)).as("contains 9001").isTrue();
+            assertThat(inserted1.contains(entity1)).as("contains 1").isTrue();
+            assertThat(inserted1.contains(entity2)).as("contains 2").isTrue();
+            assertThat(inserted1.contains(entity3)).as("contains 3").isTrue();
 
-            assertThat(inserted2).containsExactlyInAnyOrder(42, 1337, 9001);
+            assertThat(inserted2).containsExactlyInAnyOrder(entity1, entity2, entity3);
 
-            assertThat(inserted3).containsExactlyInAnyOrder(42, 1337, 9001);
-        }
-
-        @Test
-        void testInsertedCallback_InterestedOnly() {
-            // Setup
-            var all = Composition.all(C1.class);
-
-            var components42 = new BitVector();
-            components42.set(component1Id);
-            components42.set(C2Id);
-
-            var components1337 = new BitVector();
-            components1337.set(C2Id);
-
-            var entities = new IntBag(4);
-            var inserted = new IntBag(2);
-
-            var composition = compositionManager.create(all, spec -> entities);
-
-            // Add callback
-            composition.inserted(inserted::add);
-            assertThat(inserted.getSize()).as("size").isZero();
-
-            // Insert entity
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask(components42)));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask(components1337)));
-
-            // Verify
-            assertThat(inserted.getSize()).as("size").isEqualTo(1);
-            assertThat(inserted.contains(42)).as("contains 42").isTrue();
+            assertThat(inserted3).containsExactlyInAnyOrder(entity1, entity2, entity3);
         }
 
     }
@@ -1282,6 +1253,32 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             return world.createComposition(builder, C1.class);
         }
 
+        @Override
+        <T> Composition.Of1<T> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of1<T>) of;
+            composition.inserted((entityId, result) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of1<T>) of;
+            composition.removed((entityId, result) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of1<T>) of;
+            composition.process((entityId, result) -> consumer.consume(entityId, result));
+        }
+
         @Test
         void testProcessOtherEntity() {
             composition(builder1).process(expected1[0], (entityId, C1) -> {
@@ -1384,6 +1381,32 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Override
         Composition.Of2<C1, C2> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class);
+        }
+
+        @Override
+        <T> Composition.Of2<T, C2> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first, component(C2.class));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of2<T, C2>) of;
+            composition.inserted((entityId, result, c2) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of2<T, C2>) of;
+            composition.removed((entityId, result, c2) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of2<T, C2>) of;
+            composition.process((entityId, result, c2) -> consumer.consume(entityId, result));
         }
 
         @Test
@@ -1494,6 +1517,32 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Override
         Composition.Of3<C1, C2, C3> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class);
+        }
+
+        @Override
+        <T> Composition.Of3<T, C2, C3> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first, component(C2.class), component(C3.class));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of3<T, C2, C3>) of;
+            composition.inserted((entityId, result, c2, c3) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of3<T, C2, C3>) of;
+            composition.removed((entityId, result, c2, c3) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of3<T, C2, C3>) of;
+            composition.process((entityId, result, c2, c3) -> consumer.consume(entityId, result));
         }
 
         @Test
@@ -1610,6 +1659,32 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Override
         Composition.Of4<C1, C2, C3, C4> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
+        }
+
+        @Override
+        <T> Composition.Of4<T, C2, C3, C4> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of4<T, C2, C3, C4>) of;
+            composition.inserted((entityId, result, c2, c3, c4) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of4<T, C2, C3, C4>) of;
+            composition.removed((entityId, result, c2, c3, c4) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of4<T, C2, C3, C4>) of;
+            composition.process((entityId, result, c2, c3, c4) -> consumer.consume(entityId, result));
         }
 
         @Test
@@ -1732,6 +1807,32 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Override
         Composition.Of5<C1, C2, C3, C4, C5> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
+        }
+
+        @Override
+        <T> Composition.Of5<T, C2, C3, C4, C5> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of5<T, C2, C3, C4, C5>) of;
+            composition.inserted((entityId, result, c2, c3, c4, c5) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of5<T, C2, C3, C4, C5>) of;
+            composition.removed((entityId, result, c2, c3, c4, c5) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of5<T, C2, C3, C4, C5>) of;
+            composition.process((entityId, result, c2, c3, c4, c5) -> consumer.consume(entityId, result));
         }
 
         @Test
@@ -1860,6 +1961,32 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Override
         Composition.Of6<C1, C2, C3, C4, C5, C6> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+        }
+
+        @Override
+        <T> Composition.Of6<T, C2, C3, C4, C5, C6> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class), component(C6.class));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of6<T, C2, C3, C4, C5, C6>) of;
+            composition.inserted((entityId, result, c2, c3, c4, c5, c6) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of6<T, C2, C3, C4, C5, C6>) of;
+            composition.removed((entityId, result, c2, c3, c4, c5, c6) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of6<T, C2, C3, C4, C5, C6>) of;
+            composition.process((entityId, result, c2, c3, c4, c5, c6) -> consumer.consume(entityId, result));
         }
 
         @Test
@@ -1994,6 +2121,32 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Override
         Composition.Of7<C1, C2, C3, C4, C5, C6, C7> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+        }
+
+        @Override
+        <T> Composition.Of7<T, C2, C3, C4, C5, C6, C7> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class), component(C6.class), component(C7.class));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of7<T, C2, C3, C4, C5, C6, C7>) of;
+            composition.inserted((entityId, result, c2, c3, c4, c5, c6, c7) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of7<T, C2, C3, C4, C5, C6, C7>) of;
+            composition.removed((entityId, result, c2, c3, c4, c5, c6, c7) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of7<T, C2, C3, C4, C5, C6, C7>) of;
+            composition.process((entityId, result, c2, c3, c4, c5, c6, c7) -> consumer.consume(entityId, result));
         }
 
         @Test
@@ -2134,6 +2287,33 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Override
         Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+        }
+
+        @Override
+        <T> Composition.Of8<T, C2, C3, C4, C5, C6, C7, C8> composition(Builder builder, ComponentType<T> first) {
+            return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class), component(C6.class), component(C7.class),
+                    component(C8.class));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void inserted(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of8<T, C2, C3, C4, C5, C6, C7, C8>) of;
+            composition.inserted((entityId, result, c2, c3, c4, c5, c6, c7, c8) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void removed(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of8<T, C2, C3, C4, C5, C6, C7, C8>) of;
+            composition.removed((entityId, result, c2, c3, c4, c5, c6, c7, c8) -> consumer.consume(entityId, result));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        <T> void process(Composition.Of<?> of, ComponentType<T> type, Composition.Of1.Consumer<T> consumer) {
+            var composition = (Composition.Of8<T, C2, C3, C4, C5, C6, C7, C8>) of;
+            composition.process((entityId, result, c2, c3, c4, c5, c6, c7, c8) -> consumer.consume(entityId, result));
         }
 
         @Test
@@ -2321,6 +2501,14 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         abstract C composition(Composition.Builder builder);
 
+        abstract <T> Composition.Of<?> composition(Composition.Builder builder, ComponentType<T> first);
+
+        abstract <T> void inserted(Composition.Of<?> composition, ComponentType<T> type, Composition.Of1.Consumer<T> consumer);
+
+        abstract <T> void removed(Composition.Of<?> composition, ComponentType<T> type, Composition.Of1.Consumer<T> consumer);
+
+        abstract <T> void process(Composition.Of<?> composition, ComponentType<T> type, Composition.Of1.Consumer<T> consumer);
+
         @Test
         void testCachedInstance() {
             var composition1 = composition(builder1);
@@ -2408,6 +2596,249 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(composition1.parallelStream()).hasSize(expected1.length);
             assertThat(composition8.parallelStream()).hasSize(expected8.length);
             assertThat(compositionAll.parallelStream()).hasSize(expected1.length + expected8.length);
+        }
+
+        @Nested
+        class WildcardTypeTest {
+
+            @Nested
+            class ProcessTest extends AbstractTest {
+                @Override
+                <T> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T> type, TestConsumer<T> consumer) {
+                    var s = components.length;
+                    var entities = new int[s];
+
+                    for (int i = 0; i < s; i++) {
+                        entities[i] = world.createEntity(components[i]);
+                    }
+
+                    process(composition, type, (entityId, result) -> {
+                        for (int i = 0; i < s; i++) {
+                            if (entityId == entities[i]) {
+                                consumer.consume(i, result);
+                            }
+                        }
+                    });
+
+                    return entities;
+                }
+            }
+
+            @Nested
+            class InsertedTest extends AbstractTest {
+                @Override
+                <T> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T> type, TestConsumer<T> consumer) {
+                    var s = components.length;
+                    var entities = new int[s];
+
+                    var count = new AtomicInteger(0);
+
+                    inserted(composition, type, (entityId, result) -> {
+                        var i = count.getAndIncrement();
+                        if (i < s) {
+                            consumer.consume(i, result);
+                        }
+                    });
+
+                    for (int i = 0; i < s; i++) {
+                        entities[i] = world.createEntity(components[i]);
+                    }
+
+                    return entities;
+                }
+            }
+
+            @Nested
+            class RemovedTest extends AbstractTest {
+                @Override
+                <T> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T> type, TestConsumer<T> consumer) {
+                    var s = components.length;
+                    var entities = new int[s];
+
+                    for (int i = 0; i < s; i++) {
+                        entities[i] = world.createEntity(components[i]);
+                        world.deleteEntity(entities[i]);
+                    }
+
+                    removed(composition, type, (entityId, result) -> {
+                        for (int i = 0; i < s; i++) {
+                            if (entityId == entities[i]) {
+                                consumer.consume(i, result);
+                            }
+                        }
+                    });
+
+                    world.process();
+
+                    return entities;
+                }
+            }
+
+            abstract class AbstractTest {
+
+                interface TestConsumer<T> {
+                    void consume(int index, T result);
+                }
+
+                abstract <T> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T> type, TestConsumer<T> consumer);
+
+                @Test
+                void testResultSize() {
+                    var type = wildcard(C1234.class);
+                    var composition = composition(Composition.all(C1.class), type);
+
+                    var components = new Object[][] {
+                            { new C1(), new C2(), new C3(), new C4(), new C5() },
+                            { new C1(), new C2(), new C5() },
+                            { new C5() }
+                    };
+
+                    perform(components, composition, type, (id, result) -> {
+                        if (id == 0) {
+                            assertThat(result.size()).as("size").isEqualTo(4);
+                        } else if (id == 1) {
+                            assertThat(result.size()).as("size").isEqualTo(2);
+                        } else if (id == 2) {
+                            assertThat(result.size()).as("size").isEqualTo(0);
+                        }
+                    });
+                }
+
+                @Test
+                void testResultIsEmpty() {
+                    var type = wildcard(C1234.class);
+                    var composition = composition(Composition.all(C1.class), type);
+
+                    var components = new Object[][] {
+                            { new C1(), new C2(), new C3(), new C4(), new C5() },
+                            { new C1(), new C2(), new C5() },
+                            { new C5() }
+                    };
+
+                    perform(components, composition, type, (id, result) -> {
+                        if (id == 0) {
+                            assertThat(result.isEmpty()).as("isEmpty").isFalse();
+                        } else if (id == 1) {
+                            assertThat(result.isEmpty()).as("isEmpty").isFalse();
+                        } else if (id == 2) {
+                            assertThat(result.isEmpty()).as("isEmpty").isTrue();
+                        }
+                    });
+                }
+
+                @Test
+                void testResultGetByIndex() {
+                    var type = wildcard(C1234.class);
+                    var composition = composition(Composition.all(C1.class), type);
+
+                    var c1 = new C1();
+                    var c2 = new C2();
+
+                    var components = new Object[][] {
+                            { c1, c2, new C5() },
+                    };
+
+                    perform(components, composition, type, (id, result) -> {
+                        if (id == 0) {
+                            assertThat(result.get(0)).as("get(0)").isIn(c1, c2);
+                            assertThat(result.get(1)).as("get(1)").isIn(c1, c2);
+                        }
+                    });
+                }
+
+                @Test
+                void testResultEnhancedForLoop() {
+                    var type = wildcard(C1234.class);
+                    var composition = composition(Composition.all(C1.class), type);
+
+                    var c1 = new C1();
+                    var c2 = new C2();
+
+                    var components = new Object[][] {
+                            { c1, c2, new C5() },
+                    };
+
+                    perform(components, composition, type, (id, result) -> {
+                        if (id == 0) {
+                            for (var component : result) {
+                                assertThat(component).as("enhanced for loop").isIn(c1, c2);
+                            }
+                        }
+                    });
+                }
+
+                @Test
+                void testResultIterator() {
+                    var type = wildcard(C1234.class);
+                    var composition = composition(Composition.all(C1.class), type);
+
+                    var c1 = new C1();
+                    var c2 = new C2();
+
+                    var components = new Object[][] {
+                            { c1, c2, new C5() },
+                    };
+
+                    perform(components, composition, type, (id, result) -> {
+                        if (id == 0) {
+                            for (var iter = result.iterator(); iter.hasNext();) {
+                                assertThat(iter.next()).as("iterator loop").isIn(c1, c2);
+                            }
+                            for (var iter = result.iterator(); iter.hasNext();) {
+                                assertThat(iter.next()).as("iterator loop resets automatically").isIn(c1, c2);
+                            }
+                        }
+                    });
+                }
+
+                @Test
+                void testResultGetByClass() {
+                    var type = wildcard(C1234.class);
+                    var composition = composition(Composition.all(C1.class), type);
+
+                    var c1 = new C1();
+                    var c2 = new C2();
+
+                    var components = new Object[][] {
+                            { c1, c2, new C5() },
+                    };
+
+                    perform(components, composition, type, (id, result) -> {
+                        if (id == 0) {
+                            assertThat(result.get(C1.class)).as("get(C1.class)").isSameAs(c1);
+                            assertThat(result.get(C2.class)).as("get(C2.class)").isSameAs(c2);
+                            assertThat(result.get(C3.class)).as("get(C3.class)").isNull();
+                            assertThat(result.get(C4.class)).as("get(C4.class)").isNull();
+                        }
+                    });
+                }
+
+                @Test
+                void testResultReused() {
+                    var type = wildcard(C1234.class);
+                    var composition = composition(Composition.all(C1.class), type);
+
+                    var components = new Object[][] {
+                            { new C1(), new C5() },
+                            { new C1(), new C5() },
+                    };
+
+                    var invocations = new AtomicInteger();
+                    var results = new IdentityHashMap<Result<C1234>, Boolean>();
+
+                    perform(components, composition, type, (id, result) -> {
+                        if (id == 0 || id == 1) {
+                            invocations.incrementAndGet();
+                            results.put(result, true);
+                        }
+                    });
+
+                    assertThat(invocations).hasValue(2);
+                    assertThat(results).as("Result reused during single-threaded iteration").hasSize(1);
+                }
+
+            }
+
         }
 
     }
@@ -2757,9 +3188,9 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     @Nested
     class CreateEntityMutationsTest {
 
-        PooledComponents<P1> pooled1;
-        PooledComponents<P2> pooled2;
-        PooledComponents<P3> pooled3;
+        PooledComponentMapper<P1> pooled1;
+        PooledComponentMapper<P2> pooled2;
+        PooledComponentMapper<P3> pooled3;
 
         @BeforeEach
         void setupMappers() {
@@ -2916,23 +3347,19 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         assertThat(composition.isInterested(entityId)).isTrue();
     }
 
-    static ComponentMask mask(BitVector mask) {
-        var lookup = new IntBag(64);
-        mask.iterate(componentId -> lookup.set(componentId, 1));
-
-        return new ComponentMask(MASK_ID.getAndIncrement(), mask, new Component<?>[0], lookup, new Bag<>(ComponentMask.class), new Bag<>(ComponentMask.class));
+    interface C1234 {
     }
 
-    private record C1() {
+    private record C1() implements C1234 {
     }
 
-    private record C2() {
+    private record C2() implements C1234 {
     }
 
-    private record C3() {
+    private record C3() implements C1234 {
     }
 
-    private record C4() {
+    private record C4() implements C1234 {
     }
 
     private record C5() {

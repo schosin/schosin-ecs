@@ -1,32 +1,26 @@
 package de.schosin.ecs.plugins.transmuter;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.codegen.EcsCodegen;
-import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
-import de.schosin.ecs.storage.api.components.Component;
 
 @EcsCodegen
 public class TransmuterManager extends BaseTransmuterManager implements TransmuterPlugin {
 
-    private final ComponentManager componentManager;
     private final TransmutationManager transmutationManager;
     private final ComponentMapperManager componentMapperManager;
 
-    private final Map<Class<?>, PooledComponents<?>> mappers = new ConcurrentHashMap<>();
+    private final Map<Class<?>, PooledComponentMapper<?>> mappers = new ConcurrentHashMap<>();
 
     public TransmuterManager(World world) {
-        this.componentManager = world.getSingleton(ComponentManager.class);
         this.transmutationManager = world.getSingleton(TransmutationManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
     }
@@ -62,14 +56,10 @@ public class TransmuterManager extends BaseTransmuterManager implements Transmut
             this((TransmuterManager) manager, builder);
         }
 
-        protected AbstractAddTransmuter(TransmuterManager manager, Transmuter.Builder builder) {
-            super(manager.transmutationManager, convert(manager, builder.getAdd()), convert(manager, builder.getRemove()));
+        private AbstractAddTransmuter(TransmuterManager manager, Transmuter.Builder builder) {
+            super(manager.transmutationManager, builder);
 
             this.manager = manager;
-        }
-
-        private static Component<?>[] convert(TransmuterManager manager, Set<RegularComponentType<?>> classes) {
-            return classes.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
         }
 
         @Override

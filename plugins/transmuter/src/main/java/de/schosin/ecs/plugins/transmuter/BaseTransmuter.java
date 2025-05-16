@@ -19,7 +19,7 @@ public interface BaseTransmuter {
 abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
 
     protected final Set<RegularComponentType<?>> add;
-    protected final Set<RegularComponentType<?>> remove;
+    protected final Set<ComponentType<?>> remove;
 
     protected AbstractTransmuterBuilder(RegularComponentType<?>... add) {
         this.add = Set.of(add);
@@ -35,7 +35,7 @@ abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
     }
 
     @SuppressWarnings("unchecked")
-    public SELF remove(RegularComponentType<?>... components) {
+    public SELF remove(ComponentType<?>... components) {
         for (var clazz : components) {
             if (this.add.contains(clazz)) {
                 throw new IllegalArgumentException("Cannot remove component marked for adding: " + clazz);
@@ -48,7 +48,7 @@ abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
     }
 
     @SuppressWarnings("unchecked")
-    protected SELF remove(Set<RegularComponentType<?>> components) {
+    protected SELF remove(Set<ComponentType<?>> components) {
         for (var clazz : components) {
             if (this.add.contains(clazz)) {
                 throw new IllegalArgumentException("Cannot remove component marked for adding: " + clazz);
@@ -66,7 +66,7 @@ abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
     }
 
     @Override
-    public Set<RegularComponentType<?>> getRemove() {
+    public Set<ComponentType<?>> getRemove() {
         return remove;
     }
 

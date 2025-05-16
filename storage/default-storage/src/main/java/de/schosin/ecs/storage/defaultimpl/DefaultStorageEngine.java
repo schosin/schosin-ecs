@@ -1,17 +1,18 @@
 package de.schosin.ecs.storage.defaultimpl;
 
-import java.util.Collection;
 import java.util.function.Consumer;
 
 import com.google.auto.service.AutoService;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 @AutoService(StorageEngine.class)
 public class DefaultStorageEngine implements StorageEngine {
@@ -39,8 +40,13 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public Collection<Component<?>> getComponents() {
+    public ImmutableBag<Component<?>> getComponents() {
         return this.componentStorage.getComponents();
+    }
+
+    @Override
+    public <T> ImmutableBag<Component<? extends T>> getComponents(ComponentType<T> bound) {
+        return this.componentStorage.getComponents(bound);
     }
 
 }

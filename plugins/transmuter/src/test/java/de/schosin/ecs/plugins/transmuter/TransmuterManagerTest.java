@@ -1,14 +1,19 @@
 package de.schosin.ecs.plugins.transmuter;
 
+import static de.schosin.ecs.api.components.ComponentType.WILDCARD;
+import static de.schosin.ecs.api.components.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
@@ -729,12 +734,89 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                 });
             }
 
-            /**
-             * @param entityId id of entity
-             * @param remove components to remove
-             * @return added component types
-             */
+            @Test
+            void testRemoveWildcard_WhenWorldNotProcessed_DoesNotAlterYet() {
+                // Setup
+                var entityId = world.createEntity(new D1(), new D2());
+                verifyHasComponents(entityId, D1.class, D2.class);
+                verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+
+                verify(verify -> {
+                    verify.expectNoMoreUpdated();
+
+                    // Remove 2
+                    apply(entityId, WILDCARD);
+
+                    // Verify
+                    verifyHasComponents(entityId, D1.class, D2.class);
+                    verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+                });
+            }
+
+            @Test
+            void testRemoveWildcardConstant() {
+                // Setup
+                var entityId = world.createEntity(new D1(), new D2());
+                verifyHasComponents(entityId, D1.class, D2.class);
+                verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+
+                verify(verify -> {
+                    // Remove 2
+                    var added = apply(entityId, WILDCARD);
+
+                    verify.expectUpdated(entityId, new Class<?>[0]);
+                    verify.expectNoMoreUpdated();
+
+                    // Process
+                    world.process();
+
+                    // Verify
+                    verifyDoesNotHaveComponents(entityId, added);
+                    verifyDoesNotHaveComponents(entityId, D1.class, D2.class);
+
+                    verifyComponentMaskDoesNotHaveComponents(entityId, added);
+                    verifyComponentMaskDoesNotHaveComponents(entityId, D1.class, D2.class);
+                });
+            }
+
+            @Test
+            void testRemoveWildcardInterface() {
+                // Setup
+                var entityId = world.createEntity(new A1(), new A2());
+                verifyHasComponents(entityId, A1.class, A2.class);
+                verifyComponentMaskHasComponents(entityId, A1.class, A2.class);
+
+                verify(verify -> {
+                    // Remove 2
+                    var added = apply(entityId, wildcard(A.class));
+
+                    verify.expectUpdated(entityId, added);
+                    verify.expectNoMoreUpdated();
+
+                    // Process
+                    world.process();
+
+                    // Verify
+                    verifyHasComponents(entityId, added);
+                    verifyDoesNotHaveComponents(entityId, A1.class, A2.class);
+
+                    verifyComponentMaskHasComponents(entityId, added);
+                    verifyComponentMaskDoesNotHaveComponents(entityId, A1.class, A2.class);
+                });
+            }
+
+            interface A {
+            }
+
+            record A1() implements A {
+            }
+
+            record A2() implements A {
+            }
+
             protected abstract Class<?>[] apply(int entityId, Class<?>... remove);
+
+            protected abstract Class<?>[] apply(int entityId, ComponentType<?>... remove);
 
         }
 
@@ -745,11 +827,17 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class).remove(remove));
                 transmuter.apply(entityId, new C1());
 
                 return ADDED;
             }
+
         }
 
         @Nested
@@ -759,11 +847,17 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2());
 
                 return ADDED;
             }
+
         }
 
         @Nested
@@ -773,6 +867,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3());
 
@@ -787,6 +886,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4());
 
@@ -801,6 +905,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5());
 
@@ -815,6 +924,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6());
 
@@ -829,6 +943,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
 
@@ -843,6 +962,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
 
@@ -852,10 +976,17 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
         @Nested
         class AddNRemove extends AbstractRemoveByAddTest {
+
             @Override
             protected Class<?>[] apply(int entityId, Class<?>... remove) {
+                return apply(entityId, convert(remove));
+            }
+
+            @Override
+            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
                 return applyTransmuterN(entityId, remove);
             }
+
         }
 
     }
@@ -958,6 +1089,10 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             });
         }
 
+    }
+
+    private static RegularComponentType<?>[] convert(Class<?>... classes) {
+        return Arrays.stream(classes).map(ComponentType::component).toArray(RegularComponentType<?>[]::new);
     }
 
 }

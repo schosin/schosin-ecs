@@ -30,8 +30,7 @@ public class CompositionManagerGenerator {
 
     private static final ClassName BASE_COMPOSITION_IMPL = ClassName.get("", "BaseCompositionImpl");
 
-    // TODO should be Component only on the other branch
-    private static final ClassName COMPONENT = ClassName.get("de.schosin.ecs.storage.api.components", "Component");
+    private static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components", "Components");
 
     private static final String OF_PREFIX = CompositionGenerator.OF_PREFIX;
     private static final ParameterizedTypeName OF_WILDCARD = ParameterizedTypeName.get(ClassName.get("", OF_PREFIX), Utils.WILDCARD);
@@ -51,7 +50,7 @@ public class CompositionManagerGenerator {
     private static class BaseCompositionImpl {
 
         private static final String METHOD_RETRIEVE = "retrieve";
-        private static final String METHOD_GET_COMPONENT = "getComponent";
+        private static final String METHOD_GET_COMPONENT = "getComponents";
 
         private static TypeSpec create(int maxParams) {
             var compositionsN = IntStream.range(1, maxParams + 1)
@@ -66,16 +65,15 @@ public class CompositionManagerGenerator {
                     .addTypeVariable(tExtendOf)
                     .returns(Utils.T)
                     .addParameter(supplier, "constructor")
-                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
+                    .addParameter(Utils.COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
                     .build();
 
-            var componentWildcard = ParameterizedTypeName.get(COMPONENT, Utils.WILDCARD);
-            var componentTypeWildcard = ParameterizedTypeName.get(Utils.REGULAR_COMPONENT_TYPE, Utils.WILDCARD);
+            var componentsWildcard = ParameterizedTypeName.get(COMPONENTS, Utils.WILDCARD);
 
             var abstractGetComponent = MethodSpec.methodBuilder(METHOD_GET_COMPONENT)
                     .addModifiers(Modifier.PROTECTED, Modifier.ABSTRACT)
-                    .returns(componentWildcard)
-                    .addParameter(componentTypeWildcard, "type")
+                    .returns(componentsWildcard)
+                    .addParameter(Utils.COMPONENT_TYPE_WILDCARD, "type")
                     .build();
 
             var retrieveMethods = createRetrieveMethods("this", "retrieve", 1, maxParams);
@@ -112,7 +110,7 @@ public class CompositionManagerGenerator {
             var returnTypeParameterized = ParameterizedTypeName.get(returnType, returnTypeVariablesArray);
 
             var parameters = IntStream.range(0, typeVariables.size())
-                    .mapToObj(idx -> ParameterSpec.builder(componentType(typeVariables.get(idx)), "component" + (start + idx)).build())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.componentType(typeVariables.get(idx)), "component" + (start + idx)).build())
                     .toList();
 
             var body = CodeBlock.builder();
@@ -207,7 +205,7 @@ public class CompositionManagerGenerator {
 
             var fields = n < maxParams
                     ? IntStream.range(1, typeVariables.size() + 1)
-                            .mapToObj(idx -> FieldSpec.builder(componentType(typeVariables.get(idx - 1)), "component" + idx, Modifier.PRIVATE, Modifier.FINAL).build())
+                            .mapToObj(idx -> FieldSpec.builder(Utils.componentType(typeVariables.get(idx - 1)), "component" + idx, Modifier.PRIVATE, Modifier.FINAL).build())
                             .toList()
                     : List.<FieldSpec>of();
 
@@ -231,7 +229,7 @@ public class CompositionManagerGenerator {
 
         private static MethodSpec buildComponentConstructor(int n, int maxParams, List<TypeVariableName> typeVariables) {
             var parameters = IntStream.range(1, typeVariables.size() + 1)
-                    .mapToObj(idx -> ParameterSpec.builder(componentType(typeVariables.get(idx - 1)), "component" + idx).build())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.componentType(typeVariables.get(idx - 1)), "component" + idx).build())
                     .toList();
 
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
@@ -266,18 +264,26 @@ public class CompositionManagerGenerator {
 
             // "callback.consume(entityId, get(entityId, 0), get(entityId, 1), get(entityId, 2), get(entityId, 3), get(entityId, 4), get(entityId, 5), get(entityId, 6), get(entityId, 7));"
             var methodBody = CodeBlock.builder();
+            for (int i = 0, s = typeVariables.size(); i < s; i++) {
+                methodBody.addStatement("T%d component%d = get(entityId, %d)".formatted(i + 1, i + 1, i));
+            }
+
             methodBody.add("callback.consume(entityId");
             for (int i = 0; i < typeVariables.size(); i++) {
-                methodBody.add(", get(entityId, %s)".formatted(i));
+                methodBody.add(", component%d".formatted(i + 1));
             }
-            methodBody.add(")");
+            methodBody.addStatement(")");
+
+            for (int i = 0, s = typeVariables.size(); i < s; i++) {
+                methodBody.addStatement("free(%d, component%d)".formatted(i, i + 1));
+            }
 
             return MethodSpec.methodBuilder("process")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(TypeName.INT, "entityId")
                     .addParameter(callback, "callback")
-                    .addStatement(methodBody.build())
+                    .addCode(methodBody.build())
                     .build();
         }
 
@@ -317,10 +323,6 @@ public class CompositionManagerGenerator {
                     .build();
         }
 
-    }
-
-    private static ParameterizedTypeName componentType(TypeName type) {
-        return ParameterizedTypeName.get(Utils.REGULAR_COMPONENT_TYPE, type);
     }
 
 }

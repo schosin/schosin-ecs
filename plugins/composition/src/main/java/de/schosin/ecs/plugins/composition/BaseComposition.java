@@ -44,7 +44,7 @@ import de.schosin.ecs.plugins.composition.Composition.Builder;
 public interface BaseComposition {
 
     /**
-     * Returns true if this composition is atleast as strict as the {@link Spec sepc}.
+     * Returns true if this composition is atleast as strict as the {@link Spec spec}.
      * The following criteria must be met:
      * 
      * <ul>
@@ -54,7 +54,8 @@ public interface BaseComposition {
      * </ul>
      * 
      * <p>
-     * This composition may be more strict and contain additional classes in each aspect (all, one, none).
+     * This composition may be more strict and contain additional restrictings in each aspect (all, one, none).
+     * Note that restrictions for one means fewer types, whereas for all and none it means more types.
      * </p>
      * 
      * <p>

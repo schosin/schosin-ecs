@@ -1,6 +1,8 @@
 package de.schosin.ecs.plugins.composition.manager;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -12,12 +14,15 @@ import java.util.stream.StreamSupport;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.engine.components.ComponentMapperManager;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ResultComponents;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
-import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
@@ -29,9 +34,7 @@ import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionPlugin;
 import de.schosin.ecs.plugins.composition.Spec;
-import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
@@ -40,13 +43,13 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     private final BagManager bagManager;
     private final ComponentMaskManager componentMaskManager;
-    private final EntityManager entityManager;
+    private final ComponentMapperManager componentMapperManager;
 
     private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
 
     private final Bag<Bag<CompositionImpl>> compositionsByMask = new Bag<>(Bag.class, 64);
 
-    private final Pool<BitVector> bitVectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
+    private final Pool<Set<ComponentType<?>>> componentTypeSetPool = Pool.unbounded(Set.class, HashSet::new, Set::clear);
     private final Bag<ComponentMask> fill = new Bag<>(ComponentMask.class, 64);
 
     public CompositionManager(World world) {
@@ -56,7 +59,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         this.bagManager = world.getSingleton(BagManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
-        this.entityManager = world.getSingleton(EntityManager.class);
+        this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
         var eventManager = world.getSingleton(EventManager.class);
         eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.componentMask()));
@@ -198,7 +201,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         private IntConsumer removed;
         private Bag<IntConsumer> moreRemoved;
 
-        private final Map<BitVector, Composition.Of<?>> retrieves = new ConcurrentHashMap<>();
+        private final Map<Set<ComponentType<?>>, Composition.Of<?>> retrieves = new ConcurrentHashMap<>();
 
         private CompositionImpl(EngineSpec spec, IntBag entities, IntBag lookup) {
             this.spec = spec;
@@ -215,28 +218,30 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
-        protected <T extends Composition.Of<?>> T retrieve(Supplier<T> constructor, RegularComponentType<?>... components) {
-            return bitVectorPool.withInstance(vector -> {
-                componentManager.fillVector(vector, components);
+        protected <T extends Composition.Of<?>> T retrieve(Supplier<T> constructor, ComponentType<?>... components) {
+            return componentTypeSetPool.withInstance(componentTypes -> {
+                for (var component : components) {
+                    componentTypes.add(component);
+                }
 
-                return getRetrieveComposition(vector, constructor);
+                return getRetrieveComposition(componentTypes, constructor);
             });
         }
 
         @Override
-        protected Component<?> getComponent(RegularComponentType<?> type) {
-            return componentManager.getComponent(type);
+        protected Components<?> getComponents(ComponentType<?> type) {
+            return componentMapperManager.getComponents(type);
         }
 
         @SuppressWarnings("unchecked")
-        <T extends Composition.Of<?>> T getRetrieveComposition(BitVector vector, Supplier<T> constructor) {
+        private <T extends Composition.Of<?>> T getRetrieveComposition(Set<ComponentType<?>> componentTypes, Supplier<T> constructor) {
             // Lookup cached
-            var result = retrieves.get(vector);
+            var result = retrieves.get(componentTypes);
             if (result != null) {
                 return (T) result;
             }
 
-            var key = new BitVector(vector);
+            var key = Set.copyOf(componentTypes);
             return (T) retrieves.computeIfAbsent(key, ignore -> constructor.get());
         }
 
@@ -410,19 +415,28 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         protected final BaseCompositionImpl composition;
 
-        private final Component<?>[] components;
+        private final Components<?>[] components;
 
-        protected AbstractCompositionN(BaseCompositionImpl composition, RegularComponentType<?>... components) {
+        protected AbstractCompositionN(BaseCompositionImpl composition, ComponentType<?>... components) {
             this.composition = composition;
-            this.components = new Component<?>[components.length];
+            this.components = new Components<?>[components.length];
             for (int i = 0, s = components.length; i < s; i++) {
-                this.components[i] = composition.getComponent(components[i]);
+                this.components[i] = composition.getComponents(components[i]);
             }
         }
 
         @SuppressWarnings("unchecked")
         protected <T> T get(int entityId, int component) {
-            return (T) components[component].getComponent(entityId);
+            return (T) components[component].get(entityId);
+        }
+
+        @SuppressWarnings("unchecked")
+        protected void free(int component, Object instance) {
+            if (instance instanceof Result<?> result) {
+                if (components[component] instanceof ResultComponents resultComponents) {
+                    resultComponents.free(result);
+                }
+            }
         }
 
         @Override

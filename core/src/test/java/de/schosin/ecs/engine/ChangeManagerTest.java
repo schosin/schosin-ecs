@@ -7,15 +7,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.utils.collections.IntBag;
 
 class ChangeManagerTest extends AbstractWorldTest {
 
-    PooledComponents<C1> component1;
-    PooledComponents<C2> component2;
+    PooledComponentMapper<C1> component1;
+    PooledComponentMapper<C2> component2;
 
     int id1;
     int id2;

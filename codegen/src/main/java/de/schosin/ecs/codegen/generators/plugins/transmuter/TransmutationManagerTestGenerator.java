@@ -154,7 +154,7 @@ public class TransmutationManagerTestGenerator {
 
             return MethodSpec.methodBuilder("applyTransmuterN")
                     .addParameter(TypeName.INT, "entityId")
-                    .addParameter(Utils.WILDCARD_CLASS_ARRAY, "remove").varargs()
+                    .addParameter(Utils.COMPONENT_TYPE_WILDCARD_ARRAY, "remove").varargs()
                     .returns(Utils.WILDCARD_CLASS_ARRAY)
                     .addCode(body)
                     .build();

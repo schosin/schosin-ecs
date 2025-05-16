@@ -11,8 +11,9 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Components;
-import de.schosin.ecs.api.components.Components.EnumComponents;
-import de.schosin.ecs.api.components.Components.PooledComponents;
+import de.schosin.ecs.api.components.Components.ComponentMapper;
+import de.schosin.ecs.api.components.Components.EnumComponentMapper;
+import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -60,12 +61,12 @@ public class EngineWorld implements World, StorageWorld {
         this.eventManager = addSingleton(new EventManager());
         this.bagManager = addSingleton(new BagManager());
         this.idManager = addSingleton(new IdManager(bagManager));
-        this.componentManager = addSingleton(new ComponentManager(storageEngine, classes));
+        this.componentManager = addSingleton(new ComponentManager(storageEngine, eventManager, classes));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
         this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
         this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
-        this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, transmutationManager));
+        this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager));
 
         // Initialized configured singletons
         if (builder.singletons != null) {
@@ -101,18 +102,23 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T> Components<T> getComponents(Class<T> clazz) {
-        return componentMapperManager.getComponents(clazz);
+    public <T> @NonNull Components<T> getComponents(ComponentType<T> type) {
+        return componentMapperManager.getComponents(type);
     }
 
     @Override
-    public <T extends Enum<T>> @NonNull EnumComponents<T> getEnumComponents(@NonNull T defaultComponent) {
+    public <T> @NonNull ComponentMapper<T> getComponents(RegularComponentType<T> type) {
+        return componentMapperManager.getComponents(type);
+    }
+
+    @Override
+    public <T extends Enum<T>> @NonNull EnumComponentMapper<T> getEnumComponents(@NonNull T defaultComponent) {
         return componentMapperManager.getEnumComponents(defaultComponent);
     }
 
     @Override
-    public <T extends Pooled> PooledComponents<T> getPooledComponents(@NonNull Class<T> clazz) {
-        return componentMapperManager.getPooledComponents(clazz);
+    public <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull RegularComponentType<T> type) {
+        return componentMapperManager.getPooledComponents(type);
     }
 
     @Override
@@ -122,6 +128,8 @@ public class EngineWorld implements World, StorageWorld {
 
     @Override
     public boolean process(int loops) {
+        componentMapperManager.process();
+
         return changeManager.process(loops);
     }
 

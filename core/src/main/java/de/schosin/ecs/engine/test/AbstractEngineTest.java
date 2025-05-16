@@ -192,6 +192,11 @@ public abstract class AbstractEngineTest {
 
         @Override
         public Verify expectUpdated(int entityId, Class<?>... classes) {
+            if (classes.length == 0) {
+                this.updated.add(new Updated(entityId, null));
+                return this;
+            }
+
             return expectUpdated(entityId, convert(classes));
         }
 
@@ -258,12 +263,16 @@ public abstract class AbstractEngineTest {
                 var present = new HashSet<>(Set.of(componentMask.getComponents()));
                 var missing = new ArrayList<String>();
 
-                for (var expectedComponent : expected.components) {
-                    if (present.remove(expectedComponent)) {
-                        continue;
-                    }
+                if (expected.components == null) {
+                    softly.assertThat(present).as("Expected entity %d to have no components, but some were unexpected.".formatted(entityId)).isEmpty();
+                } else {
+                    for (var expectedComponent : expected.components) {
+                        if (present.remove(expectedComponent)) {
+                            continue;
+                        }
 
-                    missing.add(expectedComponent.display());
+                        missing.add(expectedComponent.display());
+                    }
                 }
 
                 if (!missing.isEmpty()) {
@@ -341,8 +350,11 @@ public abstract class AbstractEngineTest {
         }
 
         private static String components(Set<Component<?>> components) {
-            if (components.isEmpty()) {
+            if (components == null) {
                 return "<no components>";
+            }
+            if (components.isEmpty()) {
+                return "<any components>";
             }
 
             return components.stream().map(Component::display).collect(Collectors.joining(", "));
