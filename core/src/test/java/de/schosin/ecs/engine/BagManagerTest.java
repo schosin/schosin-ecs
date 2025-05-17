@@ -1,22 +1,15 @@
 package de.schosin.ecs.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class BagManagerTest {
-
-    BagManager bagManager;
-
-    @BeforeEach
-    void setup() {
-        this.bagManager = new BagManager();
-    }
+class BagManagerTest extends AbstractWorldTest {
 
     @Test
     void testInitialBagCapacity() {
@@ -71,6 +64,21 @@ class BagManagerTest {
 
         assertThat(componentBag.getCapacity()).isEqualTo(componentCapacity);
         assertThat(componentIntBag.getCapacity()).isEqualTo(componentCapacity);
+    }
+
+    @Test
+    void testEnsureEntityCapacityIncreasingByOne() {
+        var entityCapacity = this.bagManager.getEntitySize();
+
+        var entityBag = this.bagManager.createEntityBag(Object.class);
+        var entityIntBag = this.bagManager.createEntityIntBag();
+
+        for (int i = 0; i < entityCapacity + 10; i++) {
+            var entityId = world.createEntity();
+
+            assertThatCode(() -> entityBag.get(entityId)).doesNotThrowAnyException();
+            assertThatCode(() -> entityIntBag.get(entityId)).doesNotThrowAnyException();
+        }
     }
 
     @ParameterizedTest
