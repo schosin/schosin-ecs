@@ -1,8 +1,10 @@
 package de.schosin.ecs.plugins.transmuter;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.SequencedSet;
 import java.util.Set;
 
 import org.jspecify.annotations.NullMarked;
@@ -18,12 +20,12 @@ public interface BaseTransmuter {
 
 abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
 
-    protected final Set<RegularComponentType<?>> add;
-    protected final Set<ComponentType<?>> remove;
+    protected final SequencedSet<RegularComponentType<?>> add;
+    protected final SequencedSet<ComponentType<?>> remove;
 
     protected AbstractTransmuterBuilder(RegularComponentType<?>... add) {
-        this.add = Set.of(add);
-        this.remove = new HashSet<>();
+        this.add = new LinkedHashSet<>(List.of(add));
+        this.remove = new LinkedHashSet<>();
     }
 
     public SELF remove(Class<?>... components) {
@@ -61,12 +63,12 @@ abstract class AbstractTransmuterBuilder<SELF> implements Transmuter.Builder {
     }
 
     @Override
-    public Set<RegularComponentType<?>> getAdd() {
+    public SequencedSet<RegularComponentType<?>> getAdd() {
         return add;
     }
 
     @Override
-    public Set<ComponentType<?>> getRemove() {
+    public SequencedSet<ComponentType<?>> getRemove() {
         return remove;
     }
 

@@ -6,12 +6,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.lang.reflect.Modifier;
+import java.util.LinkedHashSet;
+import java.util.SequencedSet;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
+import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
+import de.schosin.ecs.engine.components.TransmutationManager.Builder;
 
 class TransmutationManagerTest extends AbstractWorldTest {
 
@@ -166,8 +172,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Cannot get component type for null instance");
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("component cannot be null");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -244,8 +250,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Cannot get component type for null instance");
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("component cannot be null");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -260,8 +266,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
 
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Cannot get component type for null instance");
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessage("component cannot be null");
 
             // Call
             world.process();
@@ -638,6 +644,142 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class, C3.class);
+        }
+
+    }
+
+    @Nested
+    class AbstractTransmuterTest {
+
+        @Test
+        void testApplyAdd() {
+            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
+            var transmuter = new CustomTransmuter(transmutationManager, builder);
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+
+            // Call
+            transmuter.apply(entityId, new C1(), new C2());
+
+            world.process();
+
+            // Verify
+            verifyHasComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+        }
+
+        @Test
+        void testApplyAdd_IncorrectOrder_Throws() {
+            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
+            var transmuter = new CustomTransmuter(transmutationManager, builder);
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+
+            // Call
+            assertThatThrownBy(() -> transmuter.apply(entityId, new C2(), new C1()));
+        }
+
+        @Test
+        void testApplyAdd_FewerComponentsThanExpected() {
+            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
+            var transmuter = new CustomTransmuter(transmutationManager, builder);
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+
+            // Call
+            transmuter.apply(entityId, new C1());
+
+            world.process();
+
+            // Verify
+            verifyHasComponents(entityId, C1.class);
+            verifyDoesNotHaveComponents(entityId, C2.class);
+
+            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+        }
+
+        @Test
+        void testApplyAdd_MoreComponentsThanExpected() {
+            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
+            var transmuter = new CustomTransmuter(transmutationManager, builder);
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+
+            // Call
+            assertThatThrownBy(() -> transmuter.apply(entityId, new C1(), new C2(), new C3()))
+                    .isInstanceOf(ArrayIndexOutOfBoundsException.class)
+                    .hasMessage("Index 2 out of bounds for length 2");
+        }
+
+        @Test
+        void testApplyRemove() {
+            var builder = new CustomBuilder().remove(component(C1.class), component(C2.class));
+            var transmuter = new CustomTransmuter(transmutationManager, builder);
+
+            var entityId = world.createEntity(new C1(), new C2(), new C3());
+            verifyHasComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+
+            // Call
+            transmuter.apply(entityId);
+            
+            world.process();
+
+            // Verify
+            verifyHasComponents(entityId, C3.class);
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
+
+            verifyComponentMaskHasComponents(entityId, C3.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+        }
+
+        private static class CustomBuilder implements Builder {
+
+            private final SequencedSet<RegularComponentType<?>> add = new LinkedHashSet<>();
+            private final SequencedSet<ComponentType<?>> remove = new LinkedHashSet<>();
+
+            private CustomBuilder add(RegularComponentType<?>... types) {
+                for (var type : types) {
+                    this.add.add(type);
+                }
+
+                return this;
+            }
+
+            private CustomBuilder remove(ComponentType<?>... types) {
+                for (var type : types) {
+                    this.remove.add(type);
+                }
+
+                return this;
+            }
+
+            @Override
+            public SequencedSet<RegularComponentType<?>> getAdd() {
+                return add;
+            }
+
+            @Override
+            public SequencedSet<ComponentType<?>> getRemove() {
+                return remove;
+            }
+
+        }
+
+        private static class CustomTransmuter extends AbstractTransmuter {
+
+            protected CustomTransmuter(TransmutationManager manager, Builder builder) {
+                super(manager, builder);
+            }
+
         }
 
     }

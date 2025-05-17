@@ -270,7 +270,7 @@ public class ChangeManager {
     public <T> boolean addComponent(int entityId, Component<T> component, @NonNull T instance) {
         var changed = !component.hasComponent(entityId);
 
-        component.addComponentUnsafe(entityId, instance);
+        component.addComponent(entityId, instance);
         unmarkRemoved(entityId, component);
 
         if (changed) {

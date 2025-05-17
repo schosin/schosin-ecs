@@ -2,6 +2,8 @@ package de.schosin.ecs.engine.components;
 
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.NonNull;
+
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
@@ -64,7 +66,7 @@ public class ComponentManager {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> Component<T> getComponent(T component) {
+    public <T> Component<T> getComponent(@NonNull T component) {
         return switch (component) {
             case null -> throw new IllegalArgumentException("Cannot get component type for null instance");
             default -> getComponent(ComponentType.component((Class<T>) component.getClass()));

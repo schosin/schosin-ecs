@@ -1,6 +1,9 @@
 package de.schosin.ecs.engine.components;
 
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
@@ -17,9 +20,9 @@ public class TransmutationManager {
 
     public interface Builder {
 
-        Set<RegularComponentType<?>> getAdd();
+        SequencedSet<RegularComponentType<?>> getAdd();
 
-        Set<ComponentType<?>> getRemove();
+        SequencedSet<ComponentType<?>> getRemove();
 
         @Override
         boolean equals(Object obj);
@@ -172,9 +175,15 @@ public class TransmutationManager {
 
         @SuppressWarnings({ "rawtypes", "unchecked" })
         private final void addComponents(int entityId, Object... components) {
-            for (var component : components) {
-                var metadata = (Component) manager.componentManager.getComponent(component);
-                manager.changeManager.addComponent(entityId, metadata, component);
+            if (components.length == 0) {
+                return;
+            }
+
+            for (int i = 0, s = components.length; i < s; i++) {
+                var instance = components[i];
+                var component = (Component) this.add[i];
+
+                manager.changeManager.addComponent(entityId, component, instance);
             }
         }
 
@@ -222,14 +231,19 @@ public class TransmutationManager {
 
     }
 
-    private record ImmutableBuilder(Set<RegularComponentType<?>> add, Set<ComponentType<?>> remove) implements Builder {
+    private record ImmutableBuilder(SequencedSet<RegularComponentType<?>> add, SequencedSet<ComponentType<?>> remove) implements Builder {
 
+        @SuppressWarnings("rawtypes")
+        private static final SequencedSet EMPTY = Collections.unmodifiableSequencedSet(new LinkedHashSet<>());
+
+        @SuppressWarnings("unchecked")
         private static ImmutableBuilder add(RegularComponentType<?> component) {
-            return new ImmutableBuilder(Set.of(component), Set.of());
+            return new ImmutableBuilder(sequencedSet(component), EMPTY);
         }
 
+        @SuppressWarnings("unchecked")
         private static ImmutableBuilder remove(ComponentType<?> component) {
-            return new ImmutableBuilder(Set.of(), Set.of(component));
+            return new ImmutableBuilder(EMPTY, sequencedSet(component));
         }
 
         private static ImmutableBuilder create(Builder builder) {
@@ -237,16 +251,29 @@ public class TransmutationManager {
                 return immutable;
             }
 
-            return new ImmutableBuilder(Set.copyOf(builder.getAdd()), Set.copyOf(builder.getRemove()));
+            return new ImmutableBuilder(copyOf(builder.getAdd()), copyOf(builder.getRemove()));
+        }
+
+        private static <T> SequencedSet<T> sequencedSet(T item) {
+            var result = new LinkedHashSet<T>();
+            result.add(item);
+
+            return Collections.unmodifiableSequencedSet(result);
+        }
+
+        private static <T> SequencedSet<T> copyOf(SequencedSet<T> set) {
+            var result = new LinkedHashSet<T>(set);
+
+            return Collections.unmodifiableSequencedSet(result);
         }
 
         @Override
-        public Set<RegularComponentType<?>> getAdd() {
+        public SequencedSet<RegularComponentType<?>> getAdd() {
             return add;
         }
 
         @Override
-        public Set<ComponentType<?>> getRemove() {
+        public SequencedSet<ComponentType<?>> getRemove() {
             return remove;
         }
 
