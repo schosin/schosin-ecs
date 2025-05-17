@@ -16,6 +16,7 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
+import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
@@ -59,7 +60,8 @@ class SingletonManagerTest extends AbstractWorldTest {
             var entityManager = new EntityManager(null, idManager, componentManager, componentMaskManager);
             var changeManager = new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager);
             var transmutationManager = new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager);
-            var componentMapperManager = new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager);
+            var relationMapperManager = new RelationMapperManager(componentManager, transmutationManager);
+            var componentMapperManager = new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager);
 
             return Stream.of(
                     Arguments.of(Named.of("eventManager", eventManager)),
@@ -71,6 +73,7 @@ class SingletonManagerTest extends AbstractWorldTest {
                     Arguments.of(Named.of("entityManager", entityManager)),
                     Arguments.of(Named.of("changeManager", changeManager)),
                     Arguments.of(Named.of("transmutationManager", transmutationManager)),
+                    Arguments.of(Named.of("relationMapperManager", relationMapperManager)),
                     Arguments.of(Named.of("componentMapperManager", componentMapperManager)));
         }
 

@@ -9,18 +9,24 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
+import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.EnumComponentMapper;
+import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
+import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ClassComponentAddedEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
@@ -48,6 +54,7 @@ public class EngineWorld implements World, StorageWorld {
     private final EntityManager entityManager;
     private final ChangeManager changeManager;
     private final TransmutationManager transmutationManager;
+    private final RelationMapperManager relationMapperManager;
     private final ComponentMapperManager componentMapperManager;
 
     public EngineWorld(WorldBuilder<?> builder, StorageEngine storageEngine) {
@@ -66,7 +73,8 @@ public class EngineWorld implements World, StorageWorld {
         this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
         this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
-        this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager));
+        this.relationMapperManager = addSingleton(new RelationMapperManager(componentManager, transmutationManager));
+        this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager));
 
         // Initialized configured singletons
         if (builder.singletons != null) {
@@ -102,12 +110,17 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T> @NonNull Components<T> getComponents(ComponentType<T> type) {
+    public <T, R> @NonNull Components<T, R> getComponents(ComponentType<T, R> type) {
         return componentMapperManager.getComponents(type);
     }
 
     @Override
-    public <T> @NonNull ComponentMapper<T> getComponents(RegularComponentType<T> type) {
+    public <T, R> @NonNull Components<T, R> getComponents(RegularComponentType<T, R> type) {
+        return componentMapperManager.getComponents(type);
+    }
+
+    @Override
+    public <T> @NonNull ComponentMapper<T> getComponents(ClassType<T> type) {
         return componentMapperManager.getComponents(type);
     }
 
@@ -117,8 +130,18 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull RegularComponentType<T> type) {
+    public <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull ClassType<T> type) {
         return componentMapperManager.getPooledComponents(type);
+    }
+
+    @Override
+    public <R, T> ComponentRelationMapper<R, T> getComponentRelations(ComponentRelationType<R, T> relation) {
+        return componentMapperManager.getComponentRelations(relation);
+    }
+
+    @Override
+    public <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation) {
+        return componentMapperManager.getComponentRelations(relation);
     }
 
     @Override
@@ -144,12 +167,8 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T> void dispatchComponentAddedEvent(RegularComponentType<T> type, Component<T> component) {
-        var event = switch (type) {
-            case ComponentType.ClassType<T> classType -> ClassComponentAddedEvent.get(classType, component);
-        };
-
-        eventManager.dispatchEvent(event);
+    public <T, R> void dispatchComponentAddedEvent(RegularComponentType<T, R> type, Component<T, R> component) {
+        componentManager.dispatchComponentAddedEvent(type, component);
     }
 
 }

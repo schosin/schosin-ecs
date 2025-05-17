@@ -49,7 +49,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     private final Bag<Bag<CompositionImpl>> compositionsByMask = new Bag<>(Bag.class, 64);
 
-    private final Pool<Set<ComponentType<?>>> componentTypeSetPool = Pool.unbounded(Set.class, HashSet::new, Set::clear);
+    private final Pool<Set<ComponentType<?, ?>>> componentTypeSetPool = Pool.unbounded(Set.class, HashSet::new, Set::clear);
     private final Bag<ComponentMask> fill = new Bag<>(ComponentMask.class, 64);
 
     public CompositionManager(World world) {
@@ -201,7 +201,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         private IntConsumer removed;
         private Bag<IntConsumer> moreRemoved;
 
-        private final Map<Set<ComponentType<?>>, Composition.Of<?>> retrieves = new ConcurrentHashMap<>();
+        private final Map<Set<ComponentType<?, ?>>, Composition.Of<?>> retrieves = new ConcurrentHashMap<>();
 
         private CompositionImpl(EngineSpec spec, IntBag entities, IntBag lookup) {
             this.spec = spec;
@@ -218,7 +218,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
-        protected <T extends Composition.Of<?>> T retrieve(Supplier<T> constructor, ComponentType<?>... components) {
+        protected <T extends Composition.Of<?>> T retrieve(Supplier<T> constructor, ComponentType<?, ?>... components) {
             return componentTypeSetPool.withInstance(componentTypes -> {
                 for (var component : components) {
                     componentTypes.add(component);
@@ -229,12 +229,12 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
-        protected Components<?> getComponents(ComponentType<?> type) {
+        protected Components<?, ?> getComponents(ComponentType<?, ?> type) {
             return componentMapperManager.getComponents(type);
         }
 
         @SuppressWarnings("unchecked")
-        private <T extends Composition.Of<?>> T getRetrieveComposition(Set<ComponentType<?>> componentTypes, Supplier<T> constructor) {
+        private <T extends Composition.Of<?>> T getRetrieveComposition(Set<ComponentType<?, ?>> componentTypes, Supplier<T> constructor) {
             // Lookup cached
             var result = retrieves.get(componentTypes);
             if (result != null) {
@@ -415,11 +415,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         protected final BaseCompositionImpl composition;
 
-        private final Components<?>[] components;
+        private final Components<?, ?>[] components;
 
-        protected AbstractCompositionN(BaseCompositionImpl composition, ComponentType<?>... components) {
+        protected AbstractCompositionN(BaseCompositionImpl composition, ComponentType<?, ?>... components) {
             this.composition = composition;
-            this.components = new Components<?>[components.length];
+            this.components = new Components<?, ?>[components.length];
             for (int i = 0, s = components.length; i < s; i++) {
                 this.components[i] = composition.getComponents(components[i]);
             }

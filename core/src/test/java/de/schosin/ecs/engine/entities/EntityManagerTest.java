@@ -13,14 +13,14 @@ import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.utils.collections.BitVector;
 
 class EntityManagerTest extends AbstractWorldTest {
 
-    Component<Component1> component1;
-    Component<Component2> component2;
-    Component<Component3> component3;
+    ClassComponent<Component1> component1;
+    ClassComponent<Component2> component2;
+    ClassComponent<Component3> component3;
 
     @BeforeEach
     void setupComponents() {
@@ -51,7 +51,26 @@ class EntityManagerTest extends AbstractWorldTest {
 
         @Test
         void testDynamicEntitiy() {
+            // Setup (ensure fixed ids)
+            world.getComponents(Component1.class);
+            world.getComponents(Component2.class);
+            
+            // Call
             var entityId = entityManager.createEntity(new Component1(), new Component2());
+
+            // Verify
+            verifyHasComponents(entityId, Component1.class, Component2.class);
+            verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class);
+        }
+
+        @Test
+        void testDynamicEntitiy_ComponentOrderDoesNotMatter() {
+            // Setup (ensure fixed ids)
+            world.getComponents(Component1.class);
+            world.getComponents(Component2.class);
+
+            // Call
+            var entityId = entityManager.createEntity(new Component2(), new Component1());
 
             // Verify
             verifyHasComponents(entityId, Component1.class, Component2.class);

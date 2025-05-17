@@ -1,6 +1,5 @@
 package de.schosin.ecs.engine.components;
 
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.SequencedSet;
@@ -8,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.ChangeManager;
@@ -15,20 +15,15 @@ import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
+import de.schosin.ecs.utils.collections.Pool;
 
 public class TransmutationManager {
 
     public interface Builder {
 
-        SequencedSet<RegularComponentType<?>> getAdd();
+        SequencedSet<RegularComponentType<?, ?>> getAdd();
 
-        SequencedSet<ComponentType<?>> getRemove();
-
-        @Override
-        boolean equals(Object obj);
-
-        @Override
-        int hashCode();
+        SequencedSet<ComponentType<?, ?>> getRemove();
 
     }
 
@@ -37,7 +32,10 @@ public class TransmutationManager {
     private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
 
-    private final Map<Builder, AbstractTransmuter> transmuters = new ConcurrentHashMap<>();
+    private final Map<BuilderKey, AbstractTransmuter> transmuters = new ConcurrentHashMap<>();
+
+    private final Pool<BuilderKey> internalKeyPool = Pool.unbounded(BuilderKey.class, () -> new BuilderKey(true));
+    private final Pool<BuilderKey> keyPool = Pool.unbounded(BuilderKey.class, () -> new BuilderKey(false));
 
     public TransmutationManager(ChangeManager changeManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, EntityManager entityManager) {
         this.changeManager = changeManager;
@@ -46,27 +44,41 @@ public class TransmutationManager {
         this.entityManager = entityManager;
     }
 
-    public <T> Add<T> getAddTransmuter(RegularComponentType<T> component) {
-        return getTransmuter(ImmutableBuilder.add(component), () -> new Add<>(component));
+    public <T> Add<T> getAddTransmuter(RegularComponentType<T, ?> component) {
+        return internalKeyPool.withInstance(key -> getTransmuter(key.add(component), () -> new Add<>(component)));
     }
 
-    public Remove getRemoveTransmuter(ComponentType<?> component) {
-        return getTransmuter(ImmutableBuilder.remove(component), () -> new Remove(component));
+    public Remove getRemoveTransmuter(ComponentType<?, ?> component) {
+        return internalKeyPool.withInstance(key -> getTransmuter(key.remove(component), () -> new Remove(component)));
+    }
+
+    public <T extends AbstractTransmuter> T getTransmuter(Builder builder, Supplier<T> supplier) {
+        return keyPool.withInstance(key -> getTransmuter(key.init(builder), supplier));
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends AbstractTransmuter> T getTransmuter(Builder builder, Supplier<T> supplier) {
-        var result = (T) transmuters.get(builder);
+    private <T extends AbstractTransmuter> T getTransmuter(BuilderKey key, Supplier<T> supplier) {
+        var result = (T) transmuters.get(key);
         if (result != null) {
             return result;
         }
 
-        return (T) transmuters.computeIfAbsent(ImmutableBuilder.create(builder), ignore -> supplier.get());
+        synchronized (transmuters) {
+            result = (T) transmuters.get(key);
+            if (result != null) {
+                return result;
+            }
+
+            var transmuter = supplier.get();
+            this.transmuters.put(key.copy(), transmuter);
+
+            return transmuter;
+        }
     }
 
     public class Add<T> extends AbstractTransmuter {
 
-        public Add(RegularComponentType<T> add) {
+        public Add(RegularComponentType<T, ?> add) {
             super(TransmutationManager.this, Set.of(add), Set.of());
         }
 
@@ -83,7 +95,7 @@ public class TransmutationManager {
 
     public class Remove extends AbstractTransmuter {
 
-        public Remove(ComponentType<?> remove) {
+        public Remove(ComponentType<?, ?> remove) {
             super(TransmutationManager.this, Set.of(), Set.of(remove));
         }
 
@@ -100,12 +112,12 @@ public class TransmutationManager {
 
     public abstract static class AbstractTransmuter {
 
-        private static final Bag<ImmutableBag<Component<?>>> EMPTY_BAG = new Bag<>(ImmutableBag.class, 0);
+        private static final Bag<ImmutableBag<Component<?, ?>>> EMPTY_BAG = new Bag<>(ImmutableBag.class, 0);
 
         private final TransmutationManager manager;
 
-        private final Component<?>[] add;
-        private final ImmutableBag<ImmutableBag<Component<?>>> remove;
+        private final Component<?, ?>[] add;
+        private final ImmutableBag<ImmutableBag<Component<?, ?>>> remove;
 
         private final Bag<ComponentMask> cache = new Bag<>(ComponentMask.class, 64);
 
@@ -113,31 +125,31 @@ public class TransmutationManager {
             this(manager, builder.getAdd(), builder.getRemove());
         }
 
-        protected AbstractTransmuter(TransmutationManager manager, Set<RegularComponentType<?>> add, Set<ComponentType<?>> remove) {
+        protected AbstractTransmuter(TransmutationManager manager, Set<RegularComponentType<?, ?>> add, Set<ComponentType<?, ?>> remove) {
             this(manager, convert(manager, add), convertRemove(manager, remove));
         }
 
-        private static Component<?>[] convert(TransmutationManager manager, Set<RegularComponentType<?>> types) {
+        private static Component<?, ?>[] convert(TransmutationManager manager, Set<RegularComponentType<?, ?>> types) {
             return types.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
         }
 
         @SuppressWarnings("unchecked")
-        private static ImmutableBag<ImmutableBag<Component<?>>> convertRemove(TransmutationManager manager, Set<ComponentType<?>> types) {
+        private static ImmutableBag<ImmutableBag<Component<?, ?>>> convertRemove(TransmutationManager manager, Set<ComponentType<?, ?>> types) {
             if (types.isEmpty()) {
                 return EMPTY_BAG;
             }
 
-            var bag = new Bag<ImmutableBag<Component<?>>>(ImmutableBag.class, 64);
+            var bag = new Bag<ImmutableBag<Component<?, ?>>>(ImmutableBag.class, 64);
 
             for (var type : types) {
                 var components = manager.componentManager.getComponents(type);
-                bag.add((ImmutableBag<Component<?>>) components);
+                bag.add((ImmutableBag<Component<?, ?>>) components);
             }
 
             return ImmutableBag.create(bag);
         }
 
-        private AbstractTransmuter(TransmutationManager manager, Component<?>[] add, ImmutableBag<ImmutableBag<Component<?>>> remove) {
+        private AbstractTransmuter(TransmutationManager manager, Component<?, ?>[] add, ImmutableBag<ImmutableBag<Component<?, ?>>> remove) {
             this.manager = manager;
 
             this.add = add;
@@ -231,50 +243,37 @@ public class TransmutationManager {
 
     }
 
-    private record ImmutableBuilder(SequencedSet<RegularComponentType<?>> add, SequencedSet<ComponentType<?>> remove) implements Builder {
+    private record BuilderKey(boolean internal, SequencedSet<RegularComponentType<?, ?>> add, SequencedSet<ComponentType<?, ?>> remove) implements Pooled {
 
-        @SuppressWarnings("rawtypes")
-        private static final SequencedSet EMPTY = Collections.unmodifiableSequencedSet(new LinkedHashSet<>());
-
-        @SuppressWarnings("unchecked")
-        private static ImmutableBuilder add(RegularComponentType<?> component) {
-            return new ImmutableBuilder(sequencedSet(component), EMPTY);
+        public BuilderKey(boolean internal) {
+            this(internal, new LinkedHashSet<>(), new LinkedHashSet<>());
         }
 
-        @SuppressWarnings("unchecked")
-        private static ImmutableBuilder remove(ComponentType<?> component) {
-            return new ImmutableBuilder(EMPTY, sequencedSet(component));
+        private BuilderKey add(RegularComponentType<?, ?> component) {
+            this.add.add(component);
+            return this;
         }
 
-        private static ImmutableBuilder create(Builder builder) {
-            if (builder instanceof ImmutableBuilder immutable) {
-                return immutable;
-            }
-
-            return new ImmutableBuilder(copyOf(builder.getAdd()), copyOf(builder.getRemove()));
+        private BuilderKey remove(ComponentType<?, ?> component) {
+            this.remove.add(component);
+            return this;
         }
 
-        private static <T> SequencedSet<T> sequencedSet(T item) {
-            var result = new LinkedHashSet<T>();
-            result.add(item);
+        private BuilderKey init(Builder builder) {
+            this.add.addAll(builder.getAdd());
+            this.remove.addAll(builder.getRemove());
 
-            return Collections.unmodifiableSequencedSet(result);
+            return this;
         }
 
-        private static <T> SequencedSet<T> copyOf(SequencedSet<T> set) {
-            var result = new LinkedHashSet<T>(set);
-
-            return Collections.unmodifiableSequencedSet(result);
+        private BuilderKey copy() {
+            return new BuilderKey(internal, new LinkedHashSet<>(this.add), new LinkedHashSet<>(this.remove));
         }
 
         @Override
-        public SequencedSet<RegularComponentType<?>> getAdd() {
-            return add;
-        }
-
-        @Override
-        public SequencedSet<ComponentType<?>> getRemove() {
-            return remove;
+        public void reset() {
+            this.add.clear();
+            this.remove.clear();
         }
 
     }

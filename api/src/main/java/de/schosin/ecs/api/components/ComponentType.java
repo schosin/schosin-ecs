@@ -3,20 +3,39 @@ package de.schosin.ecs.api.components;
 import java.lang.reflect.Modifier;
 import java.util.Set;
 
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.ComponentResult;
+
 /**
  * Interface to describe the supported component types.
  * 
  * @param <T> type of component data
+ * @param <R> type of result when retrieving component data for an entity
  */
-public sealed interface ComponentType<T> {
+public sealed interface ComponentType<T, R> {
 
-    sealed interface RegularComponentType<T> extends ComponentType<T> {
+    sealed interface RegularComponentType<T, R> extends ComponentType<T, R> {
+    }
+
+    sealed interface RegularComponentRelationType<R, T, X> extends RegularComponentType<ComponentRelation<R, T>, X> {
+        Class<R> relationship();
+
+        Class<T> target();
     }
 
     static Wildcard<Object> WILDCARD = wildcard(Object.class);
 
     static <T> ClassType<T> component(Class<T> clazz) {
         return new ClassType<>(clazz);
+    }
+
+    static <R, T> ComponentRelationType<R, T> relation(Class<R> relationship, Class<T> target) {
+        return new ComponentRelationType<>(relationship, target);
+    }
+
+    static <R extends Relation.Exclusive, T> ExclusiveComponentRelationType<R, T> exclusiveRelation(Class<R> relationship, Class<T> target) {
+        return new ExclusiveComponentRelationType<>(relationship, target);
     }
 
     static <T> Wildcard<T> wildcard(Class<T> bound) {
@@ -28,53 +47,67 @@ public sealed interface ComponentType<T> {
      * 
      * @param <T> type of component
      */
-    record ClassType<T>(Class<T> clazz) implements RegularComponentType<T> {
+    record ClassType<T>(Class<T> clazz) implements RegularComponentType<T, T> {
         public ClassType {
-            if (ComponentTypeHelper.UNSUPPORTED_TYPES.contains(clazz) || Object.class == clazz) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a component.".formatted(clazz.getName()));
-            }
-            if (clazz.isArray()) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be arrays.".formatted(clazz.getName()));
-            }
-            if (clazz.isSynthetic()) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be synthetic.".formatted(clazz.getName()));
-            }
-            if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be abstract.".formatted(clazz.getName()));
-            }
-            if (clazz.getTypeParameters().length > 0) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be generic.".formatted(clazz.getName()));
-            }
+            ComponentTypeHelper.validateClassType(clazz);
         }
 
         @Override
         public final String toString() {
-            return "ClassType(%s)".formatted(clazz.getName());
+            return "ClassType(%s)".formatted(clazz.getSimpleName());
         }
     }
 
-    record Wildcard<T>(Class<T> bound) implements ComponentType<Result<T>> {
-        public Wildcard {
-            if (ComponentTypeHelper.UNSUPPORTED_TYPES.contains(bound)) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard.".formatted(bound.getName()));
-            }
-            if (bound.isArray()) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be arrays.".formatted(bound.getName()));
-            }
-            if (bound.isSynthetic()) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be synthetic.".formatted(bound.getName()));
-            }
-            if (Modifier.isFinal(bound.getModifiers())) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be final.".formatted(bound.getName()));
-            }
-            if (bound.getTypeParameters().length > 0) {
-                throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be generic.".formatted(bound.getName()));
-            }
+    /**
+     * Describes a component relation, consisting of a {@link ComponentRelationType#relationship relationship component}, 
+     * and a {@link ComponentRelationType#target target component}.
+     * 
+     * <p>
+     * An entity can have more than one instance of the same {@link ComponentRelationType}
+     * as long as the relationship component differs.
+     * </p>
+     * 
+     * @param <R> type of relationship component, must not extend {@link Relation.Exclusive}
+     * @param <T> type of target component
+     */
+    record ComponentRelationType<R, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelationResult<R, T>> {
+        public ComponentRelationType {
+            ComponentTypeHelper.validateNonExclusiveComponentRelationRelationship(relationship);
+            ComponentTypeHelper.validateComponentRelationTarget(target);
         }
 
         @Override
         public final String toString() {
-            return "Wildcard(%s)".formatted(bound.getName());
+            return "ComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
+        }
+    }
+
+    /**
+     * Describes an exclusive component relation, consisting of a relationship component, and a target component.
+     * 
+     * @param <R> type of relationship component
+     * @param <T> type of target component
+     */
+    record ExclusiveComponentRelationType<R extends Relation.Exclusive, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelation<R, T>> {
+        public ExclusiveComponentRelationType {
+            ComponentTypeHelper.validateComponentRelationRelationship(relationship);
+            ComponentTypeHelper.validateComponentRelationTarget(target);
+        }
+
+        @Override
+        public final String toString() {
+            return "ExclusiveComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
+        }
+    }
+
+    record Wildcard<T>(Class<T> bound) implements ComponentType<T, ComponentResult<T>> {
+        public Wildcard {
+            ComponentTypeHelper.validateWildcard(bound);
+        }
+
+        @Override
+        public final String toString() {
+            return "Wildcard(%s)".formatted(bound.getSimpleName());
         }
     }
 
@@ -86,5 +119,64 @@ class ComponentTypeHelper {
             boolean.class, byte.class, char.class, short.class, int.class, long.class, float.class, double.class,
             Boolean.class, Byte.class, Character.class, Short.class, Integer.class, Long.class, Float.class, Double.class,
             String.class);
+
+    static void validateClassType(Class<?> clazz) {
+        if (UNSUPPORTED_TYPES.contains(clazz) || Object.class == clazz) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component.".formatted(clazz.getName()));
+        }
+        if (clazz.isArray()) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be arrays.".formatted(clazz.getName()));
+        }
+        if (clazz.isSynthetic()) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be synthetic.".formatted(clazz.getName()));
+        }
+        if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be abstract.".formatted(clazz.getName()));
+        }
+        if (clazz.getTypeParameters().length > 0) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be generic.".formatted(clazz.getName()));
+        }
+    }
+
+    static void validateNonExclusiveComponentRelationRelationship(Class<?> relationship) {
+        validateComponentRelationRelationship(relationship);
+
+        if (Relation.Exclusive.class.isAssignableFrom(relationship)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a non-exclusive relationship component. It is marked as a Exclusive component. Use #exclusiveRelation instead."
+                    .formatted(relationship.getName()));
+        }
+    }
+
+    static void validateComponentRelationRelationship(Class<?> relationship) {
+        if (Relation.Target.class.isAssignableFrom(relationship)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a relationship component. It is marked as a Target component.".formatted(relationship.getName()));
+        }
+    }
+
+    static void validateComponentRelationTarget(Class<?> target) {
+        validateClassType(target);
+
+        if (Relation.Relationship.class.isAssignableFrom(target)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a target component. It is marked as a Relationship component.".formatted(target.getName()));
+        }
+    }
+
+    static void validateWildcard(Class<?> bound) {
+        if (UNSUPPORTED_TYPES.contains(bound)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard.".formatted(bound.getName()));
+        }
+        if (bound.isArray()) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be arrays.".formatted(bound.getName()));
+        }
+        if (bound.isSynthetic()) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be synthetic.".formatted(bound.getName()));
+        }
+        if (Modifier.isFinal(bound.getModifiers())) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be final.".formatted(bound.getName()));
+        }
+        if (bound.getTypeParameters().length > 0) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be generic.".formatted(bound.getName()));
+        }
+    }
 
 }

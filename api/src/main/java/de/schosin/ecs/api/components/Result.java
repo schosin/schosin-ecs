@@ -5,6 +5,8 @@ import java.util.Iterator;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+
 /**
  * Represents a result containing no, one or more components matching
  * the type bound {@code T}. 
@@ -24,7 +26,36 @@ import org.jspecify.annotations.Nullable;
  * 
  * @param <T> type bound
  */
-public interface Result<T> extends Iterable<T> {
+public sealed interface Result<T> extends Iterable<T> {
+
+    non-sealed interface ComponentResult<T> extends Result<T> {
+
+        /**
+         * Retrieves a component that has the given {@code clazz}. The components
+         * will be checked by {@code component.getClass() == clazz}.
+         *  
+         * @param <R> type of component
+         * @param clazz class of component
+         * @return matching component, or null if not present
+         */
+        @Nullable
+        <R extends T> R get(Class<R> clazz);
+
+    }
+
+    non-sealed interface ComponentRelationResult<R, T> extends Result<ComponentRelation<R, T>> {
+
+        /**
+         * Retrieves the relationship given the target component. The target will be
+         * checked by {@link #equals(Object)} against existing relations, returning 
+         * its relationship if it is equal.
+         * 
+         * @param target target component
+         * @return relationship component, or null if not present
+         */
+        R getRelationship(T target);
+
+    }
 
     /**
      * Retrieves the component by its zero-based index.
@@ -37,17 +68,6 @@ public interface Result<T> extends Iterable<T> {
     T get(int i);
 
     /**
-     * Retrieves a component that has the given {@code clazz}. The components
-     * will be checked by {@code component.getClass() == clazz}.
-     *  
-     * @param <R> type of component
-     * @param clazz class of component
-     * @return matching component, or null if not present
-     */
-    @Nullable
-    <R extends T> R get(Class<R> clazz);
-
-    /**
      * @return number of components in this result
      */
     int size();
@@ -56,12 +76,5 @@ public interface Result<T> extends Iterable<T> {
      * @return true if this result contains no components
      */
     boolean isEmpty();
-
-    /**
-     * Returns an iterator. The iterator may be implemented by this instance 
-     * and as such cannot be shared.
-     */
-    @Override
-    Iterator<T> iterator();
 
 }

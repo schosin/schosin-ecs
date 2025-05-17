@@ -16,7 +16,11 @@ import org.assertj.core.api.SoftAssertions;
 
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager;
@@ -26,6 +30,8 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BagIterator;
 
 /**
  * Abstract class providing assertions for testing engine functionality.
@@ -46,15 +52,49 @@ public abstract class AbstractEngineTest {
         this.eventManager = eventManager;
     }
 
-    protected <T> ClassType<T> component(Class<T> clazz) {
+    protected static <T> Iterable<T> iterable(Bag<T> bag) {
+        return BagIterator.iterable(bag);
+    }
+
+    protected static <T> ClassType<T> type(Class<T> clazz) {
+        return component(clazz);
+    }
+
+    protected static <R, T> ComponentRelationType<R, T> type(Class<R> relationship, Class<T> target) {
+        return relation(relationship, target);
+    }
+
+    protected static <R extends Exclusive, T> ExclusiveComponentRelationType<R, T> exclusive(Class<R> relationship, Class<T> target) {
+        return exclusiveRelation(relationship, target);
+    }
+
+    protected static <T> ClassType<T> component(Class<T> clazz) {
         return ComponentType.component(clazz);
+    }
+
+    protected static <R, T> ComponentRelationType<R, T> relation(Class<R> relationship, Class<T> target) {
+        return ComponentType.relation(relationship, target);
+    }
+
+    protected static <R extends Exclusive, T> ExclusiveComponentRelationType<R, T> exclusiveRelation(Class<R> relationship, Class<T> target) {
+        return ComponentType.exclusiveRelation(relationship, target);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    protected <R, T> ComponentRelation<R, T> relation(R relationship, T target) {
+        var type = Exclusive.class.isInstance(relationship)
+                ? exclusiveRelation((Class) relationship.getClass(), (Class<T>) target.getClass())
+                : relation((Class<R>) relationship.getClass(), (Class<T>) target.getClass());
+
+        var component = componentManager.getComponent(type);
+        return component.getInstance(relationship, target);
     }
 
     protected <T> T getComponent(int entityId, Class<T> clazz) {
         return getComponent(entityId, ComponentType.component(clazz));
     }
 
-    protected <T> T getComponent(int entityId, RegularComponentType<T> type) {
+    protected <T, R> R getComponent(int entityId, RegularComponentType<T, R> type) {
         return componentManager.getComponent(type).getComponent(entityId);
     }
 
@@ -62,7 +102,7 @@ public abstract class AbstractEngineTest {
         verifyHasComponents(entityId, convert(classes));
     }
 
-    protected void verifyHasComponents(int entityId, RegularComponentType<?>... types) {
+    protected void verifyHasComponents(int entityId, RegularComponentType<?, ?>... types) {
         for (var type : types) {
             assertThat(getComponent(entityId, type)).as("entity has %s", type).isNotNull();
         }
@@ -72,7 +112,7 @@ public abstract class AbstractEngineTest {
         verifyDoesNotHaveComponents(entityId, convert(classes));
     }
 
-    protected void verifyDoesNotHaveComponents(int entityId, RegularComponentType<?>... types) {
+    protected void verifyDoesNotHaveComponents(int entityId, RegularComponentType<?, ?>... types) {
         for (var type : types) {
             assertThat(getComponent(entityId, type)).as("entity does not have %s", type).isNull();
         }
@@ -82,7 +122,7 @@ public abstract class AbstractEngineTest {
         verifyComponentMaskHasComponents(entityId, convert(classes));
     }
 
-    protected void verifyComponentMaskHasComponents(int entityId, RegularComponentType<?>... types) {
+    protected void verifyComponentMaskHasComponents(int entityId, RegularComponentType<?, ?>... types) {
         var componentMask = entityManager.getComponentMask(entityId);
 
         for (var type : types) {
@@ -95,7 +135,7 @@ public abstract class AbstractEngineTest {
         verifyComponentMaskDoesNotHaveComponents(entityId, convert(classes));
     }
 
-    protected void verifyComponentMaskDoesNotHaveComponents(int entityId, RegularComponentType<?>... types) {
+    protected void verifyComponentMaskDoesNotHaveComponents(int entityId, RegularComponentType<?, ?>... types) {
         var componentMask = entityManager.getComponentMask(entityId);
 
         for (var type : types) {
@@ -119,7 +159,7 @@ public abstract class AbstractEngineTest {
 
         Verify expectInserted(Class<?>... classes);
 
-        Verify expectInserted(RegularComponentType<?>... types);
+        Verify expectInserted(RegularComponentType<?, ?>... types);
 
         Verify expectNoMoreInserted();
 
@@ -127,7 +167,7 @@ public abstract class AbstractEngineTest {
             return expectUpdated(-1, classes);
         }
 
-        default Verify expectUpdated(RegularComponentType<?>... types) {
+        default Verify expectUpdated(RegularComponentType<?, ?>... types) {
             return expectUpdated(-1, types);
         }
 
@@ -135,7 +175,7 @@ public abstract class AbstractEngineTest {
 
         Verify expectUpdated(int entityId, Class<?>... classes);
 
-        Verify expectUpdated(int entityId, RegularComponentType<?>... types);
+        Verify expectUpdated(int entityId, RegularComponentType<?, ?>... types);
 
         Verify expectNoMoreUpdated();
 
@@ -171,8 +211,8 @@ public abstract class AbstractEngineTest {
         }
 
         @Override
-        public Verify expectInserted(RegularComponentType<?>... types) {
-            var components = Arrays.stream(types).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
+        public Verify expectInserted(RegularComponentType<?, ?>... types) {
+            var components = Arrays.stream(types).map(componentManager::getComponent).collect(Collectors.<Component<?, ?>>toSet());
 
             this.inserted.add(new Inserted(components));
             return this;
@@ -201,8 +241,8 @@ public abstract class AbstractEngineTest {
         }
 
         @Override
-        public Verify expectUpdated(int entityId, RegularComponentType<?>... types) {
-            var components = Arrays.stream(types).map(componentManager::getComponent).collect(Collectors.<Component<?>>toSet());
+        public Verify expectUpdated(int entityId, RegularComponentType<?, ?>... types) {
+            var components = Arrays.stream(types).map(componentManager::getComponent).collect(Collectors.<Component<?, ?>>toSet());
 
             this.updated.add(new Updated(entityId, components));
             return this;
@@ -345,11 +385,11 @@ public abstract class AbstractEngineTest {
             softly.assertAll();
         }
 
-        private static Set<Component<?>> set(ComponentMask componentMask) {
+        private static Set<Component<?, ?>> set(ComponentMask componentMask) {
             return Arrays.stream(componentMask.getComponents()).collect(Collectors.toSet());
         }
 
-        private static String components(Set<Component<?>> components) {
+        private static String components(Set<Component<?, ?>> components) {
             if (components == null) {
                 return "<no components>";
             }
@@ -360,10 +400,10 @@ public abstract class AbstractEngineTest {
             return components.stream().map(Component::display).collect(Collectors.joining(", "));
         }
 
-        private record Inserted(Set<Component<?>> components) {
+        private record Inserted(Set<Component<?, ?>> components) {
         }
 
-        private record Updated(int entityId, Set<Component<?>> components) {
+        private record Updated(int entityId, Set<Component<?, ?>> components) {
         }
 
         private record Removed(int entityId) {
@@ -371,8 +411,8 @@ public abstract class AbstractEngineTest {
 
     }
 
-    private static RegularComponentType<?>[] convert(Class<?>... classes) {
-        return Arrays.stream(classes).map(ComponentType::component).toArray(RegularComponentType<?>[]::new);
+    private static ClassType<?>[] convert(Class<?>... classes) {
+        return Arrays.stream(classes).map(ComponentType::component).toArray(ClassType<?>[]::new);
     }
 
 }

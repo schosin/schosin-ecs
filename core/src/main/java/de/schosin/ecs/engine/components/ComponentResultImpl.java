@@ -7,47 +7,31 @@ import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
-import de.schosin.ecs.api.components.Result;
+import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BagIterator;
 
-public class ResultImpl<T> implements Result<T>, Iterator<T>, Pooled {
+public class ComponentResultImpl<T> implements ComponentResult<T>, Pooled {
 
     private final Class<T> clazz;
     private final Bag<ComponentMapper<? extends T>> mappers;
     private final Bag<T> components;
 
+    private final ThreadLocal<BagIterator<T>> iterator = ThreadLocal.withInitial(BagIterator::new);
+
     private int entityId = -1;
-    private int index = 0;
     private int size = -1;
 
-    public ResultImpl(Class<T> clazz, Bag<ComponentMapper<? extends T>> mappers) {
+    public ComponentResultImpl(Class<T> clazz, Bag<ComponentMapper<? extends T>> mappers) {
         this.clazz = clazz;
         this.mappers = mappers;
         this.components = new Bag<>(clazz, 4);
     }
 
-    public ResultImpl<T> init(int entityId) {
+    public ComponentResultImpl<T> init(int entityId) {
         this.entityId = entityId;
 
         return this;
-    }
-
-    @Override
-    public Iterator<T> iterator() {
-        size(); // initializes components, must be done before iteration
-
-        this.index = 0;
-        return this;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return index < size();
-    }
-
-    @Override
-    public T next() {
-        return this.components.get(index++);
     }
 
     @NonNull
@@ -99,9 +83,13 @@ public class ResultImpl<T> implements Result<T>, Iterator<T>, Pooled {
     }
 
     @Override
+    public Iterator<T> iterator() {
+        return iterator.get().init(this.components);
+    }
+
+    @Override
     public void reset() {
         this.entityId = -1;
-        this.index = 0;
         this.size = -1;
 
         this.components.clear();

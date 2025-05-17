@@ -53,4 +53,11 @@ public record ComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components)
         return obj instanceof ComponentDataImpl<?> data && data.id() == id;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("ComponentDataImpl [id=").append(this.id).append(", type=").append(this.type).append("]");
+        return builder.toString();
+    }
+
 }

@@ -2,12 +2,13 @@ package de.schosin.ecs.storage.defaultimpl.components;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public record PooledComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components, Pool<T> pool) implements PooledComponentData<T> {
+public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> type, Bag<T> components, Pool<T> pool) implements PooledComponentData<T> {
 
     @Override
     public int id() {
@@ -61,6 +62,13 @@ public record PooledComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> compo
     @Override
     public boolean equals(Object obj) {
         return obj instanceof PooledComponentDataImpl<?> data && data.id() == id;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("PooledComponentDataImpl [id=").append(this.id).append(", type=").append(this.type).append("]");
+        return builder.toString();
     }
 
 }

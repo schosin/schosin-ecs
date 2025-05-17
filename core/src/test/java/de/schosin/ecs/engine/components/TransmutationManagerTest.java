@@ -730,7 +730,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             transmuter.apply(entityId);
-            
+
             world.process();
 
             // Verify
@@ -743,10 +743,10 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
         private static class CustomBuilder implements Builder {
 
-            private final SequencedSet<RegularComponentType<?>> add = new LinkedHashSet<>();
-            private final SequencedSet<ComponentType<?>> remove = new LinkedHashSet<>();
+            private final SequencedSet<RegularComponentType<?, ?>> add = new LinkedHashSet<>();
+            private final SequencedSet<ComponentType<?, ?>> remove = new LinkedHashSet<>();
 
-            private CustomBuilder add(RegularComponentType<?>... types) {
+            private CustomBuilder add(RegularComponentType<?, ?>... types) {
                 for (var type : types) {
                     this.add.add(type);
                 }
@@ -754,7 +754,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
                 return this;
             }
 
-            private CustomBuilder remove(ComponentType<?>... types) {
+            private CustomBuilder remove(ComponentType<?, ?>... types) {
                 for (var type : types) {
                     this.remove.add(type);
                 }
@@ -763,12 +763,12 @@ class TransmutationManagerTest extends AbstractWorldTest {
             }
 
             @Override
-            public SequencedSet<RegularComponentType<?>> getAdd() {
+            public SequencedSet<RegularComponentType<?, ?>> getAdd() {
                 return add;
             }
 
             @Override
-            public SequencedSet<ComponentType<?>> getRemove() {
+            public SequencedSet<ComponentType<?, ?>> getRemove() {
                 return remove;
             }
 

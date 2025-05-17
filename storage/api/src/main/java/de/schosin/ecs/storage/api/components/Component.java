@@ -4,12 +4,19 @@ import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 
-public sealed interface Component<T> {
+public sealed interface Component<T, R> {
 
-    non-sealed interface ComponentData<T> extends Component<T> {
+    sealed interface ClassComponent<T> extends Component<T, T> {
 
         @Override
         ClassType<T> type();
@@ -24,7 +31,10 @@ public sealed interface Component<T> {
 
     }
 
-    interface PooledComponentData<T> extends ComponentData<T> {
+    non-sealed interface ComponentData<T> extends ClassComponent<T> {
+    }
+
+    non-sealed interface PooledComponentData<T extends Pooled> extends ClassComponent<T> {
 
         /**
          * Returns a pooled instance of the component. The implementation should
@@ -42,6 +52,54 @@ public sealed interface Component<T> {
          * @return instance
          */
         T getInstance();
+
+    }
+
+    sealed interface ComponentRelationComponent<R, T, X> extends Component<ComponentRelation<R, T>, X> {
+
+        @Override
+        RegularComponentRelationType<R, T, X> type();
+
+        Class<R> relationshipClass();
+
+        Class<T> targetClass();
+
+        /**
+         * Adds the relation to the entity, overwriting an existing relation if it has
+         * either an equal relationship, or an equal target component.
+         * 
+         * @param entityId id of entity
+         * @param relationship relationship component
+         * @param target target component
+         */
+        void addRelation(int entityId, R relationship, T target);
+
+        /**
+         * Returns a pooled instance of the component relation, initialized with
+         * the passed components. The implementation should
+         * reuse instances when a component is removed from an entity, either via
+         * {@link Component#removeComponent(int)}, {@link Component#applyRemoval(int)},
+         * or {@link Component#applyRemovals()}.
+         * 
+         * @param relationship relationship component of the relation
+         * @param target target component of the relation
+         * @return instance
+         */
+        ComponentRelation<R, T> getInstance(R relationship, T target);
+
+    }
+
+    non-sealed interface ComponentRelationData<R, T> extends ComponentRelationComponent<R, T, ComponentRelationResult<R, T>> {
+
+        @Override
+        ComponentRelationType<R, T> type();
+
+    }
+
+    non-sealed interface ExclusiveComponentRelationData<R extends Exclusive, T> extends ComponentRelationComponent<R, T, ComponentRelation<R, T>> {
+
+        @Override
+        ExclusiveComponentRelationType<R, T> type();
 
     }
 
@@ -65,7 +123,7 @@ public sealed interface Component<T> {
      * 
      * @return type of component
      */
-    RegularComponentType<T> type();
+    RegularComponentType<T, R> type();
 
     /**
      * Returns a short string for displaying information about this component. 
@@ -106,7 +164,7 @@ public sealed interface Component<T> {
      * @param entityId id of entity
      * @return component instance or null 
      */
-    T getComponent(int entityId);
+    R getComponent(int entityId);
 
     default void addComponent(int entityId, @NonNull T component) {
         addComponentUnsafe(entityId, Objects.requireNonNull(component, "component cannot be null"));

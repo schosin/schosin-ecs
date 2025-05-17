@@ -1,10 +1,19 @@
 package de.schosin.ecs.api.components;
 
+import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
+import static de.schosin.ecs.api.components.ComponentType.relation;
+
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 
 /**
  *  Component mapper for accessing and modifying components of an entity.
@@ -39,9 +48,9 @@ import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
  * 
  * @param <T> component type
  */
-public interface Components<T> {
+public interface Components<T, R> {
 
-    interface ComponentMapper<T> extends Components<T> {
+    interface ComponentMapper<T> extends Components<T, T> {
 
         /**
          * Adds the component to the entity. Overwrites any existing component of the same class. 
@@ -131,6 +140,28 @@ public interface Components<T> {
 
     }
 
+    sealed interface ComponentRelations<R, T, X> extends Components<ComponentRelation<R, T>, X> {
+
+        ComponentRelation<R, T> add(int entityId, R relationship, T target);
+
+        ComponentRelation<R, T> getInstance(R relationship, T target);
+
+    }
+
+    non-sealed interface ComponentRelationMapper<R, T> extends ComponentRelations<R, T, ComponentRelationResult<R, T>> {
+
+        R getRelationship(int entityId, T target);
+
+    }
+
+    non-sealed interface ExclusiveComponentRelationMapper<R extends Exclusive, T> extends ComponentRelations<R, T, ComponentRelation<R, T>> {
+
+        R getRelationship(int entityId);
+
+        T getTarget(int entityId);
+
+    }
+
     /**
      * Checks whether the entity has the given component.
      * 
@@ -145,7 +176,7 @@ public interface Components<T> {
      * @param entityId id of entity
      * @return component instance, may be null
      */
-    T get(int entityId);
+    R get(int entityId);
 
     /**
      * Marks the component for removal. The component will be removed during the {@link #process()} call.
@@ -169,7 +200,7 @@ public interface Components<T> {
          * @return class to access components defined by the type argument
          */
         @NonNull
-        <T> Components<T> getComponents(@NonNull ComponentType<T> type);
+        <T, R> Components<T, R> getComponents(@NonNull ComponentType<T, R> type);
 
         /**
          * Retrieves the mapper of the given component class. This can be used to access components and 
@@ -202,7 +233,16 @@ public interface Components<T> {
          * @return class to manage the components defined by the type argument 
          */
         @NonNull
-        <T> ComponentMapper<T> getComponents(@NonNull RegularComponentType<T> type);
+        <T, R> Components<T, R> getComponents(@NonNull RegularComponentType<T, R> type);
+
+        /**
+         * Retrieves the mapper of the given component type. This can be used to access components and 
+         * to add or remove components from entities.
+         * 
+         * @param type {@link RegularComponentType} of the component
+         * @return class to manage the components defined by the type argument
+         */
+        <T> ComponentMapper<T> getComponents(@NonNull ClassType<T> type);
 
         /**
          * Retrieves the mapper of the given enum class defined by the {@literal defaultComponent}.
@@ -237,7 +277,57 @@ public interface Components<T> {
          * @param type {@link RegularComponentType} of the component
          * @return class to manage the components defined by the type argument
          */
-        <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull RegularComponentType<T> type);
+        <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull ClassType<T> type);
+
+        /**
+         * Retrieves the mapper for a {@link ComponentRelation}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param <T> type of target component
+         * @param relationship class of relationship component
+         * @param target class of target component
+         * @return class to manage the relations defined by the relationship and target class
+         */
+        default <R, T> ComponentRelationMapper<R, T> getComponentRelations(Class<R> relationship, Class<T> target) {
+            return getComponentRelations(relation(relationship, target));
+        }
+
+        /**
+         * Retrieves the mapper for a {@link ComponentRelationType}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param <T> type of target component
+         * @param type {@link ComponentRelationType} of the relation
+         * @return class to manage the relations defined by the relationship and target class
+         */
+        <R, T> ComponentRelationMapper<R, T> getComponentRelations(ComponentRelationType<R, T> relation);
+
+        /**
+         * Retrieves the mapper for a {@link ExclusiveComponentRelationType}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param <T> type of target component
+         * @param relationship class of relationship component
+         * @param target class of target component
+         * @return class to manage the relations defined by the relationship and target class
+         */
+        default <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getExclusiveComponentRelations(Class<R> relationship, Class<T> target) {
+            return getComponentRelations(exclusiveRelation(relationship, target));
+        }
+
+        /**
+         * Retrieves the mapper for a {@link ExclusiveComponentRelationType}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param <T> type of target component
+         * @param type {@link ExclusiveComponentRelationType} of the relation
+         * @return class to manage the relations defined by the relationship and target class
+         */
+        <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation);
 
     }
 

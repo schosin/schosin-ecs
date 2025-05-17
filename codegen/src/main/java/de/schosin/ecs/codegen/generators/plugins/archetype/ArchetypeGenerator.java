@@ -253,7 +253,8 @@ public class ArchetypeGenerator {
 
             var init = TypeSpec.interfaceBuilder("Init")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                    .addMethod(buildGet("get"))
+                    .addMethod(buildGet())
+                    .addMethod(buildRelation())
                     .build();
 
             var initialize = MethodSpec.methodBuilder("initialize")
@@ -271,15 +272,28 @@ public class ArchetypeGenerator {
                     .build();
         }
 
-        static MethodSpec buildGet(String name) {
+        static MethodSpec buildGet() {
             var pooledType = TypeVariableName.get("T", Utils.POOLED);
             var classT = Utils.clazz(Utils.T);
 
-            return MethodSpec.methodBuilder(name)
+            return MethodSpec.methodBuilder("get")
                     .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
                     .addTypeVariable(pooledType)
                     .addParameter(classT, "component")
                     .returns(Utils.T)
+                    .build();
+        }
+
+        static MethodSpec buildRelation() {
+            var returnType = ParameterizedTypeName.get(Utils.COMPONENT_RELATION, Utils.R, Utils.T);
+
+            return MethodSpec.methodBuilder("relation")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addTypeVariable(Utils.R)
+                    .addTypeVariable(Utils.T)
+                    .addParameter(Utils.R, "relationship")
+                    .addParameter(Utils.T, "target")
+                    .returns(returnType)
                     .build();
         }
 

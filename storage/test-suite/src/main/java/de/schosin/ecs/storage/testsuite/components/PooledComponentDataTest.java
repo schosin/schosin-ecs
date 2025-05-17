@@ -16,7 +16,7 @@ import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P1;
 import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P2;
 import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P3;
 
-public class PooledComponentDataTest extends CommonComponentTest<Pooled, P1, P2, P3> {
+public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
 
     @Nested
     class ClazzTest extends AbstractTypeTest {
@@ -101,21 +101,6 @@ public class PooledComponentDataTest extends CommonComponentTest<Pooled, P1, P2,
     }
 
     @Override
-    protected Pooled getInstance(ClassType<? extends Pooled> classType) {
-        if (P1.class == classType.clazz()) {
-            return new P1();
-        }
-        if (P2.class == classType.clazz()) {
-            return new P2();
-        }
-        if (P3.class == classType.clazz()) {
-            return new P3();
-        }
-
-        throw new IllegalArgumentException("Unknown type: " + classType);
-    }
-
-    @Override
     protected P1 getInstance1() {
         return new P1();
     }
@@ -130,7 +115,6 @@ public class PooledComponentDataTest extends CommonComponentTest<Pooled, P1, P2,
         return new P3();
     }
 
-    @Override
     protected <TT extends Pooled> PooledComponentData<TT> getComponent(ClassType<TT> classType) {
         return engine.getPooledComponent(classType, NO_OP);
     }

@@ -68,7 +68,7 @@ public class CompositionManagerGenerator {
                     .addParameter(Utils.COMPONENT_TYPE_WILDCARD_ARRAY, "components").varargs()
                     .build();
 
-            var componentsWildcard = ParameterizedTypeName.get(COMPONENTS, Utils.WILDCARD);
+            var componentsWildcard = ParameterizedTypeName.get(COMPONENTS, Utils.WILDCARD, Utils.WILDCARD);
 
             var abstractGetComponent = MethodSpec.methodBuilder(METHOD_GET_COMPONENT)
                     .addModifiers(Modifier.PROTECTED, Modifier.ABSTRACT)
@@ -110,7 +110,7 @@ public class CompositionManagerGenerator {
             var returnTypeParameterized = ParameterizedTypeName.get(returnType, returnTypeVariablesArray);
 
             var parameters = IntStream.range(0, typeVariables.size())
-                    .mapToObj(idx -> ParameterSpec.builder(Utils.componentType(typeVariables.get(idx)), "component" + (start + idx)).build())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.componentType(Utils.WILDCARD, typeVariables.get(idx)), "component" + (start + idx)).build())
                     .toList();
 
             var body = CodeBlock.builder();
@@ -205,7 +205,7 @@ public class CompositionManagerGenerator {
 
             var fields = n < maxParams
                     ? IntStream.range(1, typeVariables.size() + 1)
-                            .mapToObj(idx -> FieldSpec.builder(Utils.componentType(typeVariables.get(idx - 1)), "component" + idx, Modifier.PRIVATE, Modifier.FINAL).build())
+                            .mapToObj(idx -> FieldSpec.builder(Utils.componentType(Utils.WILDCARD, typeVariables.get(idx - 1)), "component" + idx, Modifier.PRIVATE, Modifier.FINAL).build())
                             .toList()
                     : List.<FieldSpec>of();
 
@@ -229,7 +229,7 @@ public class CompositionManagerGenerator {
 
         private static MethodSpec buildComponentConstructor(int n, int maxParams, List<TypeVariableName> typeVariables) {
             var parameters = IntStream.range(1, typeVariables.size() + 1)
-                    .mapToObj(idx -> ParameterSpec.builder(Utils.componentType(typeVariables.get(idx - 1)), "component" + idx).build())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.componentType(Utils.WILDCARD, typeVariables.get(idx - 1)), "component" + idx).build())
                     .toList();
 
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));

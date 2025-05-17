@@ -52,9 +52,11 @@ public class EntityManager {
         // Create entity
         var entity = createEntity(componentMask);
 
-        for (var component : components) {
+        for (int i = 0, s = components.length; i < s; i++) {
+            var component = components[i];
             var metadata = (Component) componentManager.getComponent(component);
-            metadata.addComponentUnsafe(entity.id, component);
+
+            metadata.addComponent(entity.id, component);
         }
 
         // Add entity
@@ -75,7 +77,7 @@ public class EntityManager {
      * @return array of entity ids
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public int[] createEntities(ComponentMask componentMask, Object[][] data, Component<?>[] lookup) {
+    public int[] createEntities(ComponentMask componentMask, Object[][] data, Component<?, ?>[] lookup) {
         var componentSize = data.length;
         var count = data[0].length;
 

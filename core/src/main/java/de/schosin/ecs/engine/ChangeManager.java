@@ -267,7 +267,7 @@ public class ChangeManager {
         this.updatedEntityMasks.set(entityId, fromLookup(componentMask.getId()));
     }
 
-    public <T> boolean addComponent(int entityId, Component<T> component, @NonNull T instance) {
+    public <T> boolean addComponent(int entityId, Component<T, ?> component, @NonNull T instance) {
         var changed = !component.hasComponent(entityId);
 
         component.addComponent(entityId, instance);
@@ -280,7 +280,7 @@ public class ChangeManager {
         return changed;
     }
 
-    public boolean removeComponent(int entityId, Component<?> component) {
+    public boolean removeComponent(int entityId, Component<?, ?> component) {
         if (!component.hasComponent(entityId)) {
             return false;
         }
@@ -291,7 +291,7 @@ public class ChangeManager {
         return true;
     }
 
-    private void markRemoved(int entityId, Component<?> component) {
+    private void markRemoved(int entityId, Component<?, ?> component) {
         var removed = this.removedComponentsBags.get(component.id());
         if (removed == null) {
             synchronized (this.removedComponentsBags) {
@@ -313,7 +313,7 @@ public class ChangeManager {
         }
     }
 
-    private void unmarkRemoved(int entityId, Component<?> component) {
+    private void unmarkRemoved(int entityId, Component<?, ?> component) {
         var removed = this.removedComponentsBags.get(component.id());
         if (removed == null || removed.isEmpty()) {
             return;

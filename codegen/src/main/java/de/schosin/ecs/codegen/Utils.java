@@ -40,14 +40,18 @@ public class Utils {
     public static final ArrayTypeName WILDCARD_CLASS_ARRAY = ArrayTypeName.of(WILDCARD_CLASS);
 
     public static final ClassName COMPONENT_TYPE = ClassName.get("de.schosin.ecs.api.components", "ComponentType");
-    public static final ParameterizedTypeName COMPONENT_TYPE_WILDCARD = ParameterizedTypeName.get(COMPONENT_TYPE, WILDCARD);
+    public static final ParameterizedTypeName COMPONENT_TYPE_WILDCARD = componentType(WILDCARD);
     public static final ArrayTypeName COMPONENT_TYPE_WILDCARD_ARRAY = ArrayTypeName.of(COMPONENT_TYPE_WILDCARD);
 
     public static final ClassName REGULAR_COMPONENT_TYPE = COMPONENT_TYPE.nestedClass("RegularComponentType");
-    public static final ParameterizedTypeName REGULAR_COMPONENT_TYPE_WILDCARD = ParameterizedTypeName.get(REGULAR_COMPONENT_TYPE, WILDCARD);
+    public static final ParameterizedTypeName REGULAR_COMPONENT_TYPE_WILDCARD = regularComponentType(WILDCARD);
     public static final ArrayTypeName REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY = ArrayTypeName.of(REGULAR_COMPONENT_TYPE_WILDCARD);
 
+    public static final ClassName RELATION = ClassName.get("de.schosin.ecs.api.components", "Relation");
+    public static final ClassName COMPONENT_RELATION = RELATION.nestedClass("ComponentRelation");
+
     public static final TypeVariableName T = TypeVariableName.get("T");
+    public static final TypeVariableName R = TypeVariableName.get("R");
 
     public static final AnnotationSpec SUPPRESS_UNCHECKED = AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build();
     public static final AnnotationSpec SUPPRESS_RAWTYPES = AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"rawtypes\"").build();
@@ -56,22 +60,30 @@ public class Utils {
             .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
             .addParameter(Utils.WILDCARD_CLASS_ARRAY, "classes")
             .returns(Utils.COMPONENT_TYPE_WILDCARD_ARRAY)
-            .addStatement("return $1T.stream(classes).map($2T::component).toArray($2T<?>[]::new)", Arrays.class, Utils.COMPONENT_TYPE)
+            .addStatement("return $1T.stream(classes).map($2T::component).toArray($3T[]::new)", Arrays.class, Utils.COMPONENT_TYPE, Utils.REGULAR_COMPONENT_TYPE_WILDCARD)
             .build();
 
     public static final MethodSpec CONVERT_REGULAR_COMPONENT_TYPE = MethodSpec.methodBuilder("convert")
             .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
             .addParameter(Utils.WILDCARD_CLASS_ARRAY, "classes")
             .returns(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY)
-            .addStatement("return $1T.stream(classes).map($2T::component).toArray($3T<?>[]::new)", Arrays.class, Utils.COMPONENT_TYPE, Utils.REGULAR_COMPONENT_TYPE)
+            .addStatement("return $1T.stream(classes).map($2T::component).toArray($3T[]::new)", Arrays.class, Utils.COMPONENT_TYPE, Utils.REGULAR_COMPONENT_TYPE_WILDCARD)
             .build();
 
     public static ParameterizedTypeName componentType(TypeName type) {
-        return ParameterizedTypeName.get(COMPONENT_TYPE, type);
+        return componentType(type, WILDCARD);
+    }
+
+    public static ParameterizedTypeName componentType(TypeName type, TypeName result) {
+        return ParameterizedTypeName.get(COMPONENT_TYPE, type, result);
     }
 
     public static ParameterizedTypeName regularComponentType(TypeName type) {
-        return ParameterizedTypeName.get(REGULAR_COMPONENT_TYPE, type);
+        return regularComponentType(type, WILDCARD);
+    }
+
+    public static ParameterizedTypeName regularComponentType(TypeName type, TypeName result) {
+        return ParameterizedTypeName.get(REGULAR_COMPONENT_TYPE, type, result);
     }
 
     public static ParameterizedTypeName abstractEcsTest() {

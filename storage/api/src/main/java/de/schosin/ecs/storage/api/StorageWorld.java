@@ -18,6 +18,6 @@ public interface StorageWorld extends World {
      */
     <T> Bag<T> createEntityBag(Class<? super T> clazz);
 
-    <T> void dispatchComponentAddedEvent(RegularComponentType<T> type, Component<T> component);
+    <T, R> void dispatchComponentAddedEvent(RegularComponentType<T, R> type, Component<T, R> component);
 
 }

@@ -352,14 +352,14 @@ public class TransmuterGenerator {
 
             if (varargs) {
                 parameters.add(ParameterSpec.builder(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").build());
-                arguments = "concat($1T.class, new $1T<?>[] { %s }, components)".formatted(superArguments.toString());
+                arguments = "concat($1T.class, new $2T[] { %s }, components)".formatted(superArguments.toString());
             }
 
             var statement = "super(%s)".formatted(arguments);
 
             var body = CodeBlock.builder();
             if (varargs) {
-                body.addStatement(statement, Utils.REGULAR_COMPONENT_TYPE);
+                body.addStatement(statement, Utils.REGULAR_COMPONENT_TYPE, Utils.REGULAR_COMPONENT_TYPE_WILDCARD);
             } else {
                 body.addStatement(statement);
             }

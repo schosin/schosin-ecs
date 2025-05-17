@@ -49,6 +49,10 @@ public class ArchetypeManagerGenerator {
         private static final ClassName ABSTRACT_ARCHETYPE = ARCHETYPE_MANAGER.nestedClass("AbstractArchetypeImpl");
 
         public static TypeSpec create(int maxParams) {
+            var typesafeCount = FieldSpec.builder(int.class, "TYPESAFE_COUNT", Modifier.PROTECTED, Modifier.STATIC, Modifier.FINAL)
+                    .initializer(Integer.toString(maxParams))
+                    .build();
+
             var archetypeNs = IntStream.range(1, maxParams + 1)
                     .mapToObj(n -> createArchetypeN(ARCHETYPE_PREFIX + n, n, false))
                     .toList();
@@ -56,6 +60,7 @@ public class ArchetypeManagerGenerator {
             return TypeSpec.classBuilder(NAME)
                     .addModifiers(Modifier.ABSTRACT)
                     .addSuperinterface(ARCHETYPE_CREATOR)
+                    .addField(typesafeCount)
                     .addMethods(creatorMethods(maxParams))
                     .addMethod(createArchetype(maxParams, true))
                     .addType(Initialize.create(maxParams))
@@ -79,7 +84,8 @@ public class ArchetypeManagerGenerator {
             var archetypeOf = ARCHETYPE.nestedClass(ArchetypeGenerator.OF_PREFIX + suffix);
             var parameterizedArchetypeOf = ParameterizedTypeName.get(archetypeOf, typeVariablesArray);
 
-            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build()).collect(Collectors.toList());
+            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build())
+                    .collect(Collectors.toList());
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
 
             if (varargs) {
@@ -109,17 +115,20 @@ public class ArchetypeManagerGenerator {
             var archetypeOf = ARCHETYPE.nestedClass(ArchetypeGenerator.OF_PREFIX + suffix);
             var parameterizedArchetypeOf = ParameterizedTypeName.get(archetypeOf, typeVariablesArray);
 
-            var parameters = IntStream.range(1, n + 1).mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build()).collect(Collectors.toList());
+            var parameters = IntStream.range(1, n + 1)
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build())
+                    .collect(Collectors.toList());
+
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
 
             if (varargs) {
                 parameters.add(ParameterSpec.builder(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components").build());
-                parameterNames = "concat($1T.class, new $1T<?>[] { %s }, components)".formatted(parameterNames.toString());
+                parameterNames = "concat($1T.class, new $2T[] { %s }, components)".formatted(parameterNames.toString());
             }
 
             var constructorBody = CodeBlock.builder();
             if (varargs) {
-                constructorBody.addStatement("super(manager, %s)".formatted(parameterNames), Utils.REGULAR_COMPONENT_TYPE);
+                constructorBody.addStatement("super(manager, %s)".formatted(parameterNames), Utils.REGULAR_COMPONENT_TYPE, Utils.REGULAR_COMPONENT_TYPE_WILDCARD);
             } else {
                 constructorBody.addStatement("super(manager, %s)".formatted(parameterNames));
             }

@@ -816,7 +816,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             protected abstract Class<?>[] apply(int entityId, Class<?>... remove);
 
-            protected abstract Class<?>[] apply(int entityId, ComponentType<?>... remove);
+            protected abstract Class<?>[] apply(int entityId, ComponentType<?, ?>... remove);
 
         }
 
@@ -831,7 +831,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class).remove(remove));
                 transmuter.apply(entityId, new C1());
 
@@ -851,7 +851,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2());
 
@@ -871,7 +871,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3());
 
@@ -890,7 +890,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4());
 
@@ -909,7 +909,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5());
 
@@ -928,7 +928,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6());
 
@@ -947,7 +947,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
 
@@ -966,7 +966,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 var transmuter = world.createTransmuter(Transmuter.add(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class).remove(remove));
                 transmuter.apply(entityId, new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
 
@@ -983,7 +983,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             }
 
             @Override
-            protected Class<?>[] apply(int entityId, ComponentType<?>... remove) {
+            protected Class<?>[] apply(int entityId, ComponentType<?, ?>... remove) {
                 return applyTransmuterN(entityId, remove);
             }
 
@@ -1091,8 +1091,121 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
     }
 
-    private static RegularComponentType<?>[] convert(Class<?>... classes) {
-        return Arrays.stream(classes).map(ComponentType::component).toArray(RegularComponentType<?>[]::new);
+    @Nested
+    class RelationTest {
+
+        @Test
+        void testAddRelation_WhenNotProcessed() {
+            var type = relation(C1.class, C2.class);
+            var mapper = world.getComponentRelations(type);
+            var add = world.createTransmuter(Transmuter.add(type));
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+
+            // Call
+            add.apply(entityId, mapper.getInstance(new C1(), new C2()));
+
+            // Verify
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+        }
+
+        @Test
+        void testAddRelation_WhenProcessed_ChangesComponentMask() {
+            var type = relation(C1.class, C2.class);
+            var mapper = world.getComponentRelations(type);
+            var add = world.createTransmuter(Transmuter.add(type));
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+
+            // Call
+            add.apply(entityId, mapper.getInstance(new C1(), new C2()));
+
+            world.process();
+
+            // Verify
+            assertThat(mapper.get(entityId)).hasSize(1);
+
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+        }
+
+        @Test
+        void testRemoveRelation_WhenNotProcessed() {
+            var type = relation(C1.class, C2.class);
+            var mapper = world.getComponentRelations(type);
+            var remove = world.createTransmuter(Transmuter.remove(type));
+
+            var entityId = world.createEntity(mapper.getInstance(new C1(), new C2()));
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+
+            // Call
+            remove.apply(entityId);
+
+            // Verify
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+        }
+
+        @Test
+        void testRemoveRelation_WhenProcessed_Removes() {
+            var type = relation(C1.class, C2.class);
+            var mapper = world.getComponentRelations(type);
+            var remove = world.createTransmuter(Transmuter.remove(type));
+
+            var entityId = world.createEntity(mapper.getInstance(new C1(), new C2()));
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+
+            // Call
+            remove.apply(entityId);
+
+            world.process();
+
+            // Verify
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+        }
+
+        @Test
+        void testRemoveMultipleRelation() {
+            var type = relation(C1.class, Target.class);
+            var mapper = world.getComponentRelations(type);
+            var remove = world.createTransmuter(Transmuter.remove(type));
+
+            var relation1 = mapper.getInstance(new C1(), new Target(1));
+            var relation2 = mapper.getInstance(new C1(), new Target(2));
+
+            var entityId = world.createEntity(relation1, relation2);
+            assertThat(mapper.get(entityId)).hasSize(2);
+
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+
+            // Call
+            remove.apply(entityId);
+
+            world.process();
+
+            // Verify
+            assertThat(mapper.get(entityId)).isNull();
+
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+        }
+
+    }
+
+    private static RegularComponentType<?, ?>[] convert(Class<?>... classes) {
+        return Arrays.stream(classes).map(ComponentType::component).toArray(RegularComponentType<?, ?>[]::new);
+    }
+
+    record Target(int value) {
     }
 
 }

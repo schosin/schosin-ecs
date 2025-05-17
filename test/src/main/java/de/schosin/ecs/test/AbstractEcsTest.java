@@ -13,6 +13,7 @@ import de.schosin.ecs.engine.SingletonManager;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
+import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
@@ -31,6 +32,7 @@ public abstract class AbstractEcsTest<WORLD extends World> extends AbstractEngin
     protected EntityManager entityManager;
     protected ChangeManager changeManager;
     protected TransmutationManager transmutationManager;
+    protected RelationMapperManager relationMapperManager;
     protected ComponentMapperManager componentMapperManager;
 
     @BeforeEach
@@ -46,6 +48,7 @@ public abstract class AbstractEcsTest<WORLD extends World> extends AbstractEngin
         this.entityManager = world.getSingleton(EntityManager.class);
         this.changeManager = world.getSingleton(ChangeManager.class);
         this.transmutationManager = world.getSingleton(TransmutationManager.class);
+        this.relationMapperManager = world.getSingleton(RelationMapperManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
         initializeEngineTest(componentManager, entityManager, eventManager);

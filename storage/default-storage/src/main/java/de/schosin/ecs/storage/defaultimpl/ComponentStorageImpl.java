@@ -8,13 +8,21 @@ import java.util.function.Consumer;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
+import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.defaultimpl.components.ComponentDataImpl;
+import de.schosin.ecs.storage.defaultimpl.components.ComponentRelationDataImpl;
+import de.schosin.ecs.storage.defaultimpl.components.ExclusiveComponentRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.PooledComponentDataImpl;
 import de.schosin.ecs.utils.ComponentUtils;
 import de.schosin.ecs.utils.ReflectionUtils;
@@ -26,15 +34,15 @@ public class ComponentStorageImpl implements ComponentStorage {
 
     private final StorageWorld world;
 
-    private final Bag<Component<?>> components = new Bag<>(Component.class, 64);
+    private final Bag<Component<?, ?>> components = new Bag<>(Component.class, 64);
 
-    private final Bag<Component<?>> sortedComponents = new Bag<>(Component.class, 64);
-    private final ImmutableBag<Component<?>> immutableComponents = ImmutableBag.create(sortedComponents);
+    private final Bag<Component<?, ?>> sortedComponents = new Bag<>(Component.class, 64);
+    private final ImmutableBag<Component<?, ?>> immutableComponents = ImmutableBag.create(sortedComponents);
 
-    private final Map<Class<?>, ComponentData<?>> componentData = new ConcurrentHashMap<>();
+    private final Map<RegularComponentType<?, ?>, Component<?, ?>> componentData = new ConcurrentHashMap<>();
 
-    private final Map<ComponentType<?>, Bag<Component<?>>> bounds = new ConcurrentHashMap<>();
-    private final Map<ComponentType<?>, ImmutableBag<Component<?>>> immutableBounds = new ConcurrentHashMap<>();
+    private final Map<ComponentType<?, ?>, Bag<Component<?, ?>>> bounds = new ConcurrentHashMap<>();
+    private final Map<ComponentType<?, ?>, ImmutableBag<Component<?, ?>>> immutableBounds = new ConcurrentHashMap<>();
 
     private final AtomicInteger nextComponentId = new AtomicInteger(0);
 
@@ -43,36 +51,33 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     @Override
-    public Component<?> getComponent(int componentId) {
+    public Component<?, ?> getComponent(int componentId) {
         return components.get(componentId);
     }
 
     @Override
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public <T> Component<T> getComponent(RegularComponentType<T> type, Consumer<RegularComponentType<?>> validate) {
-        return switch (type) {
-            case ComponentType.ClassType<T> classType -> Pooled.class.isAssignableFrom(classType.clazz())
-                    ? getPooledComponentData((ClassType) classType, validate)
-                    : getComponentData(classType, validate);
-        };
+    public <T> ClassComponent<T> getComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate) {
+        return getComponentData(type, validate);
     }
 
     @Override
-    public <T extends Pooled> PooledComponentData<T> getPooledComponent(RegularComponentType<T> type, Consumer<RegularComponentType<?>> validate) {
-        return switch (type) {
-            case ComponentType.ClassType<T> classType -> getPooledComponentData(classType, validate);
-        };
+    public <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate) {
+        return getPooledComponentData(type, validate);
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> ComponentData<T> getComponentData(ClassType<T> classType, Consumer<RegularComponentType<?>> validate) {
-        var result = (ComponentData<T>) componentData.get(classType.clazz());
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private <T> ClassComponent<T> getComponentData(ClassType<T> classType, Consumer<RegularComponentType<?, ?>> validate) {
+        if (Pooled.class.isAssignableFrom(classType.clazz())) {
+            return getPooledComponent((ClassType) classType, validate);
+        }
+
+        var result = (ComponentData<T>) componentData.get(classType);
         if (result != null) {
             return result;
         }
 
         synchronized (componentData) {
-            result = (ComponentData<T>) componentData.get(classType.clazz());
+            result = (ComponentData<T>) componentData.get(classType);
             if (result != null) {
                 return result;
             }
@@ -83,7 +88,7 @@ public class ComponentStorageImpl implements ComponentStorage {
 
             this.components.set(component.id(), component);
             this.sortedComponents.add(component);
-            this.componentData.put(classType.clazz(), component);
+            this.componentData.put(classType, component);
 
             handleNewComponent(classType, component);
 
@@ -98,14 +103,14 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Pooled> PooledComponentData<T> getPooledComponentData(ClassType<T> classType, Consumer<RegularComponentType<?>> validate) {
-        var result = (PooledComponentData<T>) componentData.get(classType.clazz());
+    private <T extends Pooled> PooledComponentData<T> getPooledComponentData(ClassType<T> classType, Consumer<RegularComponentType<?, ?>> validate) {
+        var result = (PooledComponentData<T>) componentData.get(classType);
         if (result != null) {
             return result;
         }
 
         synchronized (componentData) {
-            result = (PooledComponentData<T>) componentData.get(classType.clazz());
+            result = (PooledComponentData<T>) componentData.get(classType);
             if (result != null) {
                 return result;
             }
@@ -116,7 +121,7 @@ public class ComponentStorageImpl implements ComponentStorage {
 
             this.components.set(component.id(), component);
             this.sortedComponents.add(component);
-            this.componentData.put(classType.clazz(), component);
+            this.componentData.put(classType, component);
 
             handleNewComponent(classType, component);
 
@@ -131,7 +136,71 @@ public class ComponentStorageImpl implements ComponentStorage {
         return new PooledComponentDataImpl<>(nextComponentId.getAndIncrement(), classType, data, pool);
     }
 
-    private <T> void handleNewComponent(RegularComponentType<T> type, Component<T> component) {
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+        var result = (ComponentRelationData<R, T>) componentData.get(relationType);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (componentData) {
+            result = (ComponentRelationData<R, T>) componentData.get(relationType);
+            if (result != null) {
+                return result;
+            }
+
+            validate.accept(relationType);
+
+            var component = createComponentRelationData(relationType);
+
+            this.components.set(component.id(), component);
+            this.sortedComponents.add(component);
+            this.componentData.put(relationType, component);
+
+            handleNewComponent(relationType, component);
+
+            return component;
+        }
+    }
+
+    private <R, T> ComponentRelationData<R, T> createComponentRelationData(ComponentRelationType<R, T> relationType) {
+        return new ComponentRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+        var result = (ExclusiveComponentRelationData<R, T>) componentData.get(relationType);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (componentData) {
+            result = (ExclusiveComponentRelationData<R, T>) componentData.get(relationType);
+            if (result != null) {
+                return result;
+            }
+
+            validate.accept(relationType);
+
+            var component = createExclusiveComponentRelationData(relationType);
+
+            this.components.set(component.id(), component);
+            this.sortedComponents.add(component);
+            this.componentData.put(relationType, component);
+
+            handleNewComponent(relationType, component);
+
+            return component;
+        }
+    }
+
+    private <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> createExclusiveComponentRelationData(ExclusiveComponentRelationType<R, T> relationType) {
+        return new ExclusiveComponentRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+    }
+
+    private <T, R> void handleNewComponent(RegularComponentType<T, R> type, Component<T, R> component) {
         // Update bounds
         for (var entry : this.bounds.entrySet()) {
             if (ComponentUtils.matches(entry.getKey(), type)) {
@@ -144,13 +213,13 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     @Override
-    public ImmutableBag<Component<?>> getComponents() {
+    public ImmutableBag<Component<?, ?>> getComponents() {
         return immutableComponents;
     }
 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public <T> ImmutableBag<Component<? extends T>> getComponents(ComponentType<T> bound) {
+    public <T> ImmutableBag<Component<? extends T, ?>> getComponents(ComponentType<T, ?> bound) {
         var result = immutableBounds.get(bound);
         if (result != null) {
             return (ImmutableBag) result;
@@ -163,7 +232,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             }
 
             // Create bag
-            var bag = new Bag<Component<?>>(Component.class, 32);
+            var bag = new Bag<Component<?, ?>>(Component.class, 32);
 
             // Fill bag with known components
             var data = this.components.getData();

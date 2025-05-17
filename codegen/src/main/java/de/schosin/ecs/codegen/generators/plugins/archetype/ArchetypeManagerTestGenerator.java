@@ -94,27 +94,27 @@ public class ArchetypeManagerTestGenerator {
         private static MethodSpec createArchetypeN() {
             return MethodSpec.methodBuilder("createArchetypeN")
                     .addModifiers(Modifier.PROTECTED)
-                    .addParameter(Utils.WILDCARD_CLASS_ARRAY, "others").varargs()
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "others").varargs()
                     .returns(ARCHETYPE_DATA)
                     .addStatement("return createArchetypeN(EMPTY, others)")
                     .build();
         }
 
         private static MethodSpec createArchetypeNWith(int maxParams) {
-            var components = IntStream.range(1, maxParams + 1).mapToObj(n -> "C" + n + ".class").collect(Collectors.joining(", "));
+            var components = IntStream.range(1, maxParams + 1).mapToObj(n -> "component(C" + n + ".class)").collect(Collectors.joining(", "));
 
             var body = CodeBlock.builder()
                     .addStatement("var archetype = world.createArchetype(%s, others)".formatted(components))
                     .beginControlFlow("if (with.length > 0)")
                     .addStatement("archetype = archetype.with(with)")
                     .endControlFlow()
-                    .addStatement("return new ArchetypeDataImpl(archetype, concat(Class.class, new Class<?>[] { %s }, others))".formatted(components))
+                    .addStatement("return new ArchetypeDataImpl(archetype, concat($1T.class, new $1T<?, ?>[] { %s }, others))".formatted(components), Utils.REGULAR_COMPONENT_TYPE)
                     .build();
 
             return MethodSpec.methodBuilder("createArchetypeN")
                     .addModifiers(Modifier.PROTECTED)
                     .addParameter(Object[].class, "with")
-                    .addParameter(Utils.WILDCARD_CLASS_ARRAY, "others").varargs()
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "others").varargs()
                     .returns(ARCHETYPE_DATA)
                     .addCode(body)
                     .build();
@@ -215,7 +215,7 @@ public class ArchetypeManagerTestGenerator {
 
             var components = MethodSpec.methodBuilder("components")
                     .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                    .returns(Utils.WILDCARD_CLASS_ARRAY)
+                    .returns(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY)
                     .build();
 
             return TypeSpec.interfaceBuilder(ARCHETYPE_DATA)
@@ -233,7 +233,7 @@ public class ArchetypeManagerTestGenerator {
 
             var constructor = MethodSpec.constructorBuilder()
                     .addParameter(parameterizedArchetypeN, "archetype")
-                    .addParameter(Utils.WILDCARD_CLASS_ARRAY, "components")
+                    .addParameter(Utils.REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY, "components")
                     .build();
 
             return TypeSpec.recordBuilder(ARCHETYPE_DATA_IMPL)

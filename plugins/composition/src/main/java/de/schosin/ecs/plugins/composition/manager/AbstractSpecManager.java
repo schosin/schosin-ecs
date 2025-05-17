@@ -70,7 +70,7 @@ public abstract class AbstractSpecManager implements Spec.SpecCreator {
         }
 
         var vector = new BitVector(components.size());
-        componentManager.fillVector(vector, components.toArray(RegularComponentType<?>[]::new));
+        componentManager.fillVector(vector, components.toArray(RegularComponentType<?, ?>[]::new));
 
         return vector;
     }

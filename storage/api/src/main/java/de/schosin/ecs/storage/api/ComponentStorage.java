@@ -7,8 +7,17 @@ import javax.management.openmbean.CompositeData;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.ClassComponent;
+import de.schosin.ecs.storage.api.components.Component.ComponentData;
+import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
+import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -26,7 +35,7 @@ public interface ComponentStorage {
      * @param componentId id of component
      * @return {@link Component} instance
      */
-    Component<?> getComponent(int componentId);
+    Component<?, ?> getComponent(int componentId);
 
     /**
      * Returns the {@link Component} instance for the {@link RegularComponentType type}.
@@ -37,7 +46,7 @@ public interface ComponentStorage {
      * </p>
      * 
      * <p>
-     * Implementation must pass {@liter type} to the {@literal validate} exactly once
+     * Implementation must pass {@literal type} to the {@literal validate} exactly once
      * when this is the first time the storage sees this type and before the {@link Component}
      * instance is created. No exceptions shall be caught when that {@literal validate} might
      * throw. 
@@ -46,6 +55,8 @@ public interface ComponentStorage {
      * <p>
      * When the type describes a {@link Pooled} {@link ClassType}, the implementation must return a 
      * {@link PooledComponentData}.
+     * When the type is an instance of {@link ComponentRelationType}, the implementation must return
+     * a {@link ComponentRelationData}.
      * Otherwise the implementation must return a {@link CompositeData}.
      * </p>
      * 
@@ -54,10 +65,17 @@ public interface ComponentStorage {
      * @param validate callback for component creation
      * @return component instance
      */
-    <T> Component<T> getComponent(RegularComponentType<T> type, Consumer<RegularComponentType<?>> validate);
+    @SuppressWarnings("unchecked")
+    default <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type, Consumer<RegularComponentType<?, ?>> validate) {
+        return (Component<T, R>) switch (type) {
+            case ClassType<?> classType -> getComponent(classType, validate);
+            case ComponentRelationType<?, ?> relation -> getComponent(relation, validate);
+            case ExclusiveComponentRelationType<?, ?> relation -> getComponent(relation, validate);
+        };
+    }
 
     /**
-     * Returns the {@link PooledComponentData} instance for the {@link RegularComponentType type}.
+     * Returns the {@link ComponentData} instance for the {@link ClassType type}.
      * 
      * <p>
      * Implementation must return the same instance for multiple calls
@@ -65,7 +83,7 @@ public interface ComponentStorage {
      * </p>
      * 
      * <p>
-     * Implementation must pass {@liter type} to the {@literal validate} exactly once
+     * Implementation must pass {@literal type} to the {@literal validate} exactly once
      * when this is the first time the storage sees this type and before the {@link Component}
      * instance is created. No exceptions shall be caught when that {@literal validate} might
      * throw. 
@@ -76,7 +94,41 @@ public interface ComponentStorage {
      * @param validate callback for component creation
      * @return component instance
      */
-    <T extends Pooled> PooledComponentData<T> getPooledComponent(RegularComponentType<T> type, Consumer<RegularComponentType<?>> validate);
+    <T> ClassComponent<T> getComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate);
+
+    /**
+     * Returns the {@link PooledComponentData} instance for the {@link ClassType type}.
+     * 
+     * <p>
+     * Implementation must return the same instance for multiple calls
+     * with equal types.
+     * </p>
+     * 
+     * <p>
+     * Implementation must pass {@literal type} to the {@literal validate} exactly once
+     * when this is the first time the storage sees this type and before the {@link Component}
+     * instance is created. No exceptions shall be caught when that {@literal validate} might
+     * throw. 
+     * </p>
+     * 
+     * @param <T> type of component
+     * @param type component type of component
+     * @param validate callback for component creation
+     * @return component instance
+     */
+    <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate);
+
+    @SuppressWarnings("unchecked")
+    default <R, T, X> ComponentRelationComponent<R, T, X> getComponent(RegularComponentRelationType<R, T, X> type, Consumer<RegularComponentType<?, ?>> validate) {
+        return (ComponentRelationComponent<R, T, X>) switch (type) {
+            case ComponentRelationType<?, ?> relation -> getComponent(relation, validate);
+            case ExclusiveComponentRelationType<?, ?> relation -> getComponent(relation, validate);
+        };
+    }
+
+    <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate);
+
+    <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate);
 
     /**
      * Returns a bag of the known components. 
@@ -93,7 +145,7 @@ public interface ComponentStorage {
      * 
      * @return known components
      */
-    ImmutableBag<Component<?>> getComponents();
+    ImmutableBag<Component<?, ?>> getComponents();
 
     /**
      * Returns a bag of the known components that are {@link Class#isAssignableFrom(Class) assignable too}
@@ -112,6 +164,6 @@ public interface ComponentStorage {
      * @param bound component type bound
      * @return known components matching the bound
      */
-    <T> ImmutableBag<Component<? extends T>> getComponents(ComponentType<T> bound);
+    <T> ImmutableBag<Component<? extends T, ?>> getComponents(ComponentType<T, ?> bound);
 
 }

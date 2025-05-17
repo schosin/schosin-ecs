@@ -148,7 +148,8 @@ public interface BaseComposition {
      */
     IntStream parallelStream();
 
-    public record Group(Set<RegularComponentType<?>> components, Set<Builder> builders) {
+    
+    public record Group(Set<RegularComponentType<?, ?>> components, Set<Builder> builders) {
 
         Group() {
             this(new HashSet<>(), new HashSet<>());
@@ -170,7 +171,7 @@ public interface BaseComposition {
             return this;
         }
 
-        public Group add(RegularComponentType<?>... components) {
+        public Group add(RegularComponentType<?, ?>... components) {
             for (var component : components) {
                 this.components.add(component);
             }

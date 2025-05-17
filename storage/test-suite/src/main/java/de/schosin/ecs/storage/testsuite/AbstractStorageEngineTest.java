@@ -9,10 +9,10 @@ import de.schosin.ecs.test.AbstractEcsTest;
 
 public abstract class AbstractStorageEngineTest extends AbstractEcsTest<World> {
 
-    protected static final Consumer<RegularComponentType<?>> NO_OP = AbstractStorageEngineTest::noOp;
+    protected static final Consumer<RegularComponentType<?, ?>> NO_OP = AbstractStorageEngineTest::noOp;
 
     @SuppressWarnings("unused")
-    protected static void noOp(RegularComponentType<?> type) {
+    protected static void noOp(RegularComponentType<?, ?> type) {
     }
 
     protected StorageEngine engine;
