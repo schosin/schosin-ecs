@@ -4,6 +4,7 @@ import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.codegen.EcsCodegen;
 
 @NullMarked
@@ -62,5 +63,22 @@ public interface BaseArchetype {
      * @return pooled instance
      */
     <R, T> ComponentRelation<R, T> getRelation(R relationship, T target);
+
+    /**
+     * Returns a pooled instance of an entity relation.
+     * 
+     * <p>
+     * <b>Attention:</b> If the instance is added to an entity, it will be returned 
+     * to the underlying pool the entity is deleted or the relation removed from it.
+     * As such it cannot be assigned to multiple entities, as the data might be reset
+     * while still assigned to another entity.
+     * </p>
+     * 
+     * @param <R> type of relationship
+     * @param relationship relationship component 
+     * @param target target entity
+     * @return pooled instance
+     */
+    <R> EntityRelation<R> getRelation(R relationship, int target);
 
 }

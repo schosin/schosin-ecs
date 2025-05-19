@@ -19,11 +19,6 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
     }
 
     @Override
-    public int id() {
-        return id;
-    }
-
-    @Override
     public Class<R> relationshipClass() {
         return type.relationship();
     }
@@ -35,7 +30,7 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
 
     @Override
     public String display() {
-        return "ComponentRelation(%s / %s, %d)".formatted(type.relationship().getSimpleName(), type.target().getSimpleName(), id());
+        return "ExclusiveComponentRelation(%s / %s, %d)".formatted(type.relationship().getSimpleName(), type.target().getSimpleName(), id());
     }
 
     @Override

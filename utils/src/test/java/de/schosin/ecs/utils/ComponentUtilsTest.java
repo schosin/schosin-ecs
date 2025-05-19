@@ -140,14 +140,18 @@ class ComponentUtilsTest {
         void testClassTypeEquality(Class<?> clazz) {
             var type = component(clazz);
             var otherType = C1.class == clazz ? component(C2.class) : component(C1.class);
-            var relationType = relation(RelationshipComponent.class, TargetA.class);
-            var exclusiveRelationType = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+            var componentRelationType = relation(RelationshipComponent.class, TargetA.class);
+            var exclusiveComponentRelationType = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+            var entityRelationType = relation(RelationshipComponent.class);
+            var exclusiveEntityRelationType = exclusiveRelation(ExclusiveComponent.class);
 
             assertThat(matches(type, type)).as("same type matches itself").isTrue();
             assertThat(matches(type, component(clazz))).as("equal type matches itself").isTrue();
             assertThat(matches(type, otherType)).as("type does not match other class type").isFalse();
-            assertThat(matches(type, relationType)).as("type does not match relation type").isFalse();
-            assertThat(matches(type, exclusiveRelationType)).as("type does not match exclusive relation type").isFalse();
+            assertThat(matches(type, componentRelationType)).as("type does not match component relation type").isFalse();
+            assertThat(matches(type, exclusiveComponentRelationType)).as("type does not match exclusive component relation type").isFalse();
+            assertThat(matches(type, entityRelationType)).as("type does not match entity relation type").isFalse();
+            assertThat(matches(type, exclusiveEntityRelationType)).as("type does not match exclusive entity relation type").isFalse();
         }
 
         @Test
@@ -155,14 +159,18 @@ class ComponentUtilsTest {
             var type = relation(RelationshipComponent.class, TargetA.class);
             var otherRelationship = relation(OtherRelationshipComponent.class, TargetA.class);
             var otherTarget = relation(RelationshipComponent.class, TargetB.class);
-            var exclusiveRelationship = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+            var exclusiveComponentRelationType = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+            var entityRelationType = relation(RelationshipComponent.class);
+            var exclusiveEntityRelationType = exclusiveRelation(ExclusiveComponent.class);
             var classType = component(TargetA.class);
 
             assertThat(matches(type, type)).as("same type matches itself").isTrue();
             assertThat(matches(type, relation(RelationshipComponent.class, TargetA.class))).as("equal type matches itself").isTrue();
-            assertThat(matches(type, otherRelationship)).as("does not match relation with different relationship").isFalse();
-            assertThat(matches(type, otherTarget)).as("does not match relation with different target").isFalse();
-            assertThat(matches(type, exclusiveRelationship)).as("does not match exclusive relation").isFalse();
+            assertThat(matches(type, otherRelationship)).as("does not match component relation with different relationship").isFalse();
+            assertThat(matches(type, otherTarget)).as("does not match component relation with different target").isFalse();
+            assertThat(matches(type, exclusiveComponentRelationType)).as("does not match exclusive component relation").isFalse();
+            assertThat(matches(type, entityRelationType)).as("type does not match entity relation type").isFalse();
+            assertThat(matches(type, exclusiveEntityRelationType)).as("type does not match exclusive entity relation type").isFalse();
             assertThat(matches(type, classType)).as("does not match class type").isFalse();
         }
 
@@ -171,14 +179,54 @@ class ComponentUtilsTest {
             var type = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
             var otherRelationship = exclusiveRelation(OtherExclusiveComponent.class, TargetA.class);
             var otherTarget = exclusiveRelation(ExclusiveComponent.class, TargetB.class);
-            var nonExclusiveRelationship = relation(RelationshipComponent.class, TargetA.class);
+            var nonExclusiveComponentRelationship = relation(RelationshipComponent.class, TargetA.class);
+            var entityRelationType = relation(RelationshipComponent.class);
+            var exclusiveEntityRelationType = exclusiveRelation(ExclusiveComponent.class);
             var classType = component(TargetA.class);
 
             assertThat(matches(type, type)).as("same type matches itself").isTrue();
             assertThat(matches(type, exclusiveRelation(ExclusiveComponent.class, TargetA.class))).as("equal type matches itself").isTrue();
-            assertThat(matches(type, otherRelationship)).as("does not match relation with different relationship").isFalse();
-            assertThat(matches(type, otherTarget)).as("does not match relation with different target").isFalse();
-            assertThat(matches(type, nonExclusiveRelationship)).as("does not match non-exclusive relation").isFalse();
+            assertThat(matches(type, otherRelationship)).as("does not match component relation with different relationship").isFalse();
+            assertThat(matches(type, otherTarget)).as("does not match component relation with different target").isFalse();
+            assertThat(matches(type, nonExclusiveComponentRelationship)).as("does not match non-exclusive component relation").isFalse();
+            assertThat(matches(type, entityRelationType)).as("type does not match entity relation type").isFalse();
+            assertThat(matches(type, exclusiveEntityRelationType)).as("type does not match exclusive entity relation type").isFalse();
+            assertThat(matches(type, classType)).as("does not match class type").isFalse();
+        }
+
+        @Test
+        void testEntityRelationTypeEquality() {
+            var type = relation(RelationshipComponent.class);
+            var otherRelationship = relation(OtherRelationshipComponent.class);
+            var componentRelationType = relation(RelationshipComponent.class, TargetA.class);
+            var exclusiveComponentRelationType = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+            var exclusiveEntityRelationType = exclusiveRelation(ExclusiveComponent.class);
+            var classType = component(TargetA.class);
+
+            assertThat(matches(type, type)).as("same type matches itself").isTrue();
+            assertThat(matches(type, relation(RelationshipComponent.class))).as("equal type matches itself").isTrue();
+            assertThat(matches(type, otherRelationship)).as("does not match entity relation with different relationship").isFalse();
+            assertThat(matches(type, componentRelationType)).as("does not match component relation").isFalse();
+            assertThat(matches(type, exclusiveComponentRelationType)).as("does not match exclusive component relation").isFalse();
+            assertThat(matches(type, exclusiveEntityRelationType)).as("type does not match exclusive entity relation type").isFalse();
+            assertThat(matches(type, classType)).as("does not match class type").isFalse();
+        }
+
+        @Test
+        void testExclusiveEntityRelationTypeEquality() {
+            var type = exclusiveRelation(ExclusiveComponent.class);
+            var otherRelationship = exclusiveRelation(OtherExclusiveComponent.class);
+            var componentRelationType = relation(RelationshipComponent.class, TargetA.class);
+            var exclusiveComponentRelationType = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+            var entityRelationType = relation(RelationshipComponent.class);
+            var classType = component(TargetA.class);
+
+            assertThat(matches(type, type)).as("same type matches itself").isTrue();
+            assertThat(matches(type, exclusiveRelation(ExclusiveComponent.class))).as("equal type matches itself").isTrue();
+            assertThat(matches(type, otherRelationship)).as("does not match component relation with different relationship").isFalse();
+            assertThat(matches(type, componentRelationType)).as("does not match component relation").isFalse();
+            assertThat(matches(type, exclusiveComponentRelationType)).as("does not match exclusive component relation").isFalse();
+            assertThat(matches(type, entityRelationType)).as("type does not match entity relation type").isFalse();
             assertThat(matches(type, classType)).as("does not match class type").isFalse();
         }
 
@@ -214,6 +262,22 @@ class ComponentUtilsTest {
             void testWildcardMatchesExclusiveComponentRelation() {
                 var wildcard = wildcard(C.class);
                 var relation = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+
+                assertThat(matches(wildcard, relation)).isFalse();
+            }
+
+            @Test
+            void testWildcardMatchesEntityRelation() {
+                var wildcard = wildcard(C.class);
+                var relation = relation(RelationshipComponent.class);
+
+                assertThat(matches(wildcard, relation)).isFalse();
+            }
+
+            @Test
+            void testWildcardMatchesExclusiveEntityRelation() {
+                var wildcard = wildcard(C.class);
+                var relation = exclusiveRelation(ExclusiveComponent.class);
 
                 assertThat(matches(wildcard, relation)).isFalse();
             }

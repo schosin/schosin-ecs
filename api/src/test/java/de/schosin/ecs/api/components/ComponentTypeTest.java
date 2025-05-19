@@ -22,7 +22,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.Wildcard;
 
 class ComponentTypeTest {
@@ -46,6 +48,16 @@ class ComponentTypeTest {
         @Test
         void testExclusiveRelation() {
             assertThat(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class)).as("must not be refactored to something else").isInstanceOf(ExclusiveComponentRelationType.class);
+        }
+
+        @Test
+        void testEntityRelation() {
+            assertThat(relation(RelationshipComponent.class)).as("must not be refactored to something else").isInstanceOf(EntityRelationType.class);
+        }
+
+        @Test
+        void testEntityExclusiveRelation() {
+            assertThat(exclusiveRelation(ExclusiveComponent.class)).as("must not be refactored to something else").isInstanceOf(ExclusiveEntityRelationType.class);
         }
 
         @Test
@@ -82,6 +94,20 @@ class ComponentTypeTest {
             assertThat(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class))
                     .extracting(Object::toString, InstanceOfAssertFactories.STRING)
                     .containsSubsequence("ExclusiveComponentRelationType", ExclusiveComponent.class.getSimpleName(), TargetComponent.class.getSimpleName());
+        }
+
+        @Test
+        void testEntityRelation() {
+            assertThat(relation(RelationshipComponent.class))
+                    .extracting(Object::toString, InstanceOfAssertFactories.STRING)
+                    .containsSubsequence("EntityRelationType", RelationshipComponent.class.getSimpleName());
+        }
+
+        @Test
+        void testExclusiveEntityRelation() {
+            assertThat(exclusiveRelation(ExclusiveComponent.class))
+                    .extracting(Object::toString, InstanceOfAssertFactories.STRING)
+                    .containsSubsequence("ExclusiveEntityRelationType", ExclusiveComponent.class.getSimpleName());
         }
 
         @Test

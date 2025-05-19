@@ -9,11 +9,6 @@ import de.schosin.ecs.utils.collections.Bag;
 public record ComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components) implements ComponentData<T> {
 
     @Override
-    public int id() {
-        return id;
-    }
-
-    @Override
     public Class<T> clazz() {
         return type.clazz();
     }

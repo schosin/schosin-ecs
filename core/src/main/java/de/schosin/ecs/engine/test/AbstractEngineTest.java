@@ -17,9 +17,12 @@ import org.assertj.core.api.SoftAssertions;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
@@ -80,11 +83,29 @@ public abstract class AbstractEngineTest {
         return ComponentType.exclusiveRelation(relationship, target);
     }
 
+    protected static <R> EntityRelationType<R> relation(Class<R> relationship) {
+        return ComponentType.relation(relationship);
+    }
+
+    protected static <R extends Exclusive> ExclusiveEntityRelationType<R> exclusiveRelation(Class<R> relationship) {
+        return ComponentType.exclusiveRelation(relationship);
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     protected <R, T> ComponentRelation<R, T> relation(R relationship, T target) {
         var type = Exclusive.class.isInstance(relationship)
                 ? exclusiveRelation((Class) relationship.getClass(), (Class<T>) target.getClass())
                 : relation((Class<R>) relationship.getClass(), (Class<T>) target.getClass());
+
+        var component = componentManager.getComponent(type);
+        return component.getInstance(relationship, target);
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    protected <R> EntityRelation<R> relation(R relationship, int target) {
+        var type = Exclusive.class.isInstance(relationship)
+                ? exclusiveRelation((Class) relationship.getClass())
+                : relation((Class<R>) relationship.getClass());
 
         var component = componentManager.getComponent(type);
         return component.getInstance(relationship, target);

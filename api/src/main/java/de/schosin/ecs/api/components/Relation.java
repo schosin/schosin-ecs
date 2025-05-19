@@ -52,4 +52,10 @@ public sealed interface Relation {
         T target();
     }
 
+    non-sealed interface EntityRelation<R> extends Relation, Pooled {
+        R relationship();
+
+        int target();
+    }
+
 }

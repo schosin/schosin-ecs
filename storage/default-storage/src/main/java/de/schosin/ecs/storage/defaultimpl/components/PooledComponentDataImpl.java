@@ -11,11 +11,6 @@ import de.schosin.ecs.utils.collections.Pool;
 public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> type, Bag<T> components, Pool<T> pool) implements PooledComponentData<T> {
 
     @Override
-    public int id() {
-        return id;
-    }
-
-    @Override
     public Class<T> clazz() {
         return type.clazz();
     }

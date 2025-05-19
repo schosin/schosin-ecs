@@ -8,16 +8,23 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -69,8 +76,12 @@ public interface ComponentStorage {
     default <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type, Consumer<RegularComponentType<?, ?>> validate) {
         return (Component<T, R>) switch (type) {
             case ClassType<?> classType -> getComponent(classType, validate);
-            case ComponentRelationType<?, ?> relation -> getComponent(relation, validate);
-            case ExclusiveComponentRelationType<?, ?> relation -> getComponent(relation, validate);
+            case RelationComponentType<?, ?, ?> relation -> switch (relation) {
+                case ComponentRelationType<?, ?> componentRelation -> getComponent(componentRelation, validate);
+                case ExclusiveComponentRelationType<?, ?> componentRelation -> getComponent(componentRelation, validate);
+                case EntityRelationType<?> entityRelation -> getComponent(entityRelation, validate);
+                case ExclusiveEntityRelationType<?> entityRelation -> getComponent(entityRelation, validate);
+            };
         };
     }
 
@@ -129,6 +140,18 @@ public interface ComponentStorage {
     <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate);
 
     <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate);
+
+    @SuppressWarnings("unchecked")
+    default <R, X> EntityRelationComponent<R, X> getComponent(RegularEntityRelationType<R, X> type, Consumer<RegularComponentType<?, ?>> validate) {
+        return (EntityRelationComponent<R, X>) switch (type) {
+            case EntityRelationType<?> relation -> getComponent(relation, validate);
+            case ExclusiveEntityRelationType<?> relation -> getComponent(relation, validate);
+        };
+    }
+
+    <R> EntityRelationData<R> getComponent(EntityRelationType<R> type, Consumer<RegularComponentType<?, ?>> validate);
+
+    <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> type, Consumer<RegularComponentType<?, ?>> validate);
 
     /**
      * Returns a bag of the known components. 

@@ -25,11 +25,6 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
     }
 
     @Override
-    public int id() {
-        return id;
-    }
-
-    @Override
     public Class<R> relationshipClass() {
         return type.relationship();
     }
@@ -123,7 +118,7 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
 
 }
 
-class ComponentRelationImpl<R, T> implements ComponentRelation<R, T>, Pooled {
+class ComponentRelationImpl<R, T> implements ComponentRelation<R, T> {
 
     private R relationship;
     private T target;
@@ -174,8 +169,6 @@ class ComponentRelationResultImpl<R, T> implements ComponentRelationResult<R, T>
 
     private final Bag<ComponentRelation<R, T>> relations = new Bag<>(ComponentRelation.class, 4);
 
-    private final ThreadLocal<BagIterator<ComponentRelation<R, T>>> iterator = ThreadLocal.withInitial(BagIterator::new);
-
     public synchronized void add(ComponentRelation<R, T> relation) {
         var data = relations.getData();
         for (int i = 0, s = relations.getSize(); i < s; i++) {
@@ -219,7 +212,7 @@ class ComponentRelationResultImpl<R, T> implements ComponentRelationResult<R, T>
 
     @Override
     public Iterator<ComponentRelation<R, T>> iterator() {
-        return iterator.get().init(this.relations);
+        return new BagIterator<>(relations);
     }
 
     @Override

@@ -8,10 +8,14 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.events.EventManager;
@@ -23,7 +27,10 @@ import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -80,6 +87,18 @@ public class ComponentManager {
         return storageEngine.getComponent(type, this.validate);
     }
 
+    public <R, X> EntityRelationComponent<R, X> getComponent(RegularEntityRelationType<R, X> type) {
+        return storageEngine.getComponent(type, this.validate);
+    }
+
+    public <R> EntityRelationData<R> getComponent(EntityRelationType<R> type) {
+        return storageEngine.getComponent(type, this.validate);
+    }
+
+    public <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> type) {
+        return storageEngine.getComponent(type, this.validate);
+    }
+
     /**
      * Do no use {@link ComponentType} for accessing components. Use {@link #getComponent(RegularComponentType)} instead.
      * 
@@ -97,6 +116,9 @@ public class ComponentManager {
             case ComponentRelation<?, ?> relation -> Exclusive.class.isAssignableFrom(relation.relationship().getClass())
                     ? getComponent(ComponentType.exclusiveRelation((Class) relation.relationship().getClass(), relation.target().getClass()))
                     : getComponent(ComponentType.relation((Class) relation.relationship().getClass(), relation.target().getClass()));
+            case EntityRelation<?> relation -> Exclusive.class.isAssignableFrom(relation.relationship().getClass())
+                    ? getComponent(ComponentType.exclusiveRelation((Class) relation.relationship().getClass()))
+                    : getComponent(ComponentType.relation((Class) relation.relationship().getClass()));
             default -> getComponent(ComponentType.component((Class<T>) component.getClass()));
         };
     }
@@ -127,6 +149,8 @@ public class ComponentManager {
             case ComponentType.ClassType<?> classType -> validateComponentClass(classType.clazz(), classes);
             case ComponentRelationType<?, ?> relation -> validateComponentClass(relation.relationship(), classes) && validateComponentClass(relation.target(), classes);
             case ExclusiveComponentRelationType<?, ?> relation -> validateComponentClass(relation.relationship(), classes) && validateComponentClass(relation.target(), classes);
+            case EntityRelationType<?> relation -> validateComponentClass(relation.relationship(), classes);
+            case ExclusiveEntityRelationType<?> relation -> validateComponentClass(relation.relationship(), classes);
         };
     }
 

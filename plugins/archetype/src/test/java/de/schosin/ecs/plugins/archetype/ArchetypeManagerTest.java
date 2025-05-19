@@ -163,6 +163,30 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
             }
 
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testEntityRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type);
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(type);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1);
+                        verifyHasComponents(entityId, type);
+                        verifyComponentMaskHasComponents(entityId, type);
+                    });
+                }
+
+            }
+
         }
 
     }
@@ -411,6 +435,119 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verifyComponentMaskHasComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testComponentRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type(C2.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1, new C2());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2);
+
+                    var expected = new RegularComponentType<?, ?>[] { type1, type2 };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target1);
+                        var relation2 = archetype.getRelation(new C2(), target2);
+
+                        var entityId = archetype.create(relation1, relation2);
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type);
+
+                    var expected = new RegularComponentType<?, ?>[] { type };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target);
+                        var relation2 = archetype.getRelation(relationship, target);
+
+                        var entityId = archetype.create(relation1, relation2);
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type);
+
+                    var expected = new RegularComponentType<?, ?>[] { type };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target1);
+                        var relation2 = archetype.getRelation(relationship, target2);
+
+                        var entityId = archetype.create(relation1, relation2);
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
                                 .extracting("relationship", "target")
                                 .containsExactlyInAnyOrder(
@@ -683,6 +820,119 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
             }
 
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testComponentRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type(C2.class), type(C3.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1, new C2(), new C3());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2, type(C3.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target1);
+                        var relation2 = archetype.getRelation(new C2(), target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target);
+                        var relation2 = archetype.getRelation(relationship, target);
+
+                        var entityId = archetype.create(relation1, relation2, new C3());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target1);
+                        var relation2 = archetype.getRelation(relationship, target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
         }
 
     }
@@ -942,6 +1192,119 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verifyComponentMaskHasComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testComponentRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target1);
+                        var relation2 = archetype.getRelation(new C2(), target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target);
+                        var relation2 = archetype.getRelation(relationship, target);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target1);
+                        var relation2 = archetype.getRelation(relationship, target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
                                 .extracting("relationship", "target")
                                 .containsExactlyInAnyOrder(
@@ -1226,6 +1589,119 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
             }
 
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testComponentRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target1);
+                        var relation2 = archetype.getRelation(new C2(), target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target);
+                        var relation2 = archetype.getRelation(relationship, target);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target1);
+                        var relation2 = archetype.getRelation(relationship, target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
         }
 
     }
@@ -1493,6 +1969,119 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verifyComponentMaskHasComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testComponentRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target1);
+                        var relation2 = archetype.getRelation(new C2(), target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target);
+                        var relation2 = archetype.getRelation(relationship, target);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target1);
+                        var relation2 = archetype.getRelation(relationship, target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
                                 .extracting("relationship", "target")
                                 .containsExactlyInAnyOrder(
@@ -1786,6 +2375,119 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
             }
 
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testComponentRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target1);
+                        var relation2 = archetype.getRelation(new C2(), target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target);
+                        var relation2 = archetype.getRelation(relationship, target);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target1);
+                        var relation2 = archetype.getRelation(relationship, target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
         }
 
     }
@@ -2063,6 +2765,119 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verifyComponentMaskHasComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testComponentRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target);
+
+                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.getRelation(new C1(), target1);
+                        var relation2 = archetype.getRelation(new C2(), target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target);
+                        var relation2 = archetype.getRelation(relationship, target);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
+
+                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(expected);
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.getRelation(relationship, target1);
+                        var relation2 = archetype.getRelation(relationship, target2);
+
+                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
+                        verifyHasComponents(entityId, expected);
+                        verifyComponentMaskHasComponents(entityId, expected);
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
                                 .extracting("relationship", "target")
                                 .containsExactlyInAnyOrder(
@@ -2439,6 +3254,149 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verifyComponentMaskHasComponents(entityId, archetype.components());
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target1),
+                                        tuple(relationship, target2));
+                    });
+                }
+
+            }
+
+            @Nested
+            class EntityRelationTest {
+
+                @Test
+                void testEntityRelation() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type);
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(archetype.components());
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.archetype().getRelation(new C1(), target);
+
+                        var entityId = createEntity(archetype, relation1);
+                        verifyHasComponents(entityId, type);
+                        verifyHasComponents(entityId, archetype.components());
+
+                        verifyComponentMaskHasComponents(entityId, type);
+                        verifyComponentMaskHasComponents(entityId, archetype.components());
+                    });
+                }
+
+                @Test
+                void testMultipleEntityRelations_DifferentRelationships() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C2.class);
+
+                    var archetype = createArchetype(type1, type2);
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(archetype.components());
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.archetype().getRelation(new C1(), target1);
+                        var relation2 = archetype.archetype().getRelation(new C2(), target2);
+
+                        var entityId = createEntity(archetype, relation1, relation2);
+                        verifyHasComponents(entityId, type1, type2);
+                        verifyHasComponents(entityId, archetype.components());
+
+                        verifyComponentMaskHasComponents(entityId, type1, type2);
+                        verifyComponentMaskHasComponents(entityId, archetype.components());
+                    });
+                }
+
+                @Test
+                void testMultipleEntityRelations_DifferentTargets() {
+                    var type1 = relation(C1.class);
+                    var type2 = relation(C1.class);
+
+                    var archetype = createArchetype(type1, type2);
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(archetype.components());
+                        verify.expectNoMoreInserted();
+
+                        var relation1 = archetype.archetype().getRelation(new C1(), target1);
+                        var relation2 = archetype.archetype().getRelation(new C1(), target2);
+
+                        var entityId = createEntity(archetype, relation1, relation2);
+                        verifyHasComponents(entityId, type1, type2);
+                        verifyHasComponents(entityId, archetype.components());
+
+                        verifyComponentMaskHasComponents(entityId, type1, type2);
+                        verifyComponentMaskHasComponents(entityId, archetype.components());
+                    });
+                }
+
+                @Test
+                void testMultipleEntityRelations_SameType_SameTarget() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type);
+
+                    var target = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(archetype.components());
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.archetype().getRelation(relationship, target);
+                        var relation2 = archetype.archetype().getRelation(relationship, target);
+
+                        var entityId = createEntity(archetype, relation1, relation2);
+                        verifyHasComponents(entityId, type);
+                        verifyHasComponents(entityId, archetype.components());
+
+                        verifyComponentMaskHasComponents(entityId, type);
+                        verifyComponentMaskHasComponents(entityId, archetype.components());
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
+                        assertThat(relations)
+                                .extracting("relationship", "target")
+                                .containsExactlyInAnyOrder(
+                                        tuple(relationship, target));
+                    });
+                }
+
+                @Test
+                void testMultipleEntityRelations_SameType_TargetsNotEqual() {
+                    var type = relation(C1.class);
+                    var archetype = createArchetype(type, type);
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    verify(verify -> {
+                        verify.expectInserted(archetype.components());
+                        verify.expectNoMoreInserted();
+
+                        var relationship = new C1();
+
+                        var relation1 = archetype.archetype().getRelation(relationship, target1);
+                        var relation2 = archetype.archetype().getRelation(relationship, target2);
+
+                        var entityId = createEntity(archetype, relation1, relation2);
+                        verifyHasComponents(entityId, type);
+                        verifyHasComponents(entityId, archetype.components());
+
+                        verifyComponentMaskHasComponents(entityId, type);
+                        verifyComponentMaskHasComponents(entityId, archetype.components());
+
+                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
                                 .extracting("relationship", "target")
                                 .containsExactlyInAnyOrder(

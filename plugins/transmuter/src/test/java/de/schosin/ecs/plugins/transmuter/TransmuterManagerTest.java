@@ -1092,7 +1092,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
     }
 
     @Nested
-    class RelationTest {
+    class ComponentRelationTest {
 
         @Test
         void testAddRelation_WhenNotProcessed() {
@@ -1180,6 +1180,127 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var relation1 = mapper.getInstance(new C1(), new Target(1));
             var relation2 = mapper.getInstance(new C1(), new Target(2));
+
+            var entityId = world.createEntity(relation1, relation2);
+            assertThat(mapper.get(entityId)).hasSize(2);
+
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+
+            // Call
+            remove.apply(entityId);
+
+            world.process();
+
+            // Verify
+            assertThat(mapper.get(entityId)).isNull();
+
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+        }
+
+    }
+
+    @Nested
+    class EntityRelationTest {
+
+        @Test
+        void testAddRelation_WhenNotProcessed() {
+            var type = relation(C1.class);
+            var mapper = world.getEntityRelations(type);
+            var add = world.createTransmuter(Transmuter.add(type));
+
+            var target = world.createEntity();
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+
+            // Call
+            add.apply(entityId, mapper.getInstance(new C1(), target));
+
+            // Verify
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+        }
+
+        @Test
+        void testAddRelation_WhenProcessed_ChangesComponentMask() {
+            var type = relation(C1.class);
+            var mapper = world.getEntityRelations(type);
+            var add = world.createTransmuter(Transmuter.add(type));
+
+            var target = world.createEntity();
+
+            var entityId = world.createEntity();
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+
+            // Call
+            add.apply(entityId, mapper.getInstance(new C1(), target));
+
+            world.process();
+
+            // Verify
+            assertThat(mapper.get(entityId)).hasSize(1);
+
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+        }
+
+        @Test
+        void testRemoveRelation_WhenNotProcessed() {
+            var type = relation(C1.class);
+            var mapper = world.getEntityRelations(type);
+            var remove = world.createTransmuter(Transmuter.remove(type));
+
+            var target = world.createEntity();
+
+            var entityId = world.createEntity(mapper.getInstance(new C1(), target));
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+
+            // Call
+            remove.apply(entityId);
+
+            // Verify
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+        }
+
+        @Test
+        void testRemoveRelation_WhenProcessed_Removes() {
+            var type = relation(C1.class);
+            var mapper = world.getEntityRelations(type);
+            var remove = world.createTransmuter(Transmuter.remove(type));
+
+            var target = world.createEntity();
+
+            var entityId = world.createEntity(mapper.getInstance(new C1(), target));
+            verifyHasComponents(entityId, type);
+            verifyComponentMaskHasComponents(entityId, type);
+
+            // Call
+            remove.apply(entityId);
+
+            world.process();
+
+            // Verify
+            verifyDoesNotHaveComponents(entityId, type);
+            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+        }
+
+        @Test
+        void testRemoveMultipleRelation() {
+            var type = relation(C1.class);
+            var mapper = world.getEntityRelations(type);
+            var remove = world.createTransmuter(Transmuter.remove(type));
+
+            var target1 = world.createEntity();
+            var target2 = world.createEntity();
+
+            var relation1 = mapper.getInstance(new C1(), target1);
+            var relation2 = mapper.getInstance(new C1(), target2);
 
             var entityId = world.createEntity(relation1, relation2);
             assertThat(mapper.get(entityId)).hasSize(2);

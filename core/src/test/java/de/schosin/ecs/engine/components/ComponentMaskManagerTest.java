@@ -16,12 +16,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.junit5.SealedSubclassesSource;
 import de.schosin.ecs.utils.junit5.SealedSubclassesSource.Mode;
@@ -33,7 +34,9 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         regularComponent(component(RegularComponent.class), RegularComponent::new),
         pooledComponent(component(PooledComponent.class), PooledComponent::new),
         componentRelation(relation(RelationshipComponent.class, TargetComponent.class), getRelation(new RelationshipComponent(), new TargetComponent(1))),
-        exclusiveComponentRelation(exclusiveRelation(ExclusiveRelationshipComponent.class, TargetComponent.class), getRelation(new ExclusiveRelationshipComponent(), new TargetComponent(1)));
+        exclusiveComponentRelation(exclusiveRelation(ExclusiveRelationshipComponent.class, TargetComponent.class), getRelation(new ExclusiveRelationshipComponent(), new TargetComponent(1))),
+        entityRelation(relation(RelationshipComponent.class), getRelation(new RelationshipComponent(), 1)),
+        exclusiveEntityRelation(exclusiveRelation(ExclusiveRelationshipComponent.class), getRelation(new ExclusiveRelationshipComponent(), 1));
 
         private final RegularComponentType<?, ?> type;
         private final Function<Component<?, ?>, Object> instance;
@@ -51,6 +54,11 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         @SuppressWarnings({ "unchecked", "rawtypes" })
         private static Function<Component<?, ?>, Object> getRelation(Object relationship, Object target) {
             return component -> ((ComponentRelationComponent) component).getInstance(relationship, target);
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        private static Function<Component<?, ?>, Object> getRelation(Object relationship, int target) {
+            return component -> ((EntityRelationComponent) component).getInstance(relationship, target);
         }
 
     }
@@ -115,7 +123,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         @ParameterizedTest
         @EnumSource(TestCases.class)
         void testDuplicateComponentInstaces(TestCases test) {
-            assumeThat(test.type).isNotInstanceOf(RegularComponentRelationType.class);
+            assumeThat(test.type).isNotInstanceOf(RelationComponentType.class);
 
             assertThatThrownBy(() -> componentMaskManager.getComponentMask(test.type, component(OtherComponent.class), test.type))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -212,7 +220,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         @ParameterizedTest
         @EnumSource(TestCases.class)
         void testDuplicateComponentInstaces(TestCases test) {
-            assumeThat(test.type).isNotInstanceOf(RegularComponentRelationType.class);
+            assumeThat(test.type).isNotInstanceOf(RelationComponentType.class);
 
             var component = componentManager.getComponent(test.type);
             var otherComponent = componentManager.getComponent(component(OtherComponent.class));

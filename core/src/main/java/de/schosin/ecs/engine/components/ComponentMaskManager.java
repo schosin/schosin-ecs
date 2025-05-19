@@ -10,7 +10,7 @@ import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
+import de.schosin.ecs.storage.api.components.Component.RelationComponent;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.Pool;
@@ -160,7 +160,7 @@ public class ComponentMaskManager {
         for (int i = 0, s = components.length; i < s; i++) {
             var component = components[i];
 
-            if (!set.add(component) && component instanceof ComponentRelationComponent<?, ?, ?>) {
+            if (!set.add(component) && component instanceof RelationComponent<?, ?, ?>) {
                 duplicateRelations++;
             }
         }

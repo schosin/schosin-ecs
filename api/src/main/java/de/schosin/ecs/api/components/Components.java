@@ -9,11 +9,15 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
 
 /**
  *  Component mapper for accessing and modifying components of an entity.
@@ -162,6 +166,31 @@ public interface Components<T, R> {
 
     }
 
+    sealed interface EntityRelations<R, X> extends Components<EntityRelation<R>, X> {
+
+        EntityRelation<R> add(int entityId, R relationship, int target);
+
+        EntityRelation<R> getInstance(R relationship, int target);
+
+    }
+
+    non-sealed interface EntityRelationMapper<R> extends EntityRelations<R, EntityRelationResult<R>> {
+
+        R getRelationship(int entityId, int target);
+
+    }
+
+    non-sealed interface ExclusiveEntityRelationMapper<R extends Exclusive> extends EntityRelations<R, EntityRelation<R>> {
+
+        R getRelationship(int entityId);
+
+        /**
+         * @return target or -1 if no relation
+         */
+        int getTarget(int entityId);
+
+    }
+
     /**
      * Checks whether the entity has the given component.
      * 
@@ -280,7 +309,7 @@ public interface Components<T, R> {
         <T extends Pooled> PooledComponentMapper<T> getPooledComponents(@NonNull ClassType<T> type);
 
         /**
-         * Retrieves the mapper for a {@link ComponentRelation}. This can be used to access the relations
+         * Retrieves the mapper for a {@link ComponentRelationType}. This can be used to access the relations
          * and to add or remove them from entities.
          * 
          * @param <R> type of relationship component
@@ -299,7 +328,7 @@ public interface Components<T, R> {
          * 
          * @param <R> type of relationship component
          * @param <T> type of target component
-         * @param type {@link ComponentRelationType} of the relation
+         * @param relation {@link ComponentRelationType} of the relation
          * @return class to manage the relations defined by the relationship and target class
          */
         <R, T> ComponentRelationMapper<R, T> getComponentRelations(ComponentRelationType<R, T> relation);
@@ -324,10 +353,54 @@ public interface Components<T, R> {
          * 
          * @param <R> type of relationship component
          * @param <T> type of target component
-         * @param type {@link ExclusiveComponentRelationType} of the relation
+         * @param relation {@link ExclusiveComponentRelationType} of the relation
          * @return class to manage the relations defined by the relationship and target class
          */
         <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation);
+
+        /**
+         * Retrieves the mapper for a {@link EntityRelationType}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param relationship class of relationship component
+         * @return class to manage the relations defined by the relationship class
+         */
+        default <R> EntityRelationMapper<R> getEntityRelations(Class<R> relationship) {
+            return getEntityRelations(relation(relationship));
+        }
+
+        /**
+         * Retrieves the mapper for a {@link EntityRelationType}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param relation {@link ComponentRelationType} of the relation
+         * @return class to manage the relations defined by the relationship and target class
+         */
+        <R> EntityRelationMapper<R> getEntityRelations(EntityRelationType<R> relation);
+
+        /**
+         * Retrieves the mapper for a {@link ExclusiveEntityRelationType}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param relationship class of relationship component
+         * @return class to manage the relations defined by the relationship class
+         */
+        default <R extends Exclusive> ExclusiveEntityRelationMapper<R> getExclusiveEntityRelations(Class<R> relationship) {
+            return getEntityRelations(exclusiveRelation(relationship));
+        }
+
+        /**
+         * Retrieves the mapper for a {@link ExclusiveEntityRelationType}. This can be used to access the relations
+         * and to add or remove them from entities.
+         * 
+         * @param <R> type of relationship component
+         * @param relation {@link ExclusiveComponentRelationType} of the relation
+         * @return class to manage the relations defined by the relationship class
+         */
+        <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation);
 
     }
 

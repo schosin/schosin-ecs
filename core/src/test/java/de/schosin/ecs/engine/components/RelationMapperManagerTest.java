@@ -10,11 +10,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.RelationMapperManagerTest.Faction.Enemy;
@@ -24,7 +29,7 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 class RelationMapperManagerTest extends AbstractWorldTest {
 
     @Nested
-    class ComponentRelationMapperTest extends AbstractTest<Hates, Player, Enemy, ComponentRelationMapper<Hates, Player>, ComponentRelationMapper<Hates, Enemy>> {
+    class ComponentRelationMapperTest extends AbstractComponentRelationTest<Hates, Player, Enemy, ComponentRelationMapper<Hates, Player>, ComponentRelationMapper<Hates, Enemy>> {
 
         public ComponentRelationMapperTest() {
             super(relation(Hates.class, Player.class), relation(Hates.class, Enemy.class));
@@ -60,8 +65,8 @@ class RelationMapperManagerTest extends AbstractWorldTest {
                 verify.expectUpdated(entityId, type1, type2);
                 verify.expectNoMoreUpdated();
 
-                add(mapper1, entityId, relationship, target1);
-                add(mapper2, entityId, relationship, target2);
+                add(mapper1, entityId, relationship1, target1);
+                add(mapper2, entityId, relationship2, target2);
 
                 world.process();
 
@@ -103,7 +108,8 @@ class RelationMapperManagerTest extends AbstractWorldTest {
     }
 
     @Nested
-    class ExclusiveComponentRelationMapperTest extends AbstractTest<Loves, Player, Enemy, ExclusiveComponentRelationMapper<Loves, Player>, ExclusiveComponentRelationMapper<Loves, Enemy>> {
+    class ExclusiveComponentRelationMapperTest
+            extends AbstractComponentRelationTest<Loves, Player, Enemy, ExclusiveComponentRelationMapper<Loves, Player>, ExclusiveComponentRelationMapper<Loves, Enemy>> {
 
         public ExclusiveComponentRelationMapperTest() {
             super(exclusiveRelation(Loves.class, Player.class), exclusiveRelation(Loves.class, Enemy.class));
@@ -133,26 +139,26 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGet() {
-            var entityId = world.createEntity(mapper1.getInstance(relationship, Player.PLAYER), mapper1.getInstance(relationship, Player.PLAYER2));
+            var entityId = world.createEntity(mapper1.getInstance(relationship1, Player.PLAYER), mapper1.getInstance(relationship1, Player.PLAYER2));
 
             var relation = mapper1.get(entityId);
             assertThat(relation)
                     .extracting("relationship", "target")
-                    .contains(relationship, Player.PLAYER2);
+                    .contains(relationship1, Player.PLAYER2);
         }
 
         @Test
         void testGet_WhenMultiple_KeepsLast() {
-            var entity1 = world.createEntity(mapper1.getInstance(relationship, Player.PLAYER), mapper1.getInstance(relationship, Player.PLAYER2));
-            var entity2 = world.createEntity(mapper1.getInstance(relationship, Player.PLAYER2), mapper1.getInstance(relationship, Player.PLAYER));
+            var entity1 = world.createEntity(mapper1.getInstance(relationship1, Player.PLAYER), mapper1.getInstance(relationship1, Player.PLAYER2));
+            var entity2 = world.createEntity(mapper1.getInstance(relationship1, Player.PLAYER2), mapper1.getInstance(relationship1, Player.PLAYER));
 
             assertThat(mapper1.get(entity1))
                     .extracting("relationship", "target")
-                    .contains(relationship, Player.PLAYER2);
+                    .contains(relationship1, Player.PLAYER2);
 
             assertThat(mapper1.get(entity2))
                     .extracting("relationship", "target")
-                    .contains(relationship, Player.PLAYER);
+                    .contains(relationship1, Player.PLAYER);
         }
 
         @Test
@@ -164,7 +170,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
         }
 
         @Test
-        void testGetRelation_WhenNoRelations() {
+        void testGetRelationshipTarget_WhenNoRelations() {
             var entityId = world.createEntity();
 
             assertThat(mapper1.getRelationship(entityId)).isNull();
@@ -214,33 +220,397 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
     }
 
-    abstract class AbstractTest<R extends Enum<R>, T1 extends Enum<T1>, T2 extends Enum<T2>, M1 extends Components<ComponentRelation<R, T1>, ?>, M2 extends Components<ComponentRelation<R, T2>, ?>> {
+    abstract class AbstractComponentRelationTest<R extends Enum<R>, T1 extends Enum<T1>, T2 extends Enum<T2>, M1 extends Components<ComponentRelation<R, T1>, ?>, M2 extends Components<ComponentRelation<R, T2>, ?>>
+            extends AbstractRelationTest<R, R, RegularComponentRelationType<R, T1, ?>, RegularComponentRelationType<R, T2, ?>, ComponentRelation<R, T1>, M1, ComponentRelation<R, T2>, M2> {
 
-        protected final RegularComponentRelationType<R, T1, ?> type1;
-        protected final RegularComponentRelationType<R, T2, ?> type2;
-
-        protected final Class<R> relationshipClass;
         protected final Class<T1> target1Class;
         protected final Class<T2> target2Class;
 
-        protected R relationship;
         protected T1 target1;
         protected T2 target2;
+
+        protected AbstractComponentRelationTest(RegularComponentRelationType<R, T1, ?> type1, RegularComponentRelationType<R, T2, ?> type2) {
+            super(type1, type2);
+
+            this.target1Class = type1.target();
+            this.target2Class = type2.target();
+
+            this.target1 = target1Class.getEnumConstants()[0];
+            this.target2 = target2Class.getEnumConstants()[0];
+        }
+
+        @Override
+        protected void add1(M1 mapper, int entityId, R relationship) {
+            add(mapper1, entityId, relationship, target1);
+        }
+
+        @Override
+        protected void add2(M2 mapper, int entityId, R relationship) {
+            add(mapper2, entityId, relationship, target2);
+        }
+
+        protected abstract <RR, T> void add(Components<ComponentRelation<RR, T>, ?> mapper, int entityId, RR relationship, T target);
+
+        @Override
+        protected ComponentRelation<R, T1> getInstance1(M1 mapper, R relationship) {
+            return getInstance(mapper, relationship, target1);
+        }
+
+        @Override
+        protected ComponentRelation<R, T2> getInstance2(M2 mapper, R relationship) {
+            return getInstance(mapper, relationship, target2);
+        }
+
+        protected abstract <RR, T> ComponentRelation<RR, T> getInstance(Components<ComponentRelation<RR, T>, ?> mapper, RR relationship, T target);
+
+    }
+
+    @Nested
+    class EntityRelationMapperTest extends AbstractEntityRelationTest<Hates, Hates2, EntityRelationMapper<Hates>, EntityRelationMapper<Hates2>> {
+
+        public EntityRelationMapperTest() {
+            super(relation(Hates.class), relation(Hates2.class));
+        }
+
+        @Override
+        protected EntityRelationMapper<Hates> createMapper1() {
+            return world.getEntityRelations(Hates.class);
+        }
+
+        @Override
+        protected EntityRelationMapper<Hates2> createMapper2() {
+            return world.getEntityRelations(Hates2.class);
+        }
+
+        @Override
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        protected <RR> void add(Components<EntityRelation<RR>, ?> mapper, int entityId, RR relationship, int target) {
+            ((EntityRelationMapper) mapper).add(entityId, relationship, target);
+        }
+
+        @Override
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        protected <RR> EntityRelation<RR> getInstance(Components<EntityRelation<RR>, ?> mapper, RR relationship, int target) {
+            return ((EntityRelationMapper) mapper).getInstance(relationship, target);
+        }
+
+        @Test
+        void testMultipleRelations() {
+            var entityId = world.createEntity();
+
+            verify(verify -> {
+                verify.expectUpdated(entityId, type1, type2);
+                verify.expectNoMoreUpdated();
+
+                add(mapper1, entityId, relationship1, target1);
+                add(mapper2, entityId, relationship2, target2);
+
+                world.process();
+
+                verifyHasComponents(entityId, type1, type2);
+                verifyComponentMaskHasComponents(entityId, type1, type2);
+            });
+        }
+
+        @Test
+        void testGet() {
+            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+
+            var relations = mapper1.get(entityId);
+            assertThat(relations)
+                    .extracting("relationship", "target")
+                    .containsExactlyInAnyOrder(
+                            tuple(Hates.HATES, target1),
+                            tuple(Hates.DESPISES, target2));
+        }
+
+        @Test
+        void testGetRelationship() {
+            var target3 = world.createEntity();
+            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+
+            assertThat(mapper1.getRelationship(entityId, target1)).isSameAs(Hates.HATES);
+            assertThat(mapper1.getRelationship(entityId, target2)).isSameAs(Hates.DESPISES);
+            assertThat(mapper1.getRelationship(entityId, target3)).isNull();
+        }
+
+        @Test
+        void testGetRelationship_WhenNoRelations() {
+            var entityId = world.createEntity();
+
+            assertThat(mapper1.getRelationship(entityId, target1)).isNull();
+            assertThat(mapper1.getRelationship(entityId, target2)).isNull();
+        }
+
+        @Test
+        void testRelationsRemoved_IfTargetDeleted() {
+            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+
+            // Delete target1
+            world.deleteEntity(target1);
+
+            assertThat(mapper1.get(entityId))
+                    .extracting("relationship", "target")
+                    .containsExactlyInAnyOrder(
+                            tuple(Hates.HATES, target1),
+                            tuple(Hates.DESPISES, target2));
+
+            // Process
+            world.process();
+
+            assertThat(mapper1.get(entityId))
+                    .extracting("relationship", "target")
+                    .containsExactlyInAnyOrder(tuple(Hates.DESPISES, target2));
+
+            // Delete target2 & process
+            world.deleteEntity(target2);
+            world.process();
+
+            assertThat(mapper1.get(entityId)).isNull();
+        }
+
+        @Test
+        void testComponentMaskUpdated_IfRelationRemovedByDeletedTarget() {
+            var entityId = world.createEntity(new RegularComponent(), mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+
+            verify(verify -> {
+                verify.expectNoMoreUpdated();
+
+                world.deleteEntity(target1);
+                world.process();
+            });
+
+            verify(verify -> {
+                verify.expectNoMoreUpdated();
+
+                world.deleteEntity(target2);
+            });
+
+            verify(verify -> {
+                verify.expectUpdated(entityId, RegularComponent.class);
+                verify.expectNoMoreUpdated();
+
+                world.process();
+
+                verifyHasComponents(entityId, RegularComponent.class);
+                verifyDoesNotHaveComponents(entityId, type1);
+
+                verifyComponentMaskHasComponents(entityId, RegularComponent.class);
+                verifyComponentMaskDoesNotHaveComponents(entityId, type1);
+            });
+        }
+
+    }
+
+    @Nested
+    class ExclusiveEntityRelationMapperTest extends AbstractEntityRelationTest<Loves, Loves2, ExclusiveEntityRelationMapper<Loves>, ExclusiveEntityRelationMapper<Loves2>> {
+
+        public ExclusiveEntityRelationMapperTest() {
+            super(exclusiveRelation(Loves.class), exclusiveRelation(Loves2.class));
+        }
+
+        @Override
+        protected ExclusiveEntityRelationMapper<Loves> createMapper1() {
+            return world.getExclusiveEntityRelations(Loves.class);
+        }
+
+        @Override
+        protected ExclusiveEntityRelationMapper<Loves2> createMapper2() {
+            return world.getExclusiveEntityRelations(Loves2.class);
+        }
+
+        @Override
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        protected <RR> void add(Components<EntityRelation<RR>, ?> mapper, int entityId, RR relationship, int target) {
+            ((ExclusiveEntityRelationMapper) mapper).add(entityId, relationship, target);
+        }
+
+        @Override
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        protected <RR> EntityRelation<RR> getInstance(Components<EntityRelation<RR>, ?> mapper, RR relationship, int target) {
+            return ((ExclusiveEntityRelationMapper) mapper).getInstance(relationship, target);
+        }
+
+        @Test
+        void testGet() {
+            var entityId = world.createEntity(mapper1.getInstance(relationship1, target1), mapper1.getInstance(relationship1, target2));
+
+            var relation = mapper1.get(entityId);
+            assertThat(relation)
+                    .extracting("relationship", "target")
+                    .contains(relationship1, target2);
+        }
+
+        @Test
+        void testGet_WhenMultiple_KeepsLast() {
+            var entity1 = world.createEntity(mapper1.getInstance(relationship1, target1), mapper1.getInstance(relationship1, target2));
+            var entity2 = world.createEntity(mapper1.getInstance(relationship1, target2), mapper1.getInstance(relationship1, target1));
+
+            assertThat(mapper1.get(entity1))
+                    .extracting("relationship", "target")
+                    .contains(relationship1, target2);
+
+            assertThat(mapper1.get(entity2))
+                    .extracting("relationship", "target")
+                    .contains(relationship1, target1);
+        }
+
+        @Test
+        void testGetRelationshipTarget() {
+            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, target1), mapper1.getInstance(Loves.ADORES, target2));
+
+            assertThat(mapper1.getRelationship(entityId)).isSameAs(Loves.ADORES);
+            assertThat(mapper1.getTarget(entityId)).isSameAs(target2);
+        }
+
+        @Test
+        void testGetRelationshipTarget_WhenNoRelations() {
+            var entityId = world.createEntity();
+
+            assertThat(mapper1.getRelationship(entityId)).isNull();
+            assertThat(mapper1.getTarget(entityId)).isEqualTo(-1);
+        }
+
+        @Test
+        void testExclusiveTrait_OverridesExistingRelation() {
+            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, target1));
+
+            verify(verify -> {
+                verify.expectNoMoreUpdated();
+
+                mapper1.add(entityId, Loves.LOVES, target2);
+
+                world.process();
+
+                assertThat(mapper1.get(entityId))
+                        .extracting("relationship", "target")
+                        .contains(Loves.LOVES, target2);
+            });
+        }
+
+        @Test
+        void testExclusiveTrait_WhenAddedMultipleTimes_KeepsOnlyLast() {
+            var entityId = world.createEntity();
+
+            verify(verify -> {
+                verify.expectUpdated(entityId, type1);
+                verify.expectNoMoreUpdated();
+
+                mapper1.add(entityId, Loves.LOVES, target1);
+                mapper1.add(entityId, Loves.LOVES, target2);
+
+                world.process();
+
+                assertThat(mapper1.get(entityId))
+                        .extracting("relationship", "target")
+                        .contains(Loves.LOVES, target2);
+            });
+        }
+
+        @Test
+        void testRelationsRemoved_IfTargetDeleted() {
+            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, target1));
+
+            // Delete target1
+            world.deleteEntity(target1);
+            assertThat(mapper1.get(entityId)).extracting("relationship", "target").contains(Loves.LOVES, target1);
+
+            // Process
+            world.process();
+            assertThat(mapper1.get(entityId)).isNull();
+        }
+
+        @Test
+        void testComponentMaskUpdated_IfRelationRemovedByDeletedTarget() {
+            var entityId = world.createEntity(new RegularComponent(), mapper1.getInstance(Loves.LOVES, target1));
+
+            verify(verify -> {
+                verify.expectNoMoreUpdated();
+
+                world.deleteEntity(target1);
+            });
+
+            verify(verify -> {
+                verify.expectUpdated(entityId, RegularComponent.class);
+                verify.expectNoMoreUpdated();
+
+                world.process();
+
+                verifyHasComponents(entityId, RegularComponent.class);
+                verifyDoesNotHaveComponents(entityId, type1);
+
+                verifyComponentMaskHasComponents(entityId, RegularComponent.class);
+                verifyComponentMaskDoesNotHaveComponents(entityId, type1);
+            });
+        }
+
+    }
+
+    abstract class AbstractEntityRelationTest<R1 extends Enum<R1>, R2 extends Enum<R2>, M1 extends Components<EntityRelation<R1>, ?>, M2 extends Components<EntityRelation<R2>, ?>>
+            extends AbstractRelationTest<R1, R2, RegularEntityRelationType<R1, ?>, RegularEntityRelationType<R2, ?>, EntityRelation<R1>, M1, EntityRelation<R2>, M2> {
+
+        protected int target1;
+        protected int target2;
+
+        protected AbstractEntityRelationTest(RegularEntityRelationType<R1, ?> type1, RegularEntityRelationType<R2, ?> type2) {
+            super(type1, type2);
+        }
+
+        @BeforeEach
+        void setupTargets() {
+            this.target1 = world.createEntity();
+            this.target2 = world.createEntity();
+        }
+
+        @Override
+        protected void add1(M1 mapper, int entityId, R1 relationship) {
+            add(mapper1, entityId, relationship, target1);
+        }
+
+        @Override
+        protected void add2(M2 mapper, int entityId, R2 relationship) {
+            add(mapper2, entityId, relationship, target2);
+        }
+
+        protected abstract <RR> void add(Components<EntityRelation<RR>, ?> mapper, int entityId, RR relationship, int target);
+
+        @Override
+        protected EntityRelation<R1> getInstance1(M1 mapper, R1 relationship) {
+            return getInstance(mapper, relationship, target1);
+        }
+
+        @Override
+        protected EntityRelation<R2> getInstance2(M2 mapper, R2 relationship) {
+            return getInstance(mapper, relationship, target2);
+        }
+
+        protected abstract <RR> EntityRelation<RR> getInstance(Components<EntityRelation<RR>, ?> mapper, RR relationship, int target);
+
+    }
+
+    abstract class AbstractRelationTest<R1 extends Enum<R1>, R2 extends Enum<R2>, TYPE1 extends RelationComponentType<R1, ?, ?>, TYPE2 extends RelationComponentType<R2, ?, ?>, X1, M1 extends Components<X1, ?>, X2, M2 extends Components<X2, ?>> {
+
+        protected final TYPE1 type1;
+        protected final TYPE2 type2;
+
+        protected final Class<R1> relationship1Class;
+        protected final R1 relationship1;
+
+        protected final Class<R2> relationship2Class;
+        protected final R2 relationship2;
 
         protected M1 mapper1;
         protected M2 mapper2;
 
-        protected AbstractTest(RegularComponentRelationType<R, T1, ?> type1, RegularComponentRelationType<R, T2, ?> type2) {
+        protected AbstractRelationTest(TYPE1 type1, TYPE2 type2) {
             this.type1 = type1;
             this.type2 = type2;
 
-            this.relationshipClass = type1.relationship();
-            this.target1Class = type1.target();
-            this.target2Class = type2.target();
+            this.relationship1Class = type1.relationship();
+            this.relationship1 = relationship1Class.getEnumConstants()[0];
 
-            this.relationship = relationshipClass.getEnumConstants()[0];
-            this.target1 = target1Class.getEnumConstants()[0];
-            this.target2 = target2Class.getEnumConstants()[0];
+            this.relationship2Class = type2.relationship();
+            this.relationship2 = relationship2Class.getEnumConstants()[0];
         }
 
         @BeforeEach
@@ -253,9 +623,13 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         protected abstract M2 createMapper2();
 
-        protected abstract <RR, T> void add(Components<ComponentRelation<RR, T>, ?> mapper, int entityId, RR relationship, T target);
+        protected abstract void add1(M1 mapper, int entityId, R1 relationship);
 
-        protected abstract <RR, T> ComponentRelation<RR, T> getInstance(Components<ComponentRelation<RR, T>, ?> mapper, RR relationship, T target);
+        protected abstract void add2(M2 mapper, int entityId, R2 relationship);
+
+        protected abstract X1 getInstance1(M1 mapper, R1 relationship);
+
+        protected abstract X2 getInstance2(M2 mapper, R2 relationship);
 
         @Test
         void testCaching() {
@@ -273,7 +647,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             var componentMask = entityManager.getComponentMask(entityId);
 
             // Call
-            add(mapper1, entityId, relationship, target1);
+            add1(mapper1, entityId, relationship1);
             world.process();
 
             // Verify
@@ -283,16 +657,15 @@ class RelationMapperManagerTest extends AbstractWorldTest {
         }
 
         @Test
-        void testAddRelationship_DoesNotAddRelationOrTargetAsRegularComponents() {
+        void testAddRelationship_DoesNotAddRelationshipAsRegularComponents() {
             var entityId = world.createEntity();
 
             // Call
-            add(mapper1, entityId, relationship, target1);
+            add1(mapper1, entityId, relationship1);
             world.process();
 
             // Verify
-            verifyDoesNotHaveComponents(entityId, relationshipClass);
-            verifyDoesNotHaveComponents(entityId, target1Class);
+            verifyDoesNotHaveComponents(entityId, relationship1Class);
         }
 
         @Test
@@ -303,7 +676,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
                 verify.expectUpdated(entityId, type1);
                 verify.expectNoMoreUpdated();
 
-                add(mapper1, entityId, relationship, target1);
+                add1(mapper1, entityId, relationship1);
 
                 world.process();
             });
@@ -317,7 +690,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
 
             // Call
-            add(mapper1, entityId, relationship, target1);
+            add1(mapper1, entityId, relationship1);
             world.process();
 
             // Verify
@@ -326,13 +699,13 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testAddRelationship_WhenAlreadyPresent_DoesNotTriggerUpdate() {
-            var entityId = world.createEntity(getInstance(mapper1, relationship, target1));
+            var entityId = world.createEntity(getInstance1(mapper1, relationship1));
 
             var updated = new ArrayList<Integer>();
             eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
 
             // Call
-            add(mapper1, entityId, relationship, target1);
+            add1(mapper1, entityId, relationship1);
             world.process();
 
             // Verify
@@ -341,7 +714,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testRemoveRelationship_TriggersUpdate() {
-            var entityId = world.createEntity(getInstance(mapper1, relationship, target1));
+            var entityId = world.createEntity(getInstance1(mapper1, relationship1));
 
             var updated = new ArrayList<Integer>();
             eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
@@ -376,8 +749,8 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             verify(verify -> {
                 verify.expectNoMoreUpdated();
 
-                add(mapper1, entityId, relationship, target1);
-                add(mapper2, entityId, relationship, target2);
+                add1(mapper1, entityId, relationship1);
+                add2(mapper2, entityId, relationship2);
 
                 verifyHasComponents(entityId, type1, type2);
                 verifyComponentMaskDoesNotHaveComponents(entityId, type1, type2);
@@ -386,7 +759,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testHasComponentRelation_WhenEntityCreatedWithRelation() {
-            var relation = getInstance(mapper1, relationship, target1);
+            var relation = getInstance1(mapper1, relationship1);
 
             verify(verify -> {
                 verify.expectInserted(type1);
@@ -406,7 +779,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             verify(verify -> {
                 verify.expectNoMoreUpdated();
 
-                add(mapper1, entityId, relationship, target1);
+                add1(mapper1, entityId, relationship1);
 
                 assertThat(mapper1.has(entityId)).isTrue();
                 verifyHasComponents(entityId, type1);
@@ -422,7 +795,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
                 verify.expectUpdated(entityId, type1);
                 verify.expectNoMoreUpdated();
 
-                add(mapper1, entityId, relationship, target1);
+                add1(mapper1, entityId, relationship1);
                 world.process();
 
                 assertThat(mapper1.has(entityId)).isTrue();
@@ -440,7 +813,15 @@ class RelationMapperManagerTest extends AbstractWorldTest {
         HATES, DESPISES
     }
 
+    public enum Hates2 implements EnumComponent {
+        HATES, DESPISES
+    }
+
     public enum Loves implements Relation.Exclusive, EnumComponent {
+        LOVES, ADORES
+    }
+
+    public enum Loves2 implements Relation.Exclusive, EnumComponent {
         LOVES, ADORES
     }
 

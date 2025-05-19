@@ -11,13 +11,17 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
 import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.EnumComponentMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.components.ComponentManager;
@@ -73,7 +77,7 @@ public class EngineWorld implements World, StorageWorld {
         this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
         this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
-        this.relationMapperManager = addSingleton(new RelationMapperManager(componentManager, transmutationManager));
+        this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, componentManager, transmutationManager));
         this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager));
 
         // Initialized configured singletons
@@ -142,6 +146,16 @@ public class EngineWorld implements World, StorageWorld {
     @Override
     public <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation) {
         return componentMapperManager.getComponentRelations(relation);
+    }
+
+    @Override
+    public <R> EntityRelationMapper<R> getEntityRelations(EntityRelationType<R> relation) {
+        return componentMapperManager.getEntityRelations(relation);
+    }
+
+    @Override
+    public <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation) {
+        return componentMapperManager.getEntityRelations(relation);
     }
 
     @Override

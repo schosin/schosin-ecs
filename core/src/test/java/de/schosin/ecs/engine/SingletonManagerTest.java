@@ -60,7 +60,7 @@ class SingletonManagerTest extends AbstractWorldTest {
             var entityManager = new EntityManager(null, idManager, componentManager, componentMaskManager);
             var changeManager = new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager);
             var transmutationManager = new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager);
-            var relationMapperManager = new RelationMapperManager(componentManager, transmutationManager);
+            var relationMapperManager = new RelationMapperManager(storageEngine, eventManager, componentManager, transmutationManager);
             var componentMapperManager = new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager);
 
             return Stream.of(

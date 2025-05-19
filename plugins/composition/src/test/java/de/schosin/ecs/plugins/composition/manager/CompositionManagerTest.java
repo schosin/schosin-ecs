@@ -2845,7 +2845,7 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Nested
-        class ComponentRelationTest {
+        class RelationTest {
 
             @Nested
             class ProcessTest extends AbstractTest {
@@ -2925,164 +2925,357 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 abstract <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer);
 
                 @Nested
-                class MatchTest {
+                class ComponentRelationTest {
 
-                    @Test
-                    void testMatchComponentRelationType() {
-                        var type = relation(RelationshipComponent.class, Target.class);
-                        var composition = composition(Composition.all(type), type);
+                    @Nested
+                    class MatchTest {
 
-                        var relationship = new RelationshipComponent(10);
+                        @Test
+                        void testMatchComponentRelationType() {
+                            var type = relation(RelationshipComponent.class, Target.class);
+                            var composition = composition(Composition.all(type), type);
 
-                        var components = new Object[][] {
-                                { new C1(), relation(relationship, new Target(1)) },
-                                { new C1(), relation(relationship, new Target(2)), relation(relationship, new Target(3)) },
-                                { relation(new ExclusiveRelationship(11), new Target(1)) },
-                                { new C5() }
-                        };
+                            var relationship = new RelationshipComponent(10);
 
-                        perform(components, composition, type, (id, result) -> {
-                            if (id == 0) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .containsExactlyInAnyOrder(
-                                                tuple(10, 1));
-                            } else if (id == 1) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .containsExactlyInAnyOrder(
-                                                tuple(10, 2),
-                                                tuple(10, 3));
-                            } else {
-                                fail("Unexpected entity %d with result '%s'", id, result);
-                            }
-                        });
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship, new Target(1)) },
+                                    { new C1(), relation(relationship, new Target(2)), relation(relationship, new Target(3)) },
+                                    { relation(new ExclusiveRelationship(11), new Target(1)) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, 1));
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, 2),
+                                                    tuple(10, 3));
+                                } else {
+                                    fail("Unexpected entity %d with result '%s'", id, result);
+                                }
+                            });
+                        }
+
+                        @Test
+                        void testMatchExclusiveComponentRelationType() {
+                            var type = exclusiveRelation(ExclusiveRelationship.class, Target.class);
+                            var composition = composition(Composition.all(type), type);
+
+                            var relationship = new ExclusiveRelationship(10);
+
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship, new Target(1)) },
+                                    { new C1(), relation(relationship, new Target(2)), relation(relationship, new Target(3)) },
+                                    { relation(new RelationshipComponent(11), new Target(1)) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .contains(10, 1);
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .contains(10, 3);
+                                } else {
+                                    fail("Unexpected entity %d with result '%s'", id, result);
+                                }
+                            });
+                        }
+
                     }
 
-                    @Test
-                    void testMatchExclusiveComponentRelationType() {
-                        var type = exclusiveRelation(ExclusiveRelationship.class, Target.class);
-                        var composition = composition(Composition.all(type), type);
+                    @Nested
+                    class RetrieveTest {
 
-                        var relationship = new ExclusiveRelationship(10);
+                        @Test
+                        void testRetrieveComponentRelations() {
+                            var type = relation(RelationshipComponent.class, Target.class);
+                            var composition = composition(Composition.all(C1.class), type);
 
-                        var components = new Object[][] {
-                                { new C1(), relation(relationship, new Target(1)) },
-                                { new C1(), relation(relationship, new Target(2)), relation(relationship, new Target(3)) },
-                                { relation(new RelationshipComponent(11), new Target(1)) },
-                                { new C5() }
-                        };
+                            var relationship = new RelationshipComponent(10);
 
-                        perform(components, composition, type, (id, result) -> {
-                            if (id == 0) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .contains(10, 1);
-                            } else if (id == 1) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .contains(10, 3);
-                            } else {
-                                fail("Unexpected entity %d with result '%s'", id, result);
-                            }
-                        });
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship, new Target(1)) },
+                                    { new C1(), relation(relationship, new Target(2)), relation(relationship, new Target(3)) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, 1));
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, 2),
+                                                    tuple(10, 3));
+                                } else if (id == 2) {
+                                    assertThat(result).isEmpty();
+                                }
+                            });
+                        }
+
+                        @Test
+                        void testRetrieveComponentRelations_DifferentRelationships() {
+                            var type = relation(RelationshipComponent.class, Target.class);
+                            var composition = composition(Composition.all(C1.class), type);
+
+                            var relationship1 = new RelationshipComponent(10);
+                            var relationship2 = new RelationshipComponent(11);
+
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship1, new Target(1)) },
+                                    { new C1(), relation(relationship1, new Target(2)), relation(relationship2, new Target(3)) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, 1));
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, 2),
+                                                    tuple(11, 3));
+                                } else if (id == 2) {
+                                    assertThat(result).isEmpty();
+                                }
+                            });
+                        }
+
+                        @Test
+                        void testRetrieveExclusiveComponentRelation() {
+                            var type = exclusiveRelation(ExclusiveRelationship.class, Target.class);
+                            var composition = composition(Composition.all(C1.class), type);
+
+                            var relationship1 = new ExclusiveRelationship(10);
+                            var relationship2 = new ExclusiveRelationship(11);
+
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship1, new Target(1)) },
+                                    { new C1(), relation(relationship1, new Target(2)), relation(relationship2, new Target(3)) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .contains(10, 1);
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target.value")
+                                            .contains(11, 3);
+                                } else if (id == 2) {
+                                    assertThat(result).isNull();
+                                }
+                            });
+                        }
+
                     }
 
                 }
 
                 @Nested
-                class RetrieveTest {
+                class EntityRelationTest {
 
-                    @Test
-                    void testRetrieveComponentRelations() {
-                        var type = relation(RelationshipComponent.class, Target.class);
-                        var composition = composition(Composition.all(C1.class), type);
+                    @Nested
+                    class MatchTest {
 
-                        var relationship = new RelationshipComponent(10);
+                        @Test
+                        void testMatchEntityRelationType() {
+                            var type = relation(RelationshipComponent.class);
+                            var composition = composition(Composition.all(type), type);
 
-                        var components = new Object[][] {
-                                { new C1(), relation(relationship, new Target(1)) },
-                                { new C1(), relation(relationship, new Target(2)), relation(relationship, new Target(3)) },
-                                { new C5() }
-                        };
+                            var relationship = new RelationshipComponent(10);
 
-                        perform(components, composition, type, (id, result) -> {
-                            if (id == 0) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .containsExactlyInAnyOrder(
-                                                tuple(10, 1));
-                            } else if (id == 1) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .containsExactlyInAnyOrder(
-                                                tuple(10, 2),
-                                                tuple(10, 3));
-                            } else if (id == 2) {
-                                assertThat(result).isEmpty();
-                            }
-                        });
+                            var target1 = world.createEntity();
+                            var target2 = world.createEntity();
+                            var target3 = world.createEntity();
+
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship, target1) },
+                                    { new C1(), relation(relationship, target2), relation(relationship, target3) },
+                                    { relation(new ExclusiveRelationship(11), target1) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, target1));
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, target2),
+                                                    tuple(10, target3));
+                                } else {
+                                    fail("Unexpected entity %d with result '%s'", id, result);
+                                }
+                            });
+                        }
+
+                        @Test
+                        void testMatchExclusiveEntityRelationType() {
+                            var type = exclusiveRelation(ExclusiveRelationship.class);
+                            var composition = composition(Composition.all(type), type);
+
+                            var relationship = new ExclusiveRelationship(10);
+
+                            var target1 = world.createEntity();
+                            var target2 = world.createEntity();
+                            var target3 = world.createEntity();
+
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship, target1) },
+                                    { new C1(), relation(relationship, target2), relation(relationship, target3) },
+                                    { relation(new RelationshipComponent(11), target1) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .contains(10, target1);
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .contains(10, target3);
+                                } else {
+                                    fail("Unexpected entity %d with result '%s'", id, result);
+                                }
+                            });
+                        }
+
                     }
 
-                    @Test
-                    void testRetrieveComponentRelations_DifferentRelationships() {
-                        var type = relation(RelationshipComponent.class, Target.class);
-                        var composition = composition(Composition.all(C1.class), type);
+                    @Nested
+                    class RetrieveTest {
 
-                        var relationship1 = new RelationshipComponent(10);
-                        var relationship2 = new RelationshipComponent(11);
+                        @Test
+                        void testRetrieveEntityRelations() {
+                            var type = relation(RelationshipComponent.class);
+                            var composition = composition(Composition.all(C1.class), type);
 
-                        var components = new Object[][] {
-                                { new C1(), relation(relationship1, new Target(1)) },
-                                { new C1(), relation(relationship1, new Target(2)), relation(relationship2, new Target(3)) },
-                                { new C5() }
-                        };
+                            var relationship = new RelationshipComponent(10);
 
-                        perform(components, composition, type, (id, result) -> {
-                            if (id == 0) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .containsExactlyInAnyOrder(
-                                                tuple(10, 1));
-                            } else if (id == 1) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .containsExactlyInAnyOrder(
-                                                tuple(10, 2),
-                                                tuple(11, 3));
-                            } else if (id == 2) {
-                                assertThat(result).isEmpty();
-                            }
-                        });
-                    }
+                            var target1 = world.createEntity();
+                            var target2 = world.createEntity();
+                            var target3 = world.createEntity();
 
-                    @Test
-                    void testRetrieveExclusiveComponentRelation() {
-                        var type = exclusiveRelation(ExclusiveRelationship.class, Target.class);
-                        var composition = composition(Composition.all(C1.class), type);
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship, target1) },
+                                    { new C1(), relation(relationship, target2), relation(relationship, target3) },
+                                    { new C5() }
+                            };
 
-                        var relationship1 = new ExclusiveRelationship(10);
-                        var relationship2 = new ExclusiveRelationship(11);
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, target1));
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, target2),
+                                                    tuple(10, target3));
+                                } else if (id == 2) {
+                                    assertThat(result).isEmpty();
+                                }
+                            });
+                        }
 
-                        var components = new Object[][] {
-                                { new C1(), relation(relationship1, new Target(1)) },
-                                { new C1(), relation(relationship1, new Target(2)), relation(relationship2, new Target(3)) },
-                                { new C5() }
-                        };
+                        @Test
+                        void testRetrieveEntityRelations_DifferentRelationships() {
+                            var type = relation(RelationshipComponent.class);
+                            var composition = composition(Composition.all(C1.class), type);
 
-                        perform(components, composition, type, (id, result) -> {
-                            if (id == 0) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .contains(10, 1);
-                            } else if (id == 1) {
-                                assertThat(result)
-                                        .extracting("relationship.value", "target.value")
-                                        .contains(11, 3);
-                            } else if (id == 2) {
-                                assertThat(result).isNull();
-                            }
-                        });
+                            var relationship1 = new RelationshipComponent(10);
+                            var relationship2 = new RelationshipComponent(11);
+
+                            var target1 = world.createEntity();
+                            var target2 = world.createEntity();
+                            var target3 = world.createEntity();
+
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship1, target1) },
+                                    { new C1(), relation(relationship1, target2), relation(relationship2, target3) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, target1));
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .containsExactlyInAnyOrder(
+                                                    tuple(10, target2),
+                                                    tuple(11, target3));
+                                } else if (id == 2) {
+                                    assertThat(result).isEmpty();
+                                }
+                            });
+                        }
+
+                        @Test
+                        void testRetrieveExclusiveEntityRelation() {
+                            var type = exclusiveRelation(ExclusiveRelationship.class);
+                            var composition = composition(Composition.all(C1.class), type);
+
+                            var relationship1 = new ExclusiveRelationship(10);
+                            var relationship2 = new ExclusiveRelationship(11);
+
+                            var target1 = world.createEntity();
+                            var target2 = world.createEntity();
+                            var target3 = world.createEntity();
+
+                            var components = new Object[][] {
+                                    { new C1(), relation(relationship1, target1) },
+                                    { new C1(), relation(relationship1, target2), relation(relationship2, target3) },
+                                    { new C5() }
+                            };
+
+                            perform(components, composition, type, (id, result) -> {
+                                if (id == 0) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .contains(10, target1);
+                                } else if (id == 1) {
+                                    assertThat(result)
+                                            .extracting("relationship.value", "target")
+                                            .contains(11, target3);
+                                } else if (id == 2) {
+                                    assertThat(result).isNull();
+                                }
+                            });
+                        }
+
                     }
 
                 }

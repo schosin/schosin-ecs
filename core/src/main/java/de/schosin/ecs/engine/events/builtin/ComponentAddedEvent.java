@@ -2,11 +2,15 @@ package de.schosin.ecs.engine.events.builtin;
 
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ClassComponentAddedEvent;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ComponentRelationAddedEvent;
+import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.EntityRelationAddedEvent;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ExclusiveComponentRelationAddedEvent;
+import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ExclusiveEntityRelationAddedEvent;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Pool;
 
@@ -17,6 +21,8 @@ public sealed interface ComponentAddedEvent extends Event {
             case ClassType<?> classType -> ClassComponentAddedEventImpl.get(classType, component);
             case ComponentRelationType<?, ?> relationType -> ComponentRelationAddedEventImpl.get(relationType, component);
             case ExclusiveComponentRelationType<?, ?> exclusiveRelationType -> ExclusiveComponentRelationAddedEventImpl.get(exclusiveRelationType, component);
+            case EntityRelationType<?> relationType -> EntityRelationAddedEventImpl.get(relationType, component);
+            case ExclusiveEntityRelationType<?> exclusiveRelationType -> ExclusiveEntityRelationAddedEventImpl.get(exclusiveRelationType, component);
         };
     }
 
@@ -36,6 +42,14 @@ public sealed interface ComponentAddedEvent extends Event {
 
         sealed interface ExclusiveComponentRelationAddedEvent extends RegularComponentAddedEvent {
             ExclusiveComponentRelationType<?, ?> type();
+        }
+
+        sealed interface EntityRelationAddedEvent extends RegularComponentAddedEvent {
+            EntityRelationType<?> type();
+        }
+
+        sealed interface ExclusiveEntityRelationAddedEvent extends RegularComponentAddedEvent {
+            ExclusiveEntityRelationType<?> type();
         }
 
     }
@@ -108,6 +122,44 @@ final class ExclusiveComponentRelationAddedEventImpl extends AbstractComponentAd
     private static final Pool<ExclusiveComponentRelationAddedEventImpl> POOL = Pool.unbounded(ExclusiveComponentRelationAddedEventImpl.class, ExclusiveComponentRelationAddedEventImpl::new);
 
     static ExclusiveComponentRelationAddedEvent get(ExclusiveComponentRelationType<?, ?> type, Component<?, ?> component) {
+        var instance = POOL.getInstance();
+        instance.type = type;
+        instance.component = component;
+
+        return instance;
+    }
+
+    @Override
+    public void free() {
+        POOL.free(this);
+    }
+
+}
+
+final class EntityRelationAddedEventImpl extends AbstractComponentAddedEvent<EntityRelationType<?>> implements EntityRelationAddedEvent {
+
+    private static final Pool<EntityRelationAddedEventImpl> POOL = Pool.unbounded(EntityRelationAddedEventImpl.class, EntityRelationAddedEventImpl::new);
+
+    static EntityRelationAddedEvent get(EntityRelationType<?> type, Component<?, ?> component) {
+        var instance = POOL.getInstance();
+        instance.type = type;
+        instance.component = component;
+
+        return instance;
+    }
+
+    @Override
+    public void free() {
+        POOL.free(this);
+    }
+
+}
+
+final class ExclusiveEntityRelationAddedEventImpl extends AbstractComponentAddedEvent<ExclusiveEntityRelationType<?>> implements ExclusiveEntityRelationAddedEvent {
+
+    private static final Pool<ExclusiveEntityRelationAddedEventImpl> POOL = Pool.unbounded(ExclusiveEntityRelationAddedEventImpl.class, ExclusiveEntityRelationAddedEventImpl::new);
+
+    static ExclusiveEntityRelationAddedEvent get(ExclusiveEntityRelationType<?> type, Component<?, ?> component) {
         var instance = POOL.getInstance();
         instance.type = type;
         instance.component = component;

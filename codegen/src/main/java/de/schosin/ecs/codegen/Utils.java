@@ -49,6 +49,7 @@ public class Utils {
 
     public static final ClassName RELATION = ClassName.get("de.schosin.ecs.api.components", "Relation");
     public static final ClassName COMPONENT_RELATION = RELATION.nestedClass("ComponentRelation");
+    public static final ClassName ENTITY_RELATION = RELATION.nestedClass("EntityRelation");
 
     public static final TypeVariableName T = TypeVariableName.get("T");
     public static final TypeVariableName R = TypeVariableName.get("R");

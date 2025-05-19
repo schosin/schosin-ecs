@@ -9,7 +9,9 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.storage.api.ComponentStorage;
@@ -18,11 +20,15 @@ import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
+import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.defaultimpl.components.ComponentDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.ComponentRelationDataImpl;
+import de.schosin.ecs.storage.defaultimpl.components.EntityRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.ExclusiveComponentRelationDataImpl;
+import de.schosin.ecs.storage.defaultimpl.components.ExclusiveEntityRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.PooledComponentDataImpl;
 import de.schosin.ecs.utils.ComponentUtils;
 import de.schosin.ecs.utils.ReflectionUtils;
@@ -198,6 +204,70 @@ public class ComponentStorageImpl implements ComponentStorage {
 
     private <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> createExclusiveComponentRelationData(ExclusiveComponentRelationType<R, T> relationType) {
         return new ExclusiveComponentRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <R> EntityRelationData<R> getComponent(EntityRelationType<R> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+        var result = (EntityRelationData<R>) componentData.get(relationType);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (componentData) {
+            result = (EntityRelationData<R>) componentData.get(relationType);
+            if (result != null) {
+                return result;
+            }
+
+            validate.accept(relationType);
+
+            var component = createEntityRelationData(relationType);
+
+            this.components.set(component.id(), component);
+            this.sortedComponents.add(component);
+            this.componentData.put(relationType, component);
+
+            handleNewComponent(relationType, component);
+
+            return component;
+        }
+    }
+
+    private <R> EntityRelationData<R> createEntityRelationData(EntityRelationType<R> relationType) {
+        return new EntityRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+        var result = (ExclusiveEntityRelationData<R>) componentData.get(relationType);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (componentData) {
+            result = (ExclusiveEntityRelationData<R>) componentData.get(relationType);
+            if (result != null) {
+                return result;
+            }
+
+            validate.accept(relationType);
+
+            var component = createExclusiveEntityRelationData(relationType);
+
+            this.components.set(component.id(), component);
+            this.sortedComponents.add(component);
+            this.componentData.put(relationType, component);
+
+            handleNewComponent(relationType, component);
+
+            return component;
+        }
+    }
+
+    private <R extends Exclusive> ExclusiveEntityRelationData<R> createExclusiveEntityRelationData(ExclusiveEntityRelationType<R> relationType) {
+        return new ExclusiveEntityRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
     }
 
     private <T, R> void handleNewComponent(RegularComponentType<T, R> type, Component<T, R> component) {

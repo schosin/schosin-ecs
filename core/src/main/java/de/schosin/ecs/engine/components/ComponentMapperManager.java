@@ -10,14 +10,18 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.ComponentType.Wildcard;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
 import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.EnumComponentMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result;
@@ -88,6 +92,8 @@ public class ComponentMapperManager implements Components.Creator {
             case ComponentType.ClassType<?> classType -> getComponents(classType);
             case ComponentRelationType<?, ?> relation -> getComponentRelations(relation);
             case ExclusiveComponentRelationType<?, ?> relation -> getComponentRelations(relation);
+            case EntityRelationType<?> relation -> getEntityRelations(relation);
+            case ExclusiveEntityRelationType<?> relation -> getEntityRelations(relation);
         };
     }
 
@@ -174,6 +180,16 @@ public class ComponentMapperManager implements Components.Creator {
     @Override
     public <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation) {
         return relationMapperManager.getComponentRelationMapper(relation);
+    }
+
+    @Override
+    public <R> EntityRelationMapper<R> getEntityRelations(EntityRelationType<R> relation) {
+        return relationMapperManager.getEntityRelationMapper(relation);
+    }
+
+    @Override
+    public <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation) {
+        return relationMapperManager.getEntityRelationMapper(relation);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

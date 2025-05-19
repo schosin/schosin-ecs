@@ -10,8 +10,10 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Components.ComponentRelations;
+import de.schosin.ecs.api.components.Components.EntityRelations;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -20,7 +22,7 @@ import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
+import de.schosin.ecs.storage.api.components.Component.RelationComponent;
 import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen
@@ -32,7 +34,8 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
     private final ComponentMapperManager componentMapperManager;
 
     private final Map<Class<?>, PooledComponentMapper<?>> mappers = new ConcurrentHashMap<>();
-    private final Map<RelationKey, ComponentRelations<?, ?, ?>> relationMappers = new ConcurrentHashMap<>();
+    private final Map<RelationKey, ComponentRelations<?, ?, ?>> componentRelationMappers = new ConcurrentHashMap<>();
+    private final Map<RelationKey, EntityRelations<?, ?>> entityRelationMappers = new ConcurrentHashMap<>();
 
     private final Pool<InitializeImpl> initializePool = Pool.unbounded(InitializeImpl.class, this::createInitialize);
     private final Pool<RelationKey> relationKeyPool = Pool.unbounded(RelationKey.class, RelationKey::new);
@@ -61,12 +64,28 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         var mapper = (ComponentRelations) relationKeyPool.withInstance(key -> {
             key.init(relationship.getClass(), target.getClass());
 
-            var existing = relationMappers.get(key);
+            var existing = componentRelationMappers.get(key);
             if (existing != null) {
                 return existing;
             }
 
-            return relationMappers.computeIfAbsent(key.copy(), ignore -> componentMapperManager.getComponentRelations(relationship.getClass(), target.getClass()));
+            return componentRelationMappers.computeIfAbsent(key.copy(), ignore -> componentMapperManager.getComponentRelations(relationship.getClass(), target.getClass()));
+        });
+
+        return mapper.getInstance(relationship, target);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private <R> EntityRelation<R> getRelation(R relationship, int target) {
+        var mapper = (EntityRelations) relationKeyPool.withInstance(key -> {
+            key.init(relationship.getClass(), null);
+
+            var existing = entityRelationMappers.get(key);
+            if (existing != null) {
+                return existing;
+            }
+
+            return entityRelationMappers.computeIfAbsent(key.copy(), ignore -> componentMapperManager.getEntityRelations(relationship.getClass()));
         });
 
         return mapper.getInstance(relationship, target);
@@ -87,6 +106,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
         @Override
         public <R, T> ComponentRelation<R, T> relation(R relationship, T target) {
+            return manager.getRelation(relationship, target);
+        }
+
+        @Override
+        public <R> EntityRelation<R> relation(R relationship, int target) {
             return manager.getRelation(relationship, target);
         }
 
@@ -144,7 +168,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             for (int i = 0, s = components.length; i < s; i++) {
                 var component = components[i];
 
-                if (!set.add(component) && !(component instanceof ComponentRelationComponent<?, ?, ?>)) {
+                if (!set.add(component) && !(component instanceof RelationComponent<?, ?, ?>)) {
                     throw new IllegalArgumentException("Component '%s' already defined, cannot add duplicates.".formatted(component.display()));
                 }
             }
@@ -157,6 +181,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
         @Override
         public <R, T> ComponentRelation<R, T> getRelation(R relationship, T target) {
+            return manager.getRelation(relationship, target);
+        }
+
+        @Override
+        public <R> EntityRelation<R> getRelation(R relationship, int target) {
             return manager.getRelation(relationship, target);
         }
 

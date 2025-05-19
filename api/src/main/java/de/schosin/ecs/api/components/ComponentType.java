@@ -4,8 +4,10 @@ import java.lang.reflect.Modifier;
 import java.util.Set;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
 
 /**
  * Interface to describe the supported component types.
@@ -18,10 +20,15 @@ public sealed interface ComponentType<T, R> {
     sealed interface RegularComponentType<T, R> extends ComponentType<T, R> {
     }
 
-    sealed interface RegularComponentRelationType<R, T, X> extends RegularComponentType<ComponentRelation<R, T>, X> {
+    sealed interface RelationComponentType<R, T extends Relation, X> extends RegularComponentType<T, X> {
         Class<R> relationship();
+    }
 
+    sealed interface RegularComponentRelationType<R, T, X> extends RelationComponentType<R, ComponentRelation<R, T>, X> {
         Class<T> target();
+    }
+
+    sealed interface RegularEntityRelationType<R, X> extends RelationComponentType<R, EntityRelation<R>, X> {
     }
 
     static Wildcard<Object> WILDCARD = wildcard(Object.class);
@@ -36,6 +43,14 @@ public sealed interface ComponentType<T, R> {
 
     static <R extends Relation.Exclusive, T> ExclusiveComponentRelationType<R, T> exclusiveRelation(Class<R> relationship, Class<T> target) {
         return new ExclusiveComponentRelationType<>(relationship, target);
+    }
+
+    static <R> EntityRelationType<R> relation(Class<R> relationship) {
+        return new EntityRelationType<>(relationship);
+    }
+
+    static <R extends Relation.Exclusive> ExclusiveEntityRelationType<R> exclusiveRelation(Class<R> relationship) {
+        return new ExclusiveEntityRelationType<>(relationship);
     }
 
     static <T> Wildcard<T> wildcard(Class<T> bound) {
@@ -97,6 +112,28 @@ public sealed interface ComponentType<T, R> {
         @Override
         public final String toString() {
             return "ExclusiveComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
+        }
+    }
+
+    record EntityRelationType<R>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelationResult<R>> {
+        public EntityRelationType {
+            ComponentTypeHelper.validateNonExclusiveComponentRelationRelationship(relationship);
+        }
+
+        @Override
+        public final String toString() {
+            return "EntityRelationType(%s)".formatted(relationship.getSimpleName());
+        }
+    }
+
+    record ExclusiveEntityRelationType<R extends Relation.Exclusive>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelation<R>> {
+        public ExclusiveEntityRelationType {
+            ComponentTypeHelper.validateComponentRelationRelationship(relationship);
+        }
+
+        @Override
+        public final String toString() {
+            return "ExclusiveEntityRelationType(%s)".formatted(relationship.getSimpleName());
         }
     }
 

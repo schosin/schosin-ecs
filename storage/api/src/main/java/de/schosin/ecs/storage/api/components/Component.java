@@ -7,12 +7,20 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.utils.collections.IntBag;
 
 public sealed interface Component<T, R> {
 
@@ -55,18 +63,25 @@ public sealed interface Component<T, R> {
 
     }
 
-    sealed interface ComponentRelationComponent<R, T, X> extends Component<ComponentRelation<R, T>, X> {
+    sealed interface RelationComponent<R, T extends Relation, X> extends Component<T, X> {
+
+        @Override
+        RelationComponentType<R, T, X> type();
+
+        Class<R> relationshipClass();
+
+    }
+
+    sealed interface ComponentRelationComponent<R, T, X> extends RelationComponent<R, ComponentRelation<R, T>, X> {
 
         @Override
         RegularComponentRelationType<R, T, X> type();
-
-        Class<R> relationshipClass();
 
         Class<T> targetClass();
 
         /**
          * Adds the relation to the entity, overwriting an existing relation if it has
-         * either an equal relationship, or an equal target component.
+         * an equal target component.
          * 
          * @param entityId id of entity
          * @param relationship relationship component
@@ -100,6 +115,63 @@ public sealed interface Component<T, R> {
 
         @Override
         ExclusiveComponentRelationType<R, T> type();
+
+    }
+
+    sealed interface EntityRelationComponent<R, X> extends RelationComponent<R, EntityRelation<R>, X> {
+
+        @Override
+        RegularEntityRelationType<R, X> type();
+
+        /**
+         * Adds the relation to the entity, overwriting an existing relation if it has
+         * an equal target component.
+         * 
+         * @param entityId id of entity
+         * @param relationship relationship component
+         * @param target target entity
+         */
+        void addRelation(int entityId, R relationship, int target);
+        
+        /**
+         * Removes all relations that contain the target. 
+         * 
+         * <p>
+         * If {@literal affectedEntities} is not {@literal null}, affected entities 
+         * who no longer pocess this relation must be added to the bag.
+         * </p>
+         * 
+         * @param target id of target entity
+         * @param affectedEntities nullable bag for affected entities
+         */
+        void removeTarget(int target, IntBag affectedEntities);
+
+        /**
+         * Returns a pooled instance of the entity relation, initialized with
+         * the passed components. The implementation should
+         * reuse instances when a component is removed from an entity, either via
+         * {@link Component#removeComponent(int)}, {@link Component#applyRemoval(int)},
+         * or {@link Component#applyRemovals()}.
+         * 
+         * @param relationship relationship component of the relation
+         * @param target target entity of the relation
+         * @return instance
+         */
+        EntityRelation<R> getInstance(R relationship, int target);
+
+    }
+
+    non-sealed interface EntityRelationData<R> extends EntityRelationComponent<R, EntityRelationResult<R>> {
+
+        @Override
+        EntityRelationType<R> type();
+
+    }
+
+    non-sealed interface ExclusiveEntityRelationData<R extends Exclusive> extends EntityRelationComponent<R, EntityRelation<R>> {
+
+        @Override
+        ExclusiveEntityRelationType<R> type();
 
     }
 
