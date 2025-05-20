@@ -6,10 +6,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.Plugin;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
+import de.schosin.ecs.engine.WorldBuilderTest.ComponentAccessingPluginTest.ComponentAccessingPlugin;
+import de.schosin.ecs.engine.WorldBuilderTest.ComponentAccessingPluginTest.ComponentAccessingPluginImpl;
 import de.schosin.ecs.engine.WorldBuilderTest.MyPluginTest.MyPlugin;
 import de.schosin.ecs.engine.WorldBuilderTest.MyPluginTest.MyPluginImpl;
 import de.schosin.ecs.engine.WorldBuilderTest.SimplePluginTest.SimplePlugin;
@@ -114,6 +118,8 @@ public class WorldBuilderTest {
             private final ComponentManager componentManager;
 
             public MyPluginImpl(EngineWorld world) {
+                world.addSingleton(this);
+
                 this.world = world;
                 this.componentManager = world.getSingleton(ComponentManager.class);
             }
@@ -191,6 +197,7 @@ public class WorldBuilderTest {
         public interface ComponentAccessingWorld extends World, ComponentAccessingPlugin {
         }
 
+        @Plugin(ComponentAccessingPluginImpl.class)
         public interface ComponentAccessingPlugin {
         }
 
@@ -211,6 +218,124 @@ public class WorldBuilderTest {
         }
 
         private record PluginComponent() {
+        }
+
+    }
+
+    @Nested
+    static class PluginDependencyTest {
+
+        @ParameterizedTest
+        @ValueSource(classes = { DependentWorld.class, DependentWorldExtendsDependencyBefore.class, DependentWorldExtendsDependencyAfter.class })
+        void testPluginDependencyConstructorInjection(Class<? extends World> clazz) {
+            var world = World.builder(clazz).build();
+
+            var pluginImpl = world.getSingleton(DependentPluginImpl.class);
+            assertThat(pluginImpl.plugin).isNotNull();
+
+            assertThat(world.getSingleton(MyPluginImpl.class)).isSameAs(pluginImpl.plugin);
+        }
+
+        @Test
+        void testMultiplePluginDependenciesConstructorInjection() {
+            var world = World.builder(MultiDependencyWorld.class).build();
+
+            var pluginImpl = world.getSingleton(MultiDependencyPluginImpl.class);
+            assertThat(pluginImpl.myPlugin).isNotNull();
+            assertThat(pluginImpl.componentAccessingPlugin).isNotNull();
+
+            assertThat(world.getSingleton(MyPluginImpl.class)).isSameAs(pluginImpl.myPlugin);
+            assertThat(world.getSingleton(ComponentAccessingPluginImpl.class)).isSameAs(pluginImpl.componentAccessingPlugin);
+        }
+
+        @Test
+        void testNestedPluginDependenciesConstructorInjection() {
+            var world = World.builder(NestedDependencyWorld.class).build();
+
+            var pluginImpl = world.getSingleton(NestedDependencyPluginImpl.class);
+            assertThat(pluginImpl.multiPlugin).isNotNull();
+            assertThat(pluginImpl.myPlugin).isNotNull();
+            assertThat(pluginImpl.componentAccessingPlugin).isNotNull();
+
+            assertThat(world.getSingleton(MultiDependencyPluginImpl.class)).isSameAs(pluginImpl.multiPlugin);
+            assertThat(world.getSingleton(MyPluginImpl.class)).isSameAs(pluginImpl.myPlugin);
+            assertThat(world.getSingleton(ComponentAccessingPluginImpl.class)).isSameAs(pluginImpl.componentAccessingPlugin);
+        }
+
+        @Test
+        void testPluginDependencyDoesNotAlterProxiedWorld() {
+            var world = World.builder(DependentWorld.class).build();
+
+            assertThat(world).isNotInstanceOf(MyPlugin.class);
+        }
+
+        public interface DependentWorld extends World, DependentPlugin {
+        }
+
+        public interface DependentWorldExtendsDependencyBefore extends World, MyPlugin, DependentPlugin {
+        }
+
+        public interface DependentWorldExtendsDependencyAfter extends World, DependentPlugin, MyPlugin {
+        }
+
+        @Plugin(DependentPluginImpl.class)
+        public interface DependentPlugin {
+        }
+
+        public static class DependentPluginImpl implements DependentPlugin {
+
+            private final MyPlugin plugin;
+
+            public DependentPluginImpl(World world, MyPlugin plugin) {
+                world.addSingleton(this);
+
+                this.plugin = plugin;
+            }
+
+        }
+
+        public interface MultiDependencyWorld extends World, MultiDependencyPlugin {
+        }
+
+        @Plugin(MultiDependencyPluginImpl.class)
+        public interface MultiDependencyPlugin {
+        }
+
+        public static class MultiDependencyPluginImpl implements MultiDependencyPlugin {
+
+            private final MyPlugin myPlugin;
+            private final ComponentAccessingPlugin componentAccessingPlugin;
+
+            public MultiDependencyPluginImpl(MyPlugin myPlugin, ComponentAccessingPlugin componentAccessingPlugin, World world) {
+                world.addSingleton(this);
+
+                this.myPlugin = myPlugin;
+                this.componentAccessingPlugin = componentAccessingPlugin;
+            }
+
+        }
+
+        public interface NestedDependencyWorld extends World, NestedDependencyPlugin {
+        }
+
+        @Plugin(NestedDependencyPluginImpl.class)
+        public interface NestedDependencyPlugin {
+        }
+
+        public static class NestedDependencyPluginImpl implements NestedDependencyPlugin {
+
+            private final MultiDependencyPluginImpl multiPlugin;
+            private final MyPlugin myPlugin;
+            private final ComponentAccessingPlugin componentAccessingPlugin;
+
+            public NestedDependencyPluginImpl(World world, MultiDependencyPlugin multiPlugin) {
+                world.addSingleton(this);
+
+                this.multiPlugin = (MultiDependencyPluginImpl) multiPlugin;
+                this.myPlugin = this.multiPlugin.myPlugin;
+                this.componentAccessingPlugin = this.multiPlugin.componentAccessingPlugin;
+            }
+
         }
 
     }
@@ -339,17 +464,23 @@ public class WorldBuilderTest {
 
         @Test
         void testCreateDynamicWorld_WhenPluginImplPrivateConstructor_Throws() {
-            assertThatThrownBy(() -> World.builder(UnaccessibleConstructorWorld.class).build())
+            assertThatThrownBy(() -> World.builder(InaccessibleConstructorWorld.class).build())
                     .isInstanceOf(EcsWorldCreationException.class)
-                    .hasMessageContainingAll(UnaccessibleConstructorPlugin.class.getName(), UnaccessibleConstructorPluginImpl.class.getName(), "cannot access", "private");
+                    .hasMessageContainingAll(UnaccessibleConstructorPlugin.class.getName(), UnaccessibleConstructorPluginImpl.class.getName(), "Declares 0 public constructors");
         }
 
         @Test
         void testCreateDynamicWorld_NoMatchingConstructor_Throws() {
             assertThatThrownBy(() -> World.builder(NoMatchingConstructorWorld.class).build())
                     .isInstanceOf(EcsWorldCreationException.class)
-                    .hasMessageContainingAll(NoMatchingConstructorPlugin.class.getName(), NoMatchingConstructorPluginImpl.class.getName(),
-                            "must have either a constructor accepting World", "default constructor");
+                    .hasMessageContainingAll(NoMatchingConstructorPlugin.class.getName(), NoMatchingConstructorPluginImpl.class.getName(), "parameter of unsupported type 'int'");
+        }
+
+        @Test
+        void testCreateDynamicWorld_MultipleMatchingConstructors_Throws() {
+            assertThatThrownBy(() -> World.builder(MultipleConstructorWorld.class).build())
+                    .isInstanceOf(EcsWorldCreationException.class)
+                    .hasMessageContainingAll(MultipleConstructorPlugin.class.getName(), MultipleConstructorPluginImpl.class.getName(), "Declares 3 public constructors");
         }
 
         @Test
@@ -357,7 +488,8 @@ public class WorldBuilderTest {
             assertThatThrownBy(() -> World.builder(ThrowingConstructorWorld.class).build())
                     .isInstanceOf(EcsWorldCreationException.class)
                     .hasCauseInstanceOf(CustomPluginException.class)
-                    .hasMessageContainingAll(ThrowingConstructorPlugin.class.getName(), ThrowingConstructorPluginImpl.class.getName(), "Failed to instantiate plugin");
+                    .hasMessageContainingAll(ThrowingConstructorPlugin.class.getName(), ThrowingConstructorPluginImpl.class.getName(), CustomPluginException.class.getSimpleName(),
+                            "Failed to instantiate plugin", "custom message");
         }
 
         public interface AbstractMethodWorld extends World {
@@ -371,7 +503,7 @@ public class WorldBuilderTest {
         public interface ImplementationDoesNotImplement {
         }
 
-        public interface UnaccessibleConstructorWorld extends World, UnaccessibleConstructorPlugin {
+        public interface InaccessibleConstructorWorld extends World, UnaccessibleConstructorPlugin {
         }
 
         @Plugin(UnaccessibleConstructorPluginImpl.class)
@@ -380,6 +512,25 @@ public class WorldBuilderTest {
 
         public static class UnaccessibleConstructorPluginImpl implements UnaccessibleConstructorPlugin {
             private UnaccessibleConstructorPluginImpl() {
+            }
+        }
+
+        public interface MultipleConstructorWorld extends World, MultipleConstructorPlugin {
+        }
+
+        @Plugin(MultipleConstructorPluginImpl.class)
+        public interface MultipleConstructorPlugin {
+        }
+
+        @SuppressWarnings("unused")
+        public static class MultipleConstructorPluginImpl implements MultipleConstructorPlugin {
+            public MultipleConstructorPluginImpl() {
+            }
+
+            public MultipleConstructorPluginImpl(World world) {
+            }
+
+            public MultipleConstructorPluginImpl(MyPlugin plugin) {
             }
         }
 
@@ -411,6 +562,11 @@ public class WorldBuilderTest {
 
         static class CustomPluginException extends RuntimeException {
             private static final long serialVersionUID = 1L;
+
+            public CustomPluginException() {
+                super("custom message");
+            }
+
         }
 
     }

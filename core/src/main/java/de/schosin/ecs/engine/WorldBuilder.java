@@ -1,5 +1,6 @@
 package de.schosin.ecs.engine;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -104,6 +105,20 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
 class DynamicWorldBuilder {
 
     private record PluginData(Class<?> plugin, Class<?> implementation) {
+        public PluginData {
+            if (!plugin.isAssignableFrom(implementation)) {
+                throw new EcsPluginException("Implementation '%s' for plugin '%s' does not implement plugin. Plugin must declare implementation that implements the plugin."
+                        .formatted(implementation.getName(), plugin.getName()));
+            }
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder().append(plugin.getSimpleName()).append("(").append(implementation.getName()).append(")").toString();
+        }
+    }
+
+    private record PluginInstance(Class<?> plugin, Object instance) {
     }
 
     @SuppressWarnings("unchecked")
@@ -148,15 +163,12 @@ class DynamicWorldBuilder {
         var definition = builder.method(isMethodOf(World.class)).intercept(MethodDelegation.to(world));
         definition = definition.method(isMethodOf(StorageWorld.class)).intercept(MethodDelegation.to(world));
 
-        // Add plugins
-        for (var plugin : plugins) {
-            var implementation = instantiate(world, plugin);
-            if (!plugin.plugin.isInstance(implementation)) {
-                throw new EcsPluginException("Implementation '%s' for plugin '%s' does not implement plugin. Plugin must declare implementation that implements the plugin."
-                        .formatted(implementation.getClass().getName(), plugin.plugin.getName()));
-            }
+        // Instantiate plugins
+        var instantiatedPlugins = instantiatePlugins(world, plugins);
 
-            definition = definition.method(isMethodOf(plugin.plugin)).intercept(MethodDelegation.to(implementation));
+        // Add plugins to definition
+        for (var plugin : instantiatedPlugins) {
+            definition = definition.method(isMethodOf(plugin.plugin)).intercept(MethodDelegation.to(plugin.instance));
         }
 
         // Create class 
@@ -175,6 +187,118 @@ class DynamicWorldBuilder {
             var pluginNames = plugins.stream().map(plugin -> plugin.plugin.getName()).collect(Collectors.joining(", "));
 
             throw new EcsWorldCreationException("Failed to create dynamic World '%s' with plugins '%s': %s".formatted(clazz.getName(), pluginNames, ex.getMessage()), ex);
+        }
+    }
+
+    private static SequencedSet<PluginInstance> instantiatePlugins(EngineWorld world, SequencedSet<PluginData> plugins) {
+        var work = new LinkedHashSet<>(plugins);
+        var instances = new HashMap<Class<?>, Object>();
+
+        instantiatePlugins(world, work, instances);
+
+        var result = new LinkedHashSet<PluginInstance>();
+
+        for (var plugin : plugins) {
+            var instance = instances.get(plugin.plugin);
+            if (instance == null) {
+                throw new EcsWorldCreationException("Failed to instantiate plugin '%s'".formatted(plugin));
+            }
+
+            result.add(new PluginInstance(plugin.plugin, instance));
+        }
+
+        return result;
+    }
+
+    private static void instantiatePlugins(EngineWorld world, LinkedHashSet<PluginData> plugins, HashMap<Class<?>, Object> instances) {
+        while (!plugins.isEmpty()) {
+            var plugin = plugins.removeFirst();
+            var instance = instantiatePlugin(world, plugin, plugins, instances);
+
+            instances.put(plugin.plugin, instance);
+            instances.put(plugin.implementation, instance);
+        }
+    }
+
+    private static Object instantiatePlugin(EngineWorld world, PluginData plugin, LinkedHashSet<PluginData> pendingPlugins, HashMap<Class<?>, Object> instances) {
+        var constructors = plugin.implementation.getConstructors();
+        if (constructors.length != 1) {
+            throw new EcsWorldCreationException("Failed to instantiate plugin '%s': Declares %d public constructors, must be exactly one.".formatted(plugin, constructors.length));
+        }
+
+        var constructor = constructors[0];
+        var parameters = constructor.getParameters();
+
+        // Default constructor
+        if (parameters.length == 0) {
+            return instantiate(plugin, constructor);
+        }
+
+        // Only world argument
+        if (parameters.length == 1 && parameters[0].getType().isAssignableFrom(EngineWorld.class)) {
+            return instantiate(plugin, constructor, world);
+        }
+
+        // Analyze parameters
+        var arguments = new Object[parameters.length];
+        for (int i = 0, s = parameters.length; i < s; i++) {
+            var parameterType = parameters[i].getType();
+
+            // EngineWorld argument
+            if (parameterType.isAssignableFrom(EngineWorld.class)) {
+                arguments[i] = world;
+                continue;
+            }
+
+            // Plugin dependency
+            var dependency = instances.get(parameterType);
+            if (dependency != null) {
+                arguments[i] = dependency;
+                continue;
+            }
+
+            // Plugin dependency not yet instantiated
+            var pendingDependency = pendingPlugins.stream().filter(pending -> pending.plugin == parameterType).findFirst().orElse(null);
+            if (pendingDependency != null) {
+                pendingPlugins.remove(pendingDependency);
+
+                var instance = arguments[i] = instantiatePlugin(world, pendingDependency, pendingPlugins, instances);
+
+                instances.put(parameterType, instance);
+                instances.put(pendingDependency.implementation, instance);
+
+                continue;
+            }
+
+            // Plugin not declared by world
+            var pluginAnnotation = parameterType.getAnnotation(Plugin.class);
+            if (pluginAnnotation != null) {
+                var pluginDependency = new PluginData(parameterType, pluginAnnotation.value());
+                var instance = arguments[i] = instantiatePlugin(world, pluginDependency, pendingPlugins, instances);
+
+                instances.put(parameterType, instance);
+                instances.put(pluginAnnotation.value(), instance);
+
+                continue;
+            }
+
+            // Unknown dependency
+            throw new EcsWorldCreationException("Plugin '%s' declared parameter of unsupported type '%s'. Only World/EngineWorld and other plugins (interface only) supported."
+                    .formatted(plugin, parameterType.getName()));
+        }
+
+        return instantiate(plugin, constructor, arguments);
+    }
+
+    private static Object instantiate(PluginData plugin, Constructor<?> constructor, Object... arguments) {
+        try {
+            return constructor.newInstance(arguments);
+        } catch (InvocationTargetException ex) {
+            var cause = ex.getTargetException() != null ? ex.getTargetException() : ex;
+
+            throw new EcsWorldCreationException("Failed to instantiate plugin '%s' due to %s: %s".formatted(plugin, cause.getClass().getSimpleName(), cause.getMessage()), cause);
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | SecurityException ex) {
+            throw new EcsWorldCreationException("Failed to instantiate plugin '%s': %s".formatted(plugin, ex.getMessage()), ex);
         }
     }
 
@@ -221,40 +345,6 @@ class DynamicWorldBuilder {
 
     private static Junction<ByteCodeElement> isMethodOf(Class<?> clazz) {
         return ElementMatchers.not(ElementMatchers.isDeclaredBy(Object.class)).and(ElementMatchers.isDeclaredBy(clazz).or(ElementMatchers.isDeclaredBy(ElementMatchers.isSuperTypeOf(clazz))));
-    }
-
-    private static Object instantiate(EngineWorld world, PluginData plugin) {
-        try {
-            return createInstance(world, plugin.plugin, plugin.implementation);
-        } catch (InvocationTargetException ex) {
-            var cause = ex.getTargetException() != null ? ex.getTargetException() : ex;
-
-            throw new EcsWorldCreationException("Failed to instantiate plugin '%s' (implementation '%s'): %s"
-                    .formatted(plugin.plugin.getName(), plugin.implementation.getName(), ex.getMessage()), cause);
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | NoSuchMethodException | SecurityException ex) {
-            throw new EcsWorldCreationException("Failed to instantiate plugin '%s' (implementation '%s'): %s".formatted(plugin.plugin.getName(), plugin.implementation.getName(), ex.getMessage()), ex);
-        }
-    }
-
-    private static Object createInstance(EngineWorld world, Class<?> plugin, Class<?> implementationClass)
-            throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException {
-
-        // Try to find a constructor accepting EngineWorld or World
-        for (var constructor : implementationClass.getConstructors()) {
-            var parameters = constructor.getParameters();
-            if (parameters.length == 1 && parameters[0].getType().isAssignableFrom(EngineWorld.class)) {
-                return constructor.newInstance(world);
-            }
-        }
-
-        // Try to find a default constructor
-        try {
-            return implementationClass.getDeclaredConstructor().newInstance();
-        } catch (NoSuchMethodException e) {
-            // No suitable constructors found
-            throw new EcsPluginException("Implementation '%s' for plugin '%s' must have either a constructor accepting World/EngineWorld or a default constructor."
-                    .formatted(implementationClass.getName(), plugin.getName()));
-        }
     }
 
     private static SequencedSet<PluginData> gatherPlugins(Class<? extends World> clazz) {
