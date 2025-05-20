@@ -2,7 +2,7 @@ package de.schosin.ecs.utils.collections;
 
 import java.util.Arrays;
 
-public class IntBag {
+public class IntBag implements ImmutableIntBag {
 
     private int[] data;
     private int size;
@@ -111,6 +111,7 @@ public class IntBag {
             }
         }
     }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder().append("IntBag(");
