@@ -20,7 +20,7 @@ public sealed interface ComponentType<T, R> {
     sealed interface RegularComponentType<T, R> extends ComponentType<T, R> {
     }
 
-    sealed interface RelationComponentType<R, T extends Relation, X> extends RegularComponentType<T, X> {
+    sealed interface RelationComponentType<R, T extends Relation<R>, X> extends RegularComponentType<T, X> {
         Class<R> relationship();
     }
 

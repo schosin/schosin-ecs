@@ -9,11 +9,7 @@ import java.util.stream.Stream;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.Components.ComponentRelations;
-import de.schosin.ecs.api.components.Components.EntityRelations;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
-import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -34,11 +30,8 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
     private final ComponentMapperManager componentMapperManager;
 
     private final Map<Class<?>, PooledComponentMapper<?>> mappers = new ConcurrentHashMap<>();
-    private final Map<RelationKey, ComponentRelations<?, ?, ?>> componentRelationMappers = new ConcurrentHashMap<>();
-    private final Map<RelationKey, EntityRelations<?, ?>> entityRelationMappers = new ConcurrentHashMap<>();
 
     private final Pool<InitializeImpl> initializePool = Pool.unbounded(InitializeImpl.class, this::createInitialize);
-    private final Pool<RelationKey> relationKeyPool = Pool.unbounded(RelationKey.class, RelationKey::new);
 
     public ArchetypeManager(World world) {
         world.addSingleton(this);
@@ -59,38 +52,6 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         return component.cast(mapper.getInstance());
     }
 
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private <R, T> ComponentRelation<R, T> getRelation(R relationship, T target) {
-        var mapper = (ComponentRelations) relationKeyPool.withInstance(key -> {
-            key.init(relationship.getClass(), target.getClass());
-
-            var existing = componentRelationMappers.get(key);
-            if (existing != null) {
-                return existing;
-            }
-
-            return componentRelationMappers.computeIfAbsent(key.copy(), ignore -> componentMapperManager.getComponentRelations(relationship.getClass(), target.getClass()));
-        });
-
-        return mapper.getInstance(relationship, target);
-    }
-
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    private <R> EntityRelation<R> getRelation(R relationship, int target) {
-        var mapper = (EntityRelations) relationKeyPool.withInstance(key -> {
-            key.init(relationship.getClass(), null);
-
-            var existing = entityRelationMappers.get(key);
-            if (existing != null) {
-                return existing;
-            }
-
-            return entityRelationMappers.computeIfAbsent(key.copy(), ignore -> componentMapperManager.getEntityRelations(relationship.getClass()));
-        });
-
-        return mapper.getInstance(relationship, target);
-    }
-
     static abstract class AbstractInitImpl implements Archetype.Initialize.Init {
 
         private final ArchetypeManager manager;
@@ -102,16 +63,6 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         @Override
         public <T extends Pooled> T get(Class<T> component) {
             return manager.getInstance(component);
-        }
-
-        @Override
-        public <R, T> ComponentRelation<R, T> relation(R relationship, T target) {
-            return manager.getRelation(relationship, target);
-        }
-
-        @Override
-        public <R> EntityRelation<R> relation(R relationship, int target) {
-            return manager.getRelation(relationship, target);
         }
 
     }
@@ -179,16 +130,6 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             return manager.getInstance(clazz);
         }
 
-        @Override
-        public <R, T> ComponentRelation<R, T> getRelation(R relationship, T target) {
-            return manager.getRelation(relationship, target);
-        }
-
-        @Override
-        public <R> EntityRelation<R> getRelation(R relationship, int target) {
-            return manager.getRelation(relationship, target);
-        }
-
         protected final int createEntity(Object... components) {
             if (components.length != expected) {
                 throw new IllegalArgumentException("Expected %d added components, but got %d.".formatted(expected, components.length));
@@ -249,34 +190,6 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
                 return manager.entityManager.createEntities(this.componentMask, data, this.dataLookup);
             });
-        }
-
-    }
-
-    private class RelationKey implements Pooled {
-
-        private Class<?> relationship;
-        private Class<?> target;
-
-        public RelationKey init(Class<?> relationship, Class<?> target) {
-            this.relationship = relationship;
-            this.target = target;
-
-            return this;
-        }
-
-        public RelationKey copy() {
-            var copy = new RelationKey();
-            copy.relationship = this.relationship;
-            copy.target = this.target;
-
-            return copy;
-        }
-
-        @Override
-        public void reset() {
-            this.relationship = null;
-            this.target = null;
         }
 
     }

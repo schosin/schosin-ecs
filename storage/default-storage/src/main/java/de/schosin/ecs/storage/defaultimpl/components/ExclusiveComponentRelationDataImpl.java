@@ -3,19 +3,18 @@ package de.schosin.ecs.storage.defaultimpl.components;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.Pool;
 
-public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id, ExclusiveComponentRelationType<R, T> type, Bag<ComponentRelation<R, T>> components,
-        Pool<ComponentRelationImpl<R, T>> pool) implements ExclusiveComponentRelationData<R, T> {
+public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id, ExclusiveComponentRelationType<R, T> type, Bag<ComponentRelation<R, T>> components)
+        implements ExclusiveComponentRelationData<R, T> {
 
     public ExclusiveComponentRelationDataImpl(int id, ExclusiveComponentRelationType<R, T> type, StorageWorld world) {
-        this(id, type, world.createEntityBag(ComponentRelation.class),
-                Pool.unbounded(ComponentRelationImpl.class, ComponentRelationImpl::new));
+        this(id, type, world.createEntityBag(ComponentRelation.class));
     }
 
     @Override
@@ -45,7 +44,7 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
 
     @Override
     public void addRelation(int entityId, R relationship, T target) {
-        addComponentUnsafe(entityId, pool.getInstance().init(relationship, target));
+        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override
@@ -59,15 +58,8 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
         if (component != null) {
             this.components.set(entityId, null);
 
-            if (component instanceof ComponentRelationImpl<R, T> impl) {
-                this.pool.free(impl);
-            }
+            Relation.free(component);
         }
-    }
-
-    @Override
-    public ComponentRelation<R, T> getInstance(R relationship, T target) {
-        return pool.getInstance().init(relationship, target);
     }
 
     @Override

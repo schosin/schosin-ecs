@@ -6,11 +6,13 @@ import java.util.function.BiConsumer;
 
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
 import de.schosin.ecs.storage.testsuite.components.CommonComponentTest;
@@ -82,36 +84,6 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
             verifyRelationInstance.accept(assertThat(component.getComponent(entityId)).as("get returns equal relation after addRelation"), relation);
         }
 
-        @ParameterizedTest
-        @MethodSource(TYPES)
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testGetInstance(RegularComponentRelationType<?, ?, ?> type) {
-            var component = (ComponentRelationComponent) getComponent(type);
-            var instance = getInstance(type);
-
-            var relation = component.getInstance(instance.relationship(), instance.target());
-            assertThat(relation).as("getInstance returns an equal relation").isEqualTo(instance);
-            assertThat(relation.relationship()).as("getInstance returns the same relationship").isSameAs(instance.relationship());
-            assertThat(relation.target()).as("getInstance returns the same target").isSameAs(instance.target());
-        }
-
-        @ParameterizedTest
-        @MethodSource(TYPES)
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testGetInstance_ReusedAfterFreed(RegularComponentRelationType<?, ?, ?> type) {
-            var component = (ComponentRelationComponent) getComponent(type);
-            var instance = getInstance(type);
-
-            var relation = component.getInstance(instance.relationship(), instance.target());
-            var entityId = world.createEntity(relation);
-
-            world.deleteEntity(entityId);
-            world.process();
-
-            var reusedRelation = component.getInstance(instance.relationship(), instance.target());
-            assertThat(reusedRelation).as("relation instances should be reused if owning entity deleted").isSameAs(relation);
-        }
-
     }
 
     @Nested
@@ -159,15 +131,30 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
 
     }
 
+    @Nested
+    class FreeRelationTest {
+
+        @Test
+        void testFreeRelationInstance() {
+            var relation = Relation.create(EnumComponent.INSTANCE, EnumComponent.INSTANCE);
+            var entityId = world.createEntity(relation);
+
+            var component = getComponent(relation(EnumComponent.class, EnumComponent.class));
+            component.removeComponent(entityId);
+
+            assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
+            assertThat(relation.relationship()).as("removed relation must be returned to Relation.free").isNull();
+            assertThat(relation.target()).as("removed relation must be returned to Relation.free").isNull();
+        }
+
+    }
+
     protected <R, T, X> ComponentRelationComponent<R, T, X> getComponent(RegularComponentRelationType<R, T, X> type) {
         return engine.getComponent(type, NO_OP);
     }
 
-    protected <R, T> ComponentRelation<R, T> relation(R relationship, T target) {
-        return new ComponentRelationImpl<>(relationship, target);
-    }
-
-    private record ComponentRelationImpl<R, T>(R relationship, T target) implements ComponentRelation<R, T> {
+    private enum EnumComponent {
+        INSTANCE
     }
 
 }

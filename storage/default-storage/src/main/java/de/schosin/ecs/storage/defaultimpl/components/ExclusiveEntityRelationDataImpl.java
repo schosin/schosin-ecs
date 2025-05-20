@@ -1,20 +1,19 @@
 package de.schosin.ecs.storage.defaultimpl.components;
 
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
-import de.schosin.ecs.utils.collections.Pool;
 
-public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, ExclusiveEntityRelationType<R> type, Bag<EntityRelation<R>> components, Bag<IntBag> targetLookup,
-        Pool<EntityRelationImpl<R>> pool) implements ExclusiveEntityRelationData<R> {
+public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, ExclusiveEntityRelationType<R> type, Bag<EntityRelation<R>> components, Bag<IntBag> targetLookup)
+        implements ExclusiveEntityRelationData<R> {
 
     public ExclusiveEntityRelationDataImpl(int id, ExclusiveEntityRelationType<R> type, StorageWorld world) {
-        this(id, type, world.createEntityBag(EntityRelation.class), world.createEntityBag(IntBag.class),
-                Pool.unbounded(EntityRelationImpl.class, EntityRelationImpl::new));
+        this(id, type, world.createEntityBag(EntityRelation.class), world.createEntityBag(IntBag.class));
     }
 
     @Override
@@ -39,7 +38,7 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
 
     @Override
     public void addRelation(int entityId, R relationship, int target) {
-        addComponentUnsafe(entityId, pool.getInstance().init(relationship, target));
+        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override
@@ -73,9 +72,7 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
                 entities.removeValue(entityId);
             }
 
-            if (component instanceof EntityRelationImpl<R> impl) {
-                this.pool.free(impl);
-            }
+            Relation.free(component);
         }
     }
 
@@ -102,11 +99,6 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
         }
 
         entities.clear();
-    }
-
-    @Override
-    public EntityRelation<R> getInstance(R relationship, int target) {
-        return pool.getInstance().init(relationship, target);
     }
 
     @Override

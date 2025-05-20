@@ -21,6 +21,7 @@ import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
@@ -91,24 +92,12 @@ public abstract class AbstractEngineTest {
         return ComponentType.exclusiveRelation(relationship);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     protected <R, T> ComponentRelation<R, T> relation(R relationship, T target) {
-        var type = Exclusive.class.isInstance(relationship)
-                ? exclusiveRelation((Class) relationship.getClass(), (Class<T>) target.getClass())
-                : relation((Class<R>) relationship.getClass(), (Class<T>) target.getClass());
-
-        var component = componentManager.getComponent(type);
-        return component.getInstance(relationship, target);
+        return Relation.create(relationship, target);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     protected <R> EntityRelation<R> relation(R relationship, int target) {
-        var type = Exclusive.class.isInstance(relationship)
-                ? exclusiveRelation((Class) relationship.getClass())
-                : relation((Class<R>) relationship.getClass());
-
-        var component = componentManager.getComponent(type);
-        return component.getInstance(relationship, target);
+        return Relation.create(relationship, target);
     }
 
     protected <T> T getComponent(int entityId, Class<T> clazz) {

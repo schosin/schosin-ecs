@@ -1,8 +1,34 @@
 package de.schosin.ecs.api.components;
 
-import de.schosin.ecs.api.Pooled;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
-public sealed interface Relation {
+import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.Exclusive;
+
+public sealed interface Relation<R> {
+
+    static <R, T> ComponentRelation<R, T> create(R relationship, T target) {
+        return RelationHelper.create(relationship, target);
+    }
+
+    static <R> EntityRelation<R> create(R relationship, int target) {
+        return RelationHelper.create(relationship, target);
+    }
+
+    static void free(Relation<?> relation) {
+        RelationHelper.free(relation);
+    }
+
+    RelationComponentType<R, ?, ?> type();
+
+    R relationship();
 
     /**
      * Marker interface (trait) to enforce that a component type can only be used as a 
@@ -59,16 +85,174 @@ public sealed interface Relation {
     interface Exclusive extends Relationship {
     }
 
-    non-sealed interface ComponentRelation<R, T> extends Relation, Pooled {
-        R relationship();
+    sealed interface ComponentRelation<R, T> extends Relation<R>, Pooled {
+
+        @Override
+        RegularComponentRelationType<R, T, ?> type();
 
         T target();
+
     }
 
-    non-sealed interface EntityRelation<R> extends Relation, Pooled {
-        R relationship();
+    sealed interface EntityRelation<R> extends Relation<R>, Pooled {
+
+        @Override
+        RegularEntityRelationType<R, ?> type();
 
         int target();
+
+    }
+
+}
+
+class RelationHelper {
+
+    private static final List<ComponentRelationImpl> COMPONENT_RELATIONS = new ArrayList<>(32);
+    private static final List<EntityRelationImpl> ENTITY_RELATIONS = new ArrayList<>(32);
+
+    @SuppressWarnings("unchecked")
+    static synchronized <R, T> ComponentRelation<R, T> create(R relationship, T target) {
+        var relation = COMPONENT_RELATIONS.isEmpty() ? new ComponentRelationImpl() : COMPONENT_RELATIONS.removeLast();
+
+        relation.type = Exclusive.class.isAssignableFrom(relationship.getClass())
+                ? ComponentType.exclusiveRelation(relationship.getClass().asSubclass(Exclusive.class), target.getClass())
+                : ComponentType.relation(relationship.getClass(), target.getClass());
+
+        relation.relationship = relationship;
+        relation.target = target;
+
+        return (ComponentRelation<R, T>) relation;
+    }
+
+    @SuppressWarnings("unchecked")
+    static synchronized <R> EntityRelation<R> create(R relationship, int target) {
+        var relation = ENTITY_RELATIONS.isEmpty() ? new EntityRelationImpl() : ENTITY_RELATIONS.removeLast();
+
+        relation.type = Exclusive.class.isAssignableFrom(relationship.getClass())
+                ? ComponentType.exclusiveRelation(relationship.getClass().asSubclass(Exclusive.class))
+                : ComponentType.relation(relationship.getClass());
+
+        relation.relationship = relationship;
+        relation.target = target;
+
+        return (EntityRelation<R>) relation;
+    }
+
+    static void free(Relation<?> relation) {
+        if (relation instanceof ComponentRelationImpl impl) {
+            impl.type = null;
+            impl.relationship = null;
+            impl.target = null;
+
+            COMPONENT_RELATIONS.add(impl);
+        }
+
+        if (relation instanceof EntityRelationImpl impl) {
+            impl.type = null;
+            impl.relationship = null;
+            impl.target = -1;
+
+            ENTITY_RELATIONS.add(impl);
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static final class ComponentRelationImpl implements ComponentRelation {
+
+        private RegularComponentRelationType type;
+        private Object relationship;
+        private Object target;
+
+        @Override
+        public RegularComponentRelationType type() {
+            return type;
+        }
+
+        @Override
+        public Object relationship() {
+            return relationship;
+        }
+
+        @Override
+        public Object target() {
+            return target;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(relationship, target, type);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            ComponentRelationImpl other = (ComponentRelationImpl) obj;
+            return Objects.equals(this.relationship, other.relationship) && Objects.equals(this.target, other.target) && Objects.equals(this.type, other.type);
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("ComponentRelation(")
+                    .append(this.relationship).append(" / ")
+                    .append(this.target).append(")").toString();
+        }
+
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static final class EntityRelationImpl implements EntityRelation {
+
+        private RegularEntityRelationType type;
+        private Object relationship;
+        private int target = -1;
+
+        @Override
+        public RegularEntityRelationType type() {
+            return type;
+        }
+
+        @Override
+        public Object relationship() {
+            return relationship;
+        }
+
+        @Override
+        public int target() {
+            return target;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(relationship, target, type);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            EntityRelationImpl other = (EntityRelationImpl) obj;
+            return Objects.equals(this.relationship, other.relationship) && this.target == other.target && Objects.equals(this.type, other.type);
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("EntityRelation(")
+                    .append(this.relationship).append(" / ")
+                    .append(this.target).append(")").toString();
+        }
+
     }
 
 }

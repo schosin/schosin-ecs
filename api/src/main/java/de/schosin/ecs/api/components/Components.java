@@ -148,8 +148,6 @@ public interface Components<T, R> {
 
         ComponentRelation<R, T> add(int entityId, R relationship, T target);
 
-        ComponentRelation<R, T> getInstance(R relationship, T target);
-
     }
 
     non-sealed interface ComponentRelationMapper<R, T> extends ComponentRelations<R, T, ComponentRelationResult<R, T>> {
@@ -169,8 +167,6 @@ public interface Components<T, R> {
     sealed interface EntityRelations<R, X> extends Components<EntityRelation<R>, X> {
 
         EntityRelation<R> add(int entityId, R relationship, int target);
-
-        EntityRelation<R> getInstance(R relationship, int target);
 
     }
 

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.test.AbstractEcsTest;
@@ -153,7 +154,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(type);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1);
                         verifyHasComponents(entityId, type);
@@ -177,7 +178,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(type);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1);
                         verifyHasComponents(entityId, type);
@@ -330,7 +331,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2());
                         verifyHasComponents(entityId, expected);
@@ -351,8 +352,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2);
                         verifyHasComponents(entityId, expected);
@@ -373,8 +374,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2);
                         verifyHasComponents(entityId, expected);
@@ -397,8 +398,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2);
                         verifyHasComponents(entityId, expected);
@@ -427,8 +428,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2);
                         verifyHasComponents(entityId, expected);
@@ -461,7 +462,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2());
                         verifyHasComponents(entityId, expected);
@@ -485,8 +486,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target1);
-                        var relation2 = archetype.getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2);
                         verifyHasComponents(entityId, expected);
@@ -509,8 +510,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target);
-                        var relation2 = archetype.getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2);
                         verifyHasComponents(entityId, expected);
@@ -540,8 +541,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2);
                         verifyHasComponents(entityId, expected);
@@ -705,7 +706,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3());
                         verifyHasComponents(entityId, expected);
@@ -726,8 +727,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3());
                         verifyHasComponents(entityId, expected);
@@ -748,8 +749,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3());
                         verifyHasComponents(entityId, expected);
@@ -772,8 +773,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
                         verifyHasComponents(entityId, expected);
@@ -802,8 +803,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
                         verifyHasComponents(entityId, expected);
@@ -836,7 +837,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3());
                         verifyHasComponents(entityId, expected);
@@ -860,8 +861,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target1);
-                        var relation2 = archetype.getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
                         verifyHasComponents(entityId, expected);
@@ -884,8 +885,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target);
-                        var relation2 = archetype.getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
                         verifyHasComponents(entityId, expected);
@@ -915,8 +916,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
                         verifyHasComponents(entityId, expected);
@@ -1087,7 +1088,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1108,8 +1109,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1130,8 +1131,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1154,8 +1155,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1184,8 +1185,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1218,7 +1219,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1242,8 +1243,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target1);
-                        var relation2 = archetype.getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1266,8 +1267,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target);
-                        var relation2 = archetype.getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1297,8 +1298,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
                         verifyHasComponents(entityId, expected);
@@ -1474,7 +1475,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1495,8 +1496,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1517,8 +1518,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1541,8 +1542,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1571,8 +1572,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1605,7 +1606,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1629,8 +1630,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target1);
-                        var relation2 = archetype.getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1653,8 +1654,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target);
-                        var relation2 = archetype.getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1684,8 +1685,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
                         verifyHasComponents(entityId, expected);
@@ -1864,7 +1865,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -1885,8 +1886,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -1907,8 +1908,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -1931,8 +1932,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -1961,8 +1962,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -1995,7 +1996,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -2019,8 +2020,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target1);
-                        var relation2 = archetype.getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -2043,8 +2044,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target);
-                        var relation2 = archetype.getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -2074,8 +2075,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
                         verifyHasComponents(entityId, expected);
@@ -2260,7 +2261,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2281,8 +2282,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2303,8 +2304,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2327,8 +2328,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2357,8 +2358,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2391,7 +2392,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2415,8 +2416,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target1);
-                        var relation2 = archetype.getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2439,8 +2440,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target);
-                        var relation2 = archetype.getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2470,8 +2471,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
                         verifyHasComponents(entityId, expected);
@@ -2660,7 +2661,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2681,8 +2682,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2703,8 +2704,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2727,8 +2728,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2757,8 +2758,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2791,7 +2792,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2815,8 +2816,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(expected);
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.getRelation(new C1(), target1);
-                        var relation2 = archetype.getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2839,8 +2840,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target);
-                        var relation2 = archetype.getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -2870,8 +2871,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.getRelation(relationship, target1);
-                        var relation2 = archetype.getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
                         verifyHasComponents(entityId, expected);
@@ -3140,7 +3141,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(archetype.components());
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.archetype().getRelation(new C1(), new Target(1));
+                        var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = createEntity(archetype, relation1);
                         verifyHasComponents(entityId, type);
@@ -3162,8 +3163,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(archetype.components());
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.archetype().getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.archetype().getRelation(new C2(), new Target(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type1, type2);
@@ -3185,8 +3186,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(archetype.components());
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.archetype().getRelation(new C1(), new Target(1));
-                        var relation2 = archetype.archetype().getRelation(new C1(), new Target2(2));
+                        var relation1 = Relation.create(new C1(), new Target(1));
+                        var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type1, type2);
@@ -3211,8 +3212,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(1);
 
-                        var relation1 = archetype.archetype().getRelation(relationship, target1);
-                        var relation2 = archetype.archetype().getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type);
@@ -3243,8 +3244,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         var target1 = new Target(1);
                         var target2 = new Target(2);
 
-                        var relation1 = archetype.archetype().getRelation(relationship, target1);
-                        var relation2 = archetype.archetype().getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type);
@@ -3278,7 +3279,7 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(archetype.components());
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.archetype().getRelation(new C1(), target);
+                        var relation1 = Relation.create(new C1(), target);
 
                         var entityId = createEntity(archetype, relation1);
                         verifyHasComponents(entityId, type);
@@ -3303,8 +3304,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(archetype.components());
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.archetype().getRelation(new C1(), target1);
-                        var relation2 = archetype.archetype().getRelation(new C2(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type1, type2);
@@ -3329,8 +3330,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
                         verify.expectInserted(archetype.components());
                         verify.expectNoMoreInserted();
 
-                        var relation1 = archetype.archetype().getRelation(new C1(), target1);
-                        var relation2 = archetype.archetype().getRelation(new C1(), target2);
+                        var relation1 = Relation.create(new C1(), target1);
+                        var relation2 = Relation.create(new C1(), target2);
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type1, type2);
@@ -3354,8 +3355,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.archetype().getRelation(relationship, target);
-                        var relation2 = archetype.archetype().getRelation(relationship, target);
+                        var relation1 = Relation.create(relationship, target);
+                        var relation2 = Relation.create(relationship, target);
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type);
@@ -3386,8 +3387,8 @@ class ArchetypeManagerTest extends BaseArchetypeManagerTest {
 
                         var relationship = new C1();
 
-                        var relation1 = archetype.archetype().getRelation(relationship, target1);
-                        var relation2 = archetype.archetype().getRelation(relationship, target2);
+                        var relation1 = Relation.create(relationship, target1);
+                        var relation2 = Relation.create(relationship, target2);
 
                         var entityId = createEntity(archetype, relation1, relation2);
                         verifyHasComponents(entityId, type);

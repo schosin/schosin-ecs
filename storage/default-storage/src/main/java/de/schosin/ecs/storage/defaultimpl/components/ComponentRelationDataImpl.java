@@ -7,6 +7,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.storage.api.StorageWorld;
@@ -16,12 +17,11 @@ import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
 public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T> type, Bag<ComponentRelationResultImpl<R, T>> components,
-        Pool<ComponentRelationResultImpl<R, T>> resultPool, Pool<ComponentRelationImpl<R, T>> pool) implements ComponentRelationData<R, T> {
+        Pool<ComponentRelationResultImpl<R, T>> resultPool) implements ComponentRelationData<R, T> {
 
     public ComponentRelationDataImpl(int id, ComponentRelationType<R, T> type, StorageWorld world) {
         this(id, type, world.createEntityBag(ComponentRelationResult.class),
-                Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new),
-                Pool.unbounded(ComponentRelationImpl.class, ComponentRelationImpl::new));
+                Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new));
     }
 
     @Override
@@ -51,7 +51,7 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
 
     @Override
     public void addRelation(int entityId, R relationship, T target) {
-        addComponentUnsafe(entityId, pool.getInstance().init(relationship, target));
+        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override
@@ -85,18 +85,11 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
             for (int i = 0, s = component.size(); i < s; i++) {
                 var relation = component.get(i);
 
-                if (relation instanceof ComponentRelationImpl<R, T> impl) {
-                    this.pool.free(impl);
-                }
+                Relation.free(relation);
             }
 
             this.resultPool.free(component);
         }
-    }
-
-    @Override
-    public ComponentRelation<R, T> getInstance(R relationship, T target) {
-        return pool.getInstance().init(relationship, target);
     }
 
     @Override
@@ -114,53 +107,6 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
         StringBuilder builder = new StringBuilder();
         builder.append("ComponentRelationDataImpl [id=").append(this.id).append(", type=").append(this.type).append("]");
         return builder.toString();
-    }
-
-}
-
-class ComponentRelationImpl<R, T> implements ComponentRelation<R, T> {
-
-    private R relationship;
-    private T target;
-
-    ComponentRelationImpl<R, T> init(R relationship, T target) {
-        this.relationship = relationship;
-        this.target = target;
-
-        return this;
-    }
-
-    @Override
-    public R relationship() {
-        return relationship;
-    }
-
-    @Override
-    public T target() {
-        return target;
-    }
-
-    @Override
-    public void reset() {
-        this.relationship = null;
-        this.target = null;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("ComponentRelationImpl [relationship=").append(this.relationship).append(", target=").append(this.target).append("]");
-        return builder.toString();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(relationship, target);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof ComponentRelation<?, ?> other && Objects.equals(this.relationship, other.relationship()) && Objects.equals(this.target, other.target());
     }
 
 }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
@@ -1097,7 +1098,6 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testAddRelation_WhenNotProcessed() {
             var type = relation(C1.class, C2.class);
-            var mapper = world.getComponentRelations(type);
             var add = world.createTransmuter(Transmuter.add(type));
 
             var entityId = world.createEntity();
@@ -1105,7 +1105,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, type);
 
             // Call
-            add.apply(entityId, mapper.getInstance(new C1(), new C2()));
+            add.apply(entityId, Relation.create(new C1(), new C2()));
 
             // Verify
             verifyHasComponents(entityId, type);
@@ -1123,7 +1123,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, type);
 
             // Call
-            add.apply(entityId, mapper.getInstance(new C1(), new C2()));
+            add.apply(entityId, Relation.create(new C1(), new C2()));
 
             world.process();
 
@@ -1137,10 +1137,9 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testRemoveRelation_WhenNotProcessed() {
             var type = relation(C1.class, C2.class);
-            var mapper = world.getComponentRelations(type);
             var remove = world.createTransmuter(Transmuter.remove(type));
 
-            var entityId = world.createEntity(mapper.getInstance(new C1(), new C2()));
+            var entityId = world.createEntity(Relation.create(new C1(), new C2()));
             verifyHasComponents(entityId, type);
             verifyComponentMaskHasComponents(entityId, type);
 
@@ -1155,10 +1154,9 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testRemoveRelation_WhenProcessed_Removes() {
             var type = relation(C1.class, C2.class);
-            var mapper = world.getComponentRelations(type);
             var remove = world.createTransmuter(Transmuter.remove(type));
 
-            var entityId = world.createEntity(mapper.getInstance(new C1(), new C2()));
+            var entityId = world.createEntity(Relation.create(new C1(), new C2()));
             verifyHasComponents(entityId, type);
             verifyComponentMaskHasComponents(entityId, type);
 
@@ -1178,8 +1176,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             var mapper = world.getComponentRelations(type);
             var remove = world.createTransmuter(Transmuter.remove(type));
 
-            var relation1 = mapper.getInstance(new C1(), new Target(1));
-            var relation2 = mapper.getInstance(new C1(), new Target(2));
+            var relation1 = Relation.create(new C1(), new Target(1));
+            var relation2 = Relation.create(new C1(), new Target(2));
 
             var entityId = world.createEntity(relation1, relation2);
             assertThat(mapper.get(entityId)).hasSize(2);
@@ -1207,7 +1205,6 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testAddRelation_WhenNotProcessed() {
             var type = relation(C1.class);
-            var mapper = world.getEntityRelations(type);
             var add = world.createTransmuter(Transmuter.add(type));
 
             var target = world.createEntity();
@@ -1217,7 +1214,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, type);
 
             // Call
-            add.apply(entityId, mapper.getInstance(new C1(), target));
+            add.apply(entityId, Relation.create(new C1(), target));
 
             // Verify
             verifyHasComponents(entityId, type);
@@ -1237,7 +1234,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, type);
 
             // Call
-            add.apply(entityId, mapper.getInstance(new C1(), target));
+            add.apply(entityId, Relation.create(new C1(), target));
 
             world.process();
 
@@ -1251,12 +1248,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testRemoveRelation_WhenNotProcessed() {
             var type = relation(C1.class);
-            var mapper = world.getEntityRelations(type);
             var remove = world.createTransmuter(Transmuter.remove(type));
 
             var target = world.createEntity();
 
-            var entityId = world.createEntity(mapper.getInstance(new C1(), target));
+            var entityId = world.createEntity(Relation.create(new C1(), target));
             verifyHasComponents(entityId, type);
             verifyComponentMaskHasComponents(entityId, type);
 
@@ -1271,12 +1267,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testRemoveRelation_WhenProcessed_Removes() {
             var type = relation(C1.class);
-            var mapper = world.getEntityRelations(type);
             var remove = world.createTransmuter(Transmuter.remove(type));
 
             var target = world.createEntity();
 
-            var entityId = world.createEntity(mapper.getInstance(new C1(), target));
+            var entityId = world.createEntity(Relation.create(new C1(), target));
             verifyHasComponents(entityId, type);
             verifyComponentMaskHasComponents(entityId, type);
 
@@ -1299,8 +1294,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             var target1 = world.createEntity();
             var target2 = world.createEntity();
 
-            var relation1 = mapper.getInstance(new C1(), target1);
-            var relation2 = mapper.getInstance(new C1(), target2);
+            var relation1 = Relation.create(new C1(), target1);
+            var relation2 = Relation.create(new C1(), target2);
 
             var entityId = world.createEntity(relation1, relation2);
             assertThat(mapper.get(entityId)).hasSize(2);

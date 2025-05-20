@@ -63,7 +63,7 @@ public sealed interface Component<T, R> {
 
     }
 
-    sealed interface RelationComponent<R, T extends Relation, X> extends Component<T, X> {
+    sealed interface RelationComponent<R, T extends Relation<R>, X> extends Component<T, X> {
 
         @Override
         RelationComponentType<R, T, X> type();
@@ -88,19 +88,6 @@ public sealed interface Component<T, R> {
          * @param target target component
          */
         void addRelation(int entityId, R relationship, T target);
-
-        /**
-         * Returns a pooled instance of the component relation, initialized with
-         * the passed components. The implementation should
-         * reuse instances when a component is removed from an entity, either via
-         * {@link Component#removeComponent(int)}, {@link Component#applyRemoval(int)},
-         * or {@link Component#applyRemovals()}.
-         * 
-         * @param relationship relationship component of the relation
-         * @param target target component of the relation
-         * @return instance
-         */
-        ComponentRelation<R, T> getInstance(R relationship, T target);
 
     }
 
@@ -132,7 +119,7 @@ public sealed interface Component<T, R> {
          * @param target target entity
          */
         void addRelation(int entityId, R relationship, int target);
-        
+
         /**
          * Removes all relations that contain the target. 
          * 
@@ -145,19 +132,6 @@ public sealed interface Component<T, R> {
          * @param affectedEntities nullable bag for affected entities
          */
         void removeTarget(int target, IntBag affectedEntities);
-
-        /**
-         * Returns a pooled instance of the entity relation, initialized with
-         * the passed components. The implementation should
-         * reuse instances when a component is removed from an entity, either via
-         * {@link Component#removeComponent(int)}, {@link Component#applyRemoval(int)},
-         * or {@link Component#applyRemovals()}.
-         * 
-         * @param relationship relationship component of the relation
-         * @param target target entity of the relation
-         * @return instance
-         */
-        EntityRelation<R> getInstance(R relationship, int target);
 
     }
 

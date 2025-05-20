@@ -7,6 +7,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.storage.api.StorageWorld;
@@ -17,12 +18,11 @@ import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<EntityRelationResultImpl<R>> components, Bag<IntBag> targetLookup,
-        Pool<EntityRelationResultImpl<R>> resultPool, Pool<EntityRelationImpl<R>> pool) implements EntityRelationData<R> {
+        Pool<EntityRelationResultImpl<R>> resultPool) implements EntityRelationData<R> {
 
     public EntityRelationDataImpl(int id, EntityRelationType<R> type, StorageWorld world) {
         this(id, type, world.createEntityBag(EntityRelationResult.class), world.createEntityBag(IntBag.class),
-                Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new),
-                Pool.unbounded(EntityRelationImpl.class, EntityRelationImpl::new));
+                Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new));
     }
 
     @Override
@@ -47,7 +47,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
 
     @Override
     public void addRelation(int entityId, R relationship, int target) {
-        addComponentUnsafe(entityId, pool.getInstance().init(relationship, target));
+        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override
@@ -107,9 +107,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
                     entities.removeValue(entityId);
                 }
 
-                if (relation instanceof EntityRelationImpl<R> impl) {
-                    this.pool.free(impl);
-                }
+                Relation.free(relation);
             }
 
             this.resultPool.free(component);
@@ -148,11 +146,6 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
     }
 
     @Override
-    public EntityRelation<R> getInstance(R relationship, int target) {
-        return pool.getInstance().init(relationship, target);
-    }
-
-    @Override
     public int hashCode() {
         return id;
     }
@@ -167,53 +160,6 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
         StringBuilder builder = new StringBuilder();
         builder.append("ExclusiveEntityRelationDataImpl [id=").append(this.id).append(", type=").append(this.type).append("]");
         return builder.toString();
-    }
-
-}
-
-class EntityRelationImpl<R> implements EntityRelation<R> {
-
-    private R relationship;
-    private int target = -1;
-
-    EntityRelationImpl<R> init(R relationship, int target) {
-        this.relationship = relationship;
-        this.target = target;
-
-        return this;
-    }
-
-    @Override
-    public R relationship() {
-        return relationship;
-    }
-
-    @Override
-    public int target() {
-        return target;
-    }
-
-    @Override
-    public void reset() {
-        this.relationship = null;
-        this.target = -1;
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("EntityRelationImpl [relationship=").append(this.relationship).append(", target=").append(this.target).append("]");
-        return builder.toString();
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(relationship, target);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof EntityRelation<?> other && Objects.equals(this.relationship, other.relationship()) && this.target == other.target();
     }
 
 }

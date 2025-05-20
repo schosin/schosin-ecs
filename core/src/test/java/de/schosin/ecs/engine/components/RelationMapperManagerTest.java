@@ -53,12 +53,6 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             ((ComponentRelationMapper) mapper).add(entityId, relationship, target);
         }
 
-        @Override
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        protected <RR, T> ComponentRelation<RR, T> getInstance(Components<ComponentRelation<RR, T>, ?> mapper, RR relationship, T target) {
-            return ((ComponentRelationMapper) mapper).getInstance(relationship, target);
-        }
-
         @Test
         void testMultipleRelations() {
             var entityId = world.createEntity();
@@ -79,7 +73,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGet() {
-            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, Player.PLAYER), mapper1.getInstance(Hates.DESPISES, Player.PLAYER2));
+            var entityId = world.createEntity(relation(Hates.HATES, Player.PLAYER), relation(Hates.DESPISES, Player.PLAYER2));
 
             var relations = mapper1.get(entityId);
             assertThat(relations)
@@ -91,7 +85,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGetRelationship() {
-            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, Player.PLAYER), mapper1.getInstance(Hates.DESPISES, Player.PLAYER2));
+            var entityId = world.createEntity(relation(Hates.HATES, Player.PLAYER), relation(Hates.DESPISES, Player.PLAYER2));
 
             assertThat(mapper1.getRelationship(entityId, Player.PLAYER)).isSameAs(Hates.HATES);
             assertThat(mapper1.getRelationship(entityId, Player.PLAYER2)).isSameAs(Hates.DESPISES);
@@ -133,15 +127,9 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             ((ExclusiveComponentRelationMapper) mapper).add(entityId, (Exclusive) relationship, target);
         }
 
-        @Override
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        protected <RR, T> ComponentRelation<RR, T> getInstance(Components<ComponentRelation<RR, T>, ?> mapper, RR relationship, T target) {
-            return ((ExclusiveComponentRelationMapper) mapper).getInstance((Exclusive) relationship, target);
-        }
-
         @Test
         void testGet() {
-            var entityId = world.createEntity(mapper1.getInstance(relationship1, Player.PLAYER), mapper1.getInstance(relationship1, Player.PLAYER2));
+            var entityId = world.createEntity(relation(relationship1, Player.PLAYER), relation(relationship1, Player.PLAYER2));
 
             var relation = mapper1.get(entityId);
             assertThat(relation)
@@ -151,8 +139,8 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGet_WhenMultiple_KeepsLast() {
-            var entity1 = world.createEntity(mapper1.getInstance(relationship1, Player.PLAYER), mapper1.getInstance(relationship1, Player.PLAYER2));
-            var entity2 = world.createEntity(mapper1.getInstance(relationship1, Player.PLAYER2), mapper1.getInstance(relationship1, Player.PLAYER));
+            var entity1 = world.createEntity(relation(relationship1, Player.PLAYER), relation(relationship1, Player.PLAYER2));
+            var entity2 = world.createEntity(relation(relationship1, Player.PLAYER2), relation(relationship1, Player.PLAYER));
 
             assertThat(mapper1.get(entity1))
                     .extracting("relationship", "target")
@@ -165,7 +153,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGetRelationshipTarget() {
-            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, Player.PLAYER), mapper1.getInstance(Loves.ADORES, Player.PLAYER2));
+            var entityId = world.createEntity(relation(Loves.LOVES, Player.PLAYER), relation(Loves.ADORES, Player.PLAYER2));
 
             assertThat(mapper1.getRelationship(entityId)).isSameAs(Loves.ADORES);
             assertThat(mapper1.getTarget(entityId)).isSameAs(Player.PLAYER2);
@@ -181,7 +169,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testExclusiveTrait_OverridesExistingRelation() {
-            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, Faction.Player.PLAYER));
+            var entityId = world.createEntity(relation(Loves.LOVES, Faction.Player.PLAYER));
 
             verify(verify -> {
                 verify.expectUpdated(entityId, type2);
@@ -254,16 +242,14 @@ class RelationMapperManagerTest extends AbstractWorldTest {
         protected abstract <RR, T> void add(Components<ComponentRelation<RR, T>, ?> mapper, int entityId, RR relationship, T target);
 
         @Override
-        protected ComponentRelation<R, T1> getInstance1(M1 mapper, R relationship) {
-            return getInstance(mapper, relationship, target1);
+        protected ComponentRelation<R, T1> getInstance1(R relationship) {
+            return Relation.create(relationship, target1);
         }
 
         @Override
-        protected ComponentRelation<R, T2> getInstance2(M2 mapper, R relationship) {
-            return getInstance(mapper, relationship, target2);
+        protected ComponentRelation<R, T2> getInstance2(R relationship) {
+            return Relation.create(relationship, target2);
         }
-
-        protected abstract <RR, T> ComponentRelation<RR, T> getInstance(Components<ComponentRelation<RR, T>, ?> mapper, RR relationship, T target);
 
     }
 
@@ -290,12 +276,6 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             ((EntityRelationMapper) mapper).add(entityId, relationship, target);
         }
 
-        @Override
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        protected <RR> EntityRelation<RR> getInstance(Components<EntityRelation<RR>, ?> mapper, RR relationship, int target) {
-            return ((EntityRelationMapper) mapper).getInstance(relationship, target);
-        }
-
         @Test
         void testMultipleRelations() {
             var entityId = world.createEntity();
@@ -316,7 +296,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGet() {
-            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+            var entityId = world.createEntity(relation(Hates.HATES, target1), relation(Hates.DESPISES, target2));
 
             var relations = mapper1.get(entityId);
             assertThat(relations)
@@ -329,7 +309,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
         @Test
         void testGetRelationship() {
             var target3 = world.createEntity();
-            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+            var entityId = world.createEntity(relation(Hates.HATES, target1), relation(Hates.DESPISES, target2));
 
             assertThat(mapper1.getRelationship(entityId, target1)).isSameAs(Hates.HATES);
             assertThat(mapper1.getRelationship(entityId, target2)).isSameAs(Hates.DESPISES);
@@ -346,7 +326,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testRelationsRemoved_IfTargetDeleted() {
-            var entityId = world.createEntity(mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+            var entityId = world.createEntity(relation(Hates.HATES, target1), relation(Hates.DESPISES, target2));
 
             // Delete target1
             world.deleteEntity(target1);
@@ -373,7 +353,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testComponentMaskUpdated_IfRelationRemovedByDeletedTarget() {
-            var entityId = world.createEntity(new RegularComponent(), mapper1.getInstance(Hates.HATES, target1), mapper1.getInstance(Hates.DESPISES, target2));
+            var entityId = world.createEntity(new RegularComponent(), relation(Hates.HATES, target1), relation(Hates.DESPISES, target2));
 
             verify(verify -> {
                 verify.expectNoMoreUpdated();
@@ -427,15 +407,9 @@ class RelationMapperManagerTest extends AbstractWorldTest {
             ((ExclusiveEntityRelationMapper) mapper).add(entityId, relationship, target);
         }
 
-        @Override
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        protected <RR> EntityRelation<RR> getInstance(Components<EntityRelation<RR>, ?> mapper, RR relationship, int target) {
-            return ((ExclusiveEntityRelationMapper) mapper).getInstance(relationship, target);
-        }
-
         @Test
         void testGet() {
-            var entityId = world.createEntity(mapper1.getInstance(relationship1, target1), mapper1.getInstance(relationship1, target2));
+            var entityId = world.createEntity(relation(relationship1, target1), relation(relationship1, target2));
 
             var relation = mapper1.get(entityId);
             assertThat(relation)
@@ -445,8 +419,8 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGet_WhenMultiple_KeepsLast() {
-            var entity1 = world.createEntity(mapper1.getInstance(relationship1, target1), mapper1.getInstance(relationship1, target2));
-            var entity2 = world.createEntity(mapper1.getInstance(relationship1, target2), mapper1.getInstance(relationship1, target1));
+            var entity1 = world.createEntity(relation(relationship1, target1), relation(relationship1, target2));
+            var entity2 = world.createEntity(relation(relationship1, target2), relation(relationship1, target1));
 
             assertThat(mapper1.get(entity1))
                     .extracting("relationship", "target")
@@ -459,7 +433,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testGetRelationshipTarget() {
-            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, target1), mapper1.getInstance(Loves.ADORES, target2));
+            var entityId = world.createEntity(relation(Loves.LOVES, target1), relation(Loves.ADORES, target2));
 
             assertThat(mapper1.getRelationship(entityId)).isSameAs(Loves.ADORES);
             assertThat(mapper1.getTarget(entityId)).isSameAs(target2);
@@ -475,7 +449,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testExclusiveTrait_OverridesExistingRelation() {
-            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, target1));
+            var entityId = world.createEntity(relation(Loves.LOVES, target1));
 
             verify(verify -> {
                 verify.expectNoMoreUpdated();
@@ -511,7 +485,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testRelationsRemoved_IfTargetDeleted() {
-            var entityId = world.createEntity(mapper1.getInstance(Loves.LOVES, target1));
+            var entityId = world.createEntity(relation(Loves.LOVES, target1));
 
             // Delete target1
             world.deleteEntity(target1);
@@ -524,7 +498,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testComponentMaskUpdated_IfRelationRemovedByDeletedTarget() {
-            var entityId = world.createEntity(new RegularComponent(), mapper1.getInstance(Loves.LOVES, target1));
+            var entityId = world.createEntity(new RegularComponent(), relation(Loves.LOVES, target1));
 
             verify(verify -> {
                 verify.expectNoMoreUpdated();
@@ -577,16 +551,14 @@ class RelationMapperManagerTest extends AbstractWorldTest {
         protected abstract <RR> void add(Components<EntityRelation<RR>, ?> mapper, int entityId, RR relationship, int target);
 
         @Override
-        protected EntityRelation<R1> getInstance1(M1 mapper, R1 relationship) {
-            return getInstance(mapper, relationship, target1);
+        protected EntityRelation<R1> getInstance1(R1 relationship) {
+            return Relation.create(relationship, target1);
         }
 
         @Override
-        protected EntityRelation<R2> getInstance2(M2 mapper, R2 relationship) {
-            return getInstance(mapper, relationship, target2);
+        protected EntityRelation<R2> getInstance2(R2 relationship) {
+            return Relation.create(relationship, target2);
         }
-
-        protected abstract <RR> EntityRelation<RR> getInstance(Components<EntityRelation<RR>, ?> mapper, RR relationship, int target);
 
     }
 
@@ -629,9 +601,9 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         protected abstract void add2(M2 mapper, int entityId, R2 relationship);
 
-        protected abstract X1 getInstance1(M1 mapper, R1 relationship);
+        protected abstract X1 getInstance1(R1 relationship);
 
-        protected abstract X2 getInstance2(M2 mapper, R2 relationship);
+        protected abstract X2 getInstance2(R2 relationship);
 
         @Test
         void testCaching() {
@@ -703,7 +675,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testAddRelationship_WhenAlreadyPresent_DoesNotTriggerUpdate() {
-            var entityId = world.createEntity(getInstance1(mapper1, relationship1));
+            var entityId = world.createEntity(getInstance1(relationship1));
 
             var updated = new ArrayList<Integer>();
             eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
@@ -718,7 +690,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testRemoveRelationship_TriggersUpdate() {
-            var entityId = world.createEntity(getInstance1(mapper1, relationship1));
+            var entityId = world.createEntity(getInstance1(relationship1));
 
             var updated = new ArrayList<Integer>();
             eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
@@ -763,7 +735,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testHasComponentRelation_WhenEntityCreatedWithRelation() {
-            var relation = getInstance1(mapper1, relationship1);
+            var relation = getInstance1(relationship1);
 
             verify(verify -> {
                 verify.expectInserted(type1);

@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Nested;
@@ -18,11 +17,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
-import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.junit5.SealedSubclassesSource;
 import de.schosin.ecs.utils.junit5.SealedSubclassesSource.Mode;
@@ -33,32 +31,17 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
 
         regularComponent(component(RegularComponent.class), RegularComponent::new),
         pooledComponent(component(PooledComponent.class), PooledComponent::new),
-        componentRelation(relation(RelationshipComponent.class, TargetComponent.class), getRelation(new RelationshipComponent(), new TargetComponent(1))),
-        exclusiveComponentRelation(exclusiveRelation(ExclusiveRelationshipComponent.class, TargetComponent.class), getRelation(new ExclusiveRelationshipComponent(), new TargetComponent(1))),
-        entityRelation(relation(RelationshipComponent.class), getRelation(new RelationshipComponent(), 1)),
-        exclusiveEntityRelation(exclusiveRelation(ExclusiveRelationshipComponent.class), getRelation(new ExclusiveRelationshipComponent(), 1));
+        componentRelation(relation(RelationshipComponent.class, TargetComponent.class), () -> Relation.create(new RelationshipComponent(), new TargetComponent(1))),
+        exclusiveComponentRelation(exclusiveRelation(ExclusiveRelationshipComponent.class, TargetComponent.class), () -> Relation.create(new ExclusiveRelationshipComponent(), new TargetComponent(1))),
+        entityRelation(relation(RelationshipComponent.class), () -> Relation.create(new RelationshipComponent(), 1)),
+        exclusiveEntityRelation(exclusiveRelation(ExclusiveRelationshipComponent.class), () -> Relation.create(new ExclusiveRelationshipComponent(), 1));
 
         private final RegularComponentType<?, ?> type;
-        private final Function<Component<?, ?>, Object> instance;
+        private final Supplier<Object> instance;
 
         private TestCases(RegularComponentType<?, ?> type, Supplier<Object> instance) {
-            this(type, components -> instance.get());
-
-        }
-
-        private TestCases(RegularComponentType<?, ?> type, Function<Component<?, ?>, Object> instance) {
             this.type = type;
             this.instance = instance;
-        }
-
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        private static Function<Component<?, ?>, Object> getRelation(Object relationship, Object target) {
-            return component -> ((ComponentRelationComponent) component).getInstance(relationship, target);
-        }
-
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        private static Function<Component<?, ?>, Object> getRelation(Object relationship, int target) {
-            return component -> ((EntityRelationComponent) component).getInstance(relationship, target);
         }
 
     }
@@ -82,9 +65,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         @ParameterizedTest
         @EnumSource(TestCases.class)
         void testGetById(TestCases test) {
-            var component = componentManager.getComponent(test.type);
-
-            var entityId = world.createEntity(test.instance.apply(component));
+            var entityId = world.createEntity(test.instance.get());
             var componentMask = entityManager.getComponentMask(entityId);
 
             assertThat(componentMaskManager.getComponentMask(componentMask.getId())).isSameAs(componentMask);
@@ -139,7 +120,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         @EnumSource(TestCases.class)
         void testSingleComponentInstance(TestCases test) {
             var component = componentManager.getComponent(test.type);
-            var instance = test.instance.apply(component);
+            var instance = test.instance.get();
 
             var componentMask = componentMaskManager.getComponentMask(instance);
 
@@ -157,8 +138,8 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
             for (int i = 0, s = testCases.length; i < s; i++) {
                 var test = testCases[i];
 
-                var component = components[i] = componentManager.getComponent(test.type);
-                instances[i] = test.instance.apply(component);
+                components[i] = componentManager.getComponent(test.type);
+                instances[i] = test.instance.get();
             }
 
             var componentMask = componentMaskManager.getComponentMask(instances);
@@ -181,8 +162,8 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
             var component = componentManager.getComponent(relation(RelationshipComponent.class, TargetComponent.class));
 
             var relationship = new RelationshipComponent();
-            var relation1 = component.getInstance(relationship, new TargetComponent(1));
-            var relation2 = component.getInstance(relationship, new TargetComponent(2));
+            var relation1 = Relation.create(relationship, new TargetComponent(1));
+            var relation2 = Relation.create(relationship, new TargetComponent(2));
 
             var componentMask = componentMaskManager.getComponentMask(relation1, relation2);
 
@@ -268,7 +249,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         void testEntityWithComponent_DoesNotAlterComponentMask(TestCases test) {
             var component = componentManager.getComponent(test.type);
 
-            var entityId = world.createEntity(test.instance.apply(component));
+            var entityId = world.createEntity(test.instance.get());
             var componentMask = entityManager.getComponentMask(entityId);
 
             var newComponentMask = componentMaskManager.addComponent(componentMask, component);
@@ -309,7 +290,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         void testEntityWithComponent(TestCases test) {
             var component = componentManager.getComponent(test.type);
 
-            var entityId = world.createEntity(test.instance.apply(component));
+            var entityId = world.createEntity(test.instance.get());
             var componentMask = entityManager.getComponentMask(entityId);
 
             var newComponentMask = componentMaskManager.removeComponent(componentMask, component);
@@ -323,7 +304,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
         void testEntityWithComponentAndOtherComponent(TestCases test) {
             var component = componentManager.getComponent(test.type);
 
-            var entityId = world.createEntity(new OtherComponent(), test.instance.apply(component));
+            var entityId = world.createEntity(new OtherComponent(), test.instance.get());
             var componentMask = entityManager.getComponentMask(entityId);
 
             var newComponentMask = componentMaskManager.removeComponent(componentMask, component);
@@ -345,7 +326,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
                 var component = componentManager.getComponent(test.type);
                 components.add(component);
 
-                world.createEntity(test.instance.apply(component));
+                world.createEntity(test.instance.get());
             }
 
             var bag = new Bag<>(ComponentMask.class);
@@ -367,7 +348,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
                 var component = componentManager.getComponent(test.type);
                 components.add(component);
 
-                world.createEntity(test.instance.apply(component));
+                world.createEntity(test.instance.get());
             }
 
             var bag = new Bag<>(ComponentMask.class);

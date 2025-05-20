@@ -14,6 +14,7 @@ import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
@@ -228,15 +229,10 @@ public class RelationMapperManager {
 
         @Override
         public ComponentRelation<R, T> add(int entityId, R relationship, T target) {
-            var relation = this.data.getInstance(relationship, target);
+            var relation = Relation.create(relationship, target);
             this.add.apply(entityId, relation);
 
             return relation;
-        }
-
-        @Override
-        public ComponentRelation<R, T> getInstance(R relationship, T target) {
-            return data.getInstance(relationship, target);
         }
 
     }
@@ -295,7 +291,7 @@ public class RelationMapperManager {
                 }
             }
 
-            var relation = this.data.getInstance(relationship, target);
+            var relation = Relation.create(relationship, target);
             this.add.apply(entityId, relation);
 
             return relation;
@@ -319,11 +315,6 @@ public class RelationMapperManager {
             }
 
             return relation.target();
-        }
-
-        @Override
-        public ComponentRelation<R, T> getInstance(R relationship, T target) {
-            return data.getInstance(relationship, target);
         }
 
     }
@@ -368,7 +359,7 @@ public class RelationMapperManager {
 
         @Override
         public EntityRelation<R> add(int entityId, R relationship, int target) {
-            var relation = data.getInstance(relationship, target);
+            var relation = Relation.create(relationship, target);
             this.add.apply(entityId, relation);
 
             return relation;
@@ -384,11 +375,6 @@ public class RelationMapperManager {
             return relation.getRelationship(target);
         }
 
-        @Override
-        public EntityRelation<R> getInstance(R relationship, int target) {
-            return data.getInstance(relationship, target);
-        }
-
     }
 
     private class ExclusiveEntityRelationMapperImpl<R extends Exclusive> extends AbstractEntityRelationMapper<R, EntityRelation<R>, ExclusiveEntityRelationData<R>>
@@ -400,7 +386,7 @@ public class RelationMapperManager {
 
         @Override
         public EntityRelation<R> add(int entityId, R relationship, int target) {
-            var relation = data.getInstance(relationship, target);
+            var relation = Relation.create(relationship, target);
             this.add.apply(entityId, relation);
 
             return relation;
@@ -424,11 +410,6 @@ public class RelationMapperManager {
             }
 
             return relation.target();
-        }
-
-        @Override
-        public EntityRelation<R> getInstance(R relationship, int target) {
-            return data.getInstance(relationship, target);
         }
 
     }
