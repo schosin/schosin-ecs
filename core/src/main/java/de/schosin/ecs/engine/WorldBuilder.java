@@ -19,7 +19,6 @@ import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
 import de.schosin.ecs.engine.utils.exceptions.EcsWorldCreationException;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
-
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.ByteCodeElement;
 import net.bytebuddy.implementation.MethodDelegation;
@@ -87,13 +86,15 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
         var storageEngine = this.storageEngine != null ? StorageEngine.load(this.storageEngine) : StorageEngine.load();
         var world = new EngineWorld(this, storageEngine);
 
+        // Associate world to storage engine
+        storageEngine.setWorld(world);
+
         if (World.class.equals(clazz)) {
-            storageEngine.setWorld(world);
             return (T) world;
         }
 
         var dynamicWorld = DynamicWorldBuilder.createDynamicWorld(world, clazz);
-        storageEngine.setWorld((StorageWorld) dynamicWorld);
+        storageEngine.setProxiedWorld((StorageWorld) dynamicWorld);
 
         return dynamicWorld;
     }

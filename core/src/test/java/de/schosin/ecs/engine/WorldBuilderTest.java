@@ -1,5 +1,6 @@
 package de.schosin.ecs.engine;
 
+import static de.schosin.ecs.api.components.ComponentType.component;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -8,12 +9,16 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Plugin;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.Components.ComponentMapper;
 import de.schosin.ecs.engine.WorldBuilderTest.MyPluginTest.MyPlugin;
 import de.schosin.ecs.engine.WorldBuilderTest.MyPluginTest.MyPluginImpl;
 import de.schosin.ecs.engine.WorldBuilderTest.SimplePluginTest.SimplePlugin;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
 import de.schosin.ecs.engine.utils.exceptions.EcsWorldCreationException;
+import de.schosin.ecs.storage.api.StorageWorld;
+import de.schosin.ecs.storage.api.components.Component.ClassComponent;
+import de.schosin.ecs.storage.defaultimpl.DefaultStorageEngine;
 import de.schosin.ecs.utils.ReflectionUtils;
 
 public class WorldBuilderTest {
@@ -165,6 +170,89 @@ public class WorldBuilderTest {
             @Override
             public int getAnswer() {
                 return 42;
+            }
+        }
+
+    }
+
+    @Nested
+    static class ComponentAccessingPluginTest {
+
+        @Test
+        void testPluginAccessingStorageEngineInConstructor() {
+            var world = World.builder(ComponentAccessingWorld.class).build();
+
+            var pluginImpl = world.getSingleton(ComponentAccessingPluginImpl.class);
+
+            assertThat(pluginImpl.component).isNotNull();
+            assertThat(pluginImpl.mapper).isNotNull();
+        }
+
+        public interface ComponentAccessingWorld extends World, ComponentAccessingPlugin {
+        }
+
+        public interface ComponentAccessingPlugin {
+        }
+
+        public static class ComponentAccessingPluginImpl implements ComponentAccessingPlugin {
+
+            private final ClassComponent<PluginComponent> component;
+            private final ComponentMapper<PluginComponent> mapper;
+
+            public ComponentAccessingPluginImpl(World world) {
+                world.addSingleton(this);
+
+                var type = component(PluginComponent.class);
+
+                this.component = world.getSingleton(ComponentManager.class).getComponent(type);
+                this.mapper = world.getComponents(type);
+            }
+
+        }
+
+        private record PluginComponent() {
+        }
+
+    }
+
+    @Nested
+    static class CustomStorageEngineTest {
+
+        @Test
+        void testCustomStorageEngineAccessingPlugin() {
+            var world = World.builder(CustomWorld.class).storageEngine(CustomStorageEngine.class).build();
+
+            var plugin = world.getSingleton(CustomPluginImpl.class);
+            var engine = world.getSingleton(CustomStorageEngine.class);
+
+            assertThat(engine.plugin).isSameAs(plugin);
+        }
+
+        public interface CustomWorld extends World, CustomPlugin {
+        }
+
+        @Plugin(CustomPluginImpl.class)
+        public interface CustomPlugin {
+        }
+
+        public static class CustomPluginImpl implements CustomPlugin {
+            public CustomPluginImpl(World world) {
+                world.addSingleton(this);
+            }
+        }
+
+        public static class CustomStorageEngine extends DefaultStorageEngine {
+
+            private CustomPluginImpl plugin;
+
+            @Override
+            public void setWorld(StorageWorld world) {
+                world.addSingleton(this);
+            }
+
+            @Override
+            public void setProxiedWorld(StorageWorld world) {
+                this.plugin = world.getSingleton(CustomPluginImpl.class);
             }
         }
 

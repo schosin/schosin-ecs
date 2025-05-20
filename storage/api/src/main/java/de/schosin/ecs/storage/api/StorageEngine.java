@@ -1,15 +1,38 @@
 package de.schosin.ecs.storage.api;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.ServiceLoader;
+
+import de.schosin.ecs.api.Plugin;
+import de.schosin.ecs.api.World;
 
 public interface StorageEngine extends ComponentStorage {
 
     /**
-     * Sets the world this storage engine is used for.
+     * Sets the world this storage engine is used for. This will be an unproxied instance.
+     * 
+     * <p>
+     * Implementations must support access to all functionalities after this call. 
+     * </p>
      * 
      * @param world instance of world
      */
     default void setWorld(StorageWorld world) {
+    }
+
+    /**
+     * If the world uses {@link Plugin plugins}, this method is called once the proxied world
+     * has been fully instantiated. This will always be called after {@link #setWorld(StorageWorld)}.
+     * 
+     * <p>
+     * Implementations may support additional features for plugins which can be initialized in this
+     * callback. Access to plugins should be done either by casting the world to the plugin, or by
+     * {@link World#getSingleton(Class) accessing singletons}.
+     * </p>
+     * 
+     * @param world proxied instance of world
+     */
+    default void setProxiedWorld(StorageWorld world) {
     }
 
     static StorageEngine load() {
@@ -28,13 +51,14 @@ public interface StorageEngine extends ComponentStorage {
     }
 
     static StorageEngine load(Class<? extends StorageEngine> clazz) {
-        var provider = ServiceLoader.load(StorageEngine.class).stream()
-                .filter(p -> p.type() == clazz)
-                .findFirst()
-                .orElseThrow(() -> new StorageEngineException("Implementation '%s' of StorageEngine not found. Make sure the implementation is available via ServiceLoader."
-                        .formatted(clazz.getName())));
-
-        return provider.get();
+        try {
+            var constructor = clazz.getDeclaredConstructor();
+            return constructor.newInstance();
+        } catch (NoSuchMethodException | SecurityException ex) {
+            throw new StorageEngineException("Implementation '%s' of StorageEngine does not declare a public default constructor.".formatted(clazz.getName()), ex);
+        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+            throw new StorageEngineException("Failed to instantiate implementation '%s' of StorageEngine through its default constructor.".formatted(clazz.getName()), ex);
+        }
     }
 
 }
