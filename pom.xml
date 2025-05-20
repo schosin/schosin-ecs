@@ -16,6 +16,7 @@
         <module>plugins</module>
         <module>worlds</module>
         <module>benchmark</module>
+        <module>build-tools</module>
 	    <module>bom</module>
     </modules>
   
@@ -36,8 +37,11 @@
         <hibernate.validator.version>8.0.2.Final</hibernate.validator.version>
         <glassfish.expressly.version>5.0.0</glassfish.expressly.version>
         
+        <palantir.javapoet.version>0.7.0</palantir.javapoet.version>
         <bytebuddy.version>1.17.5</bytebuddy.version>
+        <aide.version>1.3</aide.version>
         <autoservice.version>1.1.1</autoservice.version>
+        <classgraph.version>4.8.179</classgraph.version>
         
         <junit.version>5.12.2</junit.version>
         <junit-pironeer.version>2.3.0</junit-pironeer.version>
@@ -84,6 +88,11 @@
               <artifactId>byte-buddy</artifactId>
               <version>${bytebuddy.version}</version>
             </dependency>
+            <dependency>
+              <groupId>tech.hiddenproject</groupId>
+              <artifactId>aide-reflection</artifactId>
+              <version>${aide.version}</version>
+            </dependency>
             
             <dependency>
                 <groupId>org.openjdk.jmh</groupId>
@@ -97,9 +106,19 @@
             </dependency>
         
             <dependency>
+                <groupId>com.palantir.javapoet</groupId>
+                <artifactId>javapoet</artifactId>
+                <version>${palantir.javapoet.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.google.auto.service</groupId>
                 <artifactId>auto-service</artifactId>
                 <version>${autoservice.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.classgraph</groupId>
+                <artifactId>classgraph</artifactId>
+                <version>${classgraph.version}</version>
             </dependency>
         
             <dependency>

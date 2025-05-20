@@ -9,6 +9,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
@@ -17,10 +18,17 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result;
+import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.ComponentResult;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
@@ -29,11 +37,17 @@ import de.schosin.ecs.plugins.composition.BaseComposition;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.Spec;
+import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.C1;
+import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.C1234;
+import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.ExclusiveRelationship;
+import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.MyComponentSet;
+import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.RelationshipComponent;
+import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.Target;
 import de.schosin.ecs.test.AbstractEcsTest;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
 
-class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
+public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
     private static final AtomicInteger MASK_ID = new AtomicInteger(0);
 
@@ -3785,6 +3799,45 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
     }
 
+    @Nested
+    class ComponentSetTest {
+
+        @Test
+        void testRetrieveComponentSet() {
+            var componentSet = ComponentType.componentSet(MyComponentSet.class);
+            var composition = world.createComposition(Composition.all(C1.class), componentSet);
+
+            var target1 = world.createEntity();
+            var target2 = world.createEntity();
+
+            var entityId = world.createEntity(new C1(),
+                    Relation.create(new ExclusiveRelationship(1), new Target(10)),
+                    Relation.create(new RelationshipComponent(2), new Target(20)),
+                    Relation.create(new RelationshipComponent(3), new Target(30)),
+                    Relation.create(new ExclusiveRelationship(4), target1),
+                    Relation.create(new RelationshipComponent(5), target1),
+                    Relation.create(new RelationshipComponent(6), target2),
+                    new C2(), new C3(), new C4());
+
+            var processed = new AtomicBoolean(false);
+            composition.process((id, components) -> {
+                assertThat(id).isEqualTo(entityId);
+
+                assertThat(components.c1()).isNotNull();
+                assertThat(components.componentRelation()).extracting("relationship.value", "target.value").contains(1, 10);
+                assertThat(components.componentRelations()).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(2, 20), tuple(3, 30));
+                assertThat(components.entityRelation()).extracting("relationship.value", "target").contains(4, target1);
+                assertThat(components.entityRelations()).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(5, target1), tuple(6, target2));
+                assertThat(components.c1234()).hasSize(4);
+
+                processed.set(true);
+            });
+
+            assertThat(processed.get()).isTrue();
+        }
+
+    }
+
     private void verifyHasComposition(int entityId, Composition.Builder builder) {
         var composition = world.createComposition(builder);
         assertThat(composition.isInterested(entityId)).isTrue();
@@ -3793,10 +3846,10 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     interface C1234 {
     }
 
-    private record C1() implements C1234 {
+    record C1() implements C1234 {
     }
 
-    private record C2() implements C1234 {
+    record C2() implements C1234 {
     }
 
     private record C3() implements C1234 {
@@ -3836,6 +3889,102 @@ class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     record Target2(int value) {
+    }
+
+    public interface MyComponentSet extends ComponentSet {
+
+        ComponentSetData<MyComponentSet> DATA = MyComponentSetImpl.DATA;
+
+        C1 c1();
+
+        ComponentRelation<ExclusiveRelationship, Target> componentRelation();
+
+        ComponentRelationResult<RelationshipComponent, Target> componentRelations();
+
+        EntityRelation<ExclusiveRelationship> entityRelation();
+
+        EntityRelationResult<RelationshipComponent> entityRelations();
+
+        ComponentResult<C1234> c1234();
+    }
+
+}
+
+class MyComponentSetImpl implements MyComponentSet {
+
+    static final ComponentSetData<MyComponentSet> DATA = ComponentSet.builder(MyComponentSetImpl::factory)
+            .add(new ComponentAccessor<>(MyComponentSet::c1) {})
+            .add(new ComponentAccessor<>(MyComponentSet::componentRelation) {})
+            .add(new ComponentAccessor<>(MyComponentSet::componentRelations) {})
+            .add(new ComponentAccessor<>(MyComponentSet::entityRelation) {})
+            .add(new ComponentAccessor<>(MyComponentSet::entityRelations) {})
+            .add(new ComponentAccessor<>(MyComponentSet::c1234) {})
+            .build();
+
+    private final int entityId;
+    private final C1 c1;
+    private final ComponentRelation<ExclusiveRelationship, Target> componentRelation;
+    private final ComponentRelationResult<RelationshipComponent, Target> componentRelations;
+    private final EntityRelation<ExclusiveRelationship> entityRelation;
+    private final EntityRelationResult<RelationshipComponent> entityRelations;
+    private final ComponentResult<C1234> c1234;
+
+    @SuppressWarnings("unchecked")
+    private static MyComponentSet factory(int entityId, Object[] components) {
+        return new MyComponentSetImpl(entityId,
+                (C1) components[0],
+                (ComponentRelation<ExclusiveRelationship, Target>) components[1],
+                (ComponentRelationResult<RelationshipComponent, Target>) components[2],
+                (EntityRelation<ExclusiveRelationship>) components[3],
+                (EntityRelationResult<RelationshipComponent>) components[4],
+                (ComponentResult<C1234>) components[5]);
+    }
+
+    MyComponentSetImpl(int entityId, C1 c1, ComponentRelation<ExclusiveRelationship, Target> componentRelation, ComponentRelationResult<RelationshipComponent, Target> componentRelations,
+            EntityRelation<ExclusiveRelationship> entityRelation, EntityRelationResult<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
+
+        this.entityId = entityId;
+        this.c1 = c1;
+        this.componentRelation = componentRelation;
+        this.componentRelations = componentRelations;
+        this.entityRelation = entityRelation;
+        this.entityRelations = entityRelations;
+        this.c1234 = c1234;
+    }
+
+    @Override
+    public int entityId() {
+        return entityId;
+    }
+
+    @Override
+    public C1 c1() {
+        return c1;
+    }
+
+    @Override
+    public ComponentRelation<ExclusiveRelationship, Target> componentRelation() {
+        return componentRelation;
+    }
+
+    @Override
+    public ComponentRelationResult<RelationshipComponent, Target> componentRelations() {
+        return componentRelations;
+    }
+
+    @Override
+    public EntityRelation<ExclusiveRelationship> entityRelation() {
+        return entityRelation;
+    }
+
+    @Override
+    public EntityRelationResult<RelationshipComponent> entityRelations() {
+        return entityRelations;
+    }
+
+    @Override
+    public ComponentResult<C1234> c1234() {
+        return c1234;
     }
 
 }

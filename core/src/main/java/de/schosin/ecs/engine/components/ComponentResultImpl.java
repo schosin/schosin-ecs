@@ -84,6 +84,7 @@ public class ComponentResultImpl<T> implements ComponentResult<T>, Pooled {
 
     @Override
     public Iterator<T> iterator() {
+        size();
         return iterator.get().init(this.components);
     }
 

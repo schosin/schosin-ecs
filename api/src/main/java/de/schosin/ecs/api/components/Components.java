@@ -1,5 +1,6 @@
 package de.schosin.ecs.api.components;
 
+import static de.schosin.ecs.api.components.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.ComponentType.relation;
 
@@ -9,6 +10,7 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
@@ -17,6 +19,7 @@ import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 
 /**
@@ -52,9 +55,9 @@ import de.schosin.ecs.api.components.Result.EntityRelationResult;
  * 
  * @param <T> component type
  */
-public interface Components<T, R> {
+public sealed interface Components<T, R> {
 
-    interface ComponentMapper<T> extends Components<T, T> {
+    non-sealed interface ComponentMapper<T> extends Components<T, T> {
 
         /**
          * Adds the component to the entity. Overwrites any existing component of the same class. 
@@ -146,7 +149,11 @@ public interface Components<T, R> {
 
     sealed interface ComponentRelations<R, T, X> extends Components<ComponentRelation<R, T>, X> {
 
-        ComponentRelation<R, T> add(int entityId, R relationship, T target);
+        default ComponentRelation<R, T> add(int entityId, R relationship, T target) {
+            return add(entityId, Relation.create(relationship, target));
+        }
+
+        ComponentRelation<R, T> add(int entityId, ComponentRelation<R, T> relation);
 
     }
 
@@ -166,7 +173,11 @@ public interface Components<T, R> {
 
     sealed interface EntityRelations<R, X> extends Components<EntityRelation<R>, X> {
 
-        EntityRelation<R> add(int entityId, R relationship, int target);
+        default EntityRelation<R> add(int entityId, R relationship, int target) {
+            return add(entityId, Relation.create(relationship, target));
+        }
+
+        EntityRelation<R> add(int entityId, EntityRelation<R> relation);
 
     }
 
@@ -185,6 +196,30 @@ public interface Components<T, R> {
          */
         int getTarget(int entityId);
 
+    }
+
+    non-sealed interface ComponentSetMapper<T extends ComponentSet> extends Components<T, T> {
+
+        /**
+         * Adds the components contained in the component set to the entity. 
+         * Overwrites any existing components of the same class. 
+         * 
+         * @param entityId id of entity
+         * @param components component set instance
+         */
+        void add(int entityId, @NonNull T components);
+
+        /**
+         * Returns true if the entity has all of the components defined by this set.
+         * 
+         * @param entityId id of entity
+         * @return true if entity has any component
+         */
+        boolean hasAll(int entityId);
+
+    }
+
+    non-sealed interface WildcardComponents<T> extends Components<T, ComponentResult<T>> {
     }
 
     /**
@@ -372,7 +407,7 @@ public interface Components<T, R> {
          * 
          * @param <R> type of relationship component
          * @param relation {@link ComponentRelationType} of the relation
-         * @return class to manage the relations defined by the relationship and target class
+         * @return class to manage the relations defined by the type
          */
         <R> EntityRelationMapper<R> getEntityRelations(EntityRelationType<R> relation);
 
@@ -394,9 +429,31 @@ public interface Components<T, R> {
          * 
          * @param <R> type of relationship component
          * @param relation {@link ExclusiveComponentRelationType} of the relation
-         * @return class to manage the relations defined by the relationship class
+         * @return class to manage the relations defined by the relationship type
          */
         <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation);
+
+        /**
+         * Retrieves the mapper for a {@link ComponentSet} class. This can be used to acces the component set
+         * and to add or remove the components of a set from entities.
+         *  
+         * @param <T> type of component set
+         * @param class of the set
+         * @return class to manage the component sets defined by the type
+         */
+        default <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(Class<T> type) {
+            return getComponentSets(componentSet(type));
+        }
+
+        /**
+         * Retrieves the mapper for a {@link ComponentSetType}. This can be used to acces the component set
+         * and to add or remove the components of a set from entities.
+         *  
+         * @param <T> type of component set
+         * @param type {@link ComponentSetType} of the set
+         * @return class to manage the component sets defined by the type
+         */
+        <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(ComponentSetType<T> type);
 
     }
 

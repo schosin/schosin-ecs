@@ -7,6 +7,7 @@ import org.jspecify.annotations.NullMarked;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
@@ -36,6 +37,7 @@ public class ComponentUtils {
 
         return switch (otherType) {
             case RegularComponentType<?, ?> otherRegular -> matches(type, otherRegular);
+            case ComponentSetType<?> otherSet -> type.equals(otherSet);
             case Wildcard<?> otherWildcard -> switch (type) {
                 case ClassType<?> classType -> classType.clazz().isAssignableFrom(otherWildcard.bound());
                 case Wildcard<?> wildcard -> wildcard.bound().isAssignableFrom(otherWildcard.bound());
@@ -64,6 +66,7 @@ public class ComponentUtils {
 
         return switch (type) {
             case RegularComponentType<?, ?> regular -> regular.equals(otherType);
+            case ComponentSetType<?> set -> false; 
             // No record pattern for Wildcard: https://github.com/eclipse-jdt/eclipse.jdt.core/issues/4002
             case Wildcard<?> wildcard -> switch (otherType) {
                 case ClassType<?> classType -> wildcard.bound().isAssignableFrom(classType.clazz());

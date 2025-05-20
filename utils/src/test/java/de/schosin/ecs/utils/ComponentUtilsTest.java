@@ -1,6 +1,7 @@
 package de.schosin.ecs.utils;
 
 import static de.schosin.ecs.api.components.ComponentType.component;
+import static de.schosin.ecs.api.components.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.ComponentType.relation;
 import static de.schosin.ecs.api.components.ComponentType.wildcard;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation;
@@ -38,6 +40,38 @@ class ComponentUtilsTest {
 
         protected boolean matches(ComponentType<?, ?> type, ComponentType<?, ?> otherType) {
             return ComponentUtils.matches(type, otherType);
+        }
+
+        @Nested
+        class ComponentSetTest {
+
+            @Test
+            void testComponentSetMatchesItself() {
+                var componentSet = ComponentType.componentSet(MyComponentSet.class);
+
+                assertThat(matches(componentSet, componentSet)).isTrue();
+                assertThat(matches(ComponentType.componentSet(MyComponentSet.class), componentSet)).isTrue();
+            }
+
+            @Test
+            void testComponentSetDoesNotMatchOtherComponentSet() {
+                var componentSet = ComponentType.componentSet(MyComponentSet.class);
+
+                assertThat(matches(ComponentType.componentSet(MyOtherComponentSet.class), componentSet)).isFalse();
+            }
+
+            @Test
+            void testComponentSetMatchesNoOtherTypes() {
+                var componentSet = ComponentType.componentSet(MyComponentSet.class);
+
+                assertThat(matches(component(C1.class), componentSet)).isFalse();
+                assertThat(matches(wildcard(C.class), componentSet)).isFalse();
+                assertThat(matches(relation(RelationshipComponent.class, TargetA.class), componentSet)).isFalse();
+                assertThat(matches(exclusiveRelation(ExclusiveComponent.class, TargetA.class), componentSet)).isFalse();
+                assertThat(matches(relation(RelationshipComponent.class), componentSet)).isFalse();
+                assertThat(matches(exclusiveRelation(ExclusiveComponent.class), componentSet)).isFalse();
+            }
+
         }
 
         @Nested
@@ -230,6 +264,22 @@ class ComponentUtilsTest {
             assertThat(matches(type, classType)).as("does not match class type").isFalse();
         }
 
+        @Test
+        void testComponentSefEquality() {
+            var type = componentSet(MyComponentSet.class);
+            var componentRelationType = relation(RelationshipComponent.class, TargetA.class);
+            var exclusiveComponentRelationType = exclusiveRelation(ExclusiveComponent.class, TargetA.class);
+            var entityRelationType = relation(RelationshipComponent.class);
+            var exclusiveEntityRelation = exclusiveRelation(OtherExclusiveComponent.class);
+            var classType = component(TargetA.class);
+
+            assertThat(matches(type, componentRelationType)).as("does not match component relation").isFalse();
+            assertThat(matches(type, exclusiveComponentRelationType)).as("does not match exclusive component relation").isFalse();
+            assertThat(matches(type, entityRelationType)).as("type does not match entity relation type").isFalse();
+            assertThat(matches(type, exclusiveEntityRelation)).as("type does not match exclusive entity relation type").isFalse();
+            assertThat(matches(type, classType)).as("does not match class type").isFalse();
+        }
+
         @Nested
         class CommonWildcardTest {
 
@@ -333,6 +383,16 @@ class ComponentUtilsTest {
     }
 
     record TargetB() {
+    }
+
+    interface MyComponentSet extends ComponentSet {
+        C1 c1();
+    }
+
+    interface MyOtherComponentSet extends ComponentSet {
+        C1 c1();
+
+        C2 c2();
     }
 
 }

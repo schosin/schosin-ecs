@@ -16,11 +16,10 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.Components;
-import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
-import de.schosin.ecs.engine.components.ComponentMapperManager.ResultComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
@@ -432,10 +431,8 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         @SuppressWarnings("unchecked")
         protected void free(int component, Object instance) {
-            if (instance instanceof Result<?> result) {
-                if (components[component] instanceof ResultComponents resultComponents) {
-                    resultComponents.free(result);
-                }
+            if (components[component] instanceof PoolingComponents resultComponents) {
+                resultComponents.free(instance);
             }
         }
 

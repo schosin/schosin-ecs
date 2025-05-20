@@ -74,6 +74,12 @@
                 <artifactId>default-storage</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>de.schosin.ecs.buildtools</groupId>
+                <artifactId>codegen</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             
             <dependency>
                 <groupId>de.schosin.ecs</groupId>
@@ -82,4 +88,5 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    
 </project>

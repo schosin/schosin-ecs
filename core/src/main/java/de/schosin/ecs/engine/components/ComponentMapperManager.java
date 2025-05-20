@@ -1,5 +1,6 @@
 package de.schosin.ecs.engine.components;
 
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,9 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
@@ -18,17 +22,22 @@ import de.schosin.ecs.api.components.ComponentType.Wildcard;
 import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
 import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.ComponentSetMapper;
 import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.EnumComponentMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.Components.WildcardComponents;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
+import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
+import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFactory;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
@@ -38,8 +47,12 @@ import de.schosin.ecs.utils.collections.Pool;
 
 public class ComponentMapperManager implements Components.Creator {
 
-    public interface ResultComponents<T> {
-        void free(Result<T> result);
+    public interface PoolingComponents<T> {
+        void free(T result);
+    }
+
+    private interface ReclaimingComponents {
+        void reclaim();
     }
 
     private final BagManager bagManager;
@@ -52,7 +65,7 @@ public class ComponentMapperManager implements Components.Creator {
     private final Bag<Components<?, ?>> components;
     private final Map<Enum<?>, EnumComponentMapper<?>> enumComponents = new IdentityHashMap<>();
 
-    private final Bag<WildcardComponentsImpl<?>> wildcardComponentMappers;
+    private final Bag<ReclaimingComponents> reclaimingComponents;
     private final Map<ComponentType<?, ?>, Components<?, ?>> componentMappers = new ConcurrentHashMap<>();
 
     public ComponentMapperManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, TransmutationManager transmutationManager,
@@ -65,14 +78,14 @@ public class ComponentMapperManager implements Components.Creator {
 
         this.eventHandler = new ComponentEventHandler(eventManager);
 
-        this.wildcardComponentMappers = bagManager.createComponentBag(WildcardComponentsImpl.class);
+        this.reclaimingComponents = bagManager.createComponentBag(ReclaimingComponents.class);
         this.components = bagManager.createComponentBag(Components.class);
     }
 
     public void process() {
-        var data = wildcardComponentMappers.getData();
-        for (int i = 0, s = wildcardComponentMappers.getSize(); i < s; i++) {
-            data[i].process();
+        var data = reclaimingComponents.getData();
+        for (int i = 0, s = reclaimingComponents.getSize(); i < s; i++) {
+            data[i].reclaim();
         }
     }
 
@@ -81,6 +94,7 @@ public class ComponentMapperManager implements Components.Creator {
     public <T, R> Components<T, R> getComponents(ComponentType<T, R> type) {
         return switch (type) {
             case ComponentType.RegularComponentType<T, R> regular -> getComponents(regular);
+            case ComponentType.ComponentSetType<?> set -> (Components<T, R>) getComponentSets(set);
             case ComponentType.Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
         };
     }
@@ -192,8 +206,31 @@ public class ComponentMapperManager implements Components.Creator {
         return relationMapperManager.getEntityRelationMapper(relation);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T> Components<T, ComponentResult<T>> getWildcardComponents(Wildcard<?> wildcard) {
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(ComponentSetType<T> type) {
+        var result = (ComponentSetMapper<T>) componentMappers.get(type);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.componentMappers) {
+            result = (ComponentSetMapper<T>) componentMappers.get(type);
+            if (result != null) {
+                return result;
+            }
+
+            var mapper = new ComponentSetComponentsImpl<>(type);
+
+            this.reclaimingComponents.add(mapper);
+            this.componentMappers.put(type, mapper);
+
+            return mapper;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> Components<T, ComponentResult<T>> getWildcardComponents(Wildcard<T> wildcard) {
         var result = (Components<T, ComponentResult<T>>) componentMappers.get(wildcard);
         if (result != null) {
             return result;
@@ -205,9 +242,9 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new WildcardComponentsImpl(wildcard);
+            var mapper = new WildcardComponentsImpl<>(wildcard);
 
-            this.wildcardComponentMappers.add(mapper);
+            this.reclaimingComponents.add(mapper);
             this.componentMappers.put(wildcard, mapper);
 
             return mapper;
@@ -321,7 +358,137 @@ public class ComponentMapperManager implements Components.Creator {
 
     }
 
-    private class WildcardComponentsImpl<T> implements Components<T, Result<T>>, ResultComponents<T> {
+    private class ComponentSetComponentsImpl<T extends ComponentSet> implements ComponentSetMapper<T>, PoolingComponents<T>, ReclaimingComponents {
+
+        private final ComponentSetFactory<T> factory;
+        private final ComponentData<T, ?, ?>[] componentTypes;
+        private final int size;
+
+        private final Components<?, ?>[] mappers;
+
+        private final Bag<T> lent;
+        private final Pool<Object[]> pool;
+
+        @SuppressWarnings("unchecked")
+        public ComponentSetComponentsImpl(ComponentSetType<T> type) {
+            this.factory = ComponentSetsHelper.getFactory(type.componentSet());
+
+            this.componentTypes = this.factory.getComponents().toArray(ComponentData[]::new);
+            this.size = componentTypes.length;
+
+            this.mappers = new Components<?, ?>[size];
+
+            for (int i = 0; i < size; i++) {
+                var componentType = componentTypes[i];
+
+                this.mappers[i] = getComponents(componentType.type());
+            }
+
+            this.lent = new Bag<>(type.componentSet(), 8);
+            this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
+        }
+
+        @Override
+        public void free(T result) {
+            result.free();
+        }
+
+        @Override
+        public void reclaim() {
+            var data = lent.getData();
+            for (int i = 0, s = lent.getSize(); i < s; i++) {
+                data[i].free();
+            }
+        }
+
+        @Override
+        public boolean has(int entityId) {
+            for (int i = 0; i < size; i++) {
+                var mapper = mappers[i];
+
+                if (mapper.has(entityId)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        @Override
+        public boolean hasAll(int entityId) {
+            for (int i = 0; i < size; i++) {
+                var mapper = mappers[i];
+
+                if (!mapper.has(entityId)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        @Override
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        public void add(int entityId, @NonNull T components) {
+            for (int i = 0; i < size; i++) {
+                var componentType = componentTypes[i];
+                var component = componentType.accessor().apply(components);
+                if (component == null) {
+                    continue;
+                }
+
+                switch (mappers[i]) {
+                    case ComponentMapper mapper -> mapper.add(entityId, component);
+                    case ExclusiveComponentRelationMapper<?, ?> relations -> relations.add(entityId, (ComponentRelation) component);
+                    case ExclusiveEntityRelationMapper<?> relations -> relations.add(entityId, (EntityRelation) component);
+                    default -> throw new UnsupportedOperationException("Add not supported for component type '%s'".formatted(componentType.type()));
+                }
+            }
+
+            components.free();
+        }
+
+        @Override
+        public T get(int entityId) {
+            return pool.withInstance(components -> {
+                var found = false;
+
+                for (int i = 0; i < size; i++) {
+                    var mapper = mappers[i];
+
+                    var component = components[i] = mapper.get(entityId);
+                    if (component != null) {
+                        found = true;
+                    }
+                }
+
+                if (!found) {
+                    return null;
+                }
+
+                var result = factory.getInstance(entityId, components);
+                lent.add(result);
+
+                return result;
+            });
+        }
+
+        @Override
+        public boolean remove(int entityId) {
+            var removed = false;
+
+            for (int i = 0; i < size; i++) {
+                var mapper = mappers[i];
+
+                removed |= mapper.remove(entityId);
+            }
+
+            return removed;
+        }
+
+    }
+
+    private class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, ReclaimingComponents {
 
         private final Wildcard<T> type;
         private final Bag<ComponentMapper<? extends T>> mappers;
@@ -337,13 +504,14 @@ public class ComponentMapperManager implements Components.Creator {
         }
 
         @Override
-        public void free(Result<T> result) {
+        public void free(ComponentResult<T> result) {
             if (result instanceof ComponentResultImpl<T> impl) {
                 this.pool.free(impl);
             }
         }
 
-        public void process() {
+        @Override
+        public void reclaim() {
             var data = lent.getData();
             for (int i = 0, s = lent.getSize(); i < s; i++) {
                 pool.free(data[i]);
@@ -367,7 +535,7 @@ public class ComponentMapperManager implements Components.Creator {
         }
 
         @Override
-        public Result<T> get(int entityId) {
+        public ComponentResult<T> get(int entityId) {
             var result = pool.getInstance().init(entityId);
             lent.add(result);
 

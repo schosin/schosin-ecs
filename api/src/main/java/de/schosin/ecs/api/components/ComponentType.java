@@ -53,6 +53,10 @@ public sealed interface ComponentType<T, R> {
         return new ExclusiveEntityRelationType<>(relationship);
     }
 
+    static <T extends ComponentSet> ComponentSetType<T> componentSet(Class<T> set) {
+        return new ComponentSetType<>(set);
+    }
+
     static <T> Wildcard<T> wildcard(Class<T> bound) {
         return new Wildcard<>(bound);
     }
@@ -134,6 +138,17 @@ public sealed interface ComponentType<T, R> {
         @Override
         public final String toString() {
             return "ExclusiveEntityRelationType(%s)".formatted(relationship.getSimpleName());
+        }
+    }
+
+    record ComponentSetType<T extends ComponentSet>(Class<T> componentSet) implements ComponentType<T, T> {
+        public ComponentSetType {
+            ComponentTypeHelper.validateComponentSet(componentSet);
+        }
+
+        @Override
+        public final String toString() {
+            return "ComponentSetType(%s)".formatted(componentSet.getSimpleName());
         }
     }
 
@@ -236,9 +251,18 @@ class ComponentTypeHelper {
         }
     }
 
+    public static void validateComponentSet(Class<?> componentSet) {
+        if (!componentSet.isInterface()) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component set. Component sets must be interfaces.".formatted(componentSet.getName()));
+        }
+    }
+
     static void validateComponent(Class<?> clazz) {
         if (UNSUPPORTED_TYPES.contains(clazz) || Object.class == clazz) {
             throw new IllegalArgumentException("Class '%s' cannot be used as a component.".formatted(clazz.getName()));
+        }
+        if (ComponentSet.class.isAssignableFrom(clazz)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be component sets.".formatted(clazz.getName()));
         }
         if (clazz.isArray()) {
             throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be arrays.".formatted(clazz.getName()));

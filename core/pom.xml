@@ -25,10 +25,20 @@
             <artifactId>api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>de.schosin.ecs.buildtools</groupId>
+            <artifactId>codegen-provided</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
             
         <dependency>
           <groupId>net.bytebuddy</groupId>
           <artifactId>byte-buddy</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>tech.hiddenproject</groupId>
+          <artifactId>aide-reflection</artifactId>
         </dependency>
     
         <dependency>

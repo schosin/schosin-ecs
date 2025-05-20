@@ -9,12 +9,10 @@ import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
@@ -228,8 +226,7 @@ public class RelationMapperManager {
         }
 
         @Override
-        public ComponentRelation<R, T> add(int entityId, R relationship, T target) {
-            var relation = Relation.create(relationship, target);
+        public ComponentRelation<R, T> add(int entityId, ComponentRelation<R, T> relation) {
             this.add.apply(entityId, relation);
 
             return relation;
@@ -282,7 +279,7 @@ public class RelationMapperManager {
         }
 
         @Override
-        public ComponentRelation<R, T> add(int entityId, R relationship, T target) {
+        public ComponentRelation<R, T> add(int entityId, ComponentRelation<R, T> relation) {
             var data = parent.componentRelationships.getData();
             for (int i = 0, s = parent.componentRelationships.getSize(); i < s; i++) {
                 var otherMapper = data[i];
@@ -291,7 +288,6 @@ public class RelationMapperManager {
                 }
             }
 
-            var relation = Relation.create(relationship, target);
             this.add.apply(entityId, relation);
 
             return relation;
@@ -319,7 +315,7 @@ public class RelationMapperManager {
 
     }
 
-    private abstract class AbstractComponentRelationMapper<R, T, RR, C extends Component<ComponentRelation<R, T>, RR>> implements Components<ComponentRelation<R, T>, RR> {
+    private abstract class AbstractComponentRelationMapper<R, T, RR, C extends Component<ComponentRelation<R, T>, RR>> {
 
         protected C data;
 
@@ -333,18 +329,15 @@ public class RelationMapperManager {
             this.remove = transmutationManager.getRemoveTransmuter(data.type());
         }
 
-        @Override
         public boolean has(int entityId) {
             return data.hasComponent(entityId);
         }
 
-        @Override
         @Nullable
         public RR get(int entityId) {
             return data.getComponent(entityId);
         }
 
-        @Override
         public boolean remove(int entityId) {
             return this.remove.apply(entityId);
         }
@@ -358,8 +351,7 @@ public class RelationMapperManager {
         }
 
         @Override
-        public EntityRelation<R> add(int entityId, R relationship, int target) {
-            var relation = Relation.create(relationship, target);
+        public EntityRelation<R> add(int entityId, EntityRelation<R> relation) {
             this.add.apply(entityId, relation);
 
             return relation;
@@ -385,8 +377,7 @@ public class RelationMapperManager {
         }
 
         @Override
-        public EntityRelation<R> add(int entityId, R relationship, int target) {
-            var relation = Relation.create(relationship, target);
+        public EntityRelation<R> add(int entityId, EntityRelation<R> relation) {
             this.add.apply(entityId, relation);
 
             return relation;
@@ -414,7 +405,7 @@ public class RelationMapperManager {
 
     }
 
-    private abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelationComponent<R, RR>> implements Components<EntityRelation<R>, RR> {
+    private abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelationComponent<R, RR>> {
 
         protected C data;
 
@@ -428,18 +419,15 @@ public class RelationMapperManager {
             this.remove = transmutationManager.getRemoveTransmuter(data.type());
         }
 
-        @Override
         public boolean has(int entityId) {
             return data.hasComponent(entityId);
         }
 
-        @Override
         @Nullable
         public RR get(int entityId) {
             return data.getComponent(entityId);
         }
 
-        @Override
         public boolean remove(int entityId) {
             return this.remove.apply(entityId);
         }

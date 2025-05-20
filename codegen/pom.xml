@@ -8,10 +8,6 @@
     </parent>
     
     <artifactId>codegen</artifactId>
-    
-    <properties>
-        <palantir.javapoet.version>0.7.0</palantir.javapoet.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -21,7 +17,6 @@
         <dependency>
             <groupId>com.palantir.javapoet</groupId>
             <artifactId>javapoet</artifactId>
-            <version>${palantir.javapoet.version}</version>
         </dependency>
         <dependency>
             <groupId>com.google.auto.service</groupId>

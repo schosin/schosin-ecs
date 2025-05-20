@@ -2,6 +2,7 @@ package de.schosin.ecs.api.components;
 
 import static de.schosin.ecs.api.components.ComponentType.WILDCARD;
 import static de.schosin.ecs.api.components.ComponentType.component;
+import static de.schosin.ecs.api.components.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.ComponentType.relation;
 import static de.schosin.ecs.api.components.ComponentType.wildcard;
@@ -22,6 +23,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
@@ -58,6 +60,11 @@ class ComponentTypeTest {
         @Test
         void testEntityExclusiveRelation() {
             assertThat(exclusiveRelation(ExclusiveComponent.class)).as("must not be refactored to something else").isInstanceOf(ExclusiveEntityRelationType.class);
+        }
+
+        @Test
+        void testComponentSet() {
+            assertThat(componentSet(MyComponentSet.class)).as("must not be refactored to something else").isInstanceOf(ComponentSetType.class);
         }
 
         @Test
@@ -101,6 +108,13 @@ class ComponentTypeTest {
             assertThat(relation(RelationshipComponent.class))
                     .extracting(Object::toString, InstanceOfAssertFactories.STRING)
                     .containsSubsequence("EntityRelationType", RelationshipComponent.class.getSimpleName());
+        }
+
+        @Test
+        void testComponentSet() {
+            assertThat(componentSet(MyComponentSet.class))
+                    .extracting(Object::toString, InstanceOfAssertFactories.STRING)
+                    .containsSubsequence("ComponentSetType", MyComponentSet.class.getSimpleName());
         }
 
         @Test
@@ -410,6 +424,23 @@ class ComponentTypeTest {
     }
 
     @Nested
+    class ComponentSetTest {
+
+        @Test
+        void testComponentSet() {
+            assertThatCode(() -> new ComponentSetType<>(MyComponentSet.class)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void testComponentSetImplementation_DoesThrow() {
+            assertThatCode(() -> new ComponentSetType<>(MyComponentSetClass.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(MyComponentSetClass.class.getName(), "cannot be used as a component set", "must be interfaces");
+        }
+
+    }
+
+    @Nested
     class WildcardTest {
 
         @ParameterizedTest
@@ -486,6 +517,13 @@ class ComponentTypeTest {
                     .hasMessageContainingAll(SYNTHETIC_CLASS.getName(), "must not be synthetic");
         }
 
+        @Test
+        void testComponentSet() {
+            assertThatThrownBy(() -> type(MyComponentSet.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(MyComponentSet.class.getName(), "cannot be used as a component", "must not be component sets");
+        }
+
     }
 
     static Stream<Arguments> unsupportedTypes() {
@@ -534,4 +572,19 @@ class ComponentTypeTest {
     enum TargetComponent implements Relation.Target {
     }
 
+    interface MyComponentSet extends ComponentSet {
+        Component component();
+    }
+
+    class MyComponentSetClass implements MyComponentSet {
+        @Override
+        public int entityId() {
+            return -1;
+        }
+
+        @Override
+        public Component component() {
+            return null;
+        }
+    }
 }
