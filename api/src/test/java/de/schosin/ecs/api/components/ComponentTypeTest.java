@@ -120,7 +120,12 @@ class ComponentTypeTest {
     }
 
     @Nested
-    class ClassTypeTest {
+    class ClassTypeTest extends CommonComponentTest {
+
+        @Override
+        protected ComponentType<?, ?> type(Class<?> clazz) {
+            return new ClassType<>(clazz);
+        }
 
         @ParameterizedTest
         @ValueSource(classes = { Component.class, NonFinalComponent.class, FinalComponent.class })
@@ -137,26 +142,11 @@ class ComponentTypeTest {
         }
 
         @ParameterizedTest
-        @ValueSource(classes = { GenericComponent.class, ComponentInterface.class, AbstractComponent.class, Object.class, int[].class, Integer[].class, Object[].class })
-        void testInvalidClassType(Class<?> clazz) {
+        @ValueSource(classes = { RelationshipComponent.class, ExclusiveComponent.class, EntityRelationship.class, ExclusiveEntityRelationship.class, TargetComponent.class })
+        void testInvalidTraits(Class<?> clazz) {
             assertThatThrownBy(() -> new ClassType<>(clazz))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContainingAll(clazz.getName(), "cannot be used as a component");
-        }
-
-        @ParameterizedTest
-        @MethodSource("de.schosin.ecs.api.components.ComponentTypeTest#unsupportedTypes")
-        void testUnsupportedClassType(Class<?> clazz) {
-            assertThatThrownBy(() -> new ClassType<>(clazz))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContainingAll(clazz.getName(), "cannot be used as a component");
-        }
-
-        @Test
-        void testInvalidSyntheticClass() {
-            assertThatThrownBy(() -> new ClassType<>(SYNTHETIC_CLASS))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContainingAll(SYNTHETIC_CLASS.getName(), "must not be synthetic");
+                    .hasMessageContainingAll(clazz.getName(), "cannot be used as a class component", "It is marked as ");
         }
 
     }
@@ -165,7 +155,12 @@ class ComponentTypeTest {
     class ComponentRelationTypeTest {
 
         @Nested
-        class RelationshipComponentTest {
+        class RelationshipComponentTest extends CommonComponentTest {
+
+            @Override
+            protected ComponentType<?, ?> type(Class<?> clazz) {
+                return new ComponentRelationType<>(clazz, EnumComponent.class);
+            }
 
             @Test
             void testRelationshipTrait_DoesNotThrow() {
@@ -186,10 +181,29 @@ class ComponentTypeTest {
                         .hasMessageContainingAll(TargetComponent.class.getName(), "cannot be used as a relationship component", "marked as a Target");
             }
 
+            @Test
+            void testEntityRelationshipTrait() {
+                assertThatThrownBy(() -> new ComponentRelationType<>(EntityRelationship.class, EnumComponent.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(EntityRelationship.class.getName(), "cannot be used for a component relation", "marked as a entity relationship");
+            }
+
+            @Test
+            void testExclusiveEntityRelationshipTrait() {
+                assertThatThrownBy(() -> new ComponentRelationType<>(ExclusiveEntityRelationship.class, EnumComponent.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(ExclusiveEntityRelationship.class.getName(), "cannot be used for a component relation", "marked as a entity relationship");
+            }
+
         }
 
         @Nested
-        class TargetComponentTest {
+        class TargetComponentTest extends CommonComponentTest {
+
+            @Override
+            protected ComponentType<?, ?> type(Class<?> clazz) {
+                return new ComponentRelationType<>(EnumComponent.class, clazz);
+            }
 
             @ParameterizedTest
             @ValueSource(classes = { GenericComponent.class, ComponentInterface.class, AbstractComponent.class })
@@ -233,6 +247,20 @@ class ComponentTypeTest {
                 assertThatCode(() -> new ComponentRelationType<>(EnumComponent.class, TargetComponent.class)).doesNotThrowAnyException();
             }
 
+            @Test
+            void testEntityRelationshipTrait() {
+                assertThatThrownBy(() -> new ComponentRelationType<>(EntityRelationship.class, EnumComponent.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(EntityRelationship.class.getName(), "cannot be used for a component relation", "marked as a entity relationship");
+            }
+
+            @Test
+            void testExclusiveEntityRelationshipTrait() {
+                assertThatThrownBy(() -> new ComponentRelationType<>(ExclusiveEntityRelationship.class, EnumComponent.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(ExclusiveEntityRelationship.class.getName(), "cannot be used for a component relation", "marked as a entity relationship");
+            }
+
         }
 
     }
@@ -248,10 +276,22 @@ class ComponentTypeTest {
                 assertThatCode(() -> new ExclusiveComponentRelationType<>(ExclusiveComponent.class, EnumComponent.class)).doesNotThrowAnyException();
             }
 
+            @Test
+            void testExclusiveEntityRelationshipTrait() {
+                assertThatThrownBy(() -> new ExclusiveComponentRelationType<>(ExclusiveEntityRelationship.class, EnumComponent.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(ExclusiveEntityRelationship.class.getName(), "cannot be used for a component relation", "marked as a entity relationship");
+            }
+
         }
 
         @Nested
-        class TargetComponentTest {
+        class TargetComponentTest extends CommonComponentTest {
+
+            @Override
+            protected ComponentType<?, ?> type(Class<?> clazz) {
+                return new ExclusiveComponentRelationType<>(ExclusiveComponent.class, clazz);
+            }
 
             @ParameterizedTest
             @ValueSource(classes = { GenericComponent.class, ComponentInterface.class, AbstractComponent.class })
@@ -295,6 +335,76 @@ class ComponentTypeTest {
                 assertThatCode(() -> new ExclusiveComponentRelationType<>(ExclusiveComponent.class, TargetComponent.class)).doesNotThrowAnyException();
             }
 
+            @Test
+            void testEntityRelationshipTrait() {
+                assertThatThrownBy(() -> new ExclusiveComponentRelationType<>(ExclusiveComponent.class, EntityRelationship.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(EntityRelationship.class.getName(), "cannot be used as a target component", "marked as a Relationship");
+            }
+
+            @Test
+            void testExclusiveEntityRelationshipTrait() {
+                assertThatThrownBy(() -> new ExclusiveComponentRelationType<>(ExclusiveComponent.class, ExclusiveEntityRelationship.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(ExclusiveEntityRelationship.class.getName(), "cannot be used as a target component", "marked as a Relationship");
+            }
+
+        }
+
+    }
+
+    @Nested
+    class EntityRelationTypeTest extends CommonComponentTest {
+
+        @Override
+        protected ComponentType<?, ?> type(Class<?> clazz) {
+            return new EntityRelationType<>(clazz);
+        }
+
+        @Test
+        void testRelationshipTrait_DoesNotThrow() {
+            assertThatCode(() -> new EntityRelationType<>(RelationshipComponent.class)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void testExclusiveTrait() {
+            assertThatThrownBy(() -> new EntityRelationType<>(ExclusiveComponent.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(ExclusiveComponent.class.getName(), "cannot be used as a non-exclusive relationship component", "marked as a Exclusive");
+        }
+
+        @Test
+        void testTargetTrait() {
+            assertThatThrownBy(() -> new EntityRelationType<>(TargetComponent.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(TargetComponent.class.getName(), "cannot be used as a relationship component", "marked as a Target");
+        }
+
+        @Test
+        void testEntityRelationshipTrait_DoesNotThrow() {
+            assertThatCode(() -> new EntityRelationType<>(EntityRelationship.class)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void testExclusiveEntityRelationshipTrait() {
+            assertThatThrownBy(() -> new EntityRelationType<>(ExclusiveEntityRelationship.class))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(ExclusiveEntityRelationship.class.getName(), "cannot be used as a non-exclusive relationship component", "marked as a Exclusive");
+        }
+
+    }
+
+    @Nested
+    class ExclusiveEntityRelationTypeTest {
+
+        @Test
+        void testExclusiveTrait_DoesNotThrow() {
+            assertThatCode(() -> new ExclusiveEntityRelationType<>(ExclusiveComponent.class)).doesNotThrowAnyException();
+        }
+
+        @Test
+        void testExclusiveEntityRelationshipTrait() {
+            assertThatCode(() -> new ExclusiveEntityRelationType<>(ExclusiveEntityRelationship.class)).doesNotThrowAnyException();
         }
 
     }
@@ -332,11 +442,48 @@ class ComponentTypeTest {
                     .hasMessageContainingAll(clazz.getName(), "cannot be used as a wildcard");
         }
 
+        @ParameterizedTest
+        @ValueSource(classes = { RelationshipComponent.class, ExclusiveComponent.class, EntityRelationship.class, ExclusiveEntityRelationship.class, TargetComponent.class })
+        void testInvalidTraits(Class<?> clazz) {
+            assertThatThrownBy(() -> new ClassType<>(clazz))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(clazz.getName(), "cannot be used as a class component", "It is marked as ");
+        }
+
         @Test
         void testInvalidSyntheticWildcard() {
             assertThatThrownBy(() -> new Wildcard<>(SYNTHETIC_CLASS))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining(SYNTHETIC_CLASS.getName(), "must not be synthetic");
+        }
+
+    }
+
+    abstract class CommonComponentTest {
+
+        protected abstract ComponentType<?, ?> type(Class<?> clazz);
+
+        @ParameterizedTest
+        @ValueSource(classes = { GenericComponent.class, ComponentInterface.class, AbstractComponent.class, Object.class, int[].class, Integer[].class, Object[].class })
+        void testInvalidType(Class<?> clazz) {
+            assertThatThrownBy(() -> type(clazz))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(clazz.getName(), "cannot be used as a component");
+        }
+
+        @ParameterizedTest
+        @MethodSource("de.schosin.ecs.api.components.ComponentTypeTest#unsupportedTypes")
+        void testUnsupportedClassType(Class<?> clazz) {
+            assertThatThrownBy(() -> type(clazz))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(clazz.getName(), "cannot be used as a component");
+        }
+
+        @Test
+        void testInvalidSyntheticClass() {
+            assertThatThrownBy(() -> type(SYNTHETIC_CLASS))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(SYNTHETIC_CLASS.getName(), "must not be synthetic");
         }
 
     }
@@ -373,15 +520,18 @@ class ComponentTypeTest {
     }
 
     enum RelationshipComponent implements Relation.Relationship {
-        INSTANCE
     }
 
     enum ExclusiveComponent implements Relation.Exclusive {
-        INSTANCE
+    }
+
+    enum EntityRelationship implements Relation.EntityRelationship {
+    }
+
+    enum ExclusiveEntityRelationship implements Relation.EntityRelationship, Relation.Exclusive {
     }
 
     enum TargetComponent implements Relation.Target {
-        INSTANCE
     }
 
 }

@@ -6,12 +6,13 @@ public sealed interface Relation {
 
     /**
      * Marker interface (trait) to enforce that a component type can only be used as a 
-     * {@link ComponentRelation#relationship() relationship component}. 
+     * {@link ComponentRelation#relationship() component relationship}
+     * or {@link EntityRelation#relationship() entity relationship}
      * 
      * <p>
      * Will cause an exception to be thrown when the component type is used as a regular component 
-     * or as a {@link ComponentRelation#target() target component}.
-     * </o>
+     * ,{@link ComponentRelation#target() component target} or {@link EntityRelation#target() entity target}.
+     * </p>
      */
     interface Relationship {
     }
@@ -23,9 +24,21 @@ public sealed interface Relation {
      * <p>
      * Will cause an exception to be thrown when the component type is used as a regular component 
      * or as a {@link ComponentRelation#relationship() relationship component}.
-     * </o>
+     * </p>
      */
     interface Target {
+    }
+
+    /**
+     * Marker interface (trait) to enforce that a component type can only be used as a 
+     * {@link EntityRelation#relationship() relationship component}. 
+     * 
+     * <p>
+     * Will cause an exception to be thrown when the component type is used as a regular component 
+     * or in a {@link ComponentRelation}.
+     * </p>
+     */
+    interface EntityRelationship extends Relationship {
     }
 
     /**

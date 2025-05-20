@@ -2,6 +2,7 @@ package de.schosin.ecs.engine.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.assertj.core.api.Assumptions.assumeThatCode;
 
 import java.util.ArrayList;
 
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
@@ -658,6 +660,8 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         @Test
         void testAddRelationship_DoesNotAddRelationshipAsRegularComponents() {
+            assumeThatCode(() -> ComponentType.component(relationship1Class)).doesNotThrowAnyException();
+
             var entityId = world.createEntity();
 
             // Call

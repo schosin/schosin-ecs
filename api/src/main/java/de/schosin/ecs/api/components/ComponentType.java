@@ -87,8 +87,8 @@ public sealed interface ComponentType<T, R> {
      */
     record ComponentRelationType<R, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelationResult<R, T>> {
         public ComponentRelationType {
-            ComponentTypeHelper.validateNonExclusiveComponentRelationRelationship(relationship);
-            ComponentTypeHelper.validateComponentRelationTarget(target);
+            ComponentTypeHelper.validateNonExclusiveComponentRelationship(relationship);
+            ComponentTypeHelper.validateComponentTarget(target);
         }
 
         @Override
@@ -105,8 +105,8 @@ public sealed interface ComponentType<T, R> {
      */
     record ExclusiveComponentRelationType<R extends Relation.Exclusive, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelation<R, T>> {
         public ExclusiveComponentRelationType {
-            ComponentTypeHelper.validateComponentRelationRelationship(relationship);
-            ComponentTypeHelper.validateComponentRelationTarget(target);
+            ComponentTypeHelper.validateComponentRelationship(relationship);
+            ComponentTypeHelper.validateComponentTarget(target);
         }
 
         @Override
@@ -117,7 +117,7 @@ public sealed interface ComponentType<T, R> {
 
     record EntityRelationType<R>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelationResult<R>> {
         public EntityRelationType {
-            ComponentTypeHelper.validateNonExclusiveComponentRelationRelationship(relationship);
+            ComponentTypeHelper.validateNonExclusiveEntityRelationship(relationship);
         }
 
         @Override
@@ -128,7 +128,7 @@ public sealed interface ComponentType<T, R> {
 
     record ExclusiveEntityRelationType<R extends Relation.Exclusive>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelation<R>> {
         public ExclusiveEntityRelationType {
-            ComponentTypeHelper.validateComponentRelationRelationship(relationship);
+            ComponentTypeHelper.validateEntityRelationship(relationship);
         }
 
         @Override
@@ -158,25 +158,18 @@ class ComponentTypeHelper {
             String.class);
 
     static void validateClassType(Class<?> clazz) {
-        if (UNSUPPORTED_TYPES.contains(clazz) || Object.class == clazz) {
-            throw new IllegalArgumentException("Class '%s' cannot be used as a component.".formatted(clazz.getName()));
+        validateComponent(clazz);
+
+        if (Relation.Relationship.class.isAssignableFrom(clazz)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a class component. It is marked as a relationship component.".formatted(clazz.getName()));
         }
-        if (clazz.isArray()) {
-            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be arrays.".formatted(clazz.getName()));
-        }
-        if (clazz.isSynthetic()) {
-            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be synthetic.".formatted(clazz.getName()));
-        }
-        if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
-            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be abstract.".formatted(clazz.getName()));
-        }
-        if (clazz.getTypeParameters().length > 0) {
-            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be generic.".formatted(clazz.getName()));
+        if (Relation.Target.class.isAssignableFrom(clazz)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a class component. It is marked as a target component.".formatted(clazz.getName()));
         }
     }
 
-    static void validateNonExclusiveComponentRelationRelationship(Class<?> relationship) {
-        validateComponentRelationRelationship(relationship);
+    static void validateNonExclusiveComponentRelationship(Class<?> relationship) {
+        validateComponentRelationship(relationship);
 
         if (Relation.Exclusive.class.isAssignableFrom(relationship)) {
             throw new IllegalArgumentException("Class '%s' cannot be used as a non-exclusive relationship component. It is marked as a Exclusive component. Use #exclusiveRelation instead."
@@ -184,14 +177,41 @@ class ComponentTypeHelper {
         }
     }
 
-    static void validateComponentRelationRelationship(Class<?> relationship) {
+    static void validateComponentRelationship(Class<?> relationship) {
+        validateRelationship(relationship);
+
+        if (Relation.EntityRelationship.class.isAssignableFrom(relationship)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used for a component relation. It is marked as a entity relationship component.".formatted(relationship.getName()));
+        }
+    }
+
+    static void validateComponentTarget(Class<?> target) {
+        validateTarget(target);
+    }
+
+    static void validateNonExclusiveEntityRelationship(Class<?> relationship) {
+        validateEntityRelationship(relationship);
+
+        if (Relation.Exclusive.class.isAssignableFrom(relationship)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a non-exclusive relationship component. It is marked as a Exclusive component. Use #exclusiveRelation instead."
+                    .formatted(relationship.getName()));
+        }
+    }
+
+    static void validateEntityRelationship(Class<?> relationship) {
+        validateRelationship(relationship);
+    }
+
+    static void validateRelationship(Class<?> relationship) {
+        validateComponent(relationship);
+
         if (Relation.Target.class.isAssignableFrom(relationship)) {
             throw new IllegalArgumentException("Class '%s' cannot be used as a relationship component. It is marked as a Target component.".formatted(relationship.getName()));
         }
     }
 
-    static void validateComponentRelationTarget(Class<?> target) {
-        validateClassType(target);
+    static void validateTarget(Class<?> target) {
+        validateComponent(target);
 
         if (Relation.Relationship.class.isAssignableFrom(target)) {
             throw new IllegalArgumentException("Class '%s' cannot be used as a target component. It is marked as a Relationship component.".formatted(target.getName()));
@@ -213,6 +233,24 @@ class ComponentTypeHelper {
         }
         if (bound.getTypeParameters().length > 0) {
             throw new IllegalArgumentException("Class '%s' cannot be used as a wildcard. Wildcards must not be generic.".formatted(bound.getName()));
+        }
+    }
+
+    static void validateComponent(Class<?> clazz) {
+        if (UNSUPPORTED_TYPES.contains(clazz) || Object.class == clazz) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component.".formatted(clazz.getName()));
+        }
+        if (clazz.isArray()) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be arrays.".formatted(clazz.getName()));
+        }
+        if (clazz.isSynthetic()) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be synthetic.".formatted(clazz.getName()));
+        }
+        if (clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers())) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be abstract.".formatted(clazz.getName()));
+        }
+        if (clazz.getTypeParameters().length > 0) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component. Components must not be generic.".formatted(clazz.getName()));
         }
     }
 
