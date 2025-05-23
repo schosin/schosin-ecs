@@ -3,49 +3,49 @@
     
     <parent>
         <groupId>de.schosin.ecs</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>ecs-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
     
-    <artifactId>worlds</artifactId>
+    <artifactId>ecs-worlds</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>api</artifactId>
+            <artifactId>ecs-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>ecs-core</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs.storage</groupId>
-            <artifactId>default-storage</artifactId>
+            <artifactId>ecs-storage-default-storage</artifactId>
             <version>${project.version}</version>
             <scope>runtime</scope>
         </dependency>
         
         <dependency>
             <groupId>de.schosin.ecs.plugins</groupId>
-            <artifactId>state</artifactId>
+            <artifactId>ecs-plugins-state</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs.plugins</groupId>
-            <artifactId>archetype</artifactId>
+            <artifactId>ecs-plugins-archetype</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs.plugins</groupId>
-            <artifactId>transmuter</artifactId>
+            <artifactId>ecs-plugins-transmuter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs.plugins</groupId>
-            <artifactId>composition</artifactId>
+            <artifactId>ecs-plugins-composition</artifactId>
             <version>${project.version}</version>
         </dependency>
     

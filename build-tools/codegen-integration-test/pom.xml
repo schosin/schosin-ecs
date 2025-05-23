@@ -3,29 +3,29 @@
     
     <parent>
         <groupId>de.schosin.ecs</groupId>
-        <artifactId>build-tools</artifactId>
+        <artifactId>ecs-build-tools-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
     
     <groupId>de.schosin.ecs.buildtools</groupId>
-    <artifactId>codegen-integration-test</artifactId>
+    <artifactId>ecs-build-tools-codegen-integration-test</artifactId>
     
     <dependencies>
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>ecs-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs.buildtools</groupId>
-            <artifactId>codegen-apt</artifactId>
+            <artifactId>ecs-build-tools-codegen-apt</artifactId>
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
         
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>test</artifactId>
+            <artifactId>ecs-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

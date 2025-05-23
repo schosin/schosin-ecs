@@ -3,28 +3,29 @@
     
     <parent>
         <groupId>de.schosin.ecs</groupId>
-        <artifactId>plugins</artifactId>
+        <artifactId>ecs-plugins-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
     
     <groupId>de.schosin.ecs.plugins</groupId>
-    <artifactId>archetype</artifactId>
+    <artifactId>ecs-plugins-archetype</artifactId>
 
     <dependencies>
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>engine</artifactId>
+            <artifactId>ecs-core</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>codegen</artifactId>
+            <artifactId>ecs-codegen</artifactId>
+            <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
     
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>test</artifactId>
+            <artifactId>ecs-test</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
@@ -50,7 +51,7 @@
                     <annotationProcessorPaths>
                         <annotationProcessorPath>
                             <groupId>de.schosin.ecs</groupId>
-                            <artifactId>codegen</artifactId>
+                            <artifactId>ecs-codegen</artifactId>
                             <version>${project.version}</version>
                         </annotationProcessorPath>
                     </annotationProcessorPaths>

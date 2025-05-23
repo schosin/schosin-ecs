@@ -3,17 +3,17 @@
     
     <parent>
         <groupId>de.schosin.ecs</groupId>
-        <artifactId>build-tools</artifactId>
+        <artifactId>ecs-build-tools-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
     
     <groupId>de.schosin.ecs.buildtools</groupId>
-    <artifactId>codegen-provided</artifactId>
+    <artifactId>ecs-build-tools-codegen-provided</artifactId>
     
     <dependencies>
         <dependency>
             <groupId>de.schosin.ecs</groupId>
-            <artifactId>api</artifactId>
+            <artifactId>ecs-api</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
