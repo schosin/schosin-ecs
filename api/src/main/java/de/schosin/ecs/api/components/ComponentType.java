@@ -5,8 +5,10 @@ import java.util.Set;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
+import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 
 /**
@@ -51,6 +53,14 @@ public sealed interface ComponentType<T, R> {
 
     static <R extends Relation.Exclusive> ExclusiveEntityRelationType<R> exclusiveRelation(Class<R> relationship) {
         return new ExclusiveEntityRelationType<>(relationship);
+    }
+
+    static <R, T> EntityRelationFetchType<R, T> relation(Class<R> relationship, ComponentType<?, T> fetch) {
+        return new EntityRelationFetchType<>(relationship, fetch);
+    }
+
+    static <R extends Relation.Exclusive, T> ExclusiveEntityRelationFetchType<R, T> exclusiveRelation(Class<R> relationship, ComponentType<?, T> fetch) {
+        return new ExclusiveEntityRelationFetchType<>(relationship, fetch);
     }
 
     static <T extends ComponentSet> ComponentSetType<T> componentSet(Class<T> set) {
@@ -138,6 +148,32 @@ public sealed interface ComponentType<T, R> {
         @Override
         public final String toString() {
             return "ExclusiveEntityRelationType(%s)".formatted(relationship.getSimpleName());
+        }
+    }
+
+    record EntityRelationFetchType<R, T>(Class<R> relationship, ComponentType<?, T> fetch)
+            implements ComponentType<EntityRelationData<R, T>, EntityRelationDataResult<R, T>> {
+
+        public EntityRelationFetchType {
+            ComponentTypeHelper.validateNonExclusiveEntityRelationship(relationship);
+        }
+
+        @Override
+        public final String toString() {
+            return "ExclusiveEntityRelationFetchType(%s -> %s)".formatted(relationship.getSimpleName(), fetch);
+        }
+    }
+
+    record ExclusiveEntityRelationFetchType<R extends Relation.Exclusive, T>(Class<R> relationship, ComponentType<?, T> fetch)
+            implements ComponentType<EntityRelationData<R, T>, EntityRelationData<R, T>> {
+
+        public ExclusiveEntityRelationFetchType {
+            ComponentTypeHelper.validateEntityRelationship(relationship);
+        }
+
+        @Override
+        public final String toString() {
+            return "ExclusiveEntityRelationFetchType(%s -> %s)".formatted(relationship.getSimpleName(), fetch);
         }
     }
 

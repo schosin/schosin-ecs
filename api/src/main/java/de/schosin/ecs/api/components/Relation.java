@@ -9,7 +9,7 @@ import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 
 public sealed interface Relation<R> {
@@ -19,7 +19,11 @@ public sealed interface Relation<R> {
     }
 
     static <R> EntityRelation<R> create(R relationship, int target) {
-        return RelationHelper.create(relationship, target);
+        return RelationHelper.create(relationship, target, null);
+    }
+
+    static <R, T> EntityRelationData<R, T> create(R relationship, int target, T data) {
+        return RelationHelper.create(relationship, target, data);
     }
 
     static void free(Relation<?> relation) {
@@ -103,6 +107,12 @@ public sealed interface Relation<R> {
 
     }
 
+    sealed interface EntityRelationData<R, T> extends EntityRelation<R> {
+
+        T data();
+
+    }
+
 }
 
 class RelationHelper {
@@ -125,7 +135,7 @@ class RelationHelper {
     }
 
     @SuppressWarnings("unchecked")
-    static synchronized <R> EntityRelation<R> create(R relationship, int target) {
+    static synchronized <R, T> EntityRelationData<R, T> create(R relationship, int target, T data) {
         var relation = ENTITY_RELATIONS.isEmpty() ? new EntityRelationImpl() : ENTITY_RELATIONS.removeLast();
 
         relation.type = Exclusive.class.isAssignableFrom(relationship.getClass())
@@ -134,8 +144,9 @@ class RelationHelper {
 
         relation.relationship = relationship;
         relation.target = target;
+        relation.data = data;
 
-        return (EntityRelation<R>) relation;
+        return (EntityRelationData<R, T>) relation;
     }
 
     static void free(Relation<?> relation) {
@@ -151,10 +162,10 @@ class RelationHelper {
             impl.type = null;
             impl.relationship = null;
             impl.target = -1;
+            impl.data = null;
 
             ENTITY_RELATIONS.add(impl);
         }
-
     }
 
     @SuppressWarnings("rawtypes")
@@ -207,11 +218,12 @@ class RelationHelper {
     }
 
     @SuppressWarnings("rawtypes")
-    private static final class EntityRelationImpl implements EntityRelation {
+    private static final class EntityRelationImpl implements EntityRelationData {
 
         private RegularEntityRelationType type;
         private Object relationship;
         private int target = -1;
+        private Object data;
 
         @Override
         public RegularEntityRelationType type() {
@@ -226,6 +238,11 @@ class RelationHelper {
         @Override
         public int target() {
             return target;
+        }
+
+        @Override
+        public Object data() {
+            return data;
         }
 
         @Override

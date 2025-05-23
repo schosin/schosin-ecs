@@ -7,6 +7,7 @@ import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelationData;
 
 /**
  * Represents a result containing no, one or more components matching
@@ -67,6 +68,26 @@ public sealed interface Result<T> extends Iterable<T> {
          * @return relationship component, or null if not present
          */
         R getRelationship(int target);
+
+    }
+
+    non-sealed interface EntityRelationDataResult<R, T> extends Result<EntityRelationData<R, T>> {
+
+        /**
+         * Retrieves the relationship given the target entity.
+         * 
+         * @param target target entity
+         * @return relationship component, or null if not present
+         */
+        R getRelationship(int target);
+
+        /**
+         * Retrieves the data given the target entity.
+         * 
+         * @param target target entity
+         * @return data of fetch component, or null unknown parent or no data for parent
+         */
+        T getData(int target);
 
     }
 

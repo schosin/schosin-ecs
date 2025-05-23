@@ -3800,6 +3800,52 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
+    class EntityRelationFetchTypeTest {
+
+        @Test
+        void testEntityRelationFetchType() {
+            var fetchType = ComponentType.exclusiveRelation(ExclusiveRelationship.class, ComponentType.componentSet(MyComponentSet.class));
+            var composition = world.createComposition(Composition.all(P1.class), fetchType);
+
+            var nestedTarget1 = world.createEntity();
+            var nestedTarget2 = world.createEntity();
+
+            var target = world.createEntity(
+                    Relation.create(new ExclusiveRelationship(1), new Target(10)),
+                    Relation.create(new RelationshipComponent(2), new Target(20)),
+                    Relation.create(new RelationshipComponent(3), new Target(30)),
+                    Relation.create(new ExclusiveRelationship(4), nestedTarget1),
+                    Relation.create(new RelationshipComponent(5), nestedTarget1),
+                    Relation.create(new RelationshipComponent(6), nestedTarget2),
+                    new C1(), new C2(), new C3(), new C4());
+
+            var entityId = world.createEntity(new P1(), Relation.create(new ExclusiveRelationship(42), target));
+
+            var processed = new AtomicBoolean(false);
+            composition.process((id, relation) -> {
+                assertThat(id).isEqualTo(entityId);
+
+                assertThat(relation).isNotNull();
+                assertThat(relation.target()).isEqualTo(target);
+
+                var components = relation.data();
+                assertThat(components).isNotNull();
+                assertThat(components.c1()).isNotNull();
+                assertThat(components.componentRelation()).extracting("relationship.value", "target.value").contains(1, 10);
+                assertThat(components.componentRelations()).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(2, 20), tuple(3, 30));
+                assertThat(components.entityRelation()).extracting("relationship.value", "target").contains(4, nestedTarget1);
+                assertThat(components.entityRelations()).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(5, nestedTarget1), tuple(6, nestedTarget2));
+                assertThat(components.c1234()).hasSize(4);
+
+                processed.set(true);
+            });
+
+            assertThat(processed.get()).isTrue();
+        }
+
+    }
+
+    @Nested
     class ComponentSetTest {
 
         @Test

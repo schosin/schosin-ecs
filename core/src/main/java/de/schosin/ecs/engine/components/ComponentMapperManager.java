@@ -1,7 +1,11 @@
 package de.schosin.ecs.engine.components;
 
+import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
+import static de.schosin.ecs.api.components.ComponentType.relation;
+
 import java.util.Arrays;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -14,8 +18,10 @@ import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationFetchType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.ComponentType.Wildcard;
@@ -23,16 +29,21 @@ import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
 import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.ComponentSetMapper;
+import de.schosin.ecs.api.components.Components.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.EnumComponentMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.Components.WildcardComponents;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentResult;
+import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
@@ -43,6 +54,7 @@ import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.ComponentUtils;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class ComponentMapperManager implements Components.Creator {
@@ -94,6 +106,8 @@ public class ComponentMapperManager implements Components.Creator {
     public <T, R> Components<T, R> getComponents(ComponentType<T, R> type) {
         return switch (type) {
             case ComponentType.RegularComponentType<T, R> regular -> getComponents(regular);
+            case ComponentType.EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
+            case ComponentType.ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
             case ComponentType.ComponentSetType<?> set -> (Components<T, R>) getComponentSets(set);
             case ComponentType.Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
         };
@@ -204,6 +218,48 @@ public class ComponentMapperManager implements Components.Creator {
     @Override
     public <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation) {
         return relationMapperManager.getEntityRelationMapper(relation);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R, T> EntityRelationFetchMapper<R, T> getEntityRelations(EntityRelationFetchType<R, T> relation) {
+        var result = (EntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.componentMappers) {
+            result = (EntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
+            if (result != null) {
+                return result;
+            }
+
+            var mapper = new EntityRelationFetchMapperImpl<>(relation);
+            this.componentMappers.put(relation, mapper);
+
+            return mapper;
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityRelations(ExclusiveEntityRelationFetchType<R, T> relation) {
+        var result = (ExclusiveEntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.componentMappers) {
+            result = (ExclusiveEntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
+            if (result != null) {
+                return result;
+            }
+
+            var mapper = new ExclusiveEntityRelationFetchMapperImpl<>(relation);
+            this.componentMappers.put(relation, mapper);
+
+            return mapper;
+        }
     }
 
     @Override
@@ -354,6 +410,71 @@ public class ComponentMapperManager implements Components.Creator {
         @Override
         public T getInstance() {
             return data.getInstance();
+        }
+
+    }
+
+    private final class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchMapper<R, T> {
+
+        private final EntityRelationMapper<R> relationMapper;
+        private final Components<?, T> dataMapper;
+
+        public EntityRelationFetchMapperImpl(EntityRelationFetchType<R, T> type) {
+            this.relationMapper = getEntityRelations(relation(type.relationship()));
+            this.dataMapper = getComponents(type.fetch());
+        }
+
+        @Override
+        public boolean has(int entityId) {
+            return relationMapper.has(entityId);
+        }
+
+        @Override
+        public EntityRelationDataResult<R, T> get(int entityId) {
+            var relations = relationMapper.get(entityId);
+            if (relations == null) {
+                return null;
+            }
+
+            return EntityRelationDataResultImpl.getInstance(relations, dataMapper);
+        }
+
+        @Override
+        public boolean remove(int entityId) {
+            return relationMapper.remove(entityId);
+        }
+
+    }
+
+    private final class ExclusiveEntityRelationFetchMapperImpl<R extends Exclusive, T> implements ExclusiveEntityRelationFetchMapper<R, T> {
+
+        private final ExclusiveEntityRelationMapper<R> relationMapper;
+        private final Components<?, T> dataMapper;
+
+        public ExclusiveEntityRelationFetchMapperImpl(ExclusiveEntityRelationFetchType<R, T> type) {
+            this.relationMapper = getEntityRelations(exclusiveRelation(type.relationship()));
+            this.dataMapper = getComponents(type.fetch());
+        }
+
+        @Override
+        public boolean has(int entityId) {
+            return relationMapper.has(entityId);
+        }
+
+        @Override
+        public EntityRelationData<R, T> get(int entityId) {
+            var relation = relationMapper.get(entityId);
+            if (relation == null) {
+                return null;
+            }
+
+            var data = dataMapper.get(relation.target());
+            return Relation.create(relation.relationship(), relation.target(), data);
+        }
+
+        @Override
+        public boolean remove(int entityId) {
+            return relationMapper.remove(entityId);
         }
 
     }
@@ -595,6 +716,97 @@ public class ComponentMapperManager implements Components.Creator {
             bags.add(wildcardComponents);
         }
 
+    }
+
+}
+
+@SuppressWarnings({ "unchecked", "rawtypes" })
+class EntityRelationDataResultImpl implements EntityRelationDataResult, Pooled {
+
+    private static final Pool<EntityRelationDataResultImpl> POOL = Pool.unbounded(EntityRelationDataResultImpl.class, EntityRelationDataResultImpl::new);
+
+    private EntityRelationResult<?> result;
+    private Components<?, ?> mapper;
+    private boolean initialized;
+
+    private final Bag<EntityRelationData<?, ?>> relations = new Bag<>(EntityRelationData.class, 8);
+
+    static <R, T> EntityRelationDataResult<R, T> getInstance(EntityRelationResult<R> result, Components<?, T> mapper) {
+        var instance = POOL.getInstance();
+        instance.result = result;
+        instance.mapper = mapper;
+        instance.initialized = false;
+        instance.relations.ensureCapacity(result.size());
+
+        return instance;
+    }
+
+    @Override
+    public @NonNull Object get(int i) {
+        initialize();
+
+        return this.relations.get(i);
+    }
+
+    @Override
+    public int size() {
+        return result.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return result.isEmpty();
+    }
+
+    @Override
+    public Iterator iterator() {
+        initialize();
+
+        return new BagIterator<>(this.relations);
+    }
+
+    @Override
+    public Object getRelationship(int target) {
+        return result.getRelationship(target);
+    }
+
+    @Override
+    public Object getData(int target) {
+        initialize();
+
+        var data = relations.getData();
+        for (int i = 0, s = relations.getSize(); i < s; i++) {
+            var relation = data[i];
+            if (relation.target() == target) {
+                return relation.data();
+            }
+        }
+
+        return null;
+    }
+
+    private void initialize() {
+        if (initialized) {
+            return;
+        }
+
+        for (int i = 0, s = result.size(); i < s; i++) {
+            var relation = result.get(i);
+            var data = mapper.get(relation.target());
+
+            this.relations.add(Relation.create(relation.relationship(), relation.target(), data));
+        }
+
+        this.initialized = true;
+    }
+
+    @Override
+    public void reset() {
+        this.result = null;
+        this.mapper = null;
+        this.initialized = false;
+
+        this.relations.clear();
     }
 
 }

@@ -11,15 +11,19 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentType.ClassType;
 import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
+import de.schosin.ecs.api.components.ComponentType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationFetchType;
 import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
+import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 
 /**
@@ -196,6 +200,12 @@ public sealed interface Components<T, R> {
          */
         int getTarget(int entityId);
 
+    }
+
+    non-sealed interface EntityRelationFetchMapper<R, T> extends Components<EntityRelationData<R, T>, EntityRelationDataResult<R, T>> {
+    }
+
+    non-sealed interface ExclusiveEntityRelationFetchMapper<R extends Exclusive, T> extends Components<EntityRelationData<R, T>, EntityRelationData<R, T>> {
     }
 
     non-sealed interface ComponentSetMapper<T extends ComponentSet> extends Components<T, T> {
@@ -432,6 +442,10 @@ public sealed interface Components<T, R> {
          * @return class to manage the relations defined by the relationship type
          */
         <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation);
+
+        <R, T> EntityRelationFetchMapper<R, T> getEntityRelations(EntityRelationFetchType<R, T> relation);
+
+        <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityRelations(ExclusiveEntityRelationFetchType<R, T> relation);
 
         /**
          * Retrieves the mapper for a {@link ComponentSet} class. This can be used to acces the component set
