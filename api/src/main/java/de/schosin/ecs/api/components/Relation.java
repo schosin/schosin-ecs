@@ -9,9 +9,9 @@ import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.components.types.ComponentType.RegularComponentRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.RegularEntityRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.RelationComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 
 public sealed interface Relation<R> {
 

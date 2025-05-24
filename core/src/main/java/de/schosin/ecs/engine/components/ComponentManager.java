@@ -8,15 +8,15 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.components.types.ComponentType.ClassType;
-import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.types.ComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
@@ -146,7 +146,7 @@ public class ComponentManager {
 
     private static boolean validateComponent(RegularComponentType<?, ?> type, Classes classes) {
         return switch (type) {
-            case ComponentType.ClassType<?> classType -> validateComponentClass(classType.clazz(), classes);
+            case ClassType<?> classType -> validateComponentClass(classType.clazz(), classes);
             case ComponentRelationType<?, ?> relation -> validateComponentClass(relation.relationship(), classes) && validateComponentClass(relation.target(), classes);
             case ExclusiveComponentRelationType<?, ?> relation -> validateComponentClass(relation.relationship(), classes) && validateComponentClass(relation.target(), classes);
             case EntityRelationType<?> relation -> validateComponentClass(relation.relationship(), classes);

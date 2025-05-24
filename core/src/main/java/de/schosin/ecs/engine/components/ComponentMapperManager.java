@@ -33,17 +33,17 @@ import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
+import de.schosin.ecs.api.components.types.ClassType;
+import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.components.types.ComponentType.ClassType;
-import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.ComponentSetType;
-import de.schosin.ecs.api.components.types.ComponentType.EntityRelationFetchType;
-import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.types.ComponentType.Wildcard;
+import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
+import de.schosin.ecs.api.components.types.Wildcard;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
@@ -105,11 +105,11 @@ public class ComponentMapperManager implements Components.Creator {
     @SuppressWarnings("unchecked")
     public <T, R> Components<T, R> getComponents(ComponentType<T, R> type) {
         return switch (type) {
-            case ComponentType.RegularComponentType<T, R> regular -> getComponents(regular);
-            case ComponentType.EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
-            case ComponentType.ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
-            case ComponentType.ComponentSetType<?> set -> (Components<T, R>) getComponentSets(set);
-            case ComponentType.Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
+            case RegularComponentType<T, R> regular -> getComponents(regular);
+            case EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
+            case ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
+            case ComponentSetType<?> set -> (Components<T, R>) getComponentSets(set);
+            case Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
         };
     }
 
@@ -117,7 +117,7 @@ public class ComponentMapperManager implements Components.Creator {
     @SuppressWarnings("unchecked")
     public <T, R> Components<T, R> getComponents(RegularComponentType<T, R> type) {
         return (Components<T, R>) switch (type) {
-            case ComponentType.ClassType<?> classType -> getComponents(classType);
+            case ClassType<?> classType -> getComponents(classType);
             case ComponentRelationType<?, ?> relation -> getComponentRelations(relation);
             case ExclusiveComponentRelationType<?, ?> relation -> getComponentRelations(relation);
             case EntityRelationType<?> relation -> getEntityRelations(relation);

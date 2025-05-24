@@ -15,7 +15,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
 import de.schosin.ecs.storage.testsuite.components.relations.ComponentRelationDataTest.Relationship1;
 import de.schosin.ecs.storage.testsuite.components.relations.ComponentRelationDataTest.Relationship2;

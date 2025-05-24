@@ -10,7 +10,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.types.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P1;
 import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P2;

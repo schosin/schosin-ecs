@@ -6,10 +6,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 
 class RelationTest {
 
