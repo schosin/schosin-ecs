@@ -1,6 +1,6 @@
 package de.schosin.ecs.engine.utils.exceptions;
 
-import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType;
 
 public class UnsupportedComponentTypeException extends Exception {
     private static final long serialVersionUID = 1L;

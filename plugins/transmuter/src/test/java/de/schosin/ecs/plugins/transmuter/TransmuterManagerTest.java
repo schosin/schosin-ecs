@@ -1,7 +1,7 @@
 package de.schosin.ecs.plugins.transmuter;
 
-import static de.schosin.ecs.api.components.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.ComponentType.wildcard;
+import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -12,9 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import de.schosin.ecs.api.components.ComponentType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;

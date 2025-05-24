@@ -5,10 +5,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.Nullable;
 
-import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
 import de.schosin.ecs.api.components.Components.EntityRelationMapper;
 import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
@@ -18,6 +14,10 @@ import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;

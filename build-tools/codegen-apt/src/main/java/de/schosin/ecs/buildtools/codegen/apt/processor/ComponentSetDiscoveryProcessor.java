@@ -18,7 +18,7 @@ import com.google.auto.service.AutoService;
 import com.palantir.javapoet.JavaFile;
 
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.TypeData;
 
 @AutoService(Processor.class)

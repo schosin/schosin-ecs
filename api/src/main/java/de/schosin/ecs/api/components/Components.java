@@ -1,22 +1,13 @@
 package de.schosin.ecs.api.components;
 
-import static de.schosin.ecs.api.components.ComponentType.componentSet;
-import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
-import static de.schosin.ecs.api.components.ComponentType.relation;
+import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
+import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
+import static de.schosin.ecs.api.components.types.ComponentType.relation;
 
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType.ClassType;
-import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
-import de.schosin.ecs.api.components.ComponentType.EntityRelationFetchType;
-import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationFetchType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
@@ -25,6 +16,16 @@ import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentSetType;
+import de.schosin.ecs.api.components.types.ComponentType.EntityRelationFetchType;
+import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationFetchType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 /**
  *  Component mapper for accessing and modifying components of an entity.

@@ -5,11 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
 
 class RelationTest {
 

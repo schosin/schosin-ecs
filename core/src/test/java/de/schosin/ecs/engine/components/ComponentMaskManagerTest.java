@@ -15,10 +15,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RelationComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;

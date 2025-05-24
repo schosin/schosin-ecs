@@ -8,8 +8,8 @@ import java.util.Set;
 
 import org.jspecify.annotations.NullMarked;
 
-import de.schosin.ecs.api.components.ComponentType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 
 @NullMarked

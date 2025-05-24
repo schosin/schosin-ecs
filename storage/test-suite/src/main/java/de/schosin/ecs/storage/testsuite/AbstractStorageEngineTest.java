@@ -3,7 +3,7 @@ package de.schosin.ecs.storage.testsuite;
 import java.util.function.Consumer;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.test.AbstractEcsTest;
 

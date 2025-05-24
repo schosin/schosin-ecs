@@ -1,8 +1,10 @@
-package de.schosin.ecs.api.components;
+package de.schosin.ecs.api.components.types;
 
 import java.lang.reflect.Modifier;
 import java.util.Set;
 
+import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;

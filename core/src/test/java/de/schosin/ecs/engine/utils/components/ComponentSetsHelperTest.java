@@ -1,8 +1,8 @@
 package de.schosin.ecs.engine.utils.components;
 
-import static de.schosin.ecs.api.components.ComponentType.component;
-import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
-import static de.schosin.ecs.api.components.ComponentType.relation;
+import static de.schosin.ecs.api.components.types.ComponentType.component;
+import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
+import static de.schosin.ecs.api.components.types.ComponentType.relation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.jspecify.annotations.Nullable;

@@ -1,8 +1,8 @@
 package de.schosin.ecs.engine.components;
 
-import static de.schosin.ecs.api.components.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.ComponentType.componentSet;
-import static de.schosin.ecs.api.components.ComponentType.wildcard;
+import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
+import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType;
 import de.schosin.ecs.api.components.Components.ComponentMapper;
 import de.schosin.ecs.api.components.Components.ComponentSetMapper;
 import de.schosin.ecs.api.components.Components.EntityRelationFetchMapper;
@@ -22,6 +21,7 @@ import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationFetchMapp
 import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.EngineWorld;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Birthplace;

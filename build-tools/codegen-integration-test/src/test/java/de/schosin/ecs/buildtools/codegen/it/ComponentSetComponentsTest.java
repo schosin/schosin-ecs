@@ -1,6 +1,6 @@
 package de.schosin.ecs.buildtools.codegen.it;
 
-import static de.schosin.ecs.api.components.ComponentType.componentSet;
+import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Nested;

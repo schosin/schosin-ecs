@@ -8,8 +8,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.storage.api.components.Component;

@@ -6,10 +6,10 @@ import java.util.Objects;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
 import de.schosin.ecs.utils.collections.Bag;

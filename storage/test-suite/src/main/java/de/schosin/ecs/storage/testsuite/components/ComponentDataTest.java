@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 import de.schosin.ecs.storage.testsuite.components.ComponentDataTest.C1;
 import de.schosin.ecs.storage.testsuite.components.ComponentDataTest.C2;

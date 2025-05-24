@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 /**
  * This annotation is used to generate a {@link ComponentSet} based on

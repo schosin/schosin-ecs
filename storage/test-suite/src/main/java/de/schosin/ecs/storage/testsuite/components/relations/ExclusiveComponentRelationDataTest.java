@@ -3,9 +3,9 @@ package de.schosin.ecs.storage.testsuite.components.relations;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
-import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.storage.testsuite.components.relations.ExclusiveComponentRelationDataTest.Relationship1;
 import de.schosin.ecs.storage.testsuite.components.relations.ExclusiveComponentRelationDataTest.Relationship2;
 import de.schosin.ecs.storage.testsuite.components.relations.ExclusiveComponentRelationDataTest.Relationship3;

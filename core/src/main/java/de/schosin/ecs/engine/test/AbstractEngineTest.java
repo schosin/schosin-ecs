@@ -14,17 +14,17 @@ import java.util.stream.Collectors;
 
 import org.assertj.core.api.SoftAssertions;
 
-import de.schosin.ecs.api.components.ComponentType;
-import de.schosin.ecs.api.components.ComponentType.ClassType;
-import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager;

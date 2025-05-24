@@ -1,10 +1,10 @@
 package de.schosin.ecs.utils;
 
-import static de.schosin.ecs.api.components.ComponentType.component;
-import static de.schosin.ecs.api.components.ComponentType.componentSet;
-import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
-import static de.schosin.ecs.api.components.ComponentType.relation;
-import static de.schosin.ecs.api.components.ComponentType.wildcard;
+import static de.schosin.ecs.api.components.types.ComponentType.component;
+import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
+import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
+import static de.schosin.ecs.api.components.types.ComponentType.relation;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -14,9 +14,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.ComponentType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 class ComponentUtilsTest {
 

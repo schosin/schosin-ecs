@@ -20,6 +20,7 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.types.ComponentType;
 
 /**
  * Base interface for declaring a component set. A component set consists of one or more

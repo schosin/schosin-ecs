@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import de.schosin.ecs.api.components.ComponentType.ClassType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 
 public abstract class CommonClassTypeTest<T1, T2, T3> extends CommonComponentTest<T1, T1, T2, T2, T3, T3> {

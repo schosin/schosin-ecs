@@ -39,7 +39,7 @@ public class Utils {
     public static final ParameterizedTypeName WILDCARD_CLASS = ParameterizedTypeName.get(CLASS, WILDCARD);
     public static final ArrayTypeName WILDCARD_CLASS_ARRAY = ArrayTypeName.of(WILDCARD_CLASS);
 
-    public static final ClassName COMPONENT_TYPE = ClassName.get("de.schosin.ecs.api.components", "ComponentType");
+    public static final ClassName COMPONENT_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentType");
     public static final ParameterizedTypeName COMPONENT_TYPE_WILDCARD = componentType(WILDCARD);
     public static final ArrayTypeName COMPONENT_TYPE_WILDCARD_ARRAY = ArrayTypeName.of(COMPONENT_TYPE_WILDCARD);
 

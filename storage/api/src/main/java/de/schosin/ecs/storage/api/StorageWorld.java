@@ -1,7 +1,7 @@
 package de.schosin.ecs.storage.api;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
 

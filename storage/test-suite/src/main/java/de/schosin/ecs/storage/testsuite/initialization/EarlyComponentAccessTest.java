@@ -6,8 +6,8 @@ import static org.assertj.core.api.Assertions.fail;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType;
-import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 

@@ -5,21 +5,21 @@ import java.util.Objects;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentType.ClassType;
-import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.RelationComponentType;
 import de.schosin.ecs.utils.collections.IntBag;
 
 public sealed interface Component<T, R> {

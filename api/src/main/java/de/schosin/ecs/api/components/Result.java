@@ -8,6 +8,7 @@ import org.jspecify.annotations.Nullable;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
+import de.schosin.ecs.api.components.types.ComponentType;
 
 /**
  * Represents a result containing no, one or more components matching

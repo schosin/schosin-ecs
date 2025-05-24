@@ -19,7 +19,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
 import de.schosin.ecs.engine.events.builtin.Event;
 import de.schosin.ecs.storage.api.StorageEngine;

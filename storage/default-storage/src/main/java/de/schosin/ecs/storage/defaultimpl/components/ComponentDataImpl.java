@@ -2,7 +2,7 @@ package de.schosin.ecs.storage.defaultimpl.components;
 
 import org.jspecify.annotations.NonNull;
 
-import de.schosin.ecs.api.components.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 import de.schosin.ecs.utils.collections.Bag;
 

@@ -7,9 +7,9 @@ import static org.assertj.core.api.Assumptions.assumeThat;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.storage.testsuite.components.relations.ExclusiveEntityRelationDataTest.Relationship1;
 import de.schosin.ecs.storage.testsuite.components.relations.ExclusiveEntityRelationDataTest.Relationship2;
 import de.schosin.ecs.storage.testsuite.components.relations.ExclusiveEntityRelationDataTest.Relationship3;

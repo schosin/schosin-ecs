@@ -1,11 +1,11 @@
-package de.schosin.ecs.api.components;
+package de.schosin.ecs.api.components.types;
 
-import static de.schosin.ecs.api.components.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.ComponentType.component;
-import static de.schosin.ecs.api.components.ComponentType.componentSet;
-import static de.schosin.ecs.api.components.ComponentType.exclusiveRelation;
-import static de.schosin.ecs.api.components.ComponentType.relation;
-import static de.schosin.ecs.api.components.ComponentType.wildcard;
+import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
+import static de.schosin.ecs.api.components.types.ComponentType.component;
+import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
+import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
+import static de.schosin.ecs.api.components.types.ComponentType.relation;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -21,13 +21,15 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import de.schosin.ecs.api.components.ComponentType.ClassType;
-import de.schosin.ecs.api.components.ComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ComponentSetType;
-import de.schosin.ecs.api.components.ComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.Wildcard;
+import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.types.ComponentType.ClassType;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ComponentSetType;
+import de.schosin.ecs.api.components.types.ComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.Wildcard;
 
 class ComponentTypeTest {
 
@@ -228,7 +230,7 @@ class ComponentTypeTest {
             }
 
             @ParameterizedTest
-            @MethodSource("de.schosin.ecs.api.components.ComponentTypeTest#unsupportedTypes")
+            @MethodSource("de.schosin.ecs.api.components.types.ComponentTypeTest#unsupportedTypes")
             void testUnsupportedClassType(Class<?> clazz) {
                 assertThatThrownBy(() -> new ComponentRelationType<>(EnumComponent.class, clazz))
                         .isInstanceOf(IllegalArgumentException.class)
@@ -316,7 +318,7 @@ class ComponentTypeTest {
             }
 
             @ParameterizedTest
-            @MethodSource("de.schosin.ecs.api.components.ComponentTypeTest#unsupportedTypes")
+            @MethodSource("de.schosin.ecs.api.components.types.ComponentTypeTest#unsupportedTypes")
             void testUnsupportedClassType(Class<?> clazz) {
                 assertThatThrownBy(() -> new ExclusiveComponentRelationType<>(ExclusiveComponent.class, clazz))
                         .isInstanceOf(IllegalArgumentException.class)
@@ -466,7 +468,7 @@ class ComponentTypeTest {
         }
 
         @ParameterizedTest
-        @MethodSource("de.schosin.ecs.api.components.ComponentTypeTest#unsupportedTypes")
+        @MethodSource("de.schosin.ecs.api.components.types.ComponentTypeTest#unsupportedTypes")
         void testUnsupportedWildcardType(Class<?> clazz) {
             assertThatThrownBy(() -> new Wildcard<>(clazz))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -503,7 +505,7 @@ class ComponentTypeTest {
         }
 
         @ParameterizedTest
-        @MethodSource("de.schosin.ecs.api.components.ComponentTypeTest#unsupportedTypes")
+        @MethodSource("de.schosin.ecs.api.components.types.ComponentTypeTest#unsupportedTypes")
         void testUnsupportedClassType(Class<?> clazz) {
             assertThatThrownBy(() -> type(clazz))
                     .isInstanceOf(IllegalArgumentException.class)

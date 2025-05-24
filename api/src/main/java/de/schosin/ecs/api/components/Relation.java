@@ -5,12 +5,13 @@ import java.util.List;
 import java.util.Objects;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentType.RegularComponentRelationType;
-import de.schosin.ecs.api.components.ComponentType.RegularEntityRelationType;
-import de.schosin.ecs.api.components.ComponentType.RelationComponentType;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.components.types.ComponentType.RelationComponentType;
 
 public sealed interface Relation<R> {
 

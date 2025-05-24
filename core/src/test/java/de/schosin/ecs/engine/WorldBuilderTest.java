@@ -1,6 +1,6 @@
 package de.schosin.ecs.engine;
 
-import static de.schosin.ecs.api.components.ComponentType.component;
+import static de.schosin.ecs.api.components.types.ComponentType.component;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
