@@ -18,6 +18,7 @@ import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
@@ -43,15 +44,17 @@ public class RelationMapperManager {
     private final Map<EntityRelationType<?>, EntityRelationMapper<?>> entityRelations = new ConcurrentHashMap<>();
     private final Map<ExclusiveEntityRelationType<?>, ExclusiveEntityRelationMapper<?>> exclusiveEntityRelations = new ConcurrentHashMap<>();
 
-    private final Bag<AbstractEntityRelationMapper<?, ?, ?>> entityRelationMappers = new Bag<>(AbstractEntityRelationMapper.class, 16);
+    private final Bag<AbstractEntityRelationMapper<?, ?, ?>> entityRelationMappers;
 
     private ImmutableBag<Component<?, ?>> components;
     private final IntBag affectedEntities = new IntBag(32);
 
-    public RelationMapperManager(StorageEngine engine, EventManager eventManager, ComponentManager componentManager, TransmutationManager transmutationManager) {
+    public RelationMapperManager(StorageEngine engine, EventManager eventManager, BagManager bagManager, ComponentManager componentManager, TransmutationManager transmutationManager) {
         this.engine = engine;
         this.componentManager = componentManager;
         this.transmutationManager = transmutationManager;
+
+        this.entityRelationMappers = bagManager.createComponentBag(AbstractEntityRelationMapper.class);
 
         eventManager.registerEventHandler(EntityRemovedEvent.class, this::handleEntityRemovedEvent);
     }
@@ -62,8 +65,9 @@ public class RelationMapperManager {
         }
 
         // Remove relations with entity as target
-        for (int i = 0, s = components.getSize(); i < s; i++) {
-            var mapper = entityRelationMappers.get(components.get(i).id());
+        for (int i = components.getSize() - 1; i >= 0; i--) {
+            var componentId = components.get(i).id();
+            var mapper = entityRelationMappers.get(componentId);
             if (mapper == null) {
                 continue;
             }

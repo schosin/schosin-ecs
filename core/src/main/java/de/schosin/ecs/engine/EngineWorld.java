@@ -84,7 +84,7 @@ public class EngineWorld implements World, StorageWorld {
         this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
         this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
-        this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, componentManager, transmutationManager));
+        this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager));
         this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager));
 
         // Initialized configured singletons
