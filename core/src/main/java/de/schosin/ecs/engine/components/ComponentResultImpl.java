@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Result.ComponentResult;
-import de.schosin.ecs.api.components.mappers.Components.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BagIterator;
 

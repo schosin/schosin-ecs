@@ -10,17 +10,16 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.Components.ComponentMapper;
-import de.schosin.ecs.api.components.mappers.Components.ComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.ComponentSetMapper;
-import de.schosin.ecs.api.components.mappers.Components.EntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.Components.EntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.EnumComponentMapper;
-import de.schosin.ecs.api.components.mappers.Components.ExclusiveComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -166,13 +165,13 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <R, T> EntityRelationFetchMapper<R, T> getEntityRelations(EntityRelationFetchType<R, T> relation) {
-        return componentMapperManager.getEntityRelations(relation);
+    public <R, T> EntityRelationFetchMapper<R, T> getEntityFetchRelations(EntityRelationFetchType<R, T> relation) {
+        return componentMapperManager.getEntityFetchRelations(relation);
     }
 
     @Override
-    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityRelations(ExclusiveEntityRelationFetchType<R, T> relation) {
-        return componentMapperManager.getEntityRelations(relation);
+    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityFetchRelations(ExclusiveEntityRelationFetchType<R, T> relation) {
+        return componentMapperManager.getEntityFetchRelations(relation);
     }
 
     @Override

@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentManager;

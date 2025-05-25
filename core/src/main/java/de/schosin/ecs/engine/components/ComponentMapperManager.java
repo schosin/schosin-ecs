@@ -21,18 +21,18 @@ import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
+import de.schosin.ecs.api.components.mappers.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.Components.ComponentMapper;
-import de.schosin.ecs.api.components.mappers.Components.ComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.ComponentSetMapper;
-import de.schosin.ecs.api.components.mappers.Components.EntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.Components.EntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.EnumComponentMapper;
-import de.schosin.ecs.api.components.mappers.Components.ExclusiveComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
-import de.schosin.ecs.api.components.mappers.Components.WildcardComponents;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.WildcardComponents;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -105,8 +105,8 @@ public class ComponentMapperManager implements Components.Creator {
     public <T, R> Components<T, R> getComponents(ComponentType<T, R> type) {
         return switch (type) {
             case RegularComponentType<T, R> regular -> getComponents(regular);
-            case EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
-            case ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityRelations(fetch);
+            case EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityFetchRelations(fetch);
+            case ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityFetchRelations(fetch);
             case ComponentSetType<?> set -> (Components<T, R>) getComponentSets(set);
             case Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
         };
@@ -221,7 +221,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R, T> EntityRelationFetchMapper<R, T> getEntityRelations(EntityRelationFetchType<R, T> relation) {
+    public <R, T> EntityRelationFetchMapper<R, T> getEntityFetchRelations(EntityRelationFetchType<R, T> relation) {
         var result = (EntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
         if (result != null) {
             return result;
@@ -242,7 +242,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityRelations(ExclusiveEntityRelationFetchType<R, T> relation) {
+    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityFetchRelations(ExclusiveEntityRelationFetchType<R, T> relation) {
         var result = (ExclusiveEntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
         if (result != null) {
             return result;

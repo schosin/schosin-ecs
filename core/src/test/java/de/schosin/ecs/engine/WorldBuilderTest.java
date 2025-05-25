@@ -11,7 +11,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.Plugin;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.mappers.Components.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.engine.WorldBuilderTest.ComponentAccessingPluginTest.ComponentAccessingPlugin;
 import de.schosin.ecs.engine.WorldBuilderTest.ComponentAccessingPluginTest.ComponentAccessingPluginImpl;
 import de.schosin.ecs.engine.WorldBuilderTest.MyPluginTest.MyPlugin;

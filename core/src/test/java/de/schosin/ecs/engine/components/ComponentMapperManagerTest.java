@@ -15,12 +15,12 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.mappers.Components.ComponentMapper;
-import de.schosin.ecs.api.components.mappers.Components.ComponentSetMapper;
-import de.schosin.ecs.api.components.mappers.Components.EntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.Components.EnumComponentMapper;
-import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.EngineWorld;
@@ -295,7 +295,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 
             @BeforeEach
             void setupMapper() {
-                this.mapper = world.getEntityRelations(ComponentType.relation(Related.class, componentSet(MyComponentSet.class)));
+                this.mapper = world.getEntityFetchRelations(ComponentType.relation(Related.class, componentSet(MyComponentSet.class)));
             }
 
             @Nested
@@ -531,7 +531,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 
             @BeforeEach
             void setupMapper() {
-                this.mapper = world.getEntityRelations(ComponentType.exclusiveRelation(Parent.class, componentSet(MyComponentSet.class)));
+                this.mapper = world.getEntityFetchRelations(ComponentType.exclusiveRelation(Parent.class, componentSet(MyComponentSet.class)));
             }
 
             @Nested

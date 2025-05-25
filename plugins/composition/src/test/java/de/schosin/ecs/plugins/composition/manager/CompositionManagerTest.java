@@ -27,7 +27,7 @@ import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
-import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
