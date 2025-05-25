@@ -4,6 +4,7 @@ import java.lang.reflect.Modifier;
 import java.util.Set;
 
 import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
@@ -16,11 +17,41 @@ import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRela
 /**
  * Interface to describe the supported component types.
  * 
- * @param <T> type of component data
- * @param <R> type of result when retrieving component data for an entity
+ * <p>
+ * A component type describes both the type of a single instance ({@code T}), as well as the type
+ * when retrieving the component data for an entity ({@code R}).
+ * </p>
+ * 
+ * <p>
+ * By default only {@link RegularComponentType} components can be directly added to entities.
+ * These types are intended to read, add and remove components from entities.
+ * </p>
+ * 
+ * <p>
+ * {@link ComponentType ComponentTypes} not extending {@link RegularComponentType} are intended to
+ * provide additional capabilities when reading component data. {@link Wildcard} supports reading
+ * a {@link ComponentResult} of components matching the {@link Wildcard#bound()}, {@link ComponentSetType}
+ * supports retrieves a set of components as if it were a single component, and {@link RelationFetchType}
+ * allows to fetch components of the target entity of the relation.
+ * </p>
+ * 
+ * <p>
+ * {@link ComponentType ComponentTypes} are bound to their {@link Components} counterpart. 
+ * See the return type of a method in {@link Components.Creator} that accepts a particular {@link ComponentType}
+ * to see the supported operations beyond what {@link Components} provide.
+ * </p>
+ * 
+ * @param <T> type of a single component instance
+ * @param <R> type of component data when reading
  */
 public sealed interface ComponentType<T, R> permits RegularComponentType, Wildcard, ComponentSetType, RelationFetchType {
 
+    /**
+     * Describes component types that can be directly assigned to entities.
+     * 
+     * @param <T> type of a single component instance
+     * @param <R> type of component data when reading
+     */
     sealed interface RegularComponentType<T, R> extends ComponentType<T, R> permits ClassType, RelationComponentType {
     }
 
@@ -61,6 +92,21 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
     static <T> Wildcard<T> wildcard(Class<T> bound) {
         return new Wildcard<>(bound);
     }
+
+    /**
+     * Returns whether this component type is equal to the other component type,
+     * or is interested in the other component type.
+     * 
+     * <p>
+     * {@link RegularComponentType Regular component types} should only implement this
+     * by {@link Object#equals(Object)}. Wildcard types should return true for all
+     * component types they match against.
+     * </p>
+     * 
+     * @param otherType other component type
+     * @return true if this is equal to or is interested in the other component type 
+     */
+    boolean matches(ComponentType<?, ?> otherType);
 
 }
 

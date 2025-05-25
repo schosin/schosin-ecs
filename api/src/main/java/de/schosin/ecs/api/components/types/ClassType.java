@@ -10,6 +10,11 @@ public record ClassType<T>(Class<T> clazz) implements RegularComponentType<T, T>
     }
 
     @Override
+    public boolean matches(ComponentType<?, ?> otherType) {
+        return this.equals(otherType);
+    }
+
+    @Override
     public final String toString() {
         return "ClassType(%s)".formatted(clazz.getSimpleName());
     }

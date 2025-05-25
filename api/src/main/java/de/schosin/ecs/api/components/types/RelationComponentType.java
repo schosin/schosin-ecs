@@ -37,6 +37,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return this.equals(otherType);
+        }
+
+        @Override
         public final String toString() {
             return "ComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
         }
@@ -55,6 +60,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return this.equals(otherType);
+        }
+
+        @Override
         public final String toString() {
             return "ExclusiveComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
         }
@@ -66,6 +76,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return this.equals(otherType);
+        }
+
+        @Override
         public final String toString() {
             return "EntityRelationType(%s)".formatted(relationship.getSimpleName());
         }
@@ -74,6 +89,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
     record ExclusiveEntityRelationType<R extends Relation.Exclusive>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelation<R>> {
         public ExclusiveEntityRelationType {
             RelationComponentTypeHelper.validateEntityRelationship(relationship);
+        }
+
+        @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return this.equals(otherType);
         }
 
         @Override

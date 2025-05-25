@@ -11,12 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.Component;
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.ComponentInterface;
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.ExclusiveComponent;
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.MyComponentSet;
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.RelationshipComponent;
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.TargetComponent;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 
-class ComponentTypeTest extends AbstractComponentTypeTest {
+class ComponentTypeTest {
 
     @Nested
     class FactoryMethodsTest {

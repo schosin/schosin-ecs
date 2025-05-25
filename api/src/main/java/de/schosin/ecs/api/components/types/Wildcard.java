@@ -13,6 +13,15 @@ public record Wildcard<T>(Class<T> bound) implements ComponentType<T, ComponentR
     }
 
     @Override
+    public boolean matches(ComponentType<?, ?> otherType) {
+        return switch (otherType) {
+            case ClassType<?> classType -> this.bound.isAssignableFrom(classType.clazz());
+            case Wildcard<?> wildcard -> this.bound.isAssignableFrom(wildcard.bound());
+            default -> false;
+        };
+    }
+
+    @Override
     public final String toString() {
         return "Wildcard(%s)".formatted(bound.getSimpleName());
     }

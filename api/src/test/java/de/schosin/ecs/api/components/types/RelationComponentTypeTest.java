@@ -1,7 +1,10 @@
 package de.schosin.ecs.api.components.types;
 
+import static de.schosin.ecs.api.components.types.ComponentType.component;
+import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.types.ComponentType.relation;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -18,7 +21,84 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 
-class RelationComponentTypeTest extends AbstractComponentTypeTest {
+class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationComponentTypeTest.MatchesTestCases> {
+
+    public RelationComponentTypeTest() {
+        super(MatchesTestCases.class);
+    }
+
+    enum MatchesTestCases implements AbstractComponentTypeTest.MatchesTestCase {
+
+        component_classType(relation(RelationshipComponent.class, TargetComponent.class), component(Component.class), false),
+        component_componentRelation(relation(RelationshipComponent.class, TargetComponent.class), relation(RelationshipComponent.class, TargetComponent.class), true),
+        component_otherComponentRelation(relation(RelationshipComponent.class, TargetComponent.class), relation(RelationshipComponent.class, Component.class), false),
+        component_exclusiveComponentRelation(relation(RelationshipComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
+        component_entityRelation(relation(RelationshipComponent.class, TargetComponent.class), relation(EntityRelationshipComponent.class), false),
+        component_exclusiveEntityRelation(relation(RelationshipComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
+        component_wildcardObject(relation(RelationshipComponent.class, TargetComponent.class), wildcard(Object.class), false),
+        component_componentSet(relation(RelationshipComponent.class, TargetComponent.class), componentSet(MyComponentSet.class), false),
+        component_equalEntityFetch(relation(RelationshipComponent.class, TargetComponent.class), relation(EntityRelationshipComponent.class, FETCH), false),
+        component_equalExclusiveEntityFetch(relation(RelationshipComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+
+        exclusiveComponent_classType(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), component(Component.class), false),
+        exclusiveComponent_componentRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), relation(RelationshipComponent.class, TargetComponent.class), false),
+        exclusiveComponent_exclusiveComponentRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), true),
+        exclusiveComponent_otherExclusiveComponentRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveComponent.class, Component.class), false),
+        exclusiveComponent_entityRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), relation(EntityRelationshipComponent.class), false),
+        exclusiveComponent_exclusiveEntityRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
+        exclusiveComponent_wildcardObject(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), wildcard(Object.class), false),
+        exclusiveComponent_componentSet(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), componentSet(MyComponentSet.class), false),
+        exclusiveComponent_equalEntityFetch(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), relation(EntityRelationshipComponent.class, FETCH), false),
+        exclusiveComponent_equalExclusiveEntityFetch(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+
+        entity_classType(relation(EntityRelationshipComponent.class), component(Component.class), false),
+        entity_componentRelation(relation(EntityRelationshipComponent.class), relation(RelationshipComponent.class, TargetComponent.class), false),
+        entity_exclusiveComponentRelation(relation(EntityRelationshipComponent.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
+        entity_entityRelation(relation(EntityRelationshipComponent.class), relation(EntityRelationshipComponent.class), true),
+        entity_otherEntityRelation(relation(EntityRelationshipComponent.class), relation(Component.class), false),
+        entity_exclusiveEntityRelation(relation(EntityRelationshipComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
+        entity_wildcardObject(relation(EntityRelationshipComponent.class), wildcard(Object.class), false),
+        entity_componentSet(relation(EntityRelationshipComponent.class), componentSet(MyComponentSet.class), false),
+        entity_equalEntityFetch(relation(EntityRelationshipComponent.class), relation(EntityRelationshipComponent.class, FETCH), false),
+        entity_equalExclusiveEntityFetch(relation(EntityRelationshipComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+
+        exclusiveEntity_classType(exclusiveRelation(ExclusiveEntityRelationship.class), component(Component.class), false),
+        exclusiveEntity_componentRelation(exclusiveRelation(ExclusiveEntityRelationship.class), relation(RelationshipComponent.class, TargetComponent.class), false),
+        exclusiveEntity_exclusiveComponentRelation(exclusiveRelation(ExclusiveEntityRelationship.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
+        exclusiveEntity_entityRelation(exclusiveRelation(ExclusiveEntityRelationship.class), relation(EntityRelationshipComponent.class), false),
+        exclusiveEntity_exclusiveEntityRelation(exclusiveRelation(ExclusiveEntityRelationship.class), exclusiveRelation(ExclusiveEntityRelationship.class), true),
+        exclusiveEntity_otherExclusiveEntityRelation(exclusiveRelation(ExclusiveEntityRelationship.class), exclusiveRelation(ExclusiveComponent.class), false),
+        exclusiveEntity_wildcardObject(exclusiveRelation(ExclusiveEntityRelationship.class), wildcard(Object.class), false),
+        exclusiveEntity_componentSet(exclusiveRelation(ExclusiveEntityRelationship.class), componentSet(MyComponentSet.class), false),
+        exclusiveEntity_equalEntityFetch(exclusiveRelation(ExclusiveEntityRelationship.class), relation(EntityRelationshipComponent.class, FETCH), false),
+        exclusiveEntity_equalExclusiveEntityFetch(exclusiveRelation(ExclusiveEntityRelationship.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false);
+
+        private final RelationComponentType<?, ?, ?> type;
+        private final ComponentType<?, ?> otherType;
+        private final boolean matches;
+
+        private MatchesTestCases(RelationComponentType<?, ?, ?> type, ComponentType<?, ?> otherType, boolean matches) {
+            this.type = type;
+            this.otherType = otherType;
+            this.matches = matches;
+        }
+
+        @Override
+        public ComponentType<?, ?> type() {
+            return type;
+        }
+
+        @Override
+        public ComponentType<?, ?> otherType() {
+            return otherType;
+        }
+
+        @Override
+        public boolean matches() {
+            return matches;
+        }
+
+    }
 
     @Nested
     class ComponentRelationTypeTest {

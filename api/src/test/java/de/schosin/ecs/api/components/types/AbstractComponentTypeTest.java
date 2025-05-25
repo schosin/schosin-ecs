@@ -1,11 +1,18 @@
 package de.schosin.ecs.api.components.types;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,13 +23,60 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationship;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relation.Relationship;
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.MatchesTestCase;
 
-public abstract class AbstractComponentTypeTest {
+public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestCase> {
 
     protected static final ClassType<EnumComponent> FETCH = ComponentType.component(EnumComponent.class);
 
     protected static final Class<?> SYNTHETIC_CLASS = ((Runnable) () -> {
     }).getClass();
+
+    private static final Set<Class<? extends ComponentType<?, ?>>> EXPECTED_COMPONENT_TYPES = resolveComponentTypeClasses();
+
+    protected final Class<T> matchesTestCases;
+
+    protected AbstractComponentTypeTest(Class<T> matchesTestCases) {
+        this.matchesTestCases = matchesTestCases;
+    }
+
+    interface MatchesTestCase {
+
+        String name();
+
+        ComponentType<?, ?> type();
+
+        ComponentType<?, ?> otherType();
+
+        boolean matches();
+
+    }
+
+    @Test
+    void verifyMatchesTestCases() {
+        var expected = new HashSet<>(EXPECTED_COMPONENT_TYPES);
+
+        for (var testCase : matchesTestCases.getEnumConstants()) {
+            expected.remove(testCase.otherType().getClass());
+        }
+
+        assertThat(expected).as("must cover all component types").isEmpty();
+    }
+
+    @TestFactory
+    Stream<DynamicTest> testMatches() {
+        return Arrays.stream(matchesTestCases.getEnumConstants())
+                .map(this::testMatches);
+    }
+
+    DynamicTest testMatches(MatchesTestCase testCase) {
+        var type = testCase.type();
+        var otherType = testCase.otherType();
+        var matches = testCase.matches();
+
+        var description = "%s %s %s".formatted(type, matches ? "matches" : "does not match", otherType);
+        return DynamicTest.dynamicTest(testCase.name(), () -> assertThat(type.matches(otherType)).as(description).isEqualTo(matches));
+    }
 
     abstract class CommonComponentTest {
 
@@ -37,7 +91,7 @@ public abstract class AbstractComponentTypeTest {
         }
 
         @ParameterizedTest
-        @MethodSource("de.schosin.ecs.api.components.types.ComponentTypeTest#unsupportedTypes")
+        @MethodSource("de.schosin.ecs.api.components.types.AbstractComponentTypeTest#unsupportedTypes")
         void testUnsupportedClassType(Class<?> clazz) {
             assertThatThrownBy(() -> type(clazz))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -65,6 +119,30 @@ public abstract class AbstractComponentTypeTest {
                 .map(clazz -> Arguments.of(Named.of(clazz.getSimpleName(), clazz)));
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static Set<Class<? extends ComponentType<?, ?>>> resolveComponentTypeClasses() {
+        return Set.copyOf(resolveComponentTypeClasses((Class) ComponentType.class, new HashSet<>()));
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static Set<Class<? extends ComponentType<?, ?>>> resolveComponentTypeClasses(Class<? extends ComponentType<?, ?>> clazz, Set<Class<? extends ComponentType<?, ?>>> result) {
+        if (Modifier.isFinal(clazz.getModifiers())) {
+            result.add(clazz);
+            return result;
+        }
+
+        var subclasses = clazz.getPermittedSubclasses();
+        if (subclasses == null || subclasses.length == 0) {
+            throw new IllegalStateException("Class '%s' is neither final, nor has permitted subclasses. ComponentType hierarchy broken.".formatted(clazz.getName()));
+        }
+
+        for (var subclass : subclasses) {
+            resolveComponentTypeClasses((Class) subclass, result);
+        }
+
+        return result;
+    }
+
     enum EnumComponent {
         A, B
     }
@@ -88,7 +166,7 @@ public abstract class AbstractComponentTypeTest {
     class NonFinalComponent {
     }
 
-    final class FinalComponent {
+    final class FinalComponent implements ComponentInterface {
     }
 
     enum RelationshipComponent implements Relationship {
@@ -120,6 +198,10 @@ public abstract class AbstractComponentTypeTest {
         public Component component() {
             return null;
         }
+    }
+
+    interface OtherComponentSet extends ComponentSet {
+        Component component();
     }
 
 }

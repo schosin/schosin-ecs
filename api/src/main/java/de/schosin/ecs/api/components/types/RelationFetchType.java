@@ -14,6 +14,11 @@ public sealed interface RelationFetchType<R, T, X> extends ComponentType<EntityR
         }
 
         @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return this.equals(otherType);
+        }
+
+        @Override
         public final String toString() {
             return "EntityRelationFetchType(%s -> %s)".formatted(relationship.getSimpleName(), fetch);
         }
@@ -22,6 +27,11 @@ public sealed interface RelationFetchType<R, T, X> extends ComponentType<EntityR
     record ExclusiveEntityRelationFetchType<R extends Relation.Exclusive, T>(Class<R> relationship, ComponentType<?, T> fetch) implements RelationFetchType<R, T, EntityRelationData<R, T>> {
         public ExclusiveEntityRelationFetchType {
             RelationComponentTypeHelper.validateEntityRelationship(relationship);
+        }
+
+        @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return this.equals(otherType);
         }
 
         @Override

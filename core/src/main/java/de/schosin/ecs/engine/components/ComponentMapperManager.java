@@ -52,7 +52,6 @@ import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFa
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
-import de.schosin.ecs.utils.ComponentUtils;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
@@ -688,7 +687,9 @@ public class ComponentMapperManager implements Components.Creator {
         @SuppressWarnings({ "unchecked", "rawtypes" })
         private void handleComponentAdded(ComponentAddedEvent event) {
             for (var entry : components.entrySet()) {
-                if (ComponentUtils.matches(entry.getKey(), event.type())) {
+                var componentType = entry.getKey();
+
+                if (componentType.matches(event.type())) {
                     var bags = entry.getValue();
 
                     var data = bags.getData();
@@ -706,7 +707,7 @@ public class ComponentMapperManager implements Components.Creator {
             for (int i = 0, s = components.getSize(); i < s; i++) {
                 var component = components.get(i);
 
-                if (ComponentUtils.matches(type, component.type())) {
+                if (type.matches(component.type())) {
                     wildcardComponents.mappers.add((ComponentMapper) getComponents(component.type()));
                 }
             }

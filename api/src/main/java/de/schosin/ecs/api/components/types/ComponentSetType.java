@@ -9,6 +9,11 @@ public record ComponentSetType<T extends ComponentSet>(Class<T> componentSet) im
     }
 
     @Override
+    public boolean matches(ComponentType<?, ?> otherType) {
+        return this.equals(otherType);
+    }
+
+    @Override
     public final String toString() {
         return "ComponentSetType(%s)".formatted(componentSet.getSimpleName());
     }

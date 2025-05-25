@@ -30,7 +30,6 @@ import de.schosin.ecs.storage.defaultimpl.components.EntityRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.ExclusiveComponentRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.ExclusiveEntityRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.PooledComponentDataImpl;
-import de.schosin.ecs.utils.ComponentUtils;
 import de.schosin.ecs.utils.ReflectionUtils;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -273,7 +272,9 @@ public class ComponentStorageImpl implements ComponentStorage {
     private <T, R> void handleNewComponent(RegularComponentType<T, R> type, Component<T, R> component) {
         // Update bounds
         for (var entry : this.bounds.entrySet()) {
-            if (ComponentUtils.matches(entry.getKey(), type)) {
+            var componentType = entry.getKey();
+
+            if (componentType.matches(type)) {
                 entry.getValue().add(component);
             }
         }
@@ -309,7 +310,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             for (int i = 0, s = this.components.getSize(); i < s; i++) {
                 var component = data[i];
 
-                if (ComponentUtils.matches(bound, component.type())) {
+                if (bound.matches(component.type())) {
                     bag.add(component);
                 }
             }
