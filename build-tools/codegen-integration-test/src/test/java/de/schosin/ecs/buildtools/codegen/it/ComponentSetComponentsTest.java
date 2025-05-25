@@ -155,8 +155,8 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
 
                 verify(verify -> {
                     verify.expectUpdated(entity2, Acceleration.class);
-                    verify.expectUpdated(entity3, new Class<?>[0]);
-                    verify.expectUpdated(entity4, new Class<?>[0]);
+                    verify.expectUpdated(entity3, NO_COMPONENTS);
+                    verify.expectUpdated(entity4, NO_COMPONENTS);
                     verify.expectNoMoreUpdated();
 
                     // Call
@@ -297,8 +297,8 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
 
                 verify(verify -> {
                     verify.expectUpdated(entity2, Acceleration.class);
-                    verify.expectUpdated(entity3, new Class<?>[0]);
-                    verify.expectUpdated(entity4, new Class<?>[0]);
+                    verify.expectUpdated(entity3, NO_COMPONENTS);
+                    verify.expectUpdated(entity4, NO_COMPONENTS);
                     verify.expectNoMoreUpdated();
 
                     // Call

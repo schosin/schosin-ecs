@@ -765,7 +765,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                     // Remove 2
                     var added = apply(entityId, WILDCARD);
 
-                    verify.expectUpdated(entityId, new Class<?>[0]);
+                    verify.expectUpdated(entityId, NO_COMPONENTS);
                     verify.expectNoMoreUpdated();
 
                     // Process

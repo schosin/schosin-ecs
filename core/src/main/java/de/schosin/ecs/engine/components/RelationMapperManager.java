@@ -3,13 +3,7 @@ package de.schosin.ecs.engine.components;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.jspecify.annotations.Nullable;
-
-import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
@@ -19,15 +13,16 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.engine.components.mappers.relations.AbstractEntityRelationMapper;
+import de.schosin.ecs.engine.components.mappers.relations.ComponentRelationMapperImpl;
+import de.schosin.ecs.engine.components.mappers.relations.EntityRelationMapperImpl;
+import de.schosin.ecs.engine.components.mappers.relations.ExclusiveComponentRelationMapperImpl;
+import de.schosin.ecs.engine.components.mappers.relations.ExclusiveComponentRelationMapperImpl.RelationshipParent;
+import de.schosin.ecs.engine.components.mappers.relations.ExclusiveEntityRelationMapperImpl;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
-import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
-import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
-import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
-import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -72,7 +67,7 @@ public class RelationMapperManager {
                 continue;
             }
 
-            mapper.data.removeTarget(event.entityId(), affectedEntities);
+            mapper.removeTarget(event.entityId(), affectedEntities);
             handleRemovedRelations(mapper, affectedEntities);
         }
     }
@@ -84,7 +79,7 @@ public class RelationMapperManager {
 
         var data = affectedEntities.getData();
         for (int i = 0, s = affectedEntities.getSize(); i < s; i++) {
-            mapper.remove.apply(data[i]);
+            mapper.remove(data[i]);
         }
 
         affectedEntities.clear();
@@ -150,7 +145,7 @@ public class RelationMapperManager {
             }
 
             var metadata = componentManager.getComponent(type);
-            mapper = new EntityRelationMapperImpl<>(metadata);
+            mapper = new EntityRelationMapperImpl<>(metadata, transmutationManager);
 
             this.entityRelationMappers.set(metadata.id(), (AbstractEntityRelationMapper) mapper);
             this.entityRelations.put(type, mapper);
@@ -173,7 +168,7 @@ public class RelationMapperManager {
             }
 
             var metadata = componentManager.getComponent(type);
-            mapper = new ExclusiveEntityRelationMapperImpl<>(metadata);
+            mapper = new ExclusiveEntityRelationMapperImpl<>(metadata, transmutationManager);
 
             this.entityRelationMappers.set(metadata.id(), (AbstractEntityRelationMapper) mapper);
             this.exclusiveEntityRelations.put(type, mapper);
@@ -202,7 +197,7 @@ public class RelationMapperManager {
                 }
 
                 var metadata = componentManager.getComponent(type);
-                var mapper = new ComponentRelationMapperImpl<>(metadata);
+                var mapper = new ComponentRelationMapperImpl<>(metadata, transmutationManager);
 
                 componentRelationshipByTarget.put(targetClass, mapper);
 
@@ -213,32 +208,7 @@ public class RelationMapperManager {
 
     }
 
-    private class ComponentRelationMapperImpl<R, T> extends AbstractComponentRelationMapper<R, T, ComponentRelationResult<R, T>, ComponentRelationData<R, T>> implements ComponentRelationMapper<R, T> {
-
-        public ComponentRelationMapperImpl(ComponentRelationData<R, T> data) {
-            super(data);
-        }
-
-        @Override
-        public R getRelationship(int entityId, T target) {
-            var relation = data.getComponent(entityId);
-            if (relation == null) {
-                return null;
-            }
-
-            return relation.getRelationship(target);
-        }
-
-        @Override
-        public ComponentRelation<R, T> add(int entityId, ComponentRelation<R, T> relation) {
-            this.add.apply(entityId, relation);
-
-            return relation;
-        }
-
-    }
-
-    private class ExclusiveRelationMappers<R extends Exclusive> {
+    private class ExclusiveRelationMappers<R extends Exclusive> implements RelationshipParent {
 
         private final Bag<ExclusiveComponentRelationMapperImpl<R, ?>> componentRelationships = new Bag<>(ExclusiveComponentRelationMapperImpl.class, 32);
         private final Map<Class<?>, ExclusiveComponentRelationMapper<R, ?>> componentRelationshipByTarget = new ConcurrentHashMap<>();
@@ -259,7 +229,7 @@ public class RelationMapperManager {
                 }
 
                 var metadata = componentManager.getComponent(type);
-                var mapper = new ExclusiveComponentRelationMapperImpl<>(metadata, this);
+                var mapper = new ExclusiveComponentRelationMapperImpl<>(metadata, transmutationManager, this);
 
                 componentRelationships.add(mapper);
                 componentRelationshipByTarget.put(targetClass, mapper);
@@ -269,171 +239,15 @@ public class RelationMapperManager {
 
         }
 
-    }
-
-    private class ExclusiveComponentRelationMapperImpl<R extends Exclusive, T> extends AbstractComponentRelationMapper<R, T, ComponentRelation<R, T>, ExclusiveComponentRelationData<R, T>>
-            implements ExclusiveComponentRelationMapper<R, T> {
-
-        private final ExclusiveRelationMappers<R> parent;
-
-        public ExclusiveComponentRelationMapperImpl(ExclusiveComponentRelationData<R, T> data, ExclusiveRelationMappers<R> parent) {
-            super(data);
-
-            this.parent = parent;
-        }
-
         @Override
-        public ComponentRelation<R, T> add(int entityId, ComponentRelation<R, T> relation) {
-            var data = parent.componentRelationships.getData();
-            for (int i = 0, s = parent.componentRelationships.getSize(); i < s; i++) {
+        public void removeFromOthers(int entityId, ExclusiveComponentRelationMapperImpl<?, ?> mapper) {
+            var data = componentRelationships.getData();
+            for (int i = 0, s = componentRelationships.getSize(); i < s; i++) {
                 var otherMapper = data[i];
-                if (otherMapper != this) {
+                if (otherMapper != mapper) {
                     otherMapper.remove(entityId);
                 }
             }
-
-            this.add.apply(entityId, relation);
-
-            return relation;
-        }
-
-        @Override
-        public R getRelationship(int entityId) {
-            var relation = get(entityId);
-            if (relation == null) {
-                return null;
-            }
-
-            return relation.relationship();
-        }
-
-        @Override
-        public T getTarget(int entityId) {
-            var relation = get(entityId);
-            if (relation == null) {
-                return null;
-            }
-
-            return relation.target();
-        }
-
-    }
-
-    private abstract class AbstractComponentRelationMapper<R, T, RR, C extends Component<ComponentRelation<R, T>, RR>> {
-
-        protected C data;
-
-        protected final TransmutationManager.Add<ComponentRelation<R, T>> add;
-        protected final TransmutationManager.Remove remove;
-
-        protected AbstractComponentRelationMapper(C data) {
-            this.data = data;
-
-            this.add = transmutationManager.getAddTransmuter(data.type());
-            this.remove = transmutationManager.getRemoveTransmuter(data.type());
-        }
-
-        public boolean has(int entityId) {
-            return data.hasComponent(entityId);
-        }
-
-        @Nullable
-        public RR get(int entityId) {
-            return data.getComponent(entityId);
-        }
-
-        public boolean remove(int entityId) {
-            return this.remove.apply(entityId);
-        }
-
-    }
-
-    private class EntityRelationMapperImpl<R> extends AbstractEntityRelationMapper<R, EntityRelationResult<R>, EntityRelationData<R>> implements EntityRelationMapper<R> {
-
-        public EntityRelationMapperImpl(EntityRelationData<R> data) {
-            super(data);
-        }
-
-        @Override
-        public EntityRelation<R> add(int entityId, EntityRelation<R> relation) {
-            this.add.apply(entityId, relation);
-
-            return relation;
-        }
-
-        @Override
-        public R getRelationship(int entityId, int target) {
-            var relation = data.getComponent(entityId);
-            if (relation == null) {
-                return null;
-            }
-
-            return relation.getRelationship(target);
-        }
-
-    }
-
-    private class ExclusiveEntityRelationMapperImpl<R extends Exclusive> extends AbstractEntityRelationMapper<R, EntityRelation<R>, ExclusiveEntityRelationData<R>>
-            implements ExclusiveEntityRelationMapper<R> {
-
-        public ExclusiveEntityRelationMapperImpl(ExclusiveEntityRelationData<R> data) {
-            super(data);
-        }
-
-        @Override
-        public EntityRelation<R> add(int entityId, EntityRelation<R> relation) {
-            this.add.apply(entityId, relation);
-
-            return relation;
-        }
-
-        @Override
-        public R getRelationship(int entityId) {
-            var relation = get(entityId);
-            if (relation == null) {
-                return null;
-            }
-
-            return relation.relationship();
-        }
-
-        @Override
-        public int getTarget(int entityId) {
-            var relation = get(entityId);
-            if (relation == null) {
-                return -1;
-            }
-
-            return relation.target();
-        }
-
-    }
-
-    private abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelationComponent<R, RR>> {
-
-        protected C data;
-
-        protected final TransmutationManager.Add<EntityRelation<R>> add;
-        protected final TransmutationManager.Remove remove;
-
-        protected AbstractEntityRelationMapper(C data) {
-            this.data = data;
-
-            this.add = transmutationManager.getAddTransmuter(data.type());
-            this.remove = transmutationManager.getRemoveTransmuter(data.type());
-        }
-
-        public boolean has(int entityId) {
-            return data.hasComponent(entityId);
-        }
-
-        @Nullable
-        public RR get(int entityId) {
-            return data.getComponent(entityId);
-        }
-
-        public boolean remove(int entityId) {
-            return this.remove.apply(entityId);
         }
 
     }

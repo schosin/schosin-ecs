@@ -94,6 +94,22 @@ public class Bag<T> implements ImmutableBag<T> {
         return false;
     }
 
+    public boolean removeIdentity(@NonNull T item) {
+        for (int i = 0; i < size; i++) {
+            var test = data[i];
+
+            if (item == test) {
+                // move last item to cleared slot
+                this.data[i] = data[--size];
+                this.data[size] = null;
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public T removeLast() {
         var item = data[--size];
         this.data[size] = null;

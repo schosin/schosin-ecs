@@ -46,6 +46,8 @@ import de.schosin.ecs.utils.collections.BagIterator;
  */
 public abstract class AbstractEngineTest {
 
+    protected static final RegularComponentType<?, ?>[] NO_COMPONENTS = {};
+
     protected ComponentManager componentManager;
     protected EntityManager entityManager;
     protected EventManager eventManager;

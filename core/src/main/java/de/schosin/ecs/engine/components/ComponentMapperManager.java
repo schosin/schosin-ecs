@@ -1,11 +1,6 @@
 package de.schosin.ecs.engine.components;
 
-import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
-import static de.schosin.ecs.api.components.types.ComponentType.relation;
-
-import java.util.Arrays;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,14 +8,8 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.ComponentSet.ComponentData;
-import de.schosin.ecs.api.components.Relation;
-import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentResult;
-import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
@@ -32,7 +21,6 @@ import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelation
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardComponents;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -45,16 +33,18 @@ import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetch
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
 import de.schosin.ecs.api.components.types.Wildcard;
 import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.engine.components.mappers.ComponentMapperImpl;
+import de.schosin.ecs.engine.components.mappers.ComponentSetComponentsImpl;
+import de.schosin.ecs.engine.components.mappers.EnumComponentMapperImpl;
+import de.schosin.ecs.engine.components.mappers.PooledComponentMapperImpl;
+import de.schosin.ecs.engine.components.mappers.WildcardComponentsImpl;
+import de.schosin.ecs.engine.components.mappers.WildcardComponentsImpl.WildcardComponentSync;
+import de.schosin.ecs.engine.components.mappers.fetch.EntityRelationFetchMapperImpl;
+import de.schosin.ecs.engine.components.mappers.fetch.ExclusiveEntityRelationFetchMapperImpl;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
-import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
-import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFactory;
 import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.components.Component.ClassComponent;
-import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
-import de.schosin.ecs.utils.collections.Pool;
 
 public class ComponentMapperManager implements Components.Creator {
 
@@ -62,7 +52,7 @@ public class ComponentMapperManager implements Components.Creator {
         void free(T result);
     }
 
-    private interface ReclaimingComponents {
+    public interface ReclaimingComponents {
         void reclaim();
     }
 
@@ -140,8 +130,8 @@ public class ComponentMapperManager implements Components.Creator {
             }
 
             var mapper = (ComponentMapper<T>) switch (metadata) {
-                case Component.PooledComponentData<?> pooled -> new PooledComponentMapperImpl(pooled);
-                case Component.ComponentData<T> data -> new ComponentMapperImpl<>(data);
+                case Component.PooledComponentData<?> pooled -> new PooledComponentMapperImpl(pooled, transmutationManager);
+                case Component.ComponentData<T> data -> new ComponentMapperImpl<>(data, transmutationManager);
             };
 
             this.components.set(metadata.id(), mapper);
@@ -190,7 +180,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new PooledComponentMapperImpl<>(metadata);
+            var mapper = new PooledComponentMapperImpl<>(metadata, transmutationManager);
 
             this.components.set(metadata.id(), mapper);
             this.componentMappers.put(type, mapper);
@@ -233,7 +223,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new EntityRelationFetchMapperImpl<>(relation);
+            var mapper = new EntityRelationFetchMapperImpl<>(relation, this);
             this.componentMappers.put(relation, mapper);
 
             return mapper;
@@ -254,7 +244,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new ExclusiveEntityRelationFetchMapperImpl<>(relation);
+            var mapper = new ExclusiveEntityRelationFetchMapperImpl<>(relation, this);
             this.componentMappers.put(relation, mapper);
 
             return mapper;
@@ -275,7 +265,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new ComponentSetComponentsImpl<>(type);
+            var mapper = new ComponentSetComponentsImpl<>(type, this);
 
             this.reclaimingComponents.add(mapper);
             this.componentMappers.put(type, mapper);
@@ -297,7 +287,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new WildcardComponentsImpl<>(wildcard);
+            var mapper = new WildcardComponentsImpl<>(wildcard, bagManager, eventHandler);
 
             this.reclaimingComponents.add(mapper);
             this.componentMappers.put(wildcard, mapper);
@@ -306,377 +296,7 @@ public class ComponentMapperManager implements Components.Creator {
         }
     }
 
-    private class ComponentMapperImpl<T> implements ComponentMapper<T> {
-
-        protected final ClassComponent<T> data;
-
-        private final TransmutationManager.Add<T> add;
-        private final TransmutationManager.Remove remove;
-
-        protected ComponentMapperImpl(ClassComponent<T> data) {
-            this.data = data;
-
-            this.add = transmutationManager.getAddTransmuter(data.type());
-            this.remove = transmutationManager.getRemoveTransmuter(data.type());
-        }
-
-        @Override
-        public boolean has(int entityId) {
-            return data.hasComponent(entityId);
-        }
-
-        @Override
-        public T add(int entityId, T component) {
-            this.add.apply(entityId, component);
-
-            return component;
-        }
-
-        @Override
-        public T get(int entityId) {
-            return data.getComponent(entityId);
-        }
-
-        @Override
-        public boolean remove(int entityId) {
-            return this.remove.apply(entityId);
-        }
-
-    }
-
-    private class EnumComponentMapperImpl<T extends Enum<T>> implements EnumComponentMapper<T> {
-
-        private final ComponentMapper<T> delegate;
-        private final T defaultComponent;
-
-        public EnumComponentMapperImpl(ComponentMapper<T> delegate, T defaultComponent) {
-            this.delegate = delegate;
-            this.defaultComponent = defaultComponent;
-        }
-
-        @Override
-        public @NonNull T add(int entityId) {
-            return add(entityId, defaultComponent);
-        }
-
-        @Override
-        public @NonNull T getDefault() {
-            return defaultComponent;
-        }
-
-        @Override
-        public boolean has(int entityId) {
-            return this.delegate.has(entityId);
-        }
-
-        @Override
-        public T add(int entityId, T component) {
-            return this.delegate.add(entityId, component);
-        }
-
-        @Override
-        public T get(int entityId) {
-            return this.delegate.get(entityId);
-        }
-
-        @Override
-        public boolean remove(int entityId) {
-            return this.delegate.remove(entityId);
-        }
-
-    }
-
-    private class PooledComponentMapperImpl<T extends Pooled> extends ComponentMapperImpl<T> implements PooledComponentMapper<T> {
-
-        private final PooledComponentData<T> data;
-
-        public PooledComponentMapperImpl(PooledComponentData<T> data) {
-            super(data);
-
-            this.data = data;
-        }
-
-        @Override
-        public @NonNull T add(int entityId) {
-            var component = get(entityId);
-            if (component != null) {
-                return component;
-            }
-
-            return add(entityId, getInstance());
-        }
-
-        @Override
-        public T getInstance() {
-            return data.getInstance();
-        }
-
-    }
-
-    private final class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchMapper<R, T> {
-
-        private final EntityRelationMapper<R> relationMapper;
-        private final Components<?, T> dataMapper;
-
-        public EntityRelationFetchMapperImpl(EntityRelationFetchType<R, T> type) {
-            this.relationMapper = getEntityRelations(relation(type.relationship()));
-            this.dataMapper = getComponents(type.fetch());
-        }
-
-        @Override
-        public boolean has(int entityId) {
-            return relationMapper.has(entityId);
-        }
-
-        @Override
-        public EntityRelationDataResult<R, T> get(int entityId) {
-            var relations = relationMapper.get(entityId);
-            if (relations == null) {
-                return null;
-            }
-
-            return EntityRelationDataResultImpl.getInstance(relations, dataMapper);
-        }
-
-        @Override
-        public boolean remove(int entityId) {
-            return relationMapper.remove(entityId);
-        }
-
-    }
-
-    private final class ExclusiveEntityRelationFetchMapperImpl<R extends Exclusive, T> implements ExclusiveEntityRelationFetchMapper<R, T> {
-
-        private final ExclusiveEntityRelationMapper<R> relationMapper;
-        private final Components<?, T> dataMapper;
-
-        public ExclusiveEntityRelationFetchMapperImpl(ExclusiveEntityRelationFetchType<R, T> type) {
-            this.relationMapper = getEntityRelations(exclusiveRelation(type.relationship()));
-            this.dataMapper = getComponents(type.fetch());
-        }
-
-        @Override
-        public boolean has(int entityId) {
-            return relationMapper.has(entityId);
-        }
-
-        @Override
-        public EntityRelationData<R, T> get(int entityId) {
-            var relation = relationMapper.get(entityId);
-            if (relation == null) {
-                return null;
-            }
-
-            var data = dataMapper.get(relation.target());
-            return Relation.create(relation.relationship(), relation.target(), data);
-        }
-
-        @Override
-        public boolean remove(int entityId) {
-            return relationMapper.remove(entityId);
-        }
-
-    }
-
-    private class ComponentSetComponentsImpl<T extends ComponentSet> implements ComponentSetMapper<T>, PoolingComponents<T>, ReclaimingComponents {
-
-        private final ComponentSetFactory<T> factory;
-        private final ComponentData<T, ?, ?>[] componentTypes;
-        private final int size;
-
-        private final Components<?, ?>[] mappers;
-
-        private final Bag<T> lent;
-        private final Pool<Object[]> pool;
-
-        @SuppressWarnings("unchecked")
-        public ComponentSetComponentsImpl(ComponentSetType<T> type) {
-            this.factory = ComponentSetsHelper.getFactory(type.componentSet());
-
-            this.componentTypes = this.factory.getComponents().toArray(ComponentData[]::new);
-            this.size = componentTypes.length;
-
-            this.mappers = new Components<?, ?>[size];
-
-            for (int i = 0; i < size; i++) {
-                var componentType = componentTypes[i];
-
-                this.mappers[i] = getComponents(componentType.type());
-            }
-
-            this.lent = new Bag<>(type.componentSet(), 8);
-            this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
-        }
-
-        @Override
-        public void free(T result) {
-            result.free();
-        }
-
-        @Override
-        public void reclaim() {
-            var data = lent.getData();
-            for (int i = 0, s = lent.getSize(); i < s; i++) {
-                data[i].free();
-            }
-        }
-
-        @Override
-        public boolean has(int entityId) {
-            for (int i = 0; i < size; i++) {
-                var mapper = mappers[i];
-
-                if (mapper.has(entityId)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        @Override
-        public boolean hasAll(int entityId) {
-            for (int i = 0; i < size; i++) {
-                var mapper = mappers[i];
-
-                if (!mapper.has(entityId)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        @Override
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        public void add(int entityId, @NonNull T components) {
-            for (int i = 0; i < size; i++) {
-                var componentType = componentTypes[i];
-                var component = componentType.accessor().apply(components);
-                if (component == null) {
-                    continue;
-                }
-
-                switch (mappers[i]) {
-                    case ComponentMapper mapper -> mapper.add(entityId, component);
-                    case ExclusiveComponentRelationMapper<?, ?> relations -> relations.add(entityId, (ComponentRelation) component);
-                    case ExclusiveEntityRelationMapper<?> relations -> relations.add(entityId, (EntityRelation) component);
-                    default -> throw new UnsupportedOperationException("Add not supported for component type '%s'".formatted(componentType.type()));
-                }
-            }
-
-            components.free();
-        }
-
-        @Override
-        public T get(int entityId) {
-            return pool.withInstance(components -> {
-                var found = false;
-
-                for (int i = 0; i < size; i++) {
-                    var mapper = mappers[i];
-
-                    var component = components[i] = mapper.get(entityId);
-                    if (component != null) {
-                        found = true;
-                    }
-                }
-
-                if (!found) {
-                    return null;
-                }
-
-                var result = factory.getInstance(entityId, components);
-                lent.add(result);
-
-                return result;
-            });
-        }
-
-        @Override
-        public boolean remove(int entityId) {
-            var removed = false;
-
-            for (int i = 0; i < size; i++) {
-                var mapper = mappers[i];
-
-                removed |= mapper.remove(entityId);
-            }
-
-            return removed;
-        }
-
-    }
-
-    private class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, ReclaimingComponents {
-
-        private final Wildcard<T> type;
-        private final Bag<ComponentMapper<? extends T>> mappers;
-
-        private final Pool<ComponentResultImpl<T>> pool = Pool.unbounded(ComponentResultImpl.class, this::createInstance);
-        private final Bag<ComponentResultImpl<T>> lent = new Bag<>(ComponentResultImpl.class, 8);
-
-        public WildcardComponentsImpl(Wildcard<T> type) {
-            this.type = type;
-            this.mappers = bagManager.createComponentBag(ComponentMapper.class);
-
-            eventHandler.handleComponentEvents(type, this);
-        }
-
-        @Override
-        public void free(ComponentResult<T> result) {
-            if (result instanceof ComponentResultImpl<T> impl) {
-                this.pool.free(impl);
-            }
-        }
-
-        @Override
-        public void reclaim() {
-            var data = lent.getData();
-            for (int i = 0, s = lent.getSize(); i < s; i++) {
-                pool.free(data[i]);
-            }
-        }
-
-        private ComponentResultImpl<T> createInstance() {
-            return new ComponentResultImpl<>(type.bound(), mappers);
-        }
-
-        @Override
-        public boolean has(int entityId) {
-            var data = mappers.getData();
-            for (int i = 0, s = mappers.getSize(); i < s; i++) {
-                if (data[i].has(entityId)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        @Override
-        public ComponentResult<T> get(int entityId) {
-            var result = pool.getInstance().init(entityId);
-            lent.add(result);
-
-            return result;
-        }
-
-        @Override
-        public boolean remove(int entityId) {
-            var removed = false;
-
-            var data = mappers.getData();
-            for (int i = 0, s = mappers.getSize(); i < s; i++) {
-                removed |= data[i].remove(entityId);
-            }
-
-            return removed;
-        }
-
-    }
-
-    private class ComponentEventHandler {
+    private class ComponentEventHandler implements WildcardComponentSync {
 
         private final Map<Wildcard<?>, Bag<WildcardComponentsImpl<?>>> components = new ConcurrentHashMap<>();
 
@@ -694,21 +314,21 @@ public class ComponentMapperManager implements Components.Creator {
 
                     var data = bags.getData();
                     for (int i = 0, s = bags.getSize(); i < s; i++) {
-                        data[i].mappers.add((ComponentMapper) getComponents(event.type()));
+                        data[i].addMapper((ComponentMapper) getComponents(event.type()));
                     }
                 }
             }
         }
 
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        public void handleComponentEvents(Wildcard<?> type, WildcardComponentsImpl<?> wildcardComponents) {
+        public void addWildcardComponents(Wildcard<?> type, WildcardComponentsImpl<?> wildcardComponents) {
             // Add known components
             var components = componentManager.getComponents();
             for (int i = 0, s = components.getSize(); i < s; i++) {
                 var component = components.get(i);
 
                 if (type.matches(component.type())) {
-                    wildcardComponents.mappers.add((ComponentMapper) getComponents(component.type()));
+                    wildcardComponents.addMapper((ComponentMapper) getComponents(component.type()));
                 }
             }
 
@@ -717,97 +337,6 @@ public class ComponentMapperManager implements Components.Creator {
             bags.add(wildcardComponents);
         }
 
-    }
-
-}
-
-@SuppressWarnings({ "unchecked", "rawtypes" })
-class EntityRelationDataResultImpl implements EntityRelationDataResult, Pooled {
-
-    private static final Pool<EntityRelationDataResultImpl> POOL = Pool.unbounded(EntityRelationDataResultImpl.class, EntityRelationDataResultImpl::new);
-
-    private EntityRelationResult<?> result;
-    private Components<?, ?> mapper;
-    private boolean initialized;
-
-    private final Bag<EntityRelationData<?, ?>> relations = new Bag<>(EntityRelationData.class, 8);
-
-    static <R, T> EntityRelationDataResult<R, T> getInstance(EntityRelationResult<R> result, Components<?, T> mapper) {
-        var instance = POOL.getInstance();
-        instance.result = result;
-        instance.mapper = mapper;
-        instance.initialized = false;
-        instance.relations.ensureCapacity(result.size());
-
-        return instance;
-    }
-
-    @Override
-    public @NonNull Object get(int i) {
-        initialize();
-
-        return this.relations.get(i);
-    }
-
-    @Override
-    public int size() {
-        return result.size();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return result.isEmpty();
-    }
-
-    @Override
-    public Iterator iterator() {
-        initialize();
-
-        return new BagIterator<>(this.relations);
-    }
-
-    @Override
-    public Object getRelationship(int target) {
-        return result.getRelationship(target);
-    }
-
-    @Override
-    public Object getData(int target) {
-        initialize();
-
-        var data = relations.getData();
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            var relation = data[i];
-            if (relation.target() == target) {
-                return relation.data();
-            }
-        }
-
-        return null;
-    }
-
-    private void initialize() {
-        if (initialized) {
-            return;
-        }
-
-        for (int i = 0, s = result.size(); i < s; i++) {
-            var relation = result.get(i);
-            var data = mapper.get(relation.target());
-
-            this.relations.add(Relation.create(relation.relationship(), relation.target(), data));
-        }
-
-        this.initialized = true;
-    }
-
-    @Override
-    public void reset() {
-        this.result = null;
-        this.mapper = null;
-        this.initialized = false;
-
-        this.relations.clear();
     }
 
 }
