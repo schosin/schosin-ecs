@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import com.sun.jdi.ClassType;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
 import de.schosin.ecs.engine.AbstractWorldTest;
 
 class AbstractEngineTestTest {

@@ -428,7 +428,7 @@ public class TransmuterGenerator {
 
     private static class Javadoc {
 
-        private static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components", "Components");
+        private static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components.mappers", "Components");
 
         private static final CodeBlock TRANSMUTER = CodeBlock.builder()
                 .addStatement("""

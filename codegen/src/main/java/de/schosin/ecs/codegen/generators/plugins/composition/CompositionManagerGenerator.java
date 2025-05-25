@@ -30,7 +30,7 @@ public class CompositionManagerGenerator {
 
     private static final ClassName BASE_COMPOSITION_IMPL = ClassName.get("", "BaseCompositionImpl");
 
-    private static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components", "Components");
+    private static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components.mappers", "Components");
 
     private static final String OF_PREFIX = CompositionGenerator.OF_PREFIX;
     private static final ParameterizedTypeName OF_WILDCARD = ParameterizedTypeName.get(ClassName.get("", OF_PREFIX), Utils.WILDCARD);

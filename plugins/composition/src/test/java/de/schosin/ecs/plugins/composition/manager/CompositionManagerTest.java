@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
@@ -28,6 +27,7 @@ import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;

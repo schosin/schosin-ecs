@@ -6,7 +6,7 @@ import java.util.ServiceLoader.Provider;
 
 import org.jspecify.annotations.NonNull;
 
-import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.mappers.Components;
 
 public interface World extends Components.Creator {
 

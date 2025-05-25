@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.Components.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;

@@ -4,8 +4,8 @@ import java.lang.reflect.Modifier;
 import java.util.Set;
 
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.Components;
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;

@@ -9,18 +9,18 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.Components;
-import de.schosin.ecs.api.components.Components.ComponentMapper;
-import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
-import de.schosin.ecs.api.components.Components.ComponentSetMapper;
-import de.schosin.ecs.api.components.Components.EntityRelationFetchMapper;
-import de.schosin.ecs.api.components.Components.EntityRelationMapper;
-import de.schosin.ecs.api.components.Components.EnumComponentMapper;
-import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
-import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationFetchMapper;
-import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.mappers.Components.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.Components.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.Components.ComponentSetMapper;
+import de.schosin.ecs.api.components.mappers.Components.EntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.Components.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.Components.EnumComponentMapper;
+import de.schosin.ecs.api.components.mappers.Components.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.Components.PooledComponentMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -121,12 +121,12 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T, R> @NonNull Components<T, R> getComponents(ComponentType<T, R> type) {
+    public <T, R> de.schosin.ecs.api.components.mappers.Components<T, R> getComponents(ComponentType<T, R> type) {
         return componentMapperManager.getComponents(type);
     }
 
     @Override
-    public <T, R> @NonNull Components<T, R> getComponents(RegularComponentType<T, R> type) {
+    public <T, R> de.schosin.ecs.api.components.mappers.Components<T, R> getComponents(RegularComponentType<T, R> type) {
         return componentMapperManager.getComponents(type);
     }
 

@@ -5,15 +5,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.Nullable;
 
-import de.schosin.ecs.api.components.Components.ComponentRelationMapper;
-import de.schosin.ecs.api.components.Components.EntityRelationMapper;
-import de.schosin.ecs.api.components.Components.ExclusiveComponentRelationMapper;
-import de.schosin.ecs.api.components.Components.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.mappers.Components.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.Components.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.Components.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.Components.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;

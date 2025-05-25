@@ -9,7 +9,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.Components;
+import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;

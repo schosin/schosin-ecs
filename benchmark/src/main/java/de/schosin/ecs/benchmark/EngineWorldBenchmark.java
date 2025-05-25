@@ -14,7 +14,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Components.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.Components.ComponentMapper;
 import de.schosin.ecs.plugins.archetype.Archetype;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.transmuter.Transmuter;
