@@ -31,6 +31,11 @@ import de.schosin.ecs.api.components.types.ComponentType;
  */
 public interface Result<T> extends Iterable<T> {
 
+    @SuppressWarnings("unchecked")
+    static <T> Result<T> empty() {
+        return EmptyResult.INSTANCE;
+    }
+
     interface ComponentResult<T> extends Result<T> {
 
         /**
@@ -112,4 +117,43 @@ public interface Result<T> extends Iterable<T> {
      */
     boolean isEmpty();
 
+}
+
+@SuppressWarnings("rawtypes")
+enum EmptyResult implements Result {
+
+    INSTANCE;
+
+    private static final Iterator EMPTY = new Iterator() {
+        @Override
+        public boolean hasNext() {
+            return false;
+        }
+
+        @Override
+        public Object next() {
+            throw new UnsupportedOperationException();
+        }
+    };
+
+    @Override
+    public Iterator iterator() {
+        return EMPTY;
+    }
+
+    @NonNull
+    @Override
+    public Object get(int i) {
+        return null;
+    }
+
+    @Override
+    public int size() {
+        return 0;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return true;
+    }
 }

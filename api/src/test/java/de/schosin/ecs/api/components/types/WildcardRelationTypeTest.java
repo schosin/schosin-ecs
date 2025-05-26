@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import de.schosin.ecs.api.components.Relation.EntityRelationship;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 
@@ -49,6 +50,7 @@ class WildcardRelationTypeTest extends AbstractComponentTypeTest<WildcardRelatio
         wildcardComponent_relationshipSubtype(wildcardRelation(RelationshipWildcard.class, Object.class), wildcardRelation(Object.class, Object.class), false),
         wildcardComponent_targetSubtype(wildcardRelation(Object.class, TargetWildcard.class), wildcardRelation(Object.class, Object.class), false),
         wildcardComponent_wildcardEntityRelation(wildcardRelation(Object.class, Object.class), wildcardRelation(Object.class), false),
+        wildcardComponent_wildcardEntityFetchRelation(wildcardRelation(Object.class, Object.class), wildcardRelation(Object.class, component(Component.class)), false),
 
         wildcardEntity_objectWildcard(wildcardRelation(Object.class), component(Component.class), false),
         wildcardEntity_matchingInterface(wildcardRelation(Object.class), component(FinalComponent.class), false),
@@ -66,7 +68,23 @@ class WildcardRelationTypeTest extends AbstractComponentTypeTest<WildcardRelatio
         wildcardEntity_equal(wildcardRelation(Object.class), wildcardRelation(Object.class), true),
         wildcardEntity_relationshipSupertype(wildcardRelation(Object.class), wildcardRelation(RelationshipWildcard.class), true),
         wildcardEntity_relationshipSubtype(wildcardRelation(RelationshipWildcard.class), wildcardRelation(Object.class), false),
-        wildcardEntity_wildcardComponentRelation(wildcardRelation(Object.class), wildcardRelation(Object.class, Object.class), false);
+        wildcardEntity_wildcardComponentRelation(wildcardRelation(Object.class), wildcardRelation(Object.class, Object.class), false),
+        wildcardEntity_wildcardEntityFetchRelation(wildcardRelation(Object.class), wildcardRelation(Object.class, component(Component.class)), false),
+
+        wildcardEntityFetch_objectWildcard(wildcardRelation(EntityRelationship.class, FETCH), component(Component.class), false),
+        wildcardEntityFetch_componentRelation(wildcardRelation(EntityRelationship.class, FETCH), relation(RelationshipComponent.class, TargetComponent.class), false),
+        wildcardEntityFetch_exclusiveComponentRelation(wildcardRelation(EntityRelationship.class, FETCH), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
+        wildcardEntityFetch_entityRelation(wildcardRelation(EntityRelationship.class, FETCH), relation(EntityRelationshipComponent.class), false),
+        wildcardEntityFetch_exclusiveEntityRelation(wildcardRelation(EntityRelationship.class, FETCH), exclusiveRelation(ExclusiveEntityRelationship.class), false),
+        wildcardEntityFetch_wildcardObject(wildcardRelation(EntityRelationship.class, FETCH), wildcard(Object.class), false),
+        wildcardEntityFetch_componentSet(wildcardRelation(EntityRelationship.class, FETCH), componentSet(MyComponentSet.class), false),
+        wildcardEntityFetch_entityFetch(wildcardRelation(EntityRelationship.class, FETCH), relation(EntityRelationshipComponent.class, FETCH), false),
+        wildcardEntityFetch_exclusiveEntityFetch(wildcardRelation(EntityRelationship.class, FETCH), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+        wildcardEntityFetch_wildcardComponentRelation(wildcardRelation(EntityRelationship.class, FETCH), wildcardRelation(Object.class, Object.class), false),
+        wildcardEntityFetch_wildcardEntityRelation(wildcardRelation(EntityRelationship.class, FETCH), wildcardRelation(Object.class), false),
+        wildcardEntityFetch_wildcardEntityFetchRelation_equal(wildcardRelation(EntityRelationship.class, FETCH), wildcardRelation(EntityRelationship.class, FETCH), true),
+        wildcardEntityFetch_wildcardEntityFetchRelation_supertype(wildcardRelation(Object.class, FETCH), wildcardRelation(EntityRelationship.class, FETCH), true),
+        wildcardEntityFetch_wildcardEntityFetchRelation_subtype(wildcardRelation(EntityRelationship.class, FETCH), wildcardRelation(Object.class, FETCH), false);
 
         private final WildcardRelationType<?, ?> type;
         private final ComponentType<?, ?> otherType;

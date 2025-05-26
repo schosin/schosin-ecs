@@ -36,6 +36,7 @@ class RelationFetchTypeTest extends AbstractComponentTypeTest<RelationFetchTypeT
         equalExclusiveEntityFetch(relation(EntityRelationshipComponent.class, FETCH), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
         wildcardComponentRelation(relation(EntityRelationshipComponent.class, FETCH), wildcardRelation(Object.class, Object.class), false),
         wildcardEntityRelation(relation(EntityRelationshipComponent.class, FETCH), wildcardRelation(Object.class), false),
+        wildcardEntityFetchRelation(relation(EntityRelationshipComponent.class, FETCH), wildcardRelation(Object.class, component(Component.class)), false),
 
         exclusive_classType(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), component(Component.class), false),
         exclusive_componentRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), relation(RelationshipComponent.class, TargetComponent.class), false),
@@ -47,7 +48,8 @@ class RelationFetchTypeTest extends AbstractComponentTypeTest<RelationFetchTypeT
         exclusive_equalEntityFetch(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), relation(EntityRelationshipComponent.class, FETCH), false),
         exclusive_equalExclusiveEntityFetch(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), true),
         exclusive_wildcardComponentRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), wildcardRelation(Object.class, Object.class), false),
-        exclusive_wildcardEntityRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), wildcardRelation(Object.class), false);
+        exclusive_wildcardEntityRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), wildcardRelation(Object.class), false),
+        exclusive_wildcardEntityFetchRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), wildcardRelation(Object.class, component(Component.class)), false);
 
         private final RelationFetchType<?, ?, ?> type;
         private final ComponentType<?, ?> otherType;

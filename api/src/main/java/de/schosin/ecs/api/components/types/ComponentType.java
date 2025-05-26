@@ -15,6 +15,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntity
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 
 /**
@@ -102,6 +103,10 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
 
     static <R> WildcardEntityRelationType<R> wildcardRelation(Class<R> relationshipBound) {
         return new WildcardEntityRelationType<>(relationshipBound);
+    }
+
+    static <R, T> WildcardEntityRelationFetchType<R, T> wildcardRelation(Class<R> relationship, ComponentType<?, T> fetch) {
+        return new WildcardEntityRelationFetchType<>(relationship, fetch);
     }
 
     /**

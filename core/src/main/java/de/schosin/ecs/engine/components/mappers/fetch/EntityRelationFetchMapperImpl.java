@@ -49,7 +49,8 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
         return relationMapper.remove(entityId);
     }
 
-    private static @SuppressWarnings({ "unchecked", "rawtypes" }) class EntityRelationDataResultImpl implements EntityRelationDataResult, Pooled {
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private static class EntityRelationDataResultImpl implements EntityRelationDataResult, Pooled {
 
         private static final Pool<EntityRelationDataResultImpl> POOL = Pool.unbounded(EntityRelationDataResultImpl.class, EntityRelationDataResultImpl::new);
 
@@ -69,8 +70,9 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
             return instance;
         }
 
+        @NonNull
         @Override
-        public @NonNull Object get(int i) {
+        public Object get(int i) {
             initialize();
 
             return this.relations.get(i);

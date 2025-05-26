@@ -5,6 +5,7 @@ import java.lang.reflect.Modifier;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
@@ -54,6 +55,25 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
         @Override
         public final String toString() {
             return "WildcardEntityRelationType(%s)".formatted(relationshipBound.getSimpleName());
+        }
+    }
+
+    record WildcardEntityRelationFetchType<R, T>(Class<R> relationshipBound, ComponentType<?, T> fetch) implements WildcardRelationType<R, EntityRelationDataResult<R, T>> {
+        public WildcardEntityRelationFetchType {
+            WildcardRelationTypeHelper.validateWildcardEntityRelation(relationshipBound);
+        }
+
+        @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return switch (otherType) {
+                case WildcardEntityRelationFetchType<?, ?> wildcard -> this.relationshipBound.isAssignableFrom(wildcard.relationshipBound()) & this.fetch.equals(wildcard.fetch);
+                default -> false;
+            };
+        }
+
+        @Override
+        public final String toString() {
+            return "WildcardEntityRelationFetchType(%s -> %s)".formatted(relationshipBound.getSimpleName(), fetch);
         }
     }
 
