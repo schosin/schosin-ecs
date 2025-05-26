@@ -16,13 +16,12 @@ import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRela
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
-import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFactory;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class ComponentSetComponentsImpl<T extends ComponentSet> implements ComponentSetMapper<T>, PoolingComponents<T>, ReclaimingComponents {
+public class ComponentSetComponentsImpl<T extends ComponentSet> implements ComponentSetMapper<T>, PoolingComponents<T> {
 
     private final ComponentSetFactory<T> factory;
     private final ComponentData<T, ?, ?>[] componentTypes;
@@ -64,6 +63,8 @@ public class ComponentSetComponentsImpl<T extends ComponentSet> implements Compo
         for (int i = 0, s = lent.getSize(); i < s; i++) {
             data[i].free();
         }
+
+        lent.clear();
     }
 
     @Override

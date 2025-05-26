@@ -5,6 +5,7 @@ import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.types.ComponentType.relation;
 import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -29,7 +30,8 @@ class ComponentSetTypeTest extends AbstractComponentTypeTest<ComponentSetTypeTes
         componentSet(componentSet(MyComponentSet.class), componentSet(MyComponentSet.class), true),
         otherComponentSet(componentSet(MyComponentSet.class), componentSet(OtherComponentSet.class), false),
         entityFetch(componentSet(MyComponentSet.class), relation(EntityRelationshipComponent.class, FETCH), false),
-        exclusiveEntityFetch(componentSet(MyComponentSet.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false);
+        exclusiveEntityFetch(componentSet(MyComponentSet.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+        wildcardComponentRelation(componentSet(MyComponentSet.class), wildcardRelation(Object.class, Object.class), false);
 
         private final ComponentSetType<?> type;
         private final ComponentType<?, ?> otherType;

@@ -5,6 +5,7 @@ import java.util.Set;
 
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
@@ -13,6 +14,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
 
 /**
  * Interface to describe the supported component types.
@@ -44,7 +46,7 @@ import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRela
  * @param <T> type of a single component instance
  * @param <R> type of component data when reading
  */
-public sealed interface ComponentType<T, R> permits RegularComponentType, Wildcard, ComponentSetType, RelationFetchType {
+public sealed interface ComponentType<T, R> permits RegularComponentType, Wildcard, ComponentSetType, RelationFetchType, WildcardRelationType {
 
     /**
      * Describes component types that can be directly assigned to entities.
@@ -91,6 +93,10 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
 
     static <T> Wildcard<T> wildcard(Class<T> bound) {
         return new Wildcard<>(bound);
+    }
+
+    static <R, T> WildcardComponentRelationType<R, T> wildcardRelation(Class<R> relationshipBound, Class<T> targetBound) {
+        return new WildcardComponentRelationType<>(relationshipBound, targetBound);
     }
 
     /**

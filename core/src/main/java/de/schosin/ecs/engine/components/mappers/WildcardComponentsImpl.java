@@ -12,16 +12,12 @@ import de.schosin.ecs.api.components.mappers.WildcardComponents;
 import de.schosin.ecs.api.components.types.Wildcard;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
-import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, ReclaimingComponents {
-
-    public interface WildcardComponentSync {
-        void addWildcardComponents(Wildcard<?> type, WildcardComponentsImpl<?> components);
-    }
+public class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, WildcardMapper<ComponentMapper<? extends T>> {
 
     private final Wildcard<T> type;
     private final Bag<ComponentMapper<? extends T>> mappers;
@@ -29,13 +25,12 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
     private final Pool<WildcardComponentResultImpl<T>> pool = Pool.unbounded(WildcardComponentResultImpl.class, this::createResultInstance);
     private final Bag<WildcardComponentResultImpl<T>> lent = new Bag<>(WildcardComponentResultImpl.class, 8);
 
-    public WildcardComponentsImpl(Wildcard<T> type, BagManager bagManager, WildcardComponentSync sync) {
+    public WildcardComponentsImpl(Wildcard<T> type, BagManager bagManager) {
         this.type = type;
         this.mappers = bagManager.createComponentBag(ComponentMapper.class);
-
-        sync.addWildcardComponents(type, this);
     }
 
+    @Override
     public void addMapper(ComponentMapper<? extends T> mapper) {
         this.mappers.add(mapper);
     }
@@ -54,6 +49,8 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
         for (int i = 0, s = lent.getSize(); i < s; i++) {
             pool.free(data[i]);
         }
+
+        lent.clear();
     }
 
     @Override

@@ -20,6 +20,7 @@ import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelation
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardComponentRelations;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -30,6 +31,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -177,6 +179,11 @@ public class EngineWorld implements World, StorageWorld {
     @Override
     public <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(ComponentSetType<T> type) {
         return componentMapperManager.getComponentSets(type);
+    }
+
+    @Override
+    public <R, T> WildcardComponentRelations<R, T> getWildcardComponentRelations(WildcardComponentRelationType<R, T> wildcardRelation) {
+        return componentMapperManager.getWildcardComponentRelations(wildcardRelation);
     }
 
     @Override

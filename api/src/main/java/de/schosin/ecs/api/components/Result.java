@@ -29,9 +29,9 @@ import de.schosin.ecs.api.components.types.ComponentType;
  * 
  * @param <T> type bound
  */
-public sealed interface Result<T> extends Iterable<T> {
+public interface Result<T> extends Iterable<T> {
 
-    non-sealed interface ComponentResult<T> extends Result<T> {
+    interface ComponentResult<T> extends Result<T> {
 
         /**
          * Retrieves a component that has the given {@code clazz}. The components
@@ -46,7 +46,7 @@ public sealed interface Result<T> extends Iterable<T> {
 
     }
 
-    non-sealed interface ComponentRelationResult<R, T> extends Result<ComponentRelation<R, T>> {
+    interface ComponentRelationResult<R, T> extends Result<ComponentRelation<R, T>> {
 
         /**
          * Retrieves the relationship given the target component. The target will be
@@ -60,7 +60,7 @@ public sealed interface Result<T> extends Iterable<T> {
 
     }
 
-    non-sealed interface EntityRelationResult<R> extends Result<EntityRelation<R>> {
+    interface EntityRelationResult<R> extends Result<EntityRelation<R>> {
 
         /**
          * Retrieves the relationship given the target entity.
@@ -72,7 +72,7 @@ public sealed interface Result<T> extends Iterable<T> {
 
     }
 
-    non-sealed interface EntityRelationDataResult<R, T> extends Result<EntityRelationData<R, T>> {
+    interface EntityRelationDataResult<R, T> extends Result<EntityRelationData<R, T>> {
 
         /**
          * Retrieves the relationship given the target entity.

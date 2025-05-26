@@ -74,7 +74,7 @@ import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetch
  * 
  * @param <T> component type
  */
-public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, WildcardComponents, EntityFetchRelations {
+public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, WildcardComponents, EntityFetchRelations, WildcardRelations {
 
     sealed interface RegularComponents<T, R> extends Components<T, R> permits ComponentMapper, ComponentRelations, EntityRelations {
 
@@ -119,7 +119,7 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
      */
     boolean remove(int entityId);
 
-    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelations.Creator, EntityRelations.Creator, EntityFetchRelations.Creator {
+    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelations.Creator, EntityRelations.Creator, EntityFetchRelations.Creator, WildcardRelations.Creator {
 
         /**
          * Retrieves the {@link Components} instance for the given {@link ComponentType}.

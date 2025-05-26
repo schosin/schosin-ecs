@@ -5,6 +5,7 @@ import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.types.ComponentType.relation;
 import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,7 +36,8 @@ class WildcardTest extends AbstractComponentTypeTest<WildcardTest.MatchesTestCas
         subtypeDoesNotMatchSupertype(wildcard(ComponentInterface.class), wildcard(Object.class), false),
         componentSet(wildcard(Object.class), componentSet(MyComponentSet.class), false),
         entityFetch(wildcard(Object.class), relation(EntityRelationshipComponent.class, FETCH), false),
-        exclusiveEntityFetch(wildcard(Object.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false);
+        exclusiveEntityFetch(wildcard(Object.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+        wildcardComponentRelation(wildcard(Object.class), wildcardRelation(Object.class, Object.class), false);
 
         private final Wildcard<?> type;
         private final ComponentType<?, ?> otherType;

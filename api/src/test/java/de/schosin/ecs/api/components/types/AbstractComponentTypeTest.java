@@ -19,10 +19,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationship;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relation.Relationship;
+import de.schosin.ecs.api.components.Relation.Target;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.MatchesTestCase;
 
 public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestCase> {
@@ -181,7 +181,22 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
     enum ExclusiveEntityRelationship implements EntityRelationship, Exclusive {
     }
 
-    enum TargetComponent implements Relation.Target {
+    enum TargetComponent implements Target {
+    }
+
+    interface RelationshipWildcard extends Relationship {
+    }
+
+    interface TargetWildcard extends Target {
+    }
+
+    interface ExclusiveWildcard extends Exclusive {
+    }
+
+    interface EntityRelationshipWildcard extends EntityRelationship {
+    }
+
+    interface ExclusiveEntityRelationshipWildcard extends EntityRelationship, Exclusive {
     }
 
     interface MyComponentSet extends ComponentSet {
