@@ -35,6 +35,7 @@ class RelationFetchTypeTest extends AbstractComponentTypeTest<RelationFetchTypeT
         equalEntityFetch(relation(EntityRelationshipComponent.class, FETCH), relation(EntityRelationshipComponent.class, FETCH), true),
         equalExclusiveEntityFetch(relation(EntityRelationshipComponent.class, FETCH), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
         wildcardComponentRelation(relation(EntityRelationshipComponent.class, FETCH), wildcardRelation(Object.class, Object.class), false),
+        wildcardEntityRelation(relation(EntityRelationshipComponent.class, FETCH), wildcardRelation(Object.class), false),
 
         exclusive_classType(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), component(Component.class), false),
         exclusive_componentRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), relation(RelationshipComponent.class, TargetComponent.class), false),
@@ -45,7 +46,8 @@ class RelationFetchTypeTest extends AbstractComponentTypeTest<RelationFetchTypeT
         exclusive_componentSet(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), componentSet(MyComponentSet.class), false),
         exclusive_equalEntityFetch(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), relation(EntityRelationshipComponent.class, FETCH), false),
         exclusive_equalExclusiveEntityFetch(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), true),
-        exclusive_wildcardComponentRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), wildcardRelation(Object.class, Object.class), false);
+        exclusive_wildcardComponentRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), wildcardRelation(Object.class, Object.class), false),
+        exclusive_wildcardEntityRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), wildcardRelation(Object.class), false);
 
         private final RelationFetchType<?, ?, ?> type;
         private final ComponentType<?, ?> otherType;

@@ -37,7 +37,8 @@ class WildcardTest extends AbstractComponentTypeTest<WildcardTest.MatchesTestCas
         componentSet(wildcard(Object.class), componentSet(MyComponentSet.class), false),
         entityFetch(wildcard(Object.class), relation(EntityRelationshipComponent.class, FETCH), false),
         exclusiveEntityFetch(wildcard(Object.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
-        wildcardComponentRelation(wildcard(Object.class), wildcardRelation(Object.class, Object.class), false);
+        wildcardComponentRelation(wildcard(Object.class), wildcardRelation(Object.class, Object.class), false),
+        wildcardEntityRelation(wildcard(Object.class), wildcardRelation(Object.class), false);
 
         private final Wildcard<?> type;
         private final ComponentType<?, ?> otherType;

@@ -22,6 +22,7 @@ import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntit
 import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardComponentRelations;
+import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardEntityRelations;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -34,6 +35,7 @@ import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetch
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
 import de.schosin.ecs.api.components.types.Wildcard;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.mappers.ComponentMapperImpl;
 import de.schosin.ecs.engine.components.mappers.ComponentSetComponentsImpl;
@@ -43,6 +45,7 @@ import de.schosin.ecs.engine.components.mappers.WildcardComponentsImpl;
 import de.schosin.ecs.engine.components.mappers.fetch.EntityRelationFetchMapperImpl;
 import de.schosin.ecs.engine.components.mappers.fetch.ExclusiveEntityRelationFetchMapperImpl;
 import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardComponentRelationsImpl;
+import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardEntityRelationsImpl;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
 import de.schosin.ecs.storage.api.components.Component;
@@ -105,6 +108,7 @@ public class ComponentMapperManager implements Components.Creator {
             case ComponentSetType<?> set -> (Components<T, R>) getComponentSets(set);
             case Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
             case WildcardComponentRelationType<?, ?> wildcardRelation -> (Components<T, R>) getWildcardComponentRelations(wildcardRelation);
+            case WildcardEntityRelationType<?> wildcardRelation -> (Components<T, R>) getWildcardEntityRelations(wildcardRelation);
         };
     }
 
@@ -318,6 +322,30 @@ public class ComponentMapperManager implements Components.Creator {
             }
 
             var mapper = new WildcardComponentRelationsImpl<R, T>(bagManager);
+            eventHandler.registerWildcardMapper(wildcardRelation, mapper);
+
+            this.reclaimingComponents.add(mapper);
+            this.componentMappers.put(wildcardRelation, mapper);
+
+            return mapper;
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R> WildcardEntityRelations<R> getWildcardEntityRelations(WildcardEntityRelationType<R> wildcardRelation) {
+        var result = (WildcardEntityRelations<R>) componentMappers.get(wildcardRelation);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.componentMappers) {
+            result = (WildcardEntityRelations<R>) componentMappers.get(wildcardRelation);
+            if (result != null) {
+                return result;
+            }
+
+            var mapper = new WildcardEntityRelationsImpl<R>(bagManager);
             eventHandler.registerWildcardMapper(wildcardRelation, mapper);
 
             this.reclaimingComponents.add(mapper);

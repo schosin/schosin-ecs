@@ -5,8 +5,11 @@ import java.lang.reflect.Modifier;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 
 public sealed interface WildcardRelationType<R, T extends Result<?>> extends ComponentType<R, T> {
 
@@ -33,6 +36,27 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
         }
     }
 
+    record WildcardEntityRelationType<R>(Class<R> relationshipBound) implements WildcardRelationType<R, EntityRelationResult<R>> {
+        public WildcardEntityRelationType {
+            WildcardRelationTypeHelper.validateWildcardEntityRelation(relationshipBound);
+        }
+
+        @Override
+        public boolean matches(ComponentType<?, ?> otherType) {
+            return switch (otherType) {
+                case EntityRelationType<?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship());
+                case ExclusiveEntityRelationType<?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship());
+                case WildcardEntityRelationType<?> wildcard -> this.relationshipBound.isAssignableFrom(wildcard.relationshipBound());
+                default -> false;
+            };
+        }
+
+        @Override
+        public final String toString() {
+            return "WildcardEntityRelationType(%s)".formatted(relationshipBound.getSimpleName());
+        }
+    }
+
 }
 
 class WildcardRelationTypeHelper extends ComponentTypeHelper {
@@ -55,6 +79,18 @@ class WildcardRelationTypeHelper extends ComponentTypeHelper {
         if (Modifier.isFinal(relationshipBound.getModifiers()) && Modifier.isFinal(targetBound.getModifiers())) {
             throw new IllegalArgumentException("Relationship '%s' and target '%s' cannot be used as a component wildcard bounds. At one most may be final, but both were."
                     .formatted(relationshipBound.getName(), targetBound.getName()));
+        }
+    }
+
+    static void validateWildcardEntityRelation(Class<?> relationshipBound) {
+        validateWildcard(relationshipBound);
+
+        if (Relation.Target.class.isAssignableFrom(relationshipBound)) {
+            throw new IllegalArgumentException("Class '%s' cannot be used as a relationship bound. It is marked as a Target component.".formatted(relationshipBound.getName()));
+        }
+
+        if (Modifier.isFinal(relationshipBound.getModifiers())) {
+            throw new IllegalArgumentException("Relationship '%s' cannot be used as a entity relationship bound. Must not be final.".formatted(relationshipBound.getName()));
         }
     }
 

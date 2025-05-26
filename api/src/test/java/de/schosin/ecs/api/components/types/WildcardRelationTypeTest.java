@@ -17,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 
 class WildcardRelationTypeTest extends AbstractComponentTypeTest<WildcardRelationTypeTest.MatchesTestCases> {
 
@@ -46,7 +47,26 @@ class WildcardRelationTypeTest extends AbstractComponentTypeTest<WildcardRelatio
         wildcardComponent_relationshipSupertype(wildcardRelation(Object.class, Object.class), wildcardRelation(RelationshipWildcard.class, Object.class), true),
         wildcardComponent_targetSupertype(wildcardRelation(Object.class, Object.class), wildcardRelation(Object.class, TargetWildcard.class), true),
         wildcardComponent_relationshipSubtype(wildcardRelation(RelationshipWildcard.class, Object.class), wildcardRelation(Object.class, Object.class), false),
-        wildcardComponent_targetSubtype(wildcardRelation(Object.class, TargetWildcard.class), wildcardRelation(Object.class, Object.class), false);
+        wildcardComponent_targetSubtype(wildcardRelation(Object.class, TargetWildcard.class), wildcardRelation(Object.class, Object.class), false),
+        wildcardComponent_wildcardEntityRelation(wildcardRelation(Object.class, Object.class), wildcardRelation(Object.class), false),
+
+        wildcardEntity_objectWildcard(wildcardRelation(Object.class), component(Component.class), false),
+        wildcardEntity_matchingInterface(wildcardRelation(Object.class), component(FinalComponent.class), false),
+        wildcardEntity_mismatchingInterface(wildcardRelation(Object.class), component(Component.class), false),
+        wildcardEntity_entityRelation(wildcardRelation(Object.class), relation(RelationshipComponent.class), true),
+        wildcardEntity_entityRelation_mismatchingRelationship(wildcardRelation(RelationshipWildcard.class), relation(RelationshipComponent.class), false),
+        wildcardEntity_exclusiveEntityRelation(wildcardRelation(Object.class), exclusiveRelation(ExclusiveComponent.class), true),
+        wildcardEntity_exclusiveEntityRelation_mismatchingRelationship(wildcardRelation(RelationshipWildcard.class), exclusiveRelation(ExclusiveComponent.class), false),
+        wildcardEntity_componentRelation(wildcardRelation(Object.class), relation(RelationshipComponent.class, TargetComponent.class), false),
+        wildcardEntity_exclusiveComponentRelation(wildcardRelation(Object.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
+        wildcardEntity_wildcard(wildcardRelation(Object.class), wildcard(Object.class), false),
+        wildcardEntity_componentSet(wildcardRelation(Object.class), componentSet(MyComponentSet.class), false),
+        wildcardEntity_entityFetch(wildcardRelation(Object.class), relation(EntityRelationshipComponent.class, FETCH), false),
+        wildcardEntity_exclusiveEntityFetch(wildcardRelation(Object.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+        wildcardEntity_equal(wildcardRelation(Object.class), wildcardRelation(Object.class), true),
+        wildcardEntity_relationshipSupertype(wildcardRelation(Object.class), wildcardRelation(RelationshipWildcard.class), true),
+        wildcardEntity_relationshipSubtype(wildcardRelation(RelationshipWildcard.class), wildcardRelation(Object.class), false),
+        wildcardEntity_wildcardComponentRelation(wildcardRelation(Object.class), wildcardRelation(Object.class, Object.class), false);
 
         private final WildcardRelationType<?, ?> type;
         private final ComponentType<?, ?> otherType;
@@ -221,11 +241,9 @@ class WildcardRelationTypeTest extends AbstractComponentTypeTest<WildcardRelatio
 
     }
 
-    /*
-    
     @Nested
-    class EntityRelationFetchTypeTest {
-    
+    class WildcardEntityRelationTypeTest {
+
         @ParameterizedTest
         @ValueSource(classes = { ComponentInterface.class, AbstractComponent.class, NonFinalComponent.class })
         void testToString(Class<?> relationshipBound) {
@@ -233,52 +251,73 @@ class WildcardRelationTypeTest extends AbstractComponentTypeTest<WildcardRelatio
                     .extracting(Object::toString, InstanceOfAssertFactories.STRING)
                     .containsSubsequence("WildcardEntityRelationType", relationshipBound.getSimpleName());
         }
-    
+
         @ParameterizedTest
-        @ValueSource(classes = { ComponentInterface.class, AbstractComponent.class, NonFinalComponent.class })
-        void testWildcard(Class<?> relationshipBound) {
-            var wildcard = new WildcardEntityRelationFetchType<>(relationshipBound, FETCH);
-    
-            assertThat(wildcard.relationshipBound()).isSameAs(relationshipBound);
-            assertThat(wildcard.fetch()).isSameAs(FETCH);
-        }
-    
-        @ParameterizedTest
-        @ValueSource(classes = { Component.class, GenericComponent.class, GenericComponent.class, GenericComponentInterface.class, FinalComponent.class, int[].class, Integer[].class, Object[].class })
-        void testInvalidRelationshipBound(Class<?> relationshipBound) {
-            assertThatThrownBy(() -> new WildcardEntityRelationType<>(relationshipBound))
+        @ValueSource(classes = { EnumComponent.class, Component.class, FinalComponent.class })
+        void testRelationshipFinal(Class<?> finalBound) {
+            assertThatThrownBy(() -> new WildcardEntityRelationType<>(finalBound))
                     .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContainingAll(relationshipBound.getName(), "cannot be used as a wildcard");
+                    .hasMessageContainingAll(finalBound.getName(), "cannot be used as a entity relationship bound", "Must not be final");
         }
-    
-        @Test
-        void testRelationshipTrait() {
-            assertThatCode(() -> new WildcardEntityRelationType<>(RelationshipWildcard.class)).doesNotThrowAnyException();
+
+        @Nested
+        class RelationshipTest {
+
+            @ParameterizedTest
+            @ValueSource(classes = { ComponentInterface.class, AbstractComponent.class, NonFinalComponent.class })
+            void testRelationshipBound(Class<?> relationshipBound) {
+                var wildcard = new WildcardEntityRelationType<>(relationshipBound);
+
+                assertThat(wildcard.relationshipBound()).isSameAs(relationshipBound);
+            }
+
+            @ParameterizedTest
+            @ValueSource(classes = { GenericComponent.class, GenericComponent.class, GenericComponentInterface.class, int.class, int[].class, Integer[].class, Object[].class })
+            void testInvalidRelationshipBound(Class<?> relationshipBound) {
+                assertThatThrownBy(() -> new WildcardEntityRelationType<>(relationshipBound))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(relationshipBound.getName(), "cannot be used as a wildcard");
+            }
+
+            @Test
+            void testInvalidSyntheticClass() {
+                assertThatThrownBy(() -> new WildcardEntityRelationType<>(SYNTHETIC_CLASS))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(SYNTHETIC_CLASS.getName(), "must not be synthetic");
+            }
+
+            @Test
+            void testRelationshipTrait() {
+                assertThatCode(() -> new WildcardEntityRelationType<>(RelationshipWildcard.class)).doesNotThrowAnyException();
+            }
+
+            @Test
+            void testTargetTrait() {
+                assertThatThrownBy(() -> new WildcardEntityRelationType<>(TargetWildcard.class))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll(TargetWildcard.class.getName(), "cannot be used as a relationship bound", "marked as a Target");
+            }
+
+            @Test
+            void testExclusiveTrait() {
+                assertThatCode(() -> new WildcardEntityRelationType<>(ExclusiveWildcard.class)).doesNotThrowAnyException();
+            }
+
+            @Test
+            void testEntityRelationshipTrait() {
+                assertThatCode(() -> new WildcardEntityRelationType<>(EntityRelationshipWildcard.class)).doesNotThrowAnyException();
+            }
+
+            @Test
+            void testExclusiveEntityRelationshipTrait() {
+                assertThatCode(() -> new WildcardEntityRelationType<>(ExclusiveEntityRelationshipWildcard.class)).doesNotThrowAnyException();
+            }
+
         }
-    
-        @Test
-        void testTargetTrait() {
-            assertThatThrownBy(() -> new WildcardEntityRelationType<>(TargetWildcard.class))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContainingAll(TargetWildcard.class.getName(), "cannot be used as a relationship bound", "marked as a Target");
-        }
-    
-        @Test
-        void testExclusiveTrait() {
-            assertThatCode(() -> new WildcardEntityRelationType<>(ExclusiveWildcard.class)).doesNotThrowAnyException();
-        }
-    
-        @Test
-        void testEntityRelationshipTrait() {
-            assertThatCode(() -> new WildcardEntityRelationType<>(EntityRelationshipWildcard.class)).doesNotThrowAnyException();
-        }
-    
-        @Test
-        void testExclusiveEntityRelationshipTrait() {
-            assertThatCode(() -> new WildcardEntityRelationType<>(ExclusiveEntityRelationshipWildcard.class)).doesNotThrowAnyException();
-        }
-    
+
     }
+
+    /*
     
     @Nested
     class WildcardEntityRelationFetchTypeTest {

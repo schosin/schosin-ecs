@@ -31,7 +31,8 @@ class ComponentSetTypeTest extends AbstractComponentTypeTest<ComponentSetTypeTes
         otherComponentSet(componentSet(MyComponentSet.class), componentSet(OtherComponentSet.class), false),
         entityFetch(componentSet(MyComponentSet.class), relation(EntityRelationshipComponent.class, FETCH), false),
         exclusiveEntityFetch(componentSet(MyComponentSet.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
-        wildcardComponentRelation(componentSet(MyComponentSet.class), wildcardRelation(Object.class, Object.class), false);
+        wildcardComponentRelation(componentSet(MyComponentSet.class), wildcardRelation(Object.class, Object.class), false),
+        wildcardEntityRelation(componentSet(MyComponentSet.class), wildcardRelation(Object.class), false);
 
         private final ComponentSetType<?> type;
         private final ComponentType<?, ?> otherType;
