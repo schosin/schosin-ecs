@@ -6,6 +6,7 @@ import java.util.ServiceLoader.Provider;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.api.Plugin.PluginConfig;
 import de.schosin.ecs.api.components.mappers.Components;
 
 public interface World extends Components.Creator {
@@ -66,6 +67,8 @@ public interface World extends Components.Creator {
          * @return this instance
          */
         Builder<T> singletons(Object... singletons);
+
+        Builder<T> configure(PluginConfig... configs);
 
         T build();
 

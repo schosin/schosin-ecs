@@ -4,6 +4,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -12,15 +13,16 @@ import java.util.SequencedSet;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.Plugin;
+import de.schosin.ecs.api.Plugin.PluginConfig;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.World.Builder;
 import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
 import de.schosin.ecs.engine.utils.exceptions.EcsWorldCreationException;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
-
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.ByteCodeElement;
 import net.bytebuddy.implementation.MethodDelegation;
@@ -33,7 +35,8 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
 
     Class<? extends StorageEngine> storageEngine;
     int processLoops = 3;
-    Map<Class<?>, Object> singletons;
+    final Map<Class<?>, Object> singletons = new HashMap<>();
+    final Map<Class<?>, PluginConfig> pluginConfigs = new HashMap<>();
 
     public WorldBuilder(Class<T> clazz) {
         if (!clazz.isInterface()) {
@@ -68,14 +71,24 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
 
     @Override
     public Builder<T> singletons(Object... singletons) {
-        if (this.singletons == null) {
-            this.singletons = new HashMap<>();
-        }
-
         for (var singleton : singletons) {
             if (this.singletons.put(singleton.getClass(), singleton) != null) {
                 throw new EcsWorldCreationException("Multiple singletons for class %s passed. Singletons must be unique".formatted(singleton.getClass()));
             }
+        }
+
+        return this;
+    }
+
+    @Override
+    public Builder<T> configure(PluginConfig... configs) {
+        for (var config : configs) {
+            var existing = this.pluginConfigs.get(config.getClass());
+            if (existing != null) {
+                throw new IllegalArgumentException("PluginConfig for plugin '%s' already added: %s".formatted(config.getClass().getName(), existing));
+            }
+
+            this.pluginConfigs.put(config.getClass(), config);
         }
 
         return this;
@@ -95,7 +108,7 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
             return (T) world;
         }
 
-        var dynamicWorld = DynamicWorldBuilder.createDynamicWorld(world, clazz);
+        var dynamicWorld = DynamicWorldBuilder.createDynamicWorld(world, clazz, this);
         storageEngine.setProxiedWorld((StorageWorld) dynamicWorld);
 
         return dynamicWorld;
@@ -123,7 +136,7 @@ class DynamicWorldBuilder {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T extends World> T createDynamicWorld(EngineWorld world, Class<T> clazz) {
+    public static <T extends World> T createDynamicWorld(EngineWorld world, Class<T> clazz, WorldBuilder<?> config) {
         var plugins = gatherPlugins(clazz);
         if (plugins.isEmpty()) {
             var dynamicWorld = new ByteBuddy()
@@ -147,12 +160,12 @@ class DynamicWorldBuilder {
             }
         }
 
-        return createDynamicPluginWorld(world, clazz, plugins);
+        return createDynamicPluginWorld(world, clazz, plugins, config);
 
     }
 
     @SuppressWarnings("unchecked")
-    private static <T extends World> T createDynamicPluginWorld(EngineWorld world, Class<T> clazz, SequencedSet<PluginData> plugins) {
+    private static <T extends World> T createDynamicPluginWorld(EngineWorld world, Class<T> clazz, SequencedSet<PluginData> plugins, WorldBuilder<?> config) {
         // Create builder
         var builder = new ByteBuddy()
                 .subclass(Object.class)
@@ -165,7 +178,7 @@ class DynamicWorldBuilder {
         definition = definition.method(isMethodOf(StorageWorld.class)).intercept(MethodDelegation.to(world));
 
         // Instantiate plugins
-        var instantiatedPlugins = instantiatePlugins(world, plugins);
+        var instantiatedPlugins = instantiatePlugins(world, plugins, config.pluginConfigs);
 
         // Add plugins to definition
         for (var plugin : instantiatedPlugins) {
@@ -191,11 +204,11 @@ class DynamicWorldBuilder {
         }
     }
 
-    private static SequencedSet<PluginInstance> instantiatePlugins(EngineWorld world, SequencedSet<PluginData> plugins) {
+    private static SequencedSet<PluginInstance> instantiatePlugins(EngineWorld world, SequencedSet<PluginData> plugins, Map<Class<?>, PluginConfig> configs) {
         var work = new LinkedHashSet<>(plugins);
         var instances = new HashMap<Class<?>, Object>();
 
-        instantiatePlugins(world, work, instances);
+        instantiatePlugins(world, work, instances, configs);
 
         var result = new LinkedHashSet<PluginInstance>();
 
@@ -211,17 +224,17 @@ class DynamicWorldBuilder {
         return result;
     }
 
-    private static void instantiatePlugins(EngineWorld world, LinkedHashSet<PluginData> plugins, HashMap<Class<?>, Object> instances) {
+    private static void instantiatePlugins(EngineWorld world, LinkedHashSet<PluginData> plugins, HashMap<Class<?>, Object> instances, Map<Class<?>, PluginConfig> configs) {
         while (!plugins.isEmpty()) {
             var plugin = plugins.removeFirst();
-            var instance = instantiatePlugin(world, plugin, plugins, instances);
+            var instance = instantiatePlugin(world, plugin, plugins, instances, configs);
 
             instances.put(plugin.plugin, instance);
             instances.put(plugin.implementation, instance);
         }
     }
 
-    private static Object instantiatePlugin(EngineWorld world, PluginData plugin, LinkedHashSet<PluginData> pendingPlugins, HashMap<Class<?>, Object> instances) {
+    private static Object instantiatePlugin(EngineWorld world, PluginData plugin, LinkedHashSet<PluginData> pendingPlugins, HashMap<Class<?>, Object> instances, Map<Class<?>, PluginConfig> configs) {
         var constructors = plugin.implementation.getConstructors();
         if (constructors.length != 1) {
             throw new EcsWorldCreationException("Failed to instantiate plugin '%s': Declares %d public constructors, must be exactly one.".formatted(plugin, constructors.length));
@@ -243,11 +256,24 @@ class DynamicWorldBuilder {
         // Analyze parameters
         var arguments = new Object[parameters.length];
         for (int i = 0, s = parameters.length; i < s; i++) {
-            var parameterType = parameters[i].getType();
+            var parameter = parameters[i];
+            var parameterType = parameter.getType();
 
             // EngineWorld argument
             if (parameterType.isAssignableFrom(EngineWorld.class)) {
                 arguments[i] = world;
+                continue;
+            }
+
+            // Plugin config
+            if (PluginConfig.class.isAssignableFrom(parameterType)) {
+                var config = configs.get(parameterType);
+                if (config == null && isRequiredConfig(parameter)) {
+                    throw new EcsWorldCreationException("Plugin '%s' declared required config parameter of type '%s'. Add configuration with Builder#configure."
+                            .formatted(plugin, parameterType.getName()));
+                }
+
+                arguments[i] = config;
                 continue;
             }
 
@@ -263,7 +289,7 @@ class DynamicWorldBuilder {
             if (pendingDependency != null) {
                 pendingPlugins.remove(pendingDependency);
 
-                var instance = arguments[i] = instantiatePlugin(world, pendingDependency, pendingPlugins, instances);
+                var instance = arguments[i] = instantiatePlugin(world, pendingDependency, pendingPlugins, instances, configs);
 
                 instances.put(parameterType, instance);
                 instances.put(pendingDependency.implementation, instance);
@@ -275,7 +301,7 @@ class DynamicWorldBuilder {
             var pluginAnnotation = parameterType.getAnnotation(Plugin.class);
             if (pluginAnnotation != null) {
                 var pluginDependency = new PluginData(parameterType, pluginAnnotation.value());
-                var instance = arguments[i] = instantiatePlugin(world, pluginDependency, pendingPlugins, instances);
+                var instance = arguments[i] = instantiatePlugin(world, pluginDependency, pendingPlugins, instances, configs);
 
                 instances.put(parameterType, instance);
                 instances.put(pluginAnnotation.value(), instance);
@@ -289,6 +315,21 @@ class DynamicWorldBuilder {
         }
 
         return instantiate(plugin, constructor, arguments);
+    }
+
+    private static boolean isRequiredConfig(Parameter parameter) {
+        var annotated = parameter.getAnnotatedType();
+        if (annotated.getAnnotation(Nullable.class) != null) {
+            return false;
+        }
+
+        for (var annotation : annotated.getAnnotations()) {
+            if ("Nullable".equals(annotation.getClass().getSimpleName())) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static Object instantiate(PluginData plugin, Constructor<?> constructor, Object... arguments) {

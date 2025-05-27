@@ -93,10 +93,8 @@ public class EngineWorld implements World, StorageWorld {
         this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager));
 
         // Initialized configured singletons
-        if (builder.singletons != null) {
-            for (var singleton : builder.singletons.values()) {
-                addSingleton(singleton);
-            }
+        for (var singleton : builder.singletons.values()) {
+            addSingleton(singleton);
         }
     }
 

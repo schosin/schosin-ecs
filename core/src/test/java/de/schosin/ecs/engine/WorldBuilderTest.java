@@ -10,6 +10,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.Plugin;
+import de.schosin.ecs.api.Plugin.PluginConfig;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.engine.WorldBuilderTest.ComponentAccessingPluginTest.ComponentAccessingPlugin;
@@ -379,6 +380,59 @@ public class WorldBuilderTest {
             public void setProxiedWorld(StorageWorld world) {
                 this.plugin = world.getSingleton(CustomPluginImpl.class);
             }
+        }
+
+    }
+
+    @Nested
+    static class ConfigurablePluginTest {
+
+        @Nested
+        class RequiredPluginConfigTest {
+
+            @Test
+            void testPluginConfig() {
+                var config = new ConfigurablePluginConfig();
+
+                // Create
+                var world = World.builder(ConfigurableWorld.class)
+                        .configure(config)
+                        .build();
+
+                // Verify
+                var plugin = world.getSingleton(ConfigurablePluginImpl.class);
+                assertThat(plugin.config).isSameAs(config);
+            }
+
+            @Test
+            void testMissingPluginConfig() {
+                assertThatThrownBy(() -> World.builder(ConfigurableWorld.class).build())
+                        .isInstanceOf(EcsWorldCreationException.class)
+                        .hasMessageContainingAll(ConfigurablePlugin.class.getName(), ConfigurablePluginConfig.class.getName(), "required config parameter");
+            }
+
+            public interface ConfigurableWorld extends World, ConfigurablePlugin {
+            }
+
+            @Plugin(ConfigurablePluginImpl.class)
+            public interface ConfigurablePlugin {
+            }
+
+            public static class ConfigurablePluginConfig implements PluginConfig {
+            }
+
+            public static class ConfigurablePluginImpl implements ConfigurablePlugin {
+
+                private final ConfigurablePluginConfig config;
+
+                public ConfigurablePluginImpl(World world, ConfigurablePluginConfig config) {
+                    world.addSingleton(this);
+
+                    this.config = config;
+                }
+
+            }
+
         }
 
     }
