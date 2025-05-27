@@ -7,10 +7,12 @@ import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
+import de.schosin.ecs.api.components.mappers.CustomComponents.Factory;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 
 /**
@@ -74,7 +76,7 @@ import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetch
  * 
  * @param <T> component type
  */
-public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, WildcardComponents, EntityFetchRelations, WildcardRelations {
+public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, WildcardComponents, EntityFetchRelations, WildcardRelations, CustomComponents {
 
     sealed interface RegularComponents<T, R> extends Components<T, R> permits ComponentMapper, ComponentRelations, EntityRelations {
 
@@ -146,6 +148,16 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
          */
         @NonNull
         <T, R> Components<T, R> getComponents(@NonNull RegularComponentType<T, R> type);
+
+        /**
+         * Retrieves the mapper for the custom component type.
+         * 
+         * @param type {@link CustomComponentType} of the component
+         * @return class to manage the components defined by the type argument 
+         * @throws IllegalArgumentException if no {@link Factory} has been registered for the type
+         */
+        @NonNull
+        <T, R, X extends CustomComponentType<T, R, C>, C extends CustomComponents<T, R>> C getComponents(X type);
 
     }
 

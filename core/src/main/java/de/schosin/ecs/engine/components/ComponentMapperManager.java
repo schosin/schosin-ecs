@@ -1,5 +1,6 @@
 package de.schosin.ecs.engine.components;
 
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +18,9 @@ import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelatio
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.mappers.CustomComponents;
+import de.schosin.ecs.api.components.mappers.CustomComponents.Factory;
+import de.schosin.ecs.api.components.mappers.CustomComponents.FactoryAdapter;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
@@ -28,6 +32,7 @@ import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
@@ -80,6 +85,8 @@ public class ComponentMapperManager implements Components.Creator {
     private final Bag<PoolingComponents<?>> reclaimingComponents;
     private final Map<ComponentType<?, ?>, Components<?, ?>> componentMappers = new ConcurrentHashMap<>();
 
+    private final Map<Class<? extends CustomComponentType<?, ?, ?>>, Factory> factories = new HashMap<>();
+
     public ComponentMapperManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, TransmutationManager transmutationManager,
             RelationMapperManager relationMapperManager) {
 
@@ -101,6 +108,35 @@ public class ComponentMapperManager implements Components.Creator {
         }
     }
 
+    /**
+     * Register a {@link CustomComponents.Factory} for a {@link CustomComponentType}.
+     * 
+     * @param type custom component type
+     * @param factory components factory
+     * @throws IllegalArgumentException when a factory is already registered for this type
+     */
+    @SuppressWarnings("rawtypes")
+    public synchronized <T extends CustomComponentType, C extends CustomComponents> void registerCustomComponentType(Class<? extends T> type, FactoryAdapter<T, C> factory) {
+        registerCustomComponentType(type, (Factory) factory);
+    }
+
+    /**
+     * Register a {@link CustomComponents.Factory} for a {@link CustomComponentType}.
+     * 
+     * @param type custom component type
+     * @param factory components factory
+     * @throws IllegalArgumentException when a factory is already registered for this type
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public synchronized void registerCustomComponentType(Class<? extends CustomComponentType> type, Factory factory) {
+        var existing = factories.get(type);
+        if (existing != null && existing != factory) {
+            throw new IllegalArgumentException("Factory for custom component type '%s' already registered: %s".formatted(type.getName(), existing));
+        }
+
+        this.factories.put((Class) type, factory);
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public <T, R> Components<T, R> getComponents(ComponentType<T, R> type) {
@@ -113,6 +149,7 @@ public class ComponentMapperManager implements Components.Creator {
             case WildcardComponentRelationType<?, ?> wildcardRelation -> (Components<T, R>) getWildcardComponentRelations(wildcardRelation);
             case WildcardEntityRelationType<?> wildcardRelation -> (Components<T, R>) getWildcardEntityRelations(wildcardRelation);
             case WildcardEntityRelationFetchType<?, ?> wildcardRelation -> (Components<T, R>) getWildcardEntityFetchRelations(wildcardRelation);
+            case CustomComponentType<?, ?, ?> custom -> (Components<T, R>) getComponents(custom);
         };
     }
 
@@ -377,6 +414,38 @@ public class ComponentMapperManager implements Components.Creator {
 
             this.reclaimingComponents.add(mapper);
             this.componentMappers.put(wildcardRelation, mapper);
+
+            return mapper;
+        }
+    }
+
+    @NonNull
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T, R, X extends CustomComponentType<T, R, C>, C extends CustomComponents<T, R>> C getComponents(X type) {
+        var result = (C) componentMappers.get(type);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.componentMappers) {
+            result = (C) componentMappers.get(type);
+            if (result != null) {
+                return result;
+            }
+
+            var factory = this.factories.get(type.getClass());
+            if (factory == null) {
+                throw new IllegalArgumentException("No factory registered for custom component type '%s'".formatted(type.getClass().getName()));
+            }
+
+            var mapper = factory.createComponents(type);
+
+            if (mapper instanceof PoolingComponents<?> pooling) {
+                this.reclaimingComponents.add(pooling);
+            }
+
+            this.componentMappers.put(type, mapper);
 
             return mapper;
         }

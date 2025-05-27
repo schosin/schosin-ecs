@@ -131,6 +131,10 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
             return result;
         }
 
+        if (CustomComponentType.class.equals(clazz)) {
+            return result;
+        }
+
         var subclasses = clazz.getPermittedSubclasses();
         if (subclasses == null || subclasses.length == 0) {
             throw new IllegalStateException("Class '%s' is neither final, nor has permitted subclasses. ComponentType hierarchy broken.".formatted(clazz.getName()));

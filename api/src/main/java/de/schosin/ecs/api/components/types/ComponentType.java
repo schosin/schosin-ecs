@@ -48,7 +48,7 @@ import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRe
  * @param <T> type of a single component instance
  * @param <R> type of component data when reading
  */
-public sealed interface ComponentType<T, R> permits RegularComponentType, Wildcard, ComponentSetType, RelationFetchType, WildcardRelationType {
+public sealed interface ComponentType<T, R> permits RegularComponentType, Wildcard, ComponentSetType, RelationFetchType, WildcardRelationType, CustomComponentType {
 
     /**
      * Describes component types that can be directly assigned to entities.

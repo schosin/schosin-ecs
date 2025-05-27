@@ -1,0 +1,27 @@
+package de.schosin.ecs.api.components.mappers;
+
+import de.schosin.ecs.api.components.types.CustomComponentType;
+
+public non-sealed interface CustomComponents<T, R> extends Components<T, R> {
+
+    @FunctionalInterface
+    interface Factory {
+
+        <T, R, C extends CustomComponents<T, R>> C createComponents(CustomComponentType<T, R, C> type);
+
+    }
+
+    @FunctionalInterface
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    interface FactoryAdapter<T extends CustomComponentType, C extends CustomComponents> extends Factory {
+
+        @Override
+        default <TT, R, CC extends CustomComponents<TT, R>> CC createComponents(CustomComponentType<TT, R, CC> type) {
+            return (CC) create((T) type);
+        }
+
+        C create(T type);
+
+    }
+
+}
