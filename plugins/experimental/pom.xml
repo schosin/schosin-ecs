@@ -3,21 +3,16 @@
     
     <parent>
         <groupId>de.schosin.ecs</groupId>
-        <artifactId>ecs-parent</artifactId>
+        <artifactId>ecs-plugins-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
-    
-    <artifactId>ecs-plugins-parent</artifactId>
+        
+    <groupId>de.schosin.ecs.plugins</groupId>
+    <artifactId>ecs-plugins-experimental-parent</artifactId>
     <packaging>pom</packaging>
     
     <modules>
-        <module>data-types</module>
-        <module>state</module>
-        <module>archetype</module>
-        <module>transmuter</module>
-        <module>composition</module>
-        <module>events</module>
-        <module>experimental</module>
+        <module>system</module>
     </modules>
   
 </project>
