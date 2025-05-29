@@ -11,6 +11,7 @@
     <packaging>pom</packaging>
     
     <modules>
+        <module>data-types</module>
         <module>state</module>
         <module>archetype</module>
         <module>transmuter</module>

@@ -21,6 +21,8 @@ import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeManagerGener
 import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeManagerTestGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionManagerGenerator;
+import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator;
+import de.schosin.ecs.codegen.generators.plugins.datatypes.DataTypeMapperGenerator;
 import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmutationManagerGenerator;
 import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmutationManagerTestGenerator;
 import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmuterGenerator;
@@ -48,11 +50,15 @@ public class EcsCodegenProcessor extends AbstractProcessor {
     private static final String COMPOSIITON_PLUGIN = "de.schosin.ecs.plugins.composition.BaseComposition";
     private static final String COMPOSIITON_PLUGIN_MANAGER = "de.schosin.ecs.plugins.composition.manager.CompositionManager";
 
+    private static final String BASE_DATA_TYPE = "de.schosin.ecs.plugins.data.types.BaseDataType";
+    private static final String DATA_TYPE_MAPPER = "de.schosin.ecs.plugins.data.mappers.DataTypeMapper";
+
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         var compositionParams = Integer.parseUnsignedInt(processingEnv.getOptions().getOrDefault(COMPOSITION_PARAMS, DEFAULT_PARAMS));
         var archetypeParams = Integer.parseUnsignedInt(processingEnv.getOptions().getOrDefault(ARCHETYPE_PARAMS, DEFAULT_PARAMS));
         var transmuterParams = Integer.parseUnsignedInt(processingEnv.getOptions().getOrDefault(TRANSMUTER_PARAMS, DEFAULT_PARAMS));
+        var maxParams = Math.max(compositionParams, Math.max(archetypeParams, transmuterParams));
 
         for (var element : roundEnv.getElementsAnnotatedWith(EcsCodegen.class)) {
             if (element instanceof TypeElement type) {
@@ -71,12 +77,21 @@ public class EcsCodegenProcessor extends AbstractProcessor {
                     case COMPOSIITON_PLUGIN -> writeFile(CompositionGenerator.generateFile(type, compositionParams));
                     case COMPOSIITON_PLUGIN_MANAGER -> writeFile(CompositionManagerGenerator.generateFile(type, compositionParams));
 
+                    case BASE_DATA_TYPE -> writeFiles(BaseDataTypeGenerator.generateFiles(type, maxParams));
+                    case DATA_TYPE_MAPPER -> writeFile(DataTypeMapperGenerator.generateFile(type, maxParams));
+
                     default -> throw new IllegalArgumentException("@%s used on %s: not supported".formatted(EcsCodegen.class.getSimpleName(), name));
                 }
             }
         }
 
         return true;
+    }
+
+    private void writeFiles(Iterable<JavaFile> javaFiles) {
+        for (var javaFile : javaFiles) {
+            writeFile(javaFile);
+        }
     }
 
     private void writeFile(JavaFile javaFile) {

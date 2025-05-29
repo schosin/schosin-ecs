@@ -22,8 +22,10 @@ public class Utils {
     public static final String INDENT = "    ";
 
     public static final ClassName ARRAY_UTILS = ClassName.get("de.schosin.ecs.engine.utils", "ArrayUtils");
+    public static final ClassName POOL = ClassName.get("de.schosin.ecs.utils.collections", "Pool");
     public static final ClassName POOLED = ClassName.get("de.schosin.ecs.api", "Pooled");
     public static final ClassName BAG = ClassName.get("de.schosin.ecs.utils.collections", "Bag");
+    public static final ClassName IMMUTABLE_BAG = ClassName.get("de.schosin.ecs.utils.collections", "ImmutableBag");
     public static final ClassName WORLD = ClassName.get("de.schosin.ecs.api", "World");
     public static final ClassName ABSTRACT_WORLD_TEST = ClassName.get("de.schosin.ecs.engine", "AbstractWorldTest");
     private static final ClassName ABSTRACT_ECS_TEST = ClassName.get("de.schosin.ecs.test", "AbstractEcsTest");
@@ -97,6 +99,9 @@ public class Utils {
 
     public static ParameterizedTypeName bag(TypeName type) {
         return ParameterizedTypeName.get(BAG, type);
+    }
+    public static ParameterizedTypeName immutableBag(TypeName type) {
+        return ParameterizedTypeName.get(IMMUTABLE_BAG, type);
     }
 
     public static ParameterizedTypeName clazz(TypeName type) {
