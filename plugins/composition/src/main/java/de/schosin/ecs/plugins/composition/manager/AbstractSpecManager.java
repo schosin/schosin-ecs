@@ -1,18 +1,20 @@
 package de.schosin.ecs.plugins.composition.manager;
 
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Spec;
-import de.schosin.ecs.utils.collections.BitVector;
 
 public abstract class AbstractSpecManager implements Spec.SpecCreator {
+
+    private interface Creator {
+        EngineSpec apply(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs);
+    }
 
     protected final ComponentManager componentManager;
     protected final EntityManager entityManager;
@@ -53,26 +55,23 @@ public abstract class AbstractSpecManager implements Spec.SpecCreator {
         return EngineSpec.combined(all, ones, none);
     }
 
-    private EngineSpec buildSpec(Composition.Group group, BiFunction<BitVector, Set<EngineSpec>, EngineSpec> constructor) {
+    private EngineSpec buildSpec(Composition.Group group, Creator constructor) {
         var components = buildComponents(group);
         var specs = buildSpecs(group);
 
         return components != null || specs != null
-                ? constructor.apply(components, specs)
+                ? constructor.apply(Set.copyOf(components), specs)
                 : null;
     }
 
-    private BitVector buildComponents(Composition.Group group) {
+    private Set<ComponentType<?, ?>> buildComponents(Composition.Group group) {
         var components = group.components();
 
         if (components.isEmpty()) {
             return null;
         }
 
-        var vector = new BitVector(components.size());
-        componentManager.fillVector(vector, components.toArray(RegularComponentType<?, ?>[]::new));
-
-        return vector;
+        return Set.copyOf(components);
     }
 
     private Set<EngineSpec> buildSpecs(Composition.Group group) {
@@ -98,7 +97,7 @@ public abstract class AbstractSpecManager implements Spec.SpecCreator {
         public boolean isInterested(int entityId) {
             var componentMask = entityManager.getComponentMask(entityId);
 
-            return spec.isInterested(componentMask.getMask());
+            return spec.isInterested(componentMask);
         }
 
     }

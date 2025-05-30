@@ -147,7 +147,7 @@ class EntityManagerTest extends AbstractWorldTest {
             all.set(component2.id());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.containsAll(all));
+            var entities = entityManager.getEntities(mask -> mask.getMask().containsAll(all));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(2);
@@ -171,7 +171,7 @@ class EntityManagerTest extends AbstractWorldTest {
             one.set(component3.id());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.containsSome(one));
+            var entities = entityManager.getEntities(mask -> mask.getMask().containsSome(one));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(4);
@@ -196,7 +196,7 @@ class EntityManagerTest extends AbstractWorldTest {
             none.set(component3.id());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.containsNone(none));
+            var entities = entityManager.getEntities(mask -> mask.getMask().containsNone(none));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(1);
@@ -223,7 +223,7 @@ class EntityManagerTest extends AbstractWorldTest {
             none.set(component3.id());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.containsAll(all) && mask.containsNone(none));
+            var entities = entityManager.getEntities(mask -> mask.getMask().containsAll(all) && mask.getMask().containsNone(none));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(1);

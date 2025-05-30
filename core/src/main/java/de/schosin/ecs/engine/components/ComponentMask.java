@@ -1,7 +1,10 @@
 package de.schosin.ecs.engine.components;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
@@ -29,6 +32,7 @@ public class ComponentMask {
     private final int id;
     private final BitVector mask;
     private final Component<?, ?>[] components;
+    private final List<ComponentType<?, ?>> componentTypes;
 
     private final IntBag lookup;
     private final Bag<ComponentMask> add;
@@ -40,6 +44,7 @@ public class ComponentMask {
         this.id = id;
         this.mask = mask;
         this.components = components;
+        this.componentTypes = Arrays.stream(components).<ComponentType<?, ?>>map(Component::type).toList();
 
         this.lookup = lookup;
         this.add = add;
@@ -60,6 +65,10 @@ public class ComponentMask {
 
     public Component<?, ?>[] getComponents() {
         return components;
+    }
+
+    public List<ComponentType<?, ?>> getComponentTypes() {
+        return this.componentTypes;
     }
 
     public Bag<ComponentMask> getAddMapping() {

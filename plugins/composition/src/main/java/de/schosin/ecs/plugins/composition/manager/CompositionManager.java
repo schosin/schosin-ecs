@@ -346,7 +346,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             }
 
             // Test spec and cache result
-            var result = spec.isInterested(componentMask.getMask());
+            var result = spec.isInterested(componentMask);
             maskCache.set(componentMask.getId(), result ? 1 : 2);
 
             return result;

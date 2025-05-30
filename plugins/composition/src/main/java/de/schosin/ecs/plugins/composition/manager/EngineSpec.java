@@ -6,23 +6,24 @@ import static de.schosin.ecs.plugins.composition.manager.Helper.matchesSpec;
 import java.util.Objects;
 import java.util.Set;
 
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.utils.collections.BitVector;
 
 public sealed interface EngineSpec extends EntityManager.ComponentsPredicate {
 
     static EngineSpec MATCH_ALL = MatchAll.INSTANCE;
 
-    static EngineSpec all(BitVector components, Set<EngineSpec> specs) {
-        return new AllSpec(components, specs);
+    static EngineSpec all(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) {
+        return new AllSpec(types, specs);
     }
 
-    static EngineSpec one(BitVector components, Set<EngineSpec> specs) {
-        return new OneSpec(components, specs);
+    static EngineSpec one(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) {
+        return new OneSpec(types, specs);
     }
 
-    static EngineSpec none(BitVector components, Set<EngineSpec> specs) {
-        return new NoneSpec(components, specs);
+    static EngineSpec none(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) {
+        return new NoneSpec(types, specs);
     }
 
     static EngineSpec combined(EngineSpec all, Set<EngineSpec> ones, EngineSpec none) {
@@ -37,26 +38,26 @@ public sealed interface EngineSpec extends EntityManager.ComponentsPredicate {
 
 }
 
-record AllSpec(BitVector all, Set<EngineSpec> specs) implements EngineSpec {
+record AllSpec(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) implements EngineSpec {
 
     AllSpec {
-        if (all == null && (specs == null || specs.isEmpty())) {
+        if ((types == null || types.isEmpty()) && (specs == null || specs.isEmpty())) {
             throw new IllegalArgumentException("Atleast one argument must not be null or empty");
         }
     }
 
     @Override
-    public boolean isInterested(BitVector components) {
-        return (all == null || components.containsAll(all))
-                && (specs == null || specs.stream().allMatch(spec -> spec.isInterested(components)));
+    public boolean isInterested(ComponentMask componentMask) {
+        return (types == null || types.stream().allMatch(type -> componentMask.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
+                && (specs == null || specs.stream().allMatch(spec -> spec.isInterested(componentMask)));
     }
 
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
-            case AllSpec(BitVector otherAll, Set<EngineSpec> otherSpecs) -> matchesComponents(all, otherAll) && matchesSpec(specs, otherSpecs);
-            case OneSpec(BitVector otherOne, Set<EngineSpec> otherSpecs) -> false;
-            case NoneSpec(BitVector otherNone, Set<EngineSpec> otherSpecs) -> false;
+            case AllSpec(var otherTypes, var otherSpecs) -> matchesComponents(types, otherTypes) && matchesSpec(specs, otherSpecs);
+            case OneSpec(var otherTypes, var otherSpecs) -> false;
+            case NoneSpec(var otherTypes, var otherSpecs) -> false;
             case MatchAll m -> true;
             case EngineSpecImpl e -> false;
         };
@@ -64,52 +65,53 @@ record AllSpec(BitVector all, Set<EngineSpec> specs) implements EngineSpec {
 
 }
 
-record OneSpec(BitVector one, Set<EngineSpec> specs) implements EngineSpec {
+record OneSpec(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) implements EngineSpec {
 
     OneSpec {
-        if (one == null && (specs == null || specs.isEmpty())) {
+        if ((types == null || types.isEmpty()) && (specs == null || specs.isEmpty())) {
             throw new IllegalArgumentException("Atleast one argument must not be null or empty");
         }
     }
 
     @Override
-    public boolean isInterested(BitVector components) {
-        return (one != null && components.containsSome(one)) || (specs != null && specs.stream().anyMatch(spec -> spec.isInterested(components)));
+    public boolean isInterested(ComponentMask componentMask) {
+        return (types != null && types.stream().anyMatch(type -> componentMask.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
+                || (specs != null && specs.stream().anyMatch(spec -> spec.isInterested(componentMask)));
     }
 
     @Override
     @SuppressWarnings("null") // JDT bug 
     public boolean matches(EngineSpec other) {
         return switch (other) {
-            case AllSpec(BitVector otherAll, Set<EngineSpec> otherSpecs) -> false;
-            case OneSpec(BitVector otherOne, Set<EngineSpec> otherSpecs) -> (otherOne != null && matchesComponents(one, otherOne)) || (otherSpecs != null && matchesSpec(specs, otherSpecs));
-            case NoneSpec(BitVector otherNone, Set<EngineSpec> otherSpecs) -> false;
+            case AllSpec(var otherTypes, var otherSpecs) -> false;
+            case OneSpec(var otherTypes, var otherSpecs) -> (otherTypes != null && matchesComponents(types, otherTypes)) || (otherSpecs != null && matchesSpec(specs, otherSpecs));
+            case NoneSpec(var otherTypes, var otherSpecs) -> false;
             case MatchAll m -> true;
             case EngineSpecImpl e -> false;
         };
     }
 }
 
-record NoneSpec(BitVector none, Set<EngineSpec> specs) implements EngineSpec {
+record NoneSpec(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) implements EngineSpec {
 
     NoneSpec {
-        if (none == null && (specs == null || specs.isEmpty())) {
+        if ((types == null || types.isEmpty()) && (specs == null || specs.isEmpty())) {
             throw new IllegalArgumentException("Atleast one argument must not be null or empty");
         }
     }
 
     @Override
-    public boolean isInterested(BitVector components) {
-        return (none == null || components.containsNone(none))
-                && (specs == null || specs.stream().noneMatch(spec -> spec.isInterested(components)));
+    public boolean isInterested(ComponentMask componentMask) {
+        return (types == null || types.stream().noneMatch(type -> componentMask.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
+                && (specs == null || specs.stream().noneMatch(spec -> spec.isInterested(componentMask)));
     }
 
     @Override
     public boolean matches(EngineSpec other) {
         return switch (other) {
-            case AllSpec(BitVector otherAll, Set<EngineSpec> otherSpecs) -> false;
-            case OneSpec(BitVector otherOne, Set<EngineSpec> otherSpecs) -> false;
-            case NoneSpec(BitVector otherNone, Set<EngineSpec> otherSpecs) -> matchesComponents(none, otherNone) && matchesSpec(specs, otherSpecs);
+            case AllSpec(var otherTypes, var otherSpecs) -> false;
+            case OneSpec(var otherTypes, var otherSpecs) -> false;
+            case NoneSpec(var otherTypes, var otherSpecs) -> matchesComponents(types, otherTypes) && matchesSpec(specs, otherSpecs);
             case MatchAll m -> true;
             case EngineSpecImpl e -> false;
         };
@@ -121,7 +123,7 @@ enum MatchAll implements EngineSpec {
     INSTANCE;
 
     @Override
-    public boolean isInterested(BitVector components) {
+    public boolean isInterested(ComponentMask componentMask) {
         return true;
     }
 
@@ -149,10 +151,10 @@ final class EngineSpecImpl implements EngineSpec {
     }
 
     @Override
-    public boolean isInterested(BitVector components) {
-        return (all == null || all.isInterested(components))
-                && (ones == null || ones.stream().allMatch(one -> one.isInterested(components)))
-                && (none == null || none.isInterested(components));
+    public boolean isInterested(ComponentMask componentMask) {
+        return (all == null || all.isInterested(componentMask))
+                && (ones == null || ones.stream().allMatch(one -> one.isInterested(componentMask)))
+                && (none == null || none.isInterested(componentMask));
     }
 
     @Override
@@ -189,8 +191,8 @@ final class EngineSpecImpl implements EngineSpec {
 
 class Helper {
 
-    static boolean matchesComponents(BitVector components, BitVector otherComponents) {
-        return otherComponents == null || (components != null && components.containsAll(otherComponents));
+    static boolean matchesComponents(Set<ComponentType<?, ?>> types, Set<ComponentType<?, ?>> otherTypes) {
+        return otherTypes == null || (types != null && otherTypes.stream().allMatch(otherType -> types.stream().anyMatch(type -> otherType.matches(type))));
     }
 
     static boolean matchesSpec(Set<EngineSpec> specs, Set<EngineSpec> otherSpecs) {

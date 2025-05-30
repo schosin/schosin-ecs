@@ -12,7 +12,6 @@ import org.jspecify.annotations.NullMarked;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 /**
  * A composition describes the component composition for entities. Entities can be limited by the following aspects:
@@ -57,7 +56,7 @@ public interface Composition extends Spec {
      * @param components types of components
      * @return builder
      */
-    static Builder all(RegularComponentType<?, ?>... components) {
+    static Builder all(ComponentType<?, ?>... components) {
         return builder().all(components);
     }
 
@@ -101,7 +100,7 @@ public interface Composition extends Spec {
      * @param components types of components
      * @return builder
      */
-    static Builder one(RegularComponentType<?, ?>... components) {
+    static Builder one(ComponentType<?, ?>... components) {
         return builder().one(components);
     }
 
@@ -146,7 +145,7 @@ public interface Composition extends Spec {
      * @param components types of components
      * @return builder
      */
-    static Builder none(RegularComponentType<?, ?>... components) {
+    static Builder none(ComponentType<?, ?>... components) {
         return builder().none(components);
     }
 
@@ -305,7 +304,7 @@ public interface Composition extends Spec {
          * @param components types of components
          * @return this builder
          */
-        public Builder all(RegularComponentType<?, ?>... components) {
+        public Builder all(ComponentType<?, ?>... components) {
             all.add(components);
             return this;
         }
@@ -353,7 +352,7 @@ public interface Composition extends Spec {
          * @param components types of components
          * @return this builder
          */
-        public Builder one(RegularComponentType<?, ?>... components) {
+        public Builder one(ComponentType<?, ?>... components) {
             if (components.length == 0) {
                 return this;
             }
@@ -413,7 +412,7 @@ public interface Composition extends Spec {
          * @param components types of components
          * @return this builder
          */
-        public Builder none(RegularComponentType<?, ?>... components) {
+        public Builder none(ComponentType<?, ?>... components) {
             none.add(components);
             return this;
         }
@@ -493,7 +492,7 @@ public interface Composition extends Spec {
         }
     }
 
-    record Group(Set<RegularComponentType<?, ?>> components, Set<Builder> builders) {
+    record Group(Set<ComponentType<?, ?>> components, Set<Builder> builders) {
 
         Group() {
             this(new HashSet<>(), new HashSet<>());
@@ -515,7 +514,7 @@ public interface Composition extends Spec {
             return this;
         }
 
-        public Group add(RegularComponentType<?, ?>... components) {
+        public Group add(ComponentType<?, ?>... components) {
             for (var component : components) {
                 this.components.add(component);
             }

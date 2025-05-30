@@ -11,14 +11,13 @@ import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class EntityManager {
 
     public interface ComponentsPredicate {
-        boolean isInterested(BitVector components);
+        boolean isInterested(ComponentMask componentMask);
     }
 
     private final World world;
@@ -153,7 +152,7 @@ public class EntityManager {
                     continue;
                 }
 
-                if (predicate.isInterested(entity.componentMask.getMask())) {
+                if (predicate.isInterested(entity.componentMask)) {
                     result.add(entity.id);
                 }
             }

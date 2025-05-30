@@ -1,6 +1,7 @@
 package de.schosin.ecs.plugins.composition.manager;
 
 import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
+import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -977,6 +978,110 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                         assertThat(composition.matches(createSpec(builder(all, one, none)))).isFalse();
                     }
 
+                    @Nested
+                    class NonRegularComponentTypesTest {
+
+                        @Test
+                        void testWildcard() {
+                            var composition1 = createComposition(Composition.all(component(C1.class)));
+                            var composition4 = createComposition(Composition.all(component(C4.class)));
+                            var composition5 = createComposition(Composition.all(component(C5.class)));
+                            var composition1234 = createComposition(Composition.all(wildcard(C1234.class)));
+
+                            var spec1 = createSpec(Composition.all(C1.class));
+                            var spec4 = createSpec(Composition.all(C4.class));
+                            var spec5 = createSpec(Composition.all(C5.class));
+                            var spec1234 = createSpec(Composition.all(wildcard(C1234.class)));
+
+                            assertThat(composition1234.matches(spec1)).isFalse();
+                            assertThat(composition1234.matches(spec4)).isFalse();
+                            assertThat(composition1234.matches(spec5)).isFalse();
+                            assertThat(composition1234.matches(spec1234)).isTrue();
+
+                            assertThat(composition1.matches(spec1)).isTrue();
+                            assertThat(composition1.matches(spec4)).isFalse();
+                            assertThat(composition1.matches(spec5)).isFalse();
+                            assertThat(composition1.matches(spec1234)).isTrue();
+
+                            assertThat(composition4.matches(spec1)).isFalse();
+                            assertThat(composition4.matches(spec4)).isTrue();
+                            assertThat(composition4.matches(spec5)).isFalse();
+                            assertThat(composition4.matches(spec1234)).isTrue();
+
+                            assertThat(composition5.matches(spec1)).isFalse();
+                            assertThat(composition5.matches(spec4)).isFalse();
+                            assertThat(composition5.matches(spec5)).isTrue();
+                            assertThat(composition5.matches(spec1234)).isFalse();
+                        }
+
+                        @Test
+                        void testWildcardComponentRelation() {
+                            var composition1 = createComposition(Composition.all(relation(C1.class, C8.class)));
+                            var composition4 = createComposition(Composition.all(relation(C4.class, C8.class)));
+                            var composition5 = createComposition(Composition.all(relation(C5.class, C8.class)));
+                            var composition1234 = createComposition(Composition.all(wildcardRelation(C1234.class, C8.class)));
+
+                            var spec1 = createSpec(Composition.all(relation(C1.class, C8.class)));
+                            var spec4 = createSpec(Composition.all(relation(C4.class, C8.class)));
+                            var spec5 = createSpec(Composition.all(relation(C5.class, C8.class)));
+                            var spec1234 = createSpec(Composition.all(wildcardRelation(C1234.class, C8.class)));
+
+                            assertThat(composition1234.matches(spec1)).isFalse();
+                            assertThat(composition1234.matches(spec4)).isFalse();
+                            assertThat(composition1234.matches(spec5)).isFalse();
+                            assertThat(composition1234.matches(spec1234)).isTrue();
+
+                            assertThat(composition1.matches(spec1)).isTrue();
+                            assertThat(composition1.matches(spec4)).isFalse();
+                            assertThat(composition1.matches(spec5)).isFalse();
+                            assertThat(composition1.matches(spec1234)).isTrue();
+
+                            assertThat(composition4.matches(spec1)).isFalse();
+                            assertThat(composition4.matches(spec4)).isTrue();
+                            assertThat(composition4.matches(spec5)).isFalse();
+                            assertThat(composition4.matches(spec1234)).isTrue();
+
+                            assertThat(composition5.matches(spec1)).isFalse();
+                            assertThat(composition5.matches(spec4)).isFalse();
+                            assertThat(composition5.matches(spec5)).isTrue();
+                            assertThat(composition5.matches(spec1234)).isFalse();
+                        }
+
+                        @Test
+                        void testWildcardEntityRelation() {
+                            var composition1 = createComposition(Composition.all(relation(C1.class)));
+                            var composition4 = createComposition(Composition.all(relation(C4.class)));
+                            var composition5 = createComposition(Composition.all(relation(C5.class)));
+                            var composition1234 = createComposition(Composition.all(wildcardRelation(C1234.class)));
+
+                            var spec1 = createSpec(Composition.all(relation(C1.class)));
+                            var spec4 = createSpec(Composition.all(relation(C4.class)));
+                            var spec5 = createSpec(Composition.all(relation(C5.class)));
+                            var spec1234 = createSpec(Composition.all(wildcardRelation(C1234.class)));
+
+                            assertThat(composition1234.matches(spec1)).isFalse();
+                            assertThat(composition1234.matches(spec4)).isFalse();
+                            assertThat(composition1234.matches(spec5)).isFalse();
+                            assertThat(composition1234.matches(spec1234)).isTrue();
+
+                            assertThat(composition1.matches(spec1)).isTrue();
+                            assertThat(composition1.matches(spec4)).isFalse();
+                            assertThat(composition1.matches(spec5)).isFalse();
+                            assertThat(composition1.matches(spec1234)).isTrue();
+
+                            assertThat(composition4.matches(spec1)).isFalse();
+                            assertThat(composition4.matches(spec4)).isTrue();
+                            assertThat(composition4.matches(spec5)).isFalse();
+                            assertThat(composition4.matches(spec1234)).isTrue();
+
+                            assertThat(composition5.matches(spec1)).isFalse();
+                            assertThat(composition5.matches(spec4)).isFalse();
+                            assertThat(composition5.matches(spec5)).isTrue();
+                            assertThat(composition5.matches(spec1234)).isFalse();
+                        }
+
+                    }
+
                     private Composition.Builder builder(Class<?>[] all, Class<?>[] one, Class<?>[] none) {
                         return Composition
                                 .all(all != null ? all : EMPTY)
@@ -1306,12 +1411,12 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1) -> {
-                assertThat(C1).isNotNull();
+            composition(builder1).process(expected1[0], (entityId, c1) -> {
+                assertThat(c1).isNotNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1) -> {
-                assertThat(C1).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1) -> {
+                assertThat(c1).isNotNull();
             });
         }
 
@@ -1320,10 +1425,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1) -> {
+            composition.process((entityId, c1) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
+                assertThat(c1).isNotNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -1331,14 +1436,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testProcessAllComponents() {
+        void testProcessOtherComponents() {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1) -> {
+            composition.process((entityId, c1) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
+                assertThat(c1).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -1349,16 +1454,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
 
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -1366,10 +1470,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1) -> {
+            composition.inserted((entityId, c1) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
+                assertThat(c1).isNotNull();
             });
 
             var ids = createEntities1(7);
@@ -1383,10 +1487,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1) -> {
+            composition.removed((entityId, c1) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
+                assertThat(c1).isNotNull();
             });
 
             for (int id : expected1) {
@@ -1436,14 +1540,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1, C2) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
+            composition(builder1).process(expected1[0], (entityId, c1, c2) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1, C2) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1, c2) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNotNull();
             });
         }
 
@@ -1452,11 +1556,11 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1, C2) -> {
+            composition.process((entityId, c1, c2) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -1464,15 +1568,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testProcessAllComponents() {
+        void testProcessOtherComponents() {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1, C2) -> {
+            composition.process((entityId, c1, c2) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
+                assertThat(c1).isNull();
+                assertThat(c2).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -1483,16 +1587,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1, C2) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1, c2) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
 
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -1500,11 +1603,11 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1, C2) -> {
+            composition.inserted((entityId, c1, c2) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
             });
 
             var ids = createEntities1(7);
@@ -1518,11 +1621,11 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1, C2) -> {
+            composition.removed((entityId, c1, c2) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
             });
 
             for (int id : expected1) {
@@ -1572,16 +1675,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1, C2, C3) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
+            composition(builder1).process(expected1[0], (entityId, c1, c2, c3) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1, C2, C3) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1, c2, c3) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNotNull();
+                assertThat(c3).isNotNull();
             });
         }
 
@@ -1590,12 +1693,12 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1, C2, C3) -> {
+            composition.process((entityId, c1, c2, c3) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -1603,16 +1706,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testProcessAllComponents() {
+        void testProcessOtherComponents() {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1, C2, C3) -> {
+            composition.process((entityId, c1, c2, c3) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
+                assertThat(c1).isNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -1623,16 +1726,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1, C2, C3) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1, c2, c3) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
 
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -1640,12 +1742,12 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1, C2, C3) -> {
+            composition.inserted((entityId, c1, c2, c3) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
             });
 
             var ids = createEntities1(7);
@@ -1659,12 +1761,12 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1, C2, C3) -> {
+            composition.removed((entityId, c1, c2, c3) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
             });
 
             for (int id : expected1) {
@@ -1714,18 +1816,18 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1, C2, C3, component4) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
+            composition(builder1).process(expected1[0], (entityId, c1, c2, c3, c4) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1, C2, C3, component4) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1, c2, c3, c4) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNotNull();
+                assertThat(c3).isNotNull();
+                assertThat(c4).isNotNull();
             });
         }
 
@@ -1734,13 +1836,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1, C2, C3, component4) -> {
+            composition.process((entityId, c1, c2, c3, c4) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -1748,17 +1850,17 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testProcessAllComponents() {
+        void testProcessOtherComponents() {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1, C2, C3, component4) -> {
+            composition.process((entityId, c1, c2, c3, c4) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
+                assertThat(c1).isNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -1769,16 +1871,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1, C2, C3, component4) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1, c2, c3, c4) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
 
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -1786,13 +1887,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1, C2, C3, component4) -> {
+            composition.inserted((entityId, c1, c2, c3, c4) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
             });
 
             var ids = createEntities1(7);
@@ -1806,13 +1907,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1, C2, C3, component4) -> {
+            composition.removed((entityId, c1, c2, c3, c4) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
             });
 
             for (int id : expected1) {
@@ -1862,20 +1963,20 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1, C2, C3, component4, component5) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
+            composition(builder1).process(expected1[0], (entityId, c1, c2, c3, c4, c5) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1, C2, C3, component4, component5) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1, c2, c3, c4, c5) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNotNull();
+                assertThat(c3).isNotNull();
+                assertThat(c4).isNotNull();
+                assertThat(c5).isNotNull();
             });
         }
 
@@ -1884,14 +1985,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1, C2, C3, component4, component5) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -1903,14 +2004,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
+                assertThat(c1).isNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -1921,16 +2022,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1, c2, c3, c4, c5) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
 
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -1938,14 +2038,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1, C2, C3, component4, component5) -> {
+            composition.inserted((entityId, c1, c2, c3, c4, c5) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
             });
 
             var ids = createEntities1(7);
@@ -1959,14 +2059,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1, C2, C3, component4, component5) -> {
+            composition.removed((entityId, c1, c2, c3, c4, c5) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
             });
 
             for (int id : expected1) {
@@ -2016,22 +2116,22 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1, C2, C3, component4, component5, component6) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
+            composition(builder1).process(expected1[0], (entityId, c1, c2, c3, c4, c5, c6) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1, C2, C3, component4, component5, component6) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
-                assertThat(component6).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1, c2, c3, c4, c5, c6) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNotNull();
+                assertThat(c3).isNotNull();
+                assertThat(c4).isNotNull();
+                assertThat(c5).isNotNull();
+                assertThat(c6).isNotNull();
             });
         }
 
@@ -2040,15 +2140,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5, c6) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -2056,19 +2156,19 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testProcessAllComponents() {
+        void testProcessOtherComponents() {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5, c6) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
-                assertThat(component6).isNotNull();
+                assertThat(c1).isNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -2079,16 +2179,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1, c2, c3, c4, c5, c6) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
-
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -2096,15 +2194,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1, C2, C3, component4, component5, component6) -> {
+            composition.inserted((entityId, c1, c2, c3, c4, c5, c6) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
             });
 
             var ids = createEntities1(7);
@@ -2118,15 +2216,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1, C2, C3, component4, component5, component6) -> {
+            composition.removed((entityId, c1, c2, c3, c4, c5, c6) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
             });
 
             for (int id : expected1) {
@@ -2176,24 +2274,24 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1, C2, C3, component4, component5, component6, component7) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
+            composition(builder1).process(expected1[0], (entityId, c1, c2, c3, c4, c5, c6, c7) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1, C2, C3, component4, component5, component6, component7) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
-                assertThat(component6).isNotNull();
-                assertThat(component7).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1, c2, c3, c4, c5, c6, c7) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNotNull();
+                assertThat(c3).isNotNull();
+                assertThat(c4).isNotNull();
+                assertThat(c5).isNotNull();
+                assertThat(c6).isNotNull();
+                assertThat(c7).isNotNull();
             });
         }
 
@@ -2202,16 +2300,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6, component7) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5, c6, c7) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -2219,20 +2317,20 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testProcessAllComponents() {
+        void testProcessOtherComponents() {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6, component7) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5, c6, c7) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
-                assertThat(component6).isNotNull();
-                assertThat(component7).isNotNull();
+                assertThat(c1).isNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -2243,16 +2341,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6, component7) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1, c2, c3, c4, c5, c6, c7) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
 
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -2260,16 +2357,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1, C2, C3, component4, component5, component6, component7) -> {
+            composition.inserted((entityId, c1, c2, c3, c4, c5, c6, c7) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
             });
 
             var ids = createEntities1(7);
@@ -2283,16 +2380,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1, C2, C3, component4, component5, component6, component7) -> {
+            composition.removed((entityId, c1, c2, c3, c4, c5, c6, c7) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
             });
 
             for (int id : expected1) {
@@ -2343,26 +2440,26 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testProcessOtherEntity() {
-            composition(builder1).process(expected1[0], (entityId, C1, C2, C3, component4, component5, component6, component7, component8) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
-                assertThat(component8).isNull();
+            composition(builder1).process(expected1[0], (entityId, c1, c2, c3, c4, c5, c6, c7, c8) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
+                assertThat(c8).isNull();
             });
 
-            composition(builder8).process(expected8[0], (entityId, C1, C2, C3, component4, component5, component6, component7, component8) -> {
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
-                assertThat(component6).isNotNull();
-                assertThat(component7).isNotNull();
-                assertThat(component8).isNotNull();
+            composition(builder8).process(expected18[0], (entityId, c1, c2, c3, c4, c5, c6, c7, c8) -> {
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNotNull();
+                assertThat(c3).isNotNull();
+                assertThat(c4).isNotNull();
+                assertThat(c5).isNotNull();
+                assertThat(c6).isNotNull();
+                assertThat(c7).isNotNull();
+                assertThat(c8).isNotNull();
             });
         }
 
@@ -2371,17 +2468,17 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var processed = new IntBag(expected1.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6, component7, component8) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5, c6, c7, c8) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
-                assertThat(component8).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
+                assertThat(c8).isNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected1.length);
@@ -2389,21 +2486,21 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testProcessAllComponents() {
+        void testProcessOtherComponents() {
             var composition = composition(builder8);
 
             var processed = new IntBag(expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6, component7, component8) -> {
+            composition.process((entityId, c1, c2, c3, c4, c5, c6, c7, c8) -> {
                 processed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNotNull();
-                assertThat(C3).isNotNull();
-                assertThat(component4).isNotNull();
-                assertThat(component5).isNotNull();
-                assertThat(component6).isNotNull();
-                assertThat(component7).isNotNull();
-                assertThat(component8).isNotNull();
+                assertThat(c1).isNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
+                assertThat(c8).isNotNull();
             });
 
             assertThat(processed.getSize()).isEqualTo(expected8.length);
@@ -2414,16 +2511,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessVaryingComponents() {
             var composition = composition(builderAll);
 
-            var processed = new IntBag(expected1.length + expected8.length);
-            composition.process((entityId, C1, C2, C3, component4, component5, component6, component7, component8) -> {
+            var processed = new IntBag(expected1.length + expected8.length + expected18.length);
+            composition.process((entityId, c1, c2, c3, c4, c5, c6, c7, c8) -> {
                 processed.add(entityId);
-
-                assertThat(C1).isNotNull();
             });
 
-            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length);
+            assertThat(processed.getSize()).isEqualTo(expected1.length + expected8.length + expected18.length);
             assertThat(processed.getData()).contains(expected1);
             assertThat(processed.getData()).contains(expected8);
+            assertThat(processed.getData()).contains(expected18);
         }
 
         @Test
@@ -2431,17 +2527,17 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var inserted = new IntBag(7);
-            composition.inserted((entityId, C1, C2, C3, component4, component5, component6, component7, component8) -> {
+            composition.inserted((entityId, c1, c2, c3, c4, c5, c6, c7, c8) -> {
                 inserted.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
-                assertThat(component8).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
+                assertThat(c8).isNull();
             });
 
             var ids = createEntities1(7);
@@ -2455,17 +2551,17 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition = composition(builder1);
 
             var removed = new IntBag(expected1.length);
-            composition.removed((entityId, C1, C2, C3, component4, component5, component6, component7, component8) -> {
+            composition.removed((entityId, c1, c2, c3, c4, c5, c6, c7, c8) -> {
                 removed.add(entityId);
 
-                assertThat(C1).isNotNull();
-                assertThat(C2).isNull();
-                assertThat(C3).isNull();
-                assertThat(component4).isNull();
-                assertThat(component5).isNull();
-                assertThat(component6).isNull();
-                assertThat(component7).isNull();
-                assertThat(component8).isNull();
+                assertThat(c1).isNotNull();
+                assertThat(c2).isNull();
+                assertThat(c3).isNull();
+                assertThat(c4).isNull();
+                assertThat(c5).isNull();
+                assertThat(c6).isNull();
+                assertThat(c7).isNull();
+                assertThat(c8).isNull();
             });
 
             for (int id : expected1) {
@@ -2486,11 +2582,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         final Composition.Builder builder1 = Composition.all(C1.class).none(C8.class);
-        final Composition.Builder builder8 = Composition.all(C8.class);
-        final Composition.Builder builderAll = Composition.all(C1.class);
+        final Composition.Builder builder8 = Composition.all(C8.class).none(C1.class);
+        final Composition.Builder builderAll = Composition.one(C1.class, C8.class);
 
         int[] expected1;
+        int[] expected4;
         int[] expected8;
+        int[] expected18;
 
         int createEntity1() {
             return world.createEntity(new C1());
@@ -2501,6 +2599,20 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             for (int i = 0; i < number; i++) {
                 entities[i] = world.createEntity(new C1());
+            }
+
+            return entities;
+        }
+
+        int createEntity8() {
+            return world.createEntity(new C8());
+        }
+
+        int[] createEntities8(int number) {
+            var entities = new int[number];
+
+            for (int i = 0; i < number; i++) {
+                entities[i] = world.createEntity(new C8());
             }
 
             return entities;
@@ -2523,7 +2635,8 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @BeforeEach
         void setup() {
             this.expected1 = createEntities1(10);
-            this.expected8 = createEntities18(7);
+            this.expected8 = createEntities8(5);
+            this.expected18 = createEntities18(7);
 
             world.process();
         }
@@ -2586,7 +2699,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition1 = composition(builder1);
             var composition8 = composition(builder8);
             var compositionAll = composition(builderAll);
-            var compositionEmpty = composition(Composition.none(C1.class));
+            var compositionEmpty = composition(Composition.none(C1.class, C8.class));
 
             assertThat(composition1.isEmpty()).isFalse();
             assertThat(composition8.isEmpty()).isFalse();
@@ -2602,7 +2715,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             assertThat(composition1.getCount()).isEqualTo(expected1.length);
             assertThat(composition8.getCount()).isEqualTo(expected8.length);
-            assertThat(compositionAll.getCount()).isEqualTo(expected1.length + expected8.length);
+            assertThat(compositionAll.getCount()).isEqualTo(expected1.length + expected8.length + expected18.length);
         }
 
         @Test
@@ -2613,7 +2726,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             assertThat(composition1.stream()).hasSize(expected1.length);
             assertThat(composition8.stream()).hasSize(expected8.length);
-            assertThat(compositionAll.stream()).hasSize(expected1.length + expected8.length);
+            assertThat(compositionAll.stream()).hasSize(expected1.length + expected8.length + expected18.length);
         }
 
         @Test
@@ -2624,7 +2737,90 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             assertThat(composition1.parallelStream()).hasSize(expected1.length);
             assertThat(composition8.parallelStream()).hasSize(expected8.length);
-            assertThat(compositionAll.parallelStream()).hasSize(expected1.length + expected8.length);
+            assertThat(compositionAll.parallelStream()).hasSize(expected1.length + expected8.length + expected18.length);
+        }
+
+        @Nested
+        class NonRegularComponentTypesTest {
+
+            @Test
+            void testWildcard() {
+                var composition = composition(Composition.all(wildcard(C1234.class)));
+
+                var entity2 = world.createEntity(new C2());
+                var entity23 = world.createEntity(new C2(), new C3());
+                var entity45 = world.createEntity(new C4(), new C5());
+                var entity5 = world.createEntity(new C5());
+
+                var expected = new ArrayList<Integer>();
+                expected.add(entity2);
+                expected.add(entity23);
+                expected.add(entity45);
+                for (var entityId : expected1) {
+                    expected.add(entityId);
+                }
+                for (var entityId : expected18) {
+                    expected.add(entityId);
+                }
+
+                // Verify
+                assertThat(composition.isEmpty()).isFalse();
+                assertThat(composition.getCount()).isEqualTo(expected1.length + expected18.length + 3);
+
+                var processed = new ArrayList<Integer>();
+                composition.process(processed::add);
+
+                assertThat(processed)
+                        .containsExactlyInAnyOrderElementsOf(expected)
+                        .hasSize(expected1.length + expected18.length + 3)
+                        .doesNotContain(entity5);
+            }
+
+            @Test
+            void testWildcardComponentRelation() {
+                var composition = composition(Composition.all(wildcardRelation(C1234.class, C8.class)));
+
+                var entity18 = world.createEntity(Relation.create(new C1(), new C8()));
+                var entity48 = world.createEntity(Relation.create(new C4(), new C8()));
+                var entity58 = world.createEntity(Relation.create(new C5(), new C8()));
+                var entity15 = world.createEntity(Relation.create(new C1(), new C5()));
+                var entity15and18 = world.createEntity(Relation.create(new C1(), new C5()), Relation.create(new C1(), new C8()));
+
+                // Verify
+                assertThat(composition.isEmpty()).isFalse();
+                assertThat(composition.getCount()).isEqualTo(3);
+
+                var processed = new ArrayList<Integer>();
+                composition.process(processed::add);
+
+                assertThat(processed)
+                        .containsExactlyInAnyOrder(entity18, entity48, entity15and18)
+                        .doesNotContain(entity15, entity58); // exactly ensures that, but that way those won't be easily optimized away
+            }
+
+            @Test
+            void testWildcardEntityRelation() {
+                var composition = composition(Composition.all(wildcardRelation(C1234.class)));
+
+                var target = world.createEntity();
+
+                var entity1 = world.createEntity(Relation.create(new C1(), target));
+                var entity4 = world.createEntity(Relation.create(new C4(), target));
+                var entity5 = world.createEntity(Relation.create(new C5(), target));
+                var entity5and1 = world.createEntity(Relation.create(new C5(), target), Relation.create(new C1(), target));
+
+                // Verify
+                assertThat(composition.isEmpty()).isFalse();
+                assertThat(composition.getCount()).isEqualTo(3);
+
+                var processed = new ArrayList<Integer>();
+                composition.process(processed::add);
+
+                assertThat(processed)
+                        .containsExactlyInAnyOrder(entity1, entity4, entity5and1)
+                        .doesNotContain(entity5); // exactly ensures that, but that way those won't be easily optimized away
+            }
+
         }
 
         @Nested
@@ -3897,22 +4093,28 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         assertThat(composition.isInterested(entityId)).isTrue();
     }
 
+    interface C12 {
+    }
+
     interface C1234 {
     }
 
-    record C1() implements C1234 {
+    interface C45 {
     }
 
-    record C2() implements C1234 {
+    record C1() implements C12, C1234 {
+    }
+
+    record C2() implements C12, C1234 {
     }
 
     private record C3() implements C1234 {
     }
 
-    private record C4() implements C1234 {
+    private record C4() implements C1234, C45 {
     }
 
-    private record C5() {
+    private record C5() implements C45 {
     }
 
     private record C6() {
