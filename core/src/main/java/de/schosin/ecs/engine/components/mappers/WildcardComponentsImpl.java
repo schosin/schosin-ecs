@@ -14,7 +14,6 @@ import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, WildcardMapper<ComponentMapper<? extends T>> {
@@ -95,8 +94,6 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
         private final Bag<ComponentMapper<? extends T>> mappers;
         private final Bag<T> components;
 
-        private final ThreadLocal<BagIterator<T>> iterator = ThreadLocal.withInitial(BagIterator::new);
-
         private int entityId = -1;
         private int size = -1;
 
@@ -163,7 +160,7 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
         @Override
         public Iterator<T> iterator() {
             size();
-            return iterator.get().init(this.components);
+            return this.components.iterator();
         }
 
         @Override

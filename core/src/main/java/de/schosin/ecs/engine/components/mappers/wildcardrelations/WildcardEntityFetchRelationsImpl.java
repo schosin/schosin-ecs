@@ -17,7 +17,6 @@ import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRe
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFetchRelations<R, T>, PoolingComponents<Result<EntityRelationData<? extends R, T>>> {
@@ -107,8 +106,7 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
         @Override
         public Iterator<EntityRelationData<? extends R, T>> iterator() {
             initialize();
-
-            return new BagIterator<>((Bag) this.relations);
+            return (Iterator) this.relations.iterator();
         }
 
         @NonNull

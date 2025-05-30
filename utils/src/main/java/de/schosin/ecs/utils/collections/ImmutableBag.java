@@ -1,8 +1,29 @@
 package de.schosin.ecs.utils.collections;
 
+import java.util.Iterator;
+
 import org.jspecify.annotations.NonNull;
 
-public interface ImmutableBag<T> {
+/**
+ * Fast unordered data structure for fast iteration and index lookups.
+ * 
+ * <p>
+ * To reduce memory allocations, it is recommended to iterate using a regular for loop. 
+ * 
+ * {@snippet:
+ *     for (int i = 0, s = bag.getSize(); i < s; i++) {
+ *         var item = bag.get(i);
+ *     }
+ * }
+ * 
+ * Iteration using the enhanced for loop ({@code for (var item : bag)} is possible, but 
+ * causes an allocation of the {@link Iterator} instance. For maximum performance, use
+ * the regular for loop.
+ * </p>
+ * 
+ * @param <T> element type
+ */
+public interface ImmutableBag<T> extends Iterable<T> {
 
     @SuppressWarnings("unchecked")
     static <T> ImmutableBag<T> emptyBag() {
@@ -80,6 +101,34 @@ class ImmutableBagImpl<T> implements ImmutableBag<T> {
     @Override
     public int indexOfIdentity(@NonNull T item) {
         return this.bag.indexOfIdentity(item);
+    }
+
+    @Override
+    public Iterator<T> iterator() {
+        return new ImmutableBagIterator<>(bag);
+    }
+
+    private static class ImmutableBagIterator<T> implements Iterator<T> {
+
+        private final T[] data;
+        private final int size;
+        private int index;
+
+        public ImmutableBagIterator(Bag<T> bag) {
+            this.data = bag.getData();
+            this.size = bag.getSize();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < size;
+        }
+
+        @Override
+        public T next() {
+            return data[index++];
+        }
+
     }
 
 }

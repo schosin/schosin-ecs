@@ -335,7 +335,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
             componentMaskManager.getComponentMasks(mask -> true, bag);
 
             // Verify
-            assertThat(iterable(bag))
+            assertThat(bag)
                     .hasSameSizeAs(components)
                     .as("has single component").allSatisfy(mask -> assertThat(mask.getComponents()).singleElement().isIn(components));
         }
@@ -359,7 +359,7 @@ class ComponentMaskManagerTest extends AbstractWorldTest {
             var expected = componentManager.getComponent(component(PooledComponent.class));
 
             // Verify
-            assertThat(iterable(bag))
+            assertThat(bag)
                     .singleElement()
                     .satisfies(mask -> assertThat(mask.getComponents()).singleElement().isSameAs(expected));
         }

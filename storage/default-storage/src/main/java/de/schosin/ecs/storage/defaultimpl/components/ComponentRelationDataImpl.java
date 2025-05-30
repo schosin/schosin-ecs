@@ -13,7 +13,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
 public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T> type, Bag<ComponentRelationResultImpl<R, T>> components,
@@ -158,7 +157,7 @@ class ComponentRelationResultImpl<R, T> implements ComponentRelationResult<R, T>
 
     @Override
     public Iterator<ComponentRelation<R, T>> iterator() {
-        return new BagIterator<>(relations);
+        return relations.iterator();
     }
 
     @Override

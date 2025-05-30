@@ -9,15 +9,12 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
 
 public class ComponentResultImpl<T> implements ComponentResult<T>, Pooled {
 
     private final Class<T> clazz;
     private final Bag<ComponentMapper<? extends T>> mappers;
     private final Bag<T> components;
-
-    private final ThreadLocal<BagIterator<T>> iterator = ThreadLocal.withInitial(BagIterator::new);
 
     private int entityId = -1;
     private int size = -1;
@@ -85,7 +82,7 @@ public class ComponentResultImpl<T> implements ComponentResult<T>, Pooled {
     @Override
     public Iterator<T> iterator() {
         size();
-        return iterator.get().init(this.components);
+        return this.components.iterator();
     }
 
     @Override

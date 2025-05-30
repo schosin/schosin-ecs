@@ -2,10 +2,43 @@ package de.schosin.ecs.utils.collections;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * Fast unordered data structure for fast iteration, lookup, add, and remove.
+ * 
+ * <p>
+ * The data structure is backed by an array. When removing an item from a bag,
+ * the last item of the bag will be moved to the removed index. This reordering
+ * allows for removal in {@code O(1)}, but causes the data structure to be unordered.
+ * </p>
+ * 
+ * <p>
+ * To reduce memory allocations, it is recommended to iterate using a regular for loop. 
+ * 
+ * {@snippet:
+ *     var data = bag.getData();
+ *     for (int i = 0, s = bag.getSize(); i < s; i++) {
+ *         var item = data[i];
+ *     }
+ * }
+ * 
+ * Iteration using the enhanced for loop ({@code for (var item : bag)} is possible, but 
+ * causes an allocation of the {@link Iterator} instance. For maximum performance, use
+ * the regular for loop.
+ * </p>
+ * 
+ * <p>
+ * If removal during iteration is required, either iterate the bag in reverse order, starting
+ * at {@code size - 1}, or use {@link Iterator#remove()}.
+ * </p>
+ * 
+ * @param <T> element type
+ */
 public class Bag<T> implements ImmutableBag<T> {
 
     private T[] data;
@@ -171,6 +204,11 @@ public class Bag<T> implements ImmutableBag<T> {
     }
 
     @Override
+    public Iterator<T> iterator() {
+        return new BagIterator<>(this);
+    }
+
+    @Override
     public String toString() {
         StringBuilder builder = new StringBuilder().append("Bag(");
         for (int i = 0; i < size; i++) {
@@ -180,6 +218,42 @@ public class Bag<T> implements ImmutableBag<T> {
             builder.append(data[i]);
         }
         return builder.append(")").toString();
+    }
+
+    private static class BagIterator<T> implements Iterator<T> {
+
+        private final Bag<T> bag;
+        private final T[] data;
+
+        private int size;
+        private int index;
+
+        public BagIterator(Bag<T> bag) {
+            this.bag = bag;
+            this.data = bag.getData();
+            this.size = bag.getSize();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < size;
+        }
+
+        @Override
+        public T next() {
+            return data[index++];
+        }
+
+        @Override
+        public void remove() {
+            if (bag.getData() != data) {
+                throw new ConcurrentModificationException("Backing array replaced by concurrent operation");
+            }
+
+            this.bag.remove(--index);
+            this.size--;
+        }
+
     }
 
 }

@@ -13,7 +13,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
@@ -225,7 +224,7 @@ class EntityRelationResultImpl<R> implements EntityRelationResult<R>, Pooled {
 
     @Override
     public Iterator<EntityRelation<R>> iterator() {
-        return new BagIterator<>(relations);
+        return relations.iterator();
     }
 
     @Override

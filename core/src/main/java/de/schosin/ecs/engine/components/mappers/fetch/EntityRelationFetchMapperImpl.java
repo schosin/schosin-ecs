@@ -16,7 +16,6 @@ import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMappe
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchMapper<R, T> {
@@ -91,8 +90,7 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
         @Override
         public Iterator iterator() {
             initialize();
-
-            return new BagIterator<>(this.relations);
+            return this.relations.iterator();
         }
 
         @Override

@@ -13,7 +13,6 @@ import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BagIterator;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class WildcardComponentRelationsImpl<R, T>
@@ -92,8 +91,6 @@ public class WildcardComponentRelationsImpl<R, T>
         private final Bag<ComponentRelations<R, T, ?>> mappers;
         private final Bag<ComponentRelation<? extends R, ? extends T>> components;
 
-        private final ThreadLocal<BagIterator<ComponentRelation<? extends R, ? extends T>>> iterator = ThreadLocal.withInitial(BagIterator::new);
-
         private int entityId = -1;
         private int size = -1;
 
@@ -153,7 +150,7 @@ public class WildcardComponentRelationsImpl<R, T>
         @Override
         public Iterator<ComponentRelation<? extends R, ? extends T>> iterator() {
             size();
-            return iterator.get().init(this.components);
+            return this.components.iterator();
         }
 
         @Override
