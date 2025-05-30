@@ -45,8 +45,8 @@ import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRe
  * to see the supported operations beyond what {@link Components} provide.
  * </p>
  * 
- * @param <T> type of a single component instance
- * @param <R> type of component data when reading
+ * @param <T> type of a single component instance (write operations)
+ * @param <R> type of component data when reading (read operations)
  */
 public sealed interface ComponentType<T, R> permits RegularComponentType, Wildcard, ComponentSetType, RelationFetchType, WildcardRelationType, CustomComponentType {
 
@@ -59,6 +59,9 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
     sealed interface RegularComponentType<T, R> extends ComponentType<T, R> permits ClassType, RelationComponentType {
     }
 
+    /**
+     * Wildcard matching all {@link ClassType} components.
+     */
     static Wildcard<Object> WILDCARD = Wildcard.WILDCARD;
 
     static <T> ClassType<T> component(Class<T> clazz) {

@@ -9,6 +9,17 @@ import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
+/**
+ * {@link Components Component mapper} for {@link ClassType} components. Contains additional subtypes providing
+ * additional functionality
+ * 
+ * <ol>
+ * <li><b>{@link EnumComponentMapper}:</b> Mapper that allows assigning a default enum instance that is used by {@link EnumComponentMapper#add(int) add(int)}</li>
+ * <li><b>{@link PooledComponentMapper}:</b> Mapper for components implementing {@link Pooled}</li>
+ * </ol>
+ * 
+ * @param <T> type of component
+ */
 public non-sealed interface ComponentMapper<T> extends RegularComponents<T, T> {
 
     interface EnumComponentMapper<T extends Enum<T>> extends ComponentMapper<T> {

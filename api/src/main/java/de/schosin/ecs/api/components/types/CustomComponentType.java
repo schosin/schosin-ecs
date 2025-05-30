@@ -11,6 +11,8 @@ import de.schosin.ecs.api.components.mappers.CustomComponents;
  * implementation. To use a custom component type, a 
  * {@link CustomComponents.Factory Factory} has to be registered with
  * {@link de.schosin.ecs.engine.components.ComponentMapperManager ComponentMapperManager}.
+ * Custom components are usually added by plugins, which should register the matching
+ * component mapper upon initialization.
  * </p>
  * 
  * @param <T> type of a single component instance

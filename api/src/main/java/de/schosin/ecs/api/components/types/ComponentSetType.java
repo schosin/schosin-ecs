@@ -2,6 +2,11 @@ package de.schosin.ecs.api.components.types;
 
 import de.schosin.ecs.api.components.ComponentSet;
 
+/**
+ * Describes a {@link ComponentSet} component.
+ * 
+ * @param <T> type of component set
+ */
 public record ComponentSetType<T extends ComponentSet>(Class<T> componentSet) implements ComponentType<T, T> {
 
     public ComponentSetType {

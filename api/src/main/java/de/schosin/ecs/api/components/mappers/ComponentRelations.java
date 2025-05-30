@@ -8,9 +8,19 @@ import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
 
+/**
+ * {@link Components Component mapper} for {@link RegularComponentRelationType} components. Contains subtypes
+ * for both non-exclusive and exclusive variants.
+ * 
+ * @param <R> type of relationship component
+ * @param <T> type of target component
+ * @param <X> maps to {@link ComponentType} {@code R} (read operations)
+ */
 public sealed interface ComponentRelations<R, T, X> extends RegularComponents<ComponentRelation<R, T>, X> {
 
     default ComponentRelation<R, T> add(int entityId, R relationship, T target) {

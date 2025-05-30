@@ -7,6 +7,20 @@ import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
+/**
+ * Describes relation components.
+ * 
+ * <ol>
+ * <li><b>{@link ComponentRelationType}:</b> Describes a non-exclusive component relation</li>
+ * <li><b>{@link ExclusiveComponentRelationType}:</b> Describes an exclusive component relation</li>
+ * <li><b>{@link EntityRelationType}:</b> Describes a non-exclusive entity relation</li>
+ * <li><b>{@link ExclusiveEntityRelationType}:</b> Describes an exclusive entity relation</li>
+ * </ol>
+ * 
+ * @param <R> type of relationship component
+ * @param <T> maps to {@link ComponentType} {@code T} (write operations)
+ * @param <X> maps to {@link ComponentType} {@code R} (read operations)
+ */
 public sealed interface RelationComponentType<R, T extends Relation<R>, X> extends RegularComponentType<T, X> {
 
     Class<R> relationship();
@@ -24,7 +38,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
      * 
      * <p>
      * An entity can have more than one instance of the same {@link ComponentRelationType}
-     * as long as the relationship component differs.
+     * as long as the relationship or target component differs.
      * </p>
      * 
      * @param <R> type of relationship component, must not extend {@link Relation.Exclusive}
@@ -70,6 +84,16 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
     }
 
+    /**
+     * Describes an entity relation, consisting of a {@link EntityRelationType#relationship relationship component}.
+     * 
+     * <p>
+     * An entity can have more than one instance of the same {@link EntityRelationType}
+     * as long as the relationship component or target entity differs.
+     * </p>
+     * 
+     * @param <R> type of relationship component, must not extend {@link Relation.Exclusive}
+     */
     record EntityRelationType<R>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelationResult<R>> {
         public EntityRelationType {
             RelationComponentTypeHelper.validateNonExclusiveEntityRelationship(relationship);
@@ -86,6 +110,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
     }
 
+    /**
+     * Describes an exclusive entity relation, consisting of a relationship component.
+     * 
+     * @param <R> type of relationship component
+     */
     record ExclusiveEntityRelationType<R extends Relation.Exclusive>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelation<R>> {
         public ExclusiveEntityRelationType {
             RelationComponentTypeHelper.validateEntityRelationship(relationship);

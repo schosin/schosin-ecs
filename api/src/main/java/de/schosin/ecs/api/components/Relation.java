@@ -5,34 +5,128 @@ import java.util.List;
 import java.util.Objects;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 
+/**
+ * Sealed base type of component and entity relations. A relation is a type of component
+ * that can be added to entities and consist of a relationship component and a target.
+ * 
+ * <h3>Component relations</h3>
+ * 
+ * <p>
+ * The relationship component describes the type of relation the owning entity has with the target.
+ * For example a relationship {@code Location} could be an enum with {@code Start} and {@code End}.
+ * Using this relationship, a entity could have more than one {@code Position} component by combinding
+ * it with the relationship:
+ * 
+ * {@snippet:
+ * var entityId = world.createEntity(
+ *         Relation.create(Location.Start, new Position(0, 0)), 
+ *         Relation.create(Location.End, new Position(100, 0));
+ * }
+ * </p>
+ * 
+ * <p>
+ * A system could then query for entities that have the Relation {@code (Location, Position)} 
+ * using {@link ComponentRelationMapper} and would retrieve a 
+ * {@link ComponentRelationResult ComponentRelationResult<Location, Position>} that allows the system
+ * to iterate through the the assigned relations.
+ * </p>
+ * 
+ * <h3>Entity relations</h3>
+ * 
+ * <p>
+ * Same as with component relations, the relationship component describes the type of relation the owning
+ * entity has with the target. Unlike component relations, the target is not a component, but another entity.
+ * Given a relationship component {@code Parent}, multiple parent entities could be assigned to an entity:
+ * 
+ * {@snippet:
+ * var motherId = world.createEntity();
+ * var fatherId = world.createEntity();
+ * 
+ * var entityId = world.createEntity(
+ *         Relation.create(Parent.Mother, motherId), 
+ *         Relation.create(Parent.Father, fatherId);
+ * }
+ * </p>
+ * 
+ * <p>
+ * A system could then query for these relations by using a {@link EntityRelationMapper}.
+ * </p>
+ * 
+ * <h4>Fetching target data</h4>
+ * 
+ * <p>
+ * Using a {@link EntityRelationFetchMapper} instead of {@link EntityRelationMapper} allows a
+ * system to additionally fetch component data for the target entities. When creating a mapper
+ * using {@link World#getEntityFetchRelations(de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType)},
+ * only one {@link ComponentType} can be passed. If more than one component must be fetched, consider using a
+ * {@link ComponentSet} or a {@link de.schosin.ecs.plugins.data.types.DataType DataType} from the plugin
+ * "{@code de.schosin.ecs.plugins:ecs-plugins-data-types}", which are included by default when using the composition plugin.
+ * </p>
+ * 
+ * <h3>Marker interfaces<h3>
+ * 
+ * <p>
+ * In addition to the relation types, additional marker interfaces for the relationship and target components are included.
+ * {@link Relationship}, {@link EntityRelationship} and {@link Target} limit the usage of a component to the specific role,
+ * whereas {@link Exclusive} limits to number of relations an entity can have to just one, allowing the corresponding mappers
+ * {@link ExclusiveComponentRelationMapper} and {@link ExclusiveEntityRelationMapper} to directly work on the relation instead
+ * of the {@link Result} types.
+ * </p>
+ * 
+ * @param <R> type of relationship component
+ */
 public sealed interface Relation<R> {
 
+    /**
+     * Creates an instance of a component relation.
+     */
     static <R, T> ComponentRelation<R, T> create(R relationship, T target) {
         return RelationHelper.create(relationship, target);
     }
 
+    /**
+     * Creates an instance of a entity relation.
+     */
     static <R> EntityRelation<R> create(R relationship, int target) {
         return RelationHelper.create(relationship, target, null);
     }
 
+    /**
+     * Creates an instance of a entity fetch relation.
+     */
     static <R, T> EntityRelationData<R, T> create(R relationship, int target, T data) {
         return RelationHelper.create(relationship, target, data);
     }
 
+    /**
+     * Returns a relation to its pool, allowing it to be reused.
+     */
     static void free(Relation<?> relation) {
         RelationHelper.free(relation);
     }
 
+    /**
+     * Corresponding {@link ComponentType} of the relation.
+     */
     RelationComponentType<R, ?, ?> type();
 
+    /**
+     * Returns the relationship component of the relation.
+     */
     R relationship();
 
     /**
@@ -90,26 +184,52 @@ public sealed interface Relation<R> {
     interface Exclusive extends Relationship {
     }
 
+    /**
+     * Data holder for a component relation.
+     * 
+     * @param <R> type of relationship component
+     * @param <T> type of target component
+     */
     sealed interface ComponentRelation<R, T> extends Relation<R>, Pooled {
 
         @Override
         RegularComponentRelationType<R, T, ?> type();
 
+        /**
+         * Returns the target component of the relation.
+         */
         T target();
 
     }
 
+    /**
+     * Data holder for a entity relation.
+     * 
+     * @param <R> type of relationship component
+     */
     sealed interface EntityRelation<R> extends Relation<R>, Pooled {
 
         @Override
         RegularEntityRelationType<R, ?> type();
 
+        /**
+         * Returns the id of the target entity of the relation.
+         */
         int target();
 
     }
 
+    /**
+     * Data holder for a entity fetch relation.
+     * 
+     * @param <R> type of relationship component
+     * @param <T> type of fetched data 
+     */
     sealed interface EntityRelationData<R, T> extends EntityRelation<R> {
 
+        /**
+         * Returns the data of the target entity.
+         */
         T data();
 
     }

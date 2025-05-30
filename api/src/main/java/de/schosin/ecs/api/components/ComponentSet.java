@@ -220,34 +220,88 @@ import de.schosin.ecs.api.components.types.ComponentType;
  */
 public interface ComponentSet extends Pooled {
 
+    /**
+     * Functional interface for the factory method to instantiate the component set by 
+     * the world.
+     * 
+     * @param <S> type of component set
+     */
     @FunctionalInterface
     interface Factory<S extends ComponentSet> {
         S create(int entityId, Object... components);
     }
 
+    /**
+     * Record holding the {@link ComponentType} and getter for a component of the set.
+     * 
+     * @param <S> type of set
+     * @param <T> maps to {@link ComponentType} {@code T} (write operations)
+     * @param <R> maps to {@link ComponentType} {@code R} (read operations)
+     */
     record ComponentData<S extends ComponentSet, T, R>(ComponentType<T, R> type, Function<S, R> accessor) {
     }
 
+    /**
+     * Interface for providing the factory and list of components of a component set.
+     * 
+     * @param <S> type of component set
+     */
     sealed interface ComponentSetData<S extends ComponentSet> {
         Factory<S> factory();
 
         List<ComponentData<S, ?, ?>> components();
     }
 
+    /**
+     * Builder for creating an instance of {@link ComponentSetData}. Components must be described
+     * in the same order that the passed {@link Factory} evaluates the varargs array.
+     * 
+     * <p>
+     * Use {@link ComponentSet#builder(Factory)} to obtain a builder instance.
+     * </p>
+     * 
+     * @param <S> type of component set
+     */
     sealed interface ComponentSetDataBuilder<S extends ComponentSet> {
+
+        /**
+         * Adds a component by passing its type and accessor. 
+         */
         <T, R> ComponentSetDataBuilder<S> add(ComponentType<T, R> componentType, Function<S, R> accessor);
 
+        /**
+         * Adds a component by creating an anonymous implementation of {@link ComponentAccessor}. Allows
+         * to just pass the accessor.
+         * 
+         * {@snippet:
+         * builder.add(new ComponentAccessor<>(MyCompoentSet::getPosition) {})
+         * }
+         */
         <R> ComponentSetDataBuilder<S> add(ComponentAccessor<S, R> data);
 
+        /**
+         * Creates the {@link ComponentSetData} instance.
+         */
         ComponentSetData<S> build();
+
     }
 
+    /**
+     * Abstract class used by {@link ComponentSetDataBuilder#add(ComponentAccessor)} to obtain the
+     * {@link ComponentType} from a method reference to the accessor of a component.
+     * 
+     * @param <S> type of set
+     * @param <R> type of component
+     */
     abstract class ComponentAccessor<S extends ComponentSet, R> extends AbstractComponent<S, R> {
         public ComponentAccessor(Function<S, R> accessor) {
             super(accessor);
         }
     }
 
+    /**
+     * Creates a {@link ComponentSetDataBuilder} instance given the factory method.
+     */
     static <S extends ComponentSet> ComponentSetDataBuilder<S> builder(Factory<S> factory) {
         return new ComponentSetDataBuilderImpl<>(factory);
     }

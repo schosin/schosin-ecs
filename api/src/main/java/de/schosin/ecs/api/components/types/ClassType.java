@@ -3,6 +3,18 @@ package de.schosin.ecs.api.components.types;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
+/**
+ * Describes a regular POJO component given its {@link Class} object.
+ * 
+ * <ol>
+ * <li>The component must be a non-generic, non-abstract POJO</li>
+ * <li>The component must not be {@link String}, a primitive type or their wrapper types</li>
+ * <li>The component must not implement {@link Relation.Relationship}</li>
+ * <li>The component must not implement {@link Relation.Target}</li>
+ * </ol>
+ * 
+ * @param <T> type of component
+ */
 public record ClassType<T>(Class<T> clazz) implements RegularComponentType<T, T> {
 
     public ClassType {

@@ -9,6 +9,11 @@ import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
+import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.components.types.Wildcard;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
 
 /**
  * Represents a result containing no, one or more components matching
@@ -36,6 +41,12 @@ public interface Result<T> extends Iterable<T> {
         return EmptyResult.INSTANCE;
     }
 
+    /**
+     * Specilized type used by {@link Wildcard} that allows accessing a component
+     * by its {@link Class}
+     * 
+     * @param <T> type of component
+     */
     interface ComponentResult<T> extends Result<T> {
 
         /**
@@ -51,6 +62,13 @@ public interface Result<T> extends Iterable<T> {
 
     }
 
+    /**
+     * Specialized type used by {@link ComponentRelationType} that allows accessing
+     * the relationship given an equal target component.
+     * 
+     * @param <R> type of relationship component
+     * @param <T> type of target component
+     */
     interface ComponentRelationResult<R, T> extends Result<ComponentRelation<R, T>> {
 
         /**
@@ -65,6 +83,12 @@ public interface Result<T> extends Iterable<T> {
 
     }
 
+    /**
+     * Specialized type used by {@link EntityRelationType} that allows accessing
+     * the relationship given a target entity.
+     * 
+     * @param <R> type of relationship component
+     */
     interface EntityRelationResult<R> extends Result<EntityRelation<R>> {
 
         /**
@@ -77,6 +101,13 @@ public interface Result<T> extends Iterable<T> {
 
     }
 
+    /**
+     * Specialized type used by {@link EntityRelationFetchType} and {@link WildcardEntityRelationFetchType}
+     * that allows accessing components of the target entity.
+     * 
+     * @param <R> type of relationship component
+     * @param <T> type of component retrieved from target entity
+     */
     interface EntityRelationDataResult<R, T> extends Result<EntityRelationData<R, T>> {
 
         /**
@@ -156,4 +187,5 @@ enum EmptyResult implements Result {
     public boolean isEmpty() {
         return true;
     }
+
 }

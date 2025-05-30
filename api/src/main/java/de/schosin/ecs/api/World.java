@@ -9,14 +9,56 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Plugin.PluginConfig;
 import de.schosin.ecs.api.components.mappers.Components;
 
+/**
+ * Base API for working with entities and components.
+ * 
+ * <p>
+ * To create an instance of {@link World} or an interface extending {@link World},
+ * use {@link World#builder()} and {@link World#builder(Class)} respectively to retrieve
+ * a builder instance. Using {@link Builder#build()} will create an instance of the API.
+ * </p>
+ * 
+ * <p>
+ * {@link World#builder(Class)} supports extending the API of {@link World} by creating
+ * a custom interface that extends {@link World} as well as plugin interfaces. As a starting
+ * point {@link de.schosin.ecs.worlds.DefaultWorld DefaultWorld} from the artifact "{@code de.schosin.ecs:ecs-worlds}"
+ * can be used, which includes a default set of plugins that extend the functionality with
+ * ways to create and mutate entities (Archetype and Transmuter), query entities (Composition)
+ * among other things.
+ * </p>
+ */
 public interface World extends Components.Creator {
 
     String DEFAULT_IMPLEMENTATION = "de.schosin.ecs.engine.WorldBuilder";
 
+    /**
+     * Creates a builder for the base {@link World} API without any plugins.
+     * 
+     * @return builder for base {@link World}
+     */
     static World.Builder<World> builder() {
         return builder(World.class);
     }
 
+    /**
+     * Creates a builder for a custom world interface.
+     * 
+     * <p>
+     * The custom world must be an interface, it must extend {@link World} and it
+     * must not have any abstract methods itself. The custom world interface may
+     * extend plugin interfaces, which have to be annotated with {@link Plugin},
+     * pointing to the implementation of the plugin. 
+     * </p>
+     * 
+     * <p>
+     * For an example of a custom world, see {@link de.schosin.ecs.worlds.DefaultWorld DefaultWorld} 
+     * from the artifact "{@code de.schosin.ecs:ecs-worlds}".
+     * </p>
+     * 
+     * @param <T> type of world
+     * @param clazz class of world
+     * @return builder for custom world
+     */
     @SuppressWarnings("unchecked")
     static <T extends World> World.Builder<T> builder(Class<T> clazz) {
         try {
@@ -55,7 +97,7 @@ public interface World extends Components.Creator {
          * Default loop count used by {@link World#process()} when delegating to {@link World#process(int)}.
          * 
          * @param loops default value
-         * @return this instance
+         * @return this builder
          */
         Builder<T> processLoops(int loops);
 
@@ -64,12 +106,24 @@ public interface World extends Components.Creator {
          * {@link World#getSingleton(Class)}.
          * 
          * @param singletons singletons to add
-         * @return this instance
+         * @return this builder
          */
         Builder<T> singletons(Object... singletons);
 
+        /**
+         * Adds a configuration object for a plugin. See the documentation of plugins
+         * on if and how to configure it.
+         * 
+         * @param configs configuration object
+         * @return this builder
+         */
         Builder<T> configure(PluginConfig... configs);
 
+        /**
+         * Creates an instance of the world.
+         * 
+         * @return instance of world
+         */
         T build();
 
     }

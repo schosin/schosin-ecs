@@ -8,11 +8,20 @@ import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 
+/**
+ * {@link Components Component mapper} for {@link RegularEntityRelationType} components. Contains subtypes
+ * for both non-exclusive and exclusive variants.
+ * 
+ * @param <R> type of relationship component
+ * @param <X> maps to {@link ComponentType} {@code R} (read operations)
+ */
 public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRelation<R>, X> {
 
     default EntityRelation<R> add(int entityId, R relationship, int target) {
