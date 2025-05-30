@@ -182,23 +182,10 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                         throw new IllegalArgumentException("Component %d to be of type '%s' cannot be null.".formatted(i + 1, expectedMetadata.type()));
                     }
 
-                    var metadata = manager.componentManager.getComponent(component);
-                    if (metadata != expectedMetadata) {
-                        throw new IllegalArgumentException("Expected component %d to be of type '%s', but was '%s'.".formatted(i + 1, expectedMetadata.type(), metadata.type()));
-                    }
-
                     components[i] = component;
                 }
             } else {
-                var component = data;
-                var expectedMetadata = this.dataLookup[0];
-
-                var metadata = manager.componentManager.getComponent(component);
-                if (metadata != expectedMetadata) {
-                    throw new IllegalArgumentException("Expected component to be of type '%s', but was '%s'.".formatted(expectedMetadata.type(), metadata.type()));
-                }
-
-                components[0] = component;
+                components[0] = data;
             }
 
             // Add fixed components
