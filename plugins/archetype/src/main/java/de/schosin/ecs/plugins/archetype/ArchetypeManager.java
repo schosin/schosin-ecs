@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
 import de.schosin.ecs.api.Pooled;
@@ -17,6 +18,10 @@ import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.ArrayUtils;
+import de.schosin.ecs.plugins.data.DataTypePlugin;
+import de.schosin.ecs.plugins.data.types.BaseDataType.Data;
+import de.schosin.ecs.plugins.data.types.DataProvider;
+import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.RelationComponent;
 import de.schosin.ecs.utils.collections.Pool;
@@ -31,9 +36,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
     private final Map<Class<?>, PooledComponentMapper<?>> mappers = new ConcurrentHashMap<>();
 
-    private final Pool<InitializeImpl> initializePool = Pool.unbounded(InitializeImpl.class, this::createInitialize);
-
-    public ArchetypeManager(World world) {
+    public ArchetypeManager(World world, DataTypePlugin dataTypePlugin) {
         world.addSingleton(this);
 
         this.componentManager = world.getSingleton(ComponentManager.class);
@@ -42,32 +45,13 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
     }
 
-    private InitializeImpl createInitialize() {
-        return new InitializeImpl(this);
-    }
-
     private <T extends Pooled> T getInstance(Class<T> component) {
         var mapper = mappers.computeIfAbsent(component, key -> componentMapperManager.getPooledComponents(component));
 
         return component.cast(mapper.getInstance());
     }
 
-    static abstract class AbstractInitImpl implements Archetype.Initialize.Init {
-
-        private final ArchetypeManager manager;
-
-        protected AbstractInitImpl(ArchetypeManager manager) {
-            this.manager = manager;
-        }
-
-        @Override
-        public <T extends Pooled> T get(Class<T> component) {
-            return manager.getInstance(component);
-        }
-
-    }
-
-    static abstract class AbstractArchetypeImpl implements Archetype {
+    static abstract class AbstractBaseArchetypeImpl<P extends DataProvider<?>> implements BaseArchetype<P> {
 
         protected final ArchetypeManager manager;
 
@@ -75,9 +59,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
         private final Object[] fixed;
         private final Component<?, ?>[] dataLookup;
-        private final int expected;
+        private final int size;
 
-        protected AbstractArchetypeImpl(BaseArchetypeManager manager, Object[] fixed, AbstractArchetypeImpl parent) {
+        private final Pool<Object[]> pool;
+
+        protected AbstractBaseArchetypeImpl(BaseArchetypeManager manager, Object[] fixed, AbstractBaseArchetypeImpl<P> parent) {
             this.manager = (ArchetypeManager) manager;
 
             validateNoPooledComponents(fixed);
@@ -89,7 +75,10 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             this.fixed = parent.fixed != null ? ArrayUtils.concat(Object.class, parent.fixed, fixed) : fixed;
             this.componentMask = this.manager.componentMaskManager.getComponentMask(this.dataLookup);
-            this.expected = this.dataLookup.length - (this.fixed != null ? this.fixed.length : 0);
+            this.size = this.dataLookup.length - (this.fixed != null ? this.fixed.length : 0);
+
+            var componentsSize = this.dataLookup.length;
+            this.pool = Pool.unbounded(Object[].class, () -> new Object[componentsSize], array -> Arrays.fill(array, null));
         }
 
         private void validateNoPooledComponents(Object[] components) {
@@ -100,7 +89,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             }
         }
 
-        protected AbstractArchetypeImpl(BaseArchetypeManager manager, RegularComponentType<?, ?>... components) {
+        protected AbstractBaseArchetypeImpl(BaseArchetypeManager manager, RegularComponentType<?, ?>... components) {
             this.manager = (ArchetypeManager) manager;
 
             this.dataLookup = Arrays.stream(components)
@@ -111,7 +100,9 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             this.fixed = null;
             this.componentMask = this.manager.componentMaskManager.getComponentMask(this.dataLookup);
-            this.expected = this.dataLookup.length;
+            this.size = components.length;
+
+            this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
         }
 
         private void validateNoDuplicateComponents(Component<?, ?>[] components) {
@@ -126,70 +117,99 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         }
 
         @Override
-        public <T extends Pooled> T getInstance(Class<T> clazz) {
-            return manager.getInstance(clazz);
+        public int create(P provider) {
+            var data = provider.getData();
+
+            return pool.withInstance(components -> {
+                // Fill components from data and fixed
+                fillComponents(data, components);
+
+                // Free data instance
+                if (data instanceof Data d) {
+                    d.free();
+                }
+
+                // Create entity
+                return manager.entityManager.create(componentMask, components);
+            });
         }
 
-        protected final int createEntity(Object... components) {
-            if (components.length != expected) {
-                throw new IllegalArgumentException("Expected %d added components, but got %d.".formatted(expected, components.length));
+        @Override
+        public int[] createIndexed(int count, IntFunction<P> provider) {
+            var data = fixed != null
+                    ? new Object[size + fixed.length][count]
+                    : new Object[size][count];
+
+            var components = pool.getInstance();
+
+            for (int i = 0; i < count; i++) {
+                var provided = provider.apply(i).getData();
+                fillComponents(provided, components);
+
+                for (int c = 0, s = components.length; c < s; c++) {
+                    data[c][i] = components[c];
+                }
+
+                // Free provided instance
+                if (provided instanceof Data d) {
+                    d.free();
+                }
             }
 
-            for (int i = TYPESAFE_COUNT, s = components.length; i < s; i++) {
-                var component = components[i];
-                var expectedMetadata = this.dataLookup[i];
+            pool.free(components);
+
+            return manager.entityManager.createEntities(this.componentMask, data, this.dataLookup);
+        }
+
+        private void fillComponents(Object data, Object[] components) {
+            if (data == null) {
+                var message = size == 1
+                        ? "Component cannot be null"
+                        : "Components cannot be null. Return result of invoking 'create' on factory.";
+
+                throw new IllegalArgumentException(message);
+            }
+
+            // Add components from provider
+            if (data instanceof DataType.Data d) {
+                var dataComponents = d.getComponents();
+
+                for (int i = 0; i < size; i++) {
+                    var expectedMetadata = this.dataLookup[i];
+
+                    var component = dataComponents.get(i);
+                    if (component == null) {
+                        throw new IllegalArgumentException("Component %d to be of type '%s' cannot be null.".formatted(i + 1, expectedMetadata.type()));
+                    }
+
+                    var metadata = manager.componentManager.getComponent(component);
+                    if (metadata != expectedMetadata) {
+                        throw new IllegalArgumentException("Expected component %d to be of type '%s', but was '%s'.".formatted(i + 1, expectedMetadata.type(), metadata.type()));
+                    }
+
+                    components[i] = component;
+                }
+            } else {
+                var component = data;
+                var expectedMetadata = this.dataLookup[0];
 
                 var metadata = manager.componentManager.getComponent(component);
                 if (metadata != expectedMetadata) {
-                    throw new IllegalArgumentException("Expected component %d to be of type '%s', but was '%s'.".formatted(i + 1, expectedMetadata.type(), metadata.type()));
+                    throw new IllegalArgumentException("Expected component to be of type '%s', but was '%s'.".formatted(expectedMetadata.type(), metadata.type()));
                 }
+
+                components[0] = component;
             }
 
+            // Add fixed components
             if (fixed != null) {
-                components = ArrayUtils.concat(Object.class, components, fixed);
+                System.arraycopy(fixed, 0, components, size, fixed.length);
             }
-
-            return manager.entityManager.create(componentMask, components);
         }
 
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        protected final int[] createEntities(int count, Archetype.Initialize initialize) {
-            return manager.initializePool.withInstance(init -> {
-                init.size = fixed != null
-                        ? this.componentMask.getComponents().length - fixed.length
-                        : this.componentMask.getComponents().length;
-
-                init.added = 0;
-
-                var data = fixed != null
-                        ? new Object[init.size + fixed.length][count]
-                        : new Object[init.size][count];
-
-                for (int i = 0; i < count; i++) {
-                    init.valid = false;
-                    initialize.initialize(i, init);
-
-                    if (!init.valid) {
-                        throw new IllegalStateException("Initialization callback not called for entity %d/%d".formatted(i + 1, count));
-                    }
-
-                    if (init.added != init.size) {
-                        throw new IllegalStateException("Expected %d added components, but got %d for entity %d/%d".formatted(init.size, init.added, i + 1, count));
-                    }
-
-                    for (int c = 0; c < init.added; c++) {
-                        data[c][i] = init.components.get(c);
-                    }
-
-                    if (fixed != null) {
-                        for (int c = 0, s = fixed.length; c < s; c++) {
-                            data[init.size + c][i] = fixed[c];
-                        }
-                    }
-                }
-
-                return manager.entityManager.createEntities(this.componentMask, data, this.dataLookup);
-            });
+        @Override
+        public <T extends Pooled> T getInstance(Class<T> clazz) {
+            return manager.getInstance(clazz);
         }
 
     }

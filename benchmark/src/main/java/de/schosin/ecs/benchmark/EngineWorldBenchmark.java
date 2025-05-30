@@ -15,7 +15,12 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
-import de.schosin.ecs.plugins.archetype.Archetype;
+import de.schosin.ecs.plugins.archetype.Archetype1;
+import de.schosin.ecs.plugins.archetype.Archetype2;
+import de.schosin.ecs.plugins.archetype.Archetype3;
+import de.schosin.ecs.plugins.archetype.Archetype4;
+import de.schosin.ecs.plugins.archetype.Archetype5;
+import de.schosin.ecs.plugins.archetype.Archetype6;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.transmuter.Transmuter;
 
@@ -42,19 +47,19 @@ public class EngineWorldBenchmark {
             new Runner(options).run();
         }
 
-        private Archetype.Of1<Component1> archetype1;
-        private Archetype.Of2<Component1, Component2> archetype2;
-        private Archetype.Of3<Component1, Component2, Component3> archetype3;
-        private Archetype.Of4<Component1, Component2, Component3, Component4> archetype4;
-        private Archetype.Of5<Component1, Component2, Component3, Component4, Component5> archetype5;
-        private Archetype.Of6<Component1, Component2, Component3, Component4, Component5, Component6> archetype6;
+        private Archetype1<Component1> archetype1;
+        private Archetype2<Component1, Component2> archetype2;
+        private Archetype3<Component1, Component2, Component3> archetype3;
+        private Archetype4<Component1, Component2, Component3, Component4> archetype4;
+        private Archetype5<Component1, Component2, Component3, Component4, Component5> archetype5;
+        private Archetype6<Component1, Component2, Component3, Component4, Component5, Component6> archetype6;
 
-        private Archetype.Of1<Pooled1> pooledArchetype1;
-        private Archetype.Of2<Pooled1, Pooled2> pooledArchetype2;
-        private Archetype.Of3<Pooled1, Pooled2, Pooled3> pooledArchetype3;
-        private Archetype.Of4<Pooled1, Pooled2, Pooled3, Pooled4> pooledArchetype4;
-        private Archetype.Of5<Pooled1, Pooled2, Pooled3, Pooled4, Pooled5> pooledArchetype5;
-        private Archetype.Of6<Pooled1, Pooled2, Pooled3, Pooled4, Pooled5, Pooled6> pooledArchetype6;
+        private Archetype1<Pooled1> pooledArchetype1;
+        private Archetype2<Pooled1, Pooled2> pooledArchetype2;
+        private Archetype3<Pooled1, Pooled2, Pooled3> pooledArchetype3;
+        private Archetype4<Pooled1, Pooled2, Pooled3, Pooled4> pooledArchetype4;
+        private Archetype5<Pooled1, Pooled2, Pooled3, Pooled4, Pooled5> pooledArchetype5;
+        private Archetype6<Pooled1, Pooled2, Pooled3, Pooled4, Pooled5, Pooled6> pooledArchetype6;
 
         @Param({ "1000000" })
         private int entityCount;
@@ -163,12 +168,12 @@ public class EngineWorldBenchmark {
         @Benchmark
         public void archetypeBatch(Blackhole bh) {
             bh.consume(entities = switch (components) {
-                case 1 -> archetype1.createBatch(entityCount, (i, init) -> init.initialize(new Component1()));
-                case 2 -> archetype2.createBatch(entityCount, (i, init) -> init.initialize(new Component1(), new Component2()));
-                case 3 -> archetype3.createBatch(entityCount, (i, init) -> init.initialize(new Component1(), new Component2(), new Component3()));
-                case 4 -> archetype4.createBatch(entityCount, (i, init) -> init.initialize(new Component1(), new Component2(), new Component3(), new Component4()));
-                case 5 -> archetype5.createBatch(entityCount, (i, init) -> init.initialize(new Component1(), new Component2(), new Component3(), new Component4(), new Component5()));
-                case 6 -> archetype6.createBatch(entityCount, (i, init) -> init.initialize(new Component1(), new Component2(), new Component3(), new Component4(), new Component5(), new Component6()));
+                case 1 -> archetype1.createBatch(entityCount, () -> new Component1());
+                case 2 -> archetype2.createBatch(entityCount, init -> init.create(new Component1(), new Component2()));
+                case 3 -> archetype3.createBatch(entityCount, init -> init.create(new Component1(), new Component2(), new Component3()));
+                case 4 -> archetype4.createBatch(entityCount, init -> init.create(new Component1(), new Component2(), new Component3(), new Component4()));
+                case 5 -> archetype5.createBatch(entityCount, init -> init.create(new Component1(), new Component2(), new Component3(), new Component4(), new Component5()));
+                case 6 -> archetype6.createBatch(entityCount, init -> init.create(new Component1(), new Component2(), new Component3(), new Component4(), new Component5(), new Component6()));
                 default -> throw new IllegalArgumentException("Unexpected value: " + components);
             });
         }
@@ -176,17 +181,17 @@ public class EngineWorldBenchmark {
         @Benchmark
         public void pooledArchetypeBatch(Blackhole bh) {
             bh.consume(entities = switch (components) {
-                case 1 -> pooledArchetype1.createBatch(entityCount, (i, init) -> init.initialize(pooledArchetype1.getInstance(Pooled1.class)));
-                case 2 -> pooledArchetype2.createBatch(entityCount, (i, init) -> init.initialize(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class)));
-                case 3 -> pooledArchetype3.createBatch(entityCount,
-                        (i, init) -> init.initialize(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class), pooledArchetype1.getInstance(Pooled3.class)));
-                case 4 -> pooledArchetype4.createBatch(entityCount, (i, init) -> init.initialize(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class),
+                case 1 -> pooledArchetype1.createBatch(entityCount, () -> pooledArchetype1.getInstance(Pooled1.class));
+                case 2 -> pooledArchetype2.createBatch(entityCount, init -> init.create(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class)));
+                case 3 -> pooledArchetype3.createBatch(entityCount, init -> init.create(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class),
+                        pooledArchetype1.getInstance(Pooled3.class)));
+                case 4 -> pooledArchetype4.createBatch(entityCount, init -> init.create(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class),
                         pooledArchetype1.getInstance(Pooled3.class), pooledArchetype1.getInstance(Pooled4.class)));
-                case 5 -> pooledArchetype5.createBatch(entityCount, (i, init) -> init.initialize(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class),
+                case 5 -> pooledArchetype5.createBatch(entityCount, init -> init.create(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class),
                         pooledArchetype1.getInstance(Pooled3.class), pooledArchetype1.getInstance(Pooled4.class), pooledArchetype1.getInstance(Pooled5.class)));
-                case 6 -> pooledArchetype6.createBatch(entityCount,
-                        (i, init) -> init.initialize(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class), pooledArchetype1.getInstance(Pooled3.class),
-                                pooledArchetype1.getInstance(Pooled4.class), pooledArchetype1.getInstance(Pooled5.class), pooledArchetype1.getInstance(Pooled6.class)));
+                case 6 -> pooledArchetype6.createBatch(entityCount, init -> init.create(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class),
+                        pooledArchetype1.getInstance(Pooled3.class), pooledArchetype1.getInstance(Pooled4.class), pooledArchetype1.getInstance(Pooled5.class),
+                        pooledArchetype1.getInstance(Pooled6.class)));
                 default -> throw new IllegalArgumentException("Unexpected value: " + components);
             });
         }
@@ -203,12 +208,12 @@ public class EngineWorldBenchmark {
             new Runner(options).run();
         }
 
-        private Archetype.Of1<Component1> archetype1;
-        private Archetype.Of2<Component1, Component2> archetype2;
-        private Archetype.Of3<Component1, Component2, Component3> archetype3;
-        private Archetype.Of4<Component1, Component2, Component3, Component4> archetype4;
-        private Archetype.Of5<Component1, Component2, Component3, Component4, Component5> archetype5;
-        private Archetype.Of6<Component1, Component2, Component3, Component4, Component5, Component6> archetype6;
+        private Archetype1<Component1> archetype1;
+        private Archetype2<Component1, Component2> archetype2;
+        private Archetype3<Component1, Component2, Component3> archetype3;
+        private Archetype4<Component1, Component2, Component3, Component4> archetype4;
+        private Archetype5<Component1, Component2, Component3, Component4, Component5> archetype5;
+        private Archetype6<Component1, Component2, Component3, Component4, Component5, Component6> archetype6;
 
         @Param({ "1000000" })
         private int entityCount;
@@ -470,8 +475,8 @@ public class EngineWorldBenchmark {
             new Runner(options).run();
         }
 
-        private Archetype.Of1<Component1> archetype1;
-        private Archetype.Of2<Component1, Component2> archetype12;
+        private Archetype1<Component1> archetype1;
+        private Archetype2<Component1, Component2> archetype12;
 
         private Composition composition1;
         private Composition composition1not2;

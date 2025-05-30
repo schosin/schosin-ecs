@@ -25,15 +25,56 @@ import de.schosin.ecs.codegen.Utils;
 
 public class BaseDataTypeGenerator {
 
-    private static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.plugins.data.types", "DataProcessor");
-    private static final ClassName DATA_PROVIDER = ClassName.get("de.schosin.ecs.plugins.data.types", "DataProvider");
+    public record TypeVariables(
+            List<TypeVariableName> typeVariablesT, List<TypeVariableName> typeVariablesR, List<TypeVariableName> typeVariables,
+            TypeVariableName[] typeVariablesArrayT, TypeVariableName[] typeVariablesArrayR, TypeVariableName[] typeVariablesArray) {
 
-    private static ParameterizedTypeName dataProcessor(TypeName name) {
+        public TypeVariables(List<TypeVariableName> typeVariablesT, List<TypeVariableName> typeVariablesR, List<TypeVariableName> typeVariables) {
+            this(typeVariablesT, typeVariablesR, typeVariables,
+                    typeVariablesT.toArray(TypeVariableName[]::new), typeVariablesR.toArray(TypeVariableName[]::new), typeVariables.toArray(TypeVariableName[]::new));
+        }
+    }
+
+    public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.plugins.data.types", "DataProcessor");
+    public static final ClassName DATA_PROVIDER = ClassName.get("de.schosin.ecs.plugins.data.types", "DataProvider");
+
+    public static ParameterizedTypeName dataProcessor(TypeName name) {
         return ParameterizedTypeName.get(DATA_PROCESSOR, name);
     }
 
-    private static ParameterizedTypeName dataProvider(TypeName name) {
+    public static ParameterizedTypeName dataProvider(TypeName name) {
         return ParameterizedTypeName.get(DATA_PROVIDER, name);
+    }
+
+    public static ParameterizedTypeName dataTypeN(int n, List<? extends TypeName> typeVariables) {
+        var typeVariablesArray = typeVariables.toArray(TypeName[]::new);
+        return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n), typeVariablesArray);
+    }
+
+    public static ParameterizedTypeName dataN(int n, List<TypeVariableName> typeVariables) {
+        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+        return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n).nestedClass("Data" + n), typeVariablesArray);
+    }
+
+    public static ParameterizedTypeName dataFactory(int n, List<TypeVariableName> typeVariables) {
+        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+        return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n).nestedClass("Factory" + n), typeVariablesArray);
+    }
+
+    public static ParameterizedTypeName dataProviderN(int n, List<TypeVariableName> typeVariables) {
+        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+        return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n).nestedClass("Provider" + n), typeVariablesArray);
+    }
+
+    public static TypeVariables getTypeVariables(int n) {
+        var typeVariablesT = Utils.generateTypeVariables("T", n);
+        var typeVariablesR = Utils.generateTypeVariables("R", n);
+        var typeVariables = IntStream.range(0, n)
+                .mapToObj(Integer::valueOf)
+                .flatMap(i -> Stream.of(typeVariablesT.get(i), typeVariablesR.get(i)))
+                .toList();
+
+        return new TypeVariables(typeVariablesT, typeVariablesR, typeVariables);
     }
 
     public static Iterable<JavaFile> generateFiles(TypeElement type, int maxParams) {
@@ -81,14 +122,9 @@ public class BaseDataTypeGenerator {
         }
 
         private static MethodSpec factoryMethod(int n) {
-            var typeVariablesT = Utils.generateTypeVariables("T", n);
-            var typeVariablesR = Utils.generateTypeVariables("R", n);
-            var typeVariables = IntStream.range(0, n)
-                    .mapToObj(Integer::valueOf)
-                    .flatMap(i -> Stream.of(typeVariablesT.get(i), typeVariablesR.get(i)))
-                    .toList();
+            var variables = getTypeVariables(n);
 
-            var dataTypeN = dataTypeN(n, typeVariables);
+            var dataTypeN = dataTypeN(n, variables.typeVariables);
 
             var parameters = new ArrayList<ParameterSpec>(n);
             var arguments = "";
@@ -99,13 +135,13 @@ public class BaseDataTypeGenerator {
                 }
                 arguments += "type" + i;
 
-                var componentType = ParameterizedTypeName.get(Utils.COMPONENT_TYPE, typeVariablesT.get(i - 1), typeVariablesR.get(i - 1));
+                var componentType = ParameterizedTypeName.get(Utils.COMPONENT_TYPE, variables.typeVariablesT.get(i - 1), variables.typeVariablesR.get(i - 1));
                 parameters.add(ParameterSpec.builder(componentType, "type" + i).build());
             }
 
             return MethodSpec.methodBuilder("get")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                    .addTypeVariables(typeVariables)
+                    .addTypeVariables(variables.typeVariables)
                     .addParameters(parameters)
                     .returns(dataTypeN)
                     .addStatement("return new $1T<>(%s)".formatted(arguments), ClassName.get("", "DataType" + n))
@@ -119,17 +155,12 @@ public class BaseDataTypeGenerator {
         public static JavaFile create(String packageName, int n) {
             var className = ClassName.get("", "DataType" + n);
 
-            var typeVariablesT = Utils.generateTypeVariables("T", n);
-            var typeVariablesR = Utils.generateTypeVariables("R", n);
-            var typeVariables = IntStream.range(0, n)
-                    .mapToObj(Integer::valueOf)
-                    .flatMap(i -> Stream.of(typeVariablesT.get(i), typeVariablesR.get(i)))
-                    .toList();
+            var variables = getTypeVariables(n);
 
-            var dataT = dataN(n, typeVariablesT);
-            var provider = ParameterizedTypeName.get(className.nestedClass("Provider" + n), typeVariablesT.toArray(TypeVariableName[]::new));
-            var dataR = dataN(n, typeVariablesR);
-            var processor = ParameterizedTypeName.get(className.nestedClass("Processor" + n), typeVariablesR.toArray(TypeVariableName[]::new));
+            var dataT = dataN(n, variables.typeVariablesT);
+            var provider = ParameterizedTypeName.get(className.nestedClass("Provider" + n), variables.typeVariablesT.toArray(TypeVariableName[]::new));
+            var dataR = dataN(n, variables.typeVariablesR);
+            var processor = ParameterizedTypeName.get(className.nestedClass("Processor" + n), variables.typeVariablesR.toArray(TypeVariableName[]::new));
 
             var superinterface = ClassName.get("", "DataType");
             var parameterizedSuperinterface = ParameterizedTypeName.get(superinterface, dataT, provider, dataR, processor);
@@ -138,22 +169,22 @@ public class BaseDataTypeGenerator {
             var constructor = MethodSpec.compactConstructorBuilder().addModifiers(Modifier.PUBLIC);
 
             for (int i = 1; i <= n; i++) {
-                var type = Utils.componentType(typeVariablesT.get(i - 1), typeVariablesR.get(i - 1));
+                var type = Utils.componentType(variables.typeVariablesT.get(i - 1), variables.typeVariablesR.get(i - 1));
                 recordConstructor.addParameter(type, "type" + i);
                 constructor.addStatement("$1T.requireNonNull(%s, \"%s cannot be null\")".formatted("type" + i, "type" + i, "type" + i), Objects.class);
             }
 
             var type = TypeSpec.recordBuilder(className)
                     .addModifiers(Modifier.PUBLIC)
-                    .addTypeVariables(typeVariables)
+                    .addTypeVariables(variables.typeVariables)
                     .addSuperinterface(parameterizedSuperinterface)
                     .recordConstructor(recordConstructor.build())
                     .addMethod(constructor.build())
                     .addMethod(getComponentTypes(n))
-                    .addType(dataType(n, typeVariablesT))
-                    .addType(processorType(n, typeVariablesR))
-                    .addType(factoryType(n, typeVariablesT))
-                    .addType(providerType(n, typeVariablesT))
+                    .addType(dataType(n, variables.typeVariablesT))
+                    .addType(processorType(n, variables.typeVariablesR))
+                    .addType(factoryType(n, variables.typeVariablesT))
+                    .addType(providerType(n, variables.typeVariablesT))
                     .build();
 
             return JavaFile.builder(packageName, type)
@@ -476,16 +507,6 @@ public class BaseDataTypeGenerator {
                     .build();
         }
 
-    }
-
-    private static ParameterizedTypeName dataTypeN(int n, List<TypeVariableName> typeVariables) {
-        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
-        return ParameterizedTypeName.get(ClassName.get("", "DataType" + n), typeVariablesArray);
-    }
-
-    private static ParameterizedTypeName dataN(int n, List<TypeVariableName> typeVariables) {
-        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
-        return ParameterizedTypeName.get(ClassName.get("", "DataType" + n).nestedClass("Data" + n), typeVariablesArray);
     }
 
 }

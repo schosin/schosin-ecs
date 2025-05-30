@@ -1,13 +1,67 @@
 package de.schosin.ecs.plugins.archetype;
 
+import java.util.function.IntFunction;
+
 import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.codegen.EcsCodegen;
+import de.schosin.ecs.plugins.data.types.DataProvider;
 
 @NullMarked
 @EcsCodegen
-public interface BaseArchetype {
+public interface BaseArchetype<P extends DataProvider<?>> {
+
+    /**
+     * Creates an entity. All components must be non-null.
+     * 
+     * <p>
+     * Example:
+     * {@snippet:
+     * var entityId = archetype.create(factory -> factory.create(component1, component2));
+     * }
+     * </p>
+     * 
+     * @param provider method accepting a factory, returning the result of invoking the {@code create} method.
+     * @return id of entity
+     */
+    int create(P provider);
+
+    /**
+     * Creates a batch of entities. All components must be non-null.
+     * 
+     * <p>
+     * Example (Lambda):
+     * {@snippet:
+     * var entityIds = archetype.createBatch(10, factory -> factory.create(component1, component2));
+     * }
+     * </p>
+     * 
+     * @param count number of entities
+     * @param provider method accepting a factory, returning the result of invoking the {@code create} method
+     * @return array of length {@code count} containing the ids of created entities
+     */
+    default int[] createBatch(int count, P provider) {
+        return createIndexed(count, idx -> provider);
+    }
+
+    /**
+     * Creates a batch of entities. All components must be non-null.
+     * 
+     * <p>
+     * Example (Lambda):
+     * {@snippet:
+     * var entityIds = archetype.createBatch(10, idx -> factory -> factory.create(
+     *         createComponent1(idx), 
+     *         createComponent2(idx)));
+     * }
+     * </p>
+     * 
+     * @param count
+     * @param provider method accepting a zero-based index, returning a method accepting a factory, returning the result of invoking the {@code create} method.
+     * @return array of length {@code count} containing the ids of created entities
+     */
+    int[] createIndexed(int count, IntFunction<P> provider);
 
     /**
      * Create a new archetype that extends this archetype by adding the passed components to
@@ -26,7 +80,7 @@ public interface BaseArchetype {
      * @param components components to add to every entity
      * @return new archetype
      */
-    Archetype with(Object... components);
+    BaseArchetype<P> with(Object... components);
 
     /**
      * Returns a pooled instance of the component.

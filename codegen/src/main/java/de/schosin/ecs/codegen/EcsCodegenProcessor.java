@@ -16,9 +16,8 @@ import javax.tools.Diagnostic;
 import com.google.auto.service.AutoService;
 import com.palantir.javapoet.JavaFile;
 
-import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeGenerator;
 import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeManagerGenerator;
-import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeManagerTestGenerator;
+import de.schosin.ecs.codegen.generators.plugins.archetype.BaseArchetypeGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionManagerGenerator;
 import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator;
@@ -41,7 +40,6 @@ public class EcsCodegenProcessor extends AbstractProcessor {
 
     private static final String ARCHETYPE_PLUGIN = "de.schosin.ecs.plugins.archetype.BaseArchetype";
     private static final String ARCHETYPE_PLUGIN_MANAGER = "de.schosin.ecs.plugins.archetype.ArchetypeManager";
-    private static final String ARCHETYPE_PLUGIN_MANAGER_TEST = "de.schosin.ecs.plugins.archetype.ArchetypeManagerTest";
 
     private static final String TRANSMUTER_PLUGIN = "de.schosin.ecs.plugins.transmuter.BaseTransmuter";
     private static final String TRANSMUTER_PLUGIN_MANAGER = "de.schosin.ecs.plugins.transmuter.TransmuterManager";
@@ -66,9 +64,8 @@ public class EcsCodegenProcessor extends AbstractProcessor {
 
                 switch (name) {
                     // plugins
-                    case ARCHETYPE_PLUGIN -> writeFile(ArchetypeGenerator.generateFile(type, archetypeParams));
+                    case ARCHETYPE_PLUGIN -> writeFiles(BaseArchetypeGenerator.generateFiles(type, archetypeParams));
                     case ARCHETYPE_PLUGIN_MANAGER -> writeFile(ArchetypeManagerGenerator.generateFile(type, archetypeParams));
-                    case ARCHETYPE_PLUGIN_MANAGER_TEST -> writeFile(ArchetypeManagerTestGenerator.generateFile(type, archetypeParams));
 
                     case TRANSMUTER_PLUGIN -> writeFile(TransmuterGenerator.generateFile(type, transmuterParams));
                     case TRANSMUTER_PLUGIN_MANAGER -> writeFile(TransmutationManagerGenerator.generateFile(type, transmuterParams));
