@@ -50,17 +50,30 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
     @Override
     public void free(T result) {
         lent.removeIdentity(result);
-        result.free();
+        freeData(result);
     }
 
     @Override
     public void reclaim() {
         var data = lent.getData();
         for (int i = 0, s = lent.getSize(); i < s; i++) {
-            data[i].free();
+            freeData(data[i]);
         }
 
         lent.clear();
+    }
+
+    @SuppressWarnings("unchecked")
+    private void freeData(Data result) {
+        var components = result.getComponents();
+        for (int i = 0; i < size; i++) {
+            var mapper = mappers[i];
+            if (mapper instanceof PoolingComponents pooling) {
+                pooling.free(components.get(i));
+            }
+        }
+
+        result.free();
     }
 
     @Override

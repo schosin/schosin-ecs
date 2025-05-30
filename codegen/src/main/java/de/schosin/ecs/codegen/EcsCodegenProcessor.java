@@ -18,8 +18,10 @@ import com.palantir.javapoet.JavaFile;
 
 import de.schosin.ecs.codegen.generators.plugins.archetype.ArchetypeManagerGenerator;
 import de.schosin.ecs.codegen.generators.plugins.archetype.BaseArchetypeGenerator;
+import de.schosin.ecs.codegen.generators.plugins.composition.CompositionDataGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionManagerGenerator;
+import de.schosin.ecs.codegen.generators.plugins.composition.CompositionPluginGenerator;
 import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator;
 import de.schosin.ecs.codegen.generators.plugins.datatypes.DataTypeMapperGenerator;
 import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmutationManagerGenerator;
@@ -45,7 +47,9 @@ public class EcsCodegenProcessor extends AbstractProcessor {
     private static final String TRANSMUTER_PLUGIN_MANAGER = "de.schosin.ecs.plugins.transmuter.TransmuterManager";
     private static final String TRANSMUTER_PLUGIN_MANAGER_TEST = "de.schosin.ecs.plugins.transmuter.TransmuterManagerTest";
 
-    private static final String COMPOSIITON_PLUGIN = "de.schosin.ecs.plugins.composition.BaseComposition";
+    private static final String COMPOSIITON_PLUGIN = "de.schosin.ecs.plugins.composition.CompositionPlugin";
+    private static final String COMPOSIITON = "de.schosin.ecs.plugins.composition.Composition";
+    private static final String COMPOSIITON_DATA = "de.schosin.ecs.plugins.composition.CompositionData";
     private static final String COMPOSIITON_PLUGIN_MANAGER = "de.schosin.ecs.plugins.composition.manager.CompositionManager";
 
     private static final String BASE_DATA_TYPE = "de.schosin.ecs.plugins.data.types.BaseDataType";
@@ -71,7 +75,9 @@ public class EcsCodegenProcessor extends AbstractProcessor {
                     case TRANSMUTER_PLUGIN_MANAGER -> writeFile(TransmutationManagerGenerator.generateFile(type, transmuterParams));
                     case TRANSMUTER_PLUGIN_MANAGER_TEST -> writeFile(TransmutationManagerTestGenerator.generateFile(type, transmuterParams));
 
-                    case COMPOSIITON_PLUGIN -> writeFile(CompositionGenerator.generateFile(type, compositionParams));
+                    case COMPOSIITON_PLUGIN -> writeFile(CompositionPluginGenerator.generateFile(type, compositionParams));
+                    case COMPOSIITON -> writeFile(CompositionGenerator.generateFile(type, compositionParams));
+                    case COMPOSIITON_DATA -> writeFiles(CompositionDataGenerator.generateFiles(type, compositionParams));
                     case COMPOSIITON_PLUGIN_MANAGER -> writeFile(CompositionManagerGenerator.generateFile(type, compositionParams));
 
                     case BASE_DATA_TYPE -> writeFiles(BaseDataTypeGenerator.generateFiles(type, maxParams));

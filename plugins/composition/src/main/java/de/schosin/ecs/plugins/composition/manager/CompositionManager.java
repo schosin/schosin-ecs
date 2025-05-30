@@ -1,13 +1,10 @@
 package de.schosin.ecs.plugins.composition.manager;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.IntConsumer;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 
@@ -28,14 +25,18 @@ import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.plugins.composition.BaseComposition;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
+import de.schosin.ecs.plugins.composition.CompositionData;
+import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionPlugin;
 import de.schosin.ecs.plugins.composition.Spec;
+import de.schosin.ecs.plugins.data.DataTypePlugin;
+import de.schosin.ecs.plugins.data.types.BaseDataType.Data;
+import de.schosin.ecs.plugins.data.types.DataProcessor;
+import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
-import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen
 public class CompositionManager extends AbstractSpecManager implements CompositionPlugin {
@@ -47,11 +48,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
 
     private final Bag<Bag<CompositionImpl>> compositionsByMask = new Bag<>(Bag.class, 64);
-
-    private final Pool<Set<ComponentType<?, ?>>> componentTypeSetPool = Pool.unbounded(Set.class, HashSet::new, Set::clear);
     private final Bag<ComponentMask> fill = new Bag<>(ComponentMask.class, 64);
 
-    public CompositionManager(World world) {
+    public CompositionManager(World world, DataTypePlugin dataTypePlugin) {
         super(world);
 
         world.addSingleton(this);
@@ -70,6 +69,20 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     @Override
     public Composition createComposition(Builder builder) {
         return create(builder, entityManager::getEntities);
+    }
+
+    @Override
+    public <R> CompositionData1<R> createComposition(Builder builder, ComponentType<?, R> component) {
+        var composition = (CompositionImpl) createComposition(builder);
+
+        return composition.createCompositionData(component);
+    }
+
+    @Override
+    public <T extends Data, P extends DataProcessor<T>, D extends CompositionData<P>> D createComposition(Builder builder, DataType<?, ?, T, P> dataType) {
+        var composition = (CompositionImpl) createComposition(builder);
+
+        return composition.createCompositionData(dataType);
     }
 
     public Composition create(Builder builder, Function<ComponentsPredicate, IntBag> entities) {
@@ -185,7 +198,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    private final class CompositionImpl extends BaseCompositionImpl implements Composition {
+    private final class CompositionImpl implements Composition {
 
         private final EngineSpec spec;
 
@@ -200,7 +213,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         private IntConsumer removed;
         private Bag<IntConsumer> moreRemoved;
 
-        private final Map<Set<ComponentType<?, ?>>, Composition.Of<?>> retrieves = new ConcurrentHashMap<>();
+        private final Map<ComponentType<?, ?>, CompositionData<?>> compositionData = new ConcurrentHashMap<>();
 
         private CompositionImpl(EngineSpec spec, IntBag entities, IntBag lookup) {
             this.spec = spec;
@@ -216,32 +229,52 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             this.maskCache = new IntBag(64);
         }
 
-        @Override
-        protected <T extends Composition.Of<?>> T retrieve(Supplier<T> constructor, ComponentType<?, ?>... components) {
-            return componentTypeSetPool.withInstance(componentTypes -> {
-                for (var component : components) {
-                    componentTypes.add(component);
+        @SuppressWarnings("unchecked")
+        private <R> CompositionData1<R> createCompositionData(ComponentType<?, R> component) {
+            if (component instanceof DataType<?, ?, ?, ?>) {
+                throw new IllegalArgumentException("Cannot pass DataType to createComposition(Builder, ComponentType). Use createComposition(Builder, DataType) instead.");
+            }
+
+            var result = (CompositionData1<R>) compositionData.get(component);
+            if (result != null) {
+                return result;
+            }
+
+            synchronized (compositionData) {
+                result = (CompositionData1<R>) compositionData.get(component);
+                if (result != null) {
+                    return result;
                 }
 
-                return getRetrieveComposition(componentTypes, constructor);
-            });
-        }
+                var compositionData = new Composition1<>(this, component);
+                this.compositionData.put(component, compositionData);
 
-        @Override
-        protected Components<?, ?> getComponents(ComponentType<?, ?> type) {
-            return componentMapperManager.getComponents(type);
+                return compositionData;
+            }
         }
 
         @SuppressWarnings("unchecked")
-        private <T extends Composition.Of<?>> T getRetrieveComposition(Set<ComponentType<?, ?>> componentTypes, Supplier<T> constructor) {
-            // Lookup cached
-            var result = retrieves.get(componentTypes);
+        private <T extends Data, P extends DataProcessor<T>, D extends CompositionData<P>> D createCompositionData(DataType<?, ?, T, P> dataType) {
+            var result = (D) compositionData.get(dataType);
             if (result != null) {
-                return (T) result;
+                return result;
             }
 
-            var key = Set.copyOf(componentTypes);
-            return (T) retrieves.computeIfAbsent(key, ignore -> constructor.get());
+            synchronized (compositionData) {
+                result = (D) compositionData.get(dataType);
+                if (result != null) {
+                    return result;
+                }
+
+                var compositionData = (D) CompositionManagerHelper.createCompositionData(this, dataType);
+                this.compositionData.put(dataType, compositionData);
+
+                return compositionData;
+            }
+        }
+
+        protected <R> Components<?, R> getComponents(ComponentType<?, R> type) {
+            return componentMapperManager.getComponents(type);
         }
 
         private boolean containsEntity(int entityId) {
@@ -334,7 +367,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 return this.spec.matches(composition.spec);
             }
 
-            if (spec instanceof AbstractCompositionN composition) {
+            if (spec instanceof AbstractComposition composition) {
                 return this.spec.matches(((CompositionImpl) composition.composition).spec);
             }
 
@@ -410,30 +443,31 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     }
 
-    abstract static class AbstractCompositionN implements BaseComposition, Spec {
+    static class Composition1<R> extends AbstractComposition<R, DataProcessor<R>> implements CompositionData1<R> {
 
-        protected final BaseCompositionImpl composition;
-
-        private final Components<?, ?>[] components;
-
-        protected AbstractCompositionN(BaseCompositionImpl composition, ComponentType<?, ?>... components) {
-            this.composition = composition;
-            this.components = new Components<?, ?>[components.length];
-            for (int i = 0, s = components.length; i < s; i++) {
-                this.components[i] = composition.getComponents(components[i]);
-            }
+        protected Composition1(Composition composition, ComponentType<?, R> type) {
+            super(composition, type);
         }
 
-        @SuppressWarnings("unchecked")
-        protected <T> T get(int entityId, int component) {
-            return (T) components[component].get(entityId);
+    }
+
+    abstract static class AbstractCompositionN<R extends Data, P extends DataProcessor<R>> extends AbstractComposition<R, P> {
+
+        protected AbstractCompositionN(Composition composition, DataType<?, ?, R, P> dataType) {
+            super(composition, dataType);
         }
 
-        @SuppressWarnings("unchecked")
-        protected void free(int component, Object instance) {
-            if (components[component] instanceof PoolingComponents resultComponents) {
-                resultComponents.free(instance);
-            }
+    }
+
+    abstract static class AbstractComposition<R, P extends DataProcessor<R>> implements CompositionData<P>, Spec {
+
+        protected final CompositionImpl composition;
+
+        private final Components<?, R> mapper;
+
+        protected AbstractComposition(Composition composition, ComponentType<?, R> type) {
+            this.composition = (CompositionImpl) composition;
+            this.mapper = this.composition.getComponents(type);
         }
 
         @Override
@@ -452,8 +486,18 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
+        public void inserted(P processor) {
+            composition.inserted(entityId -> process(entityId, processor));
+        }
+
+        @Override
         public void removed(IntConsumer removed) {
             composition.removed(removed);
+        }
+
+        @Override
+        public void removed(P processor) {
+            composition.removed(entityId -> process(entityId, processor));
         }
 
         @Override
@@ -469,6 +513,22 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         @Override
         public void process(IntConsumer process) {
             composition.process(process);
+        }
+
+        @Override
+        public void process(P processor) {
+            composition.process(entityId -> process(entityId, processor));
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public void process(int entityId, P processor) {
+            var data = mapper.get(entityId);
+            processor.process(entityId, data);
+
+            if (data != null && mapper instanceof PoolingComponents pooling) {
+                pooling.free(data);
+            }
         }
 
         @Override

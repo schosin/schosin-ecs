@@ -66,6 +66,11 @@ public class BaseDataTypeGenerator {
         return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n).nestedClass("Provider" + n), typeVariablesArray);
     }
 
+    public static ParameterizedTypeName dataProcessorN(int n, List<TypeVariableName> typeVariables) {
+        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+        return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n).nestedClass("Processor" + n), typeVariablesArray);
+    }
+
     public static TypeVariables getTypeVariables(int n) {
         var typeVariablesT = Utils.generateTypeVariables("T", n);
         var typeVariablesR = Utils.generateTypeVariables("R", n);
@@ -276,8 +281,18 @@ public class BaseDataTypeGenerator {
 
             var superinterface = dataProcessor(dataN);
 
-            var overrideMethodBody = CodeBlock.builder()
-                    .add("process(entityId");
+            var overrideMethodBody = CodeBlock.builder();
+
+            overrideMethodBody.beginControlFlow("if (data == null)");
+            overrideMethodBody.add("process(entityId");
+            for (int i = 1; i <= n; i++) {
+                overrideMethodBody.add(", null");
+            }
+            overrideMethodBody.add(");");
+            overrideMethodBody.add("return;");
+            overrideMethodBody.endControlFlow();
+
+            overrideMethodBody.add("process(entityId");
 
             var processMethod = MethodSpec.methodBuilder("process")
                     .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)

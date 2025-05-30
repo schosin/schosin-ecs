@@ -33,9 +33,17 @@ import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.plugins.composition.BaseComposition;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
+import de.schosin.ecs.plugins.composition.CompositionData;
+import de.schosin.ecs.plugins.composition.CompositionData1;
+import de.schosin.ecs.plugins.composition.CompositionData2;
+import de.schosin.ecs.plugins.composition.CompositionData3;
+import de.schosin.ecs.plugins.composition.CompositionData4;
+import de.schosin.ecs.plugins.composition.CompositionData5;
+import de.schosin.ecs.plugins.composition.CompositionData6;
+import de.schosin.ecs.plugins.composition.CompositionData7;
+import de.schosin.ecs.plugins.composition.CompositionData8;
 import de.schosin.ecs.plugins.composition.Spec;
 import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.C1;
 import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.C1234;
@@ -188,120 +196,120 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             }
 
             @Nested
-            class Of1Test extends AbstractIsInterestedTest<Composition.Of1<C1>> {
+            class Of1Test extends AbstractIsInterestedTest<CompositionData1<C1>> {
 
                 @Override
-                protected Composition.Of1<C1> create(Builder builder) {
+                protected CompositionData1<C1> create(Builder builder) {
                     return world.createComposition(builder, C1.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of1<C1> composition, int entityId) {
+                protected boolean isInterested(CompositionData1<C1> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
             }
 
             @Nested
-            class Of2Test extends AbstractIsInterestedTest<Composition.Of2<C1, C2>> {
+            class Of2Test extends AbstractIsInterestedTest<CompositionData2<C1, C2>> {
 
                 @Override
-                protected Composition.Of2<C1, C2> create(Builder builder) {
+                protected CompositionData2<C1, C2> create(Builder builder) {
                     return world.createComposition(builder, C1.class, C2.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of2<C1, C2> composition, int entityId) {
+                protected boolean isInterested(CompositionData2<C1, C2> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
             }
 
             @Nested
-            class Of3Test extends AbstractIsInterestedTest<Composition.Of3<C1, C2, C3>> {
+            class Of3Test extends AbstractIsInterestedTest<CompositionData3<C1, C2, C3>> {
 
                 @Override
-                protected Composition.Of3<C1, C2, C3> create(Builder builder) {
+                protected CompositionData3<C1, C2, C3> create(Builder builder) {
                     return world.createComposition(builder, C1.class, C2.class, C3.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of3<C1, C2, C3> composition, int entityId) {
+                protected boolean isInterested(CompositionData3<C1, C2, C3> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
             }
 
             @Nested
-            class Of4Test extends AbstractIsInterestedTest<Composition.Of4<C1, C2, C3, C4>> {
+            class Of4Test extends AbstractIsInterestedTest<CompositionData4<C1, C2, C3, C4>> {
 
                 @Override
-                protected Composition.Of4<C1, C2, C3, C4> create(Builder builder) {
+                protected CompositionData4<C1, C2, C3, C4> create(Builder builder) {
                     return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of4<C1, C2, C3, C4> composition, int entityId) {
+                protected boolean isInterested(CompositionData4<C1, C2, C3, C4> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
             }
 
             @Nested
-            class Of5Test extends AbstractIsInterestedTest<Composition.Of5<C1, C2, C3, C4, C5>> {
+            class Of5Test extends AbstractIsInterestedTest<CompositionData5<C1, C2, C3, C4, C5>> {
 
                 @Override
-                protected Composition.Of5<C1, C2, C3, C4, C5> create(Builder builder) {
+                protected CompositionData5<C1, C2, C3, C4, C5> create(Builder builder) {
                     return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of5<C1, C2, C3, C4, C5> composition, int entityId) {
+                protected boolean isInterested(CompositionData5<C1, C2, C3, C4, C5> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
             }
 
             @Nested
-            class Of6Test extends AbstractIsInterestedTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
+            class Of6Test extends AbstractIsInterestedTest<CompositionData6<C1, C2, C3, C4, C5, C6>> {
 
                 @Override
-                protected Composition.Of6<C1, C2, C3, C4, C5, C6> create(Builder builder) {
+                protected CompositionData6<C1, C2, C3, C4, C5, C6> create(Builder builder) {
                     return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of6<C1, C2, C3, C4, C5, C6> composition, int entityId) {
+                protected boolean isInterested(CompositionData6<C1, C2, C3, C4, C5, C6> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
             }
 
             @Nested
-            class Of7Test extends AbstractIsInterestedTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
+            class Of7Test extends AbstractIsInterestedTest<CompositionData7<C1, C2, C3, C4, C5, C6, C7>> {
 
                 @Override
-                protected Composition.Of7<C1, C2, C3, C4, C5, C6, C7> create(Builder builder) {
+                protected CompositionData7<C1, C2, C3, C4, C5, C6, C7> create(Builder builder) {
                     return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of7<C1, C2, C3, C4, C5, C6, C7> composition, int entityId) {
+                protected boolean isInterested(CompositionData7<C1, C2, C3, C4, C5, C6, C7> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
             }
 
             @Nested
-            class Of8Test extends AbstractIsInterestedTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
+            class Of8Test extends AbstractIsInterestedTest<CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8>> {
 
                 @Override
-                protected Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> create(Builder builder) {
+                protected CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8> create(Builder builder) {
                     return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
                 }
 
                 @Override
-                protected boolean isInterested(Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> composition, int entityId) {
+                protected boolean isInterested(CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8> composition, int entityId) {
                     return composition.isInterested(entityId);
                 }
 
@@ -507,65 +515,65 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 }
 
                 @Nested
-                class Of1Test extends AbstractTest<Composition.Of1<C1>> {
+                class Of1Test extends AbstractTest<CompositionData1<C1>> {
                     @Override
-                    protected Composition.Of1<C1> createSpec(Composition.Builder builder) {
+                    protected CompositionData1<C1> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class);
                     }
                 }
 
                 @Nested
-                class Of2Test extends AbstractTest<Composition.Of2<C1, C2>> {
+                class Of2Test extends AbstractTest<CompositionData2<C1, C2>> {
                     @Override
-                    protected Composition.Of2<C1, C2> createSpec(Composition.Builder builder) {
+                    protected CompositionData2<C1, C2> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class);
                     }
                 }
 
                 @Nested
-                class Of3Test extends AbstractTest<Composition.Of3<C1, C2, C3>> {
+                class Of3Test extends AbstractTest<CompositionData3<C1, C2, C3>> {
                     @Override
-                    protected Composition.Of3<C1, C2, C3> createSpec(Composition.Builder builder) {
+                    protected CompositionData3<C1, C2, C3> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class);
                     }
                 }
 
                 @Nested
-                class Of4Test extends AbstractTest<Composition.Of4<C1, C2, C3, C4>> {
+                class Of4Test extends AbstractTest<CompositionData4<C1, C2, C3, C4>> {
                     @Override
-                    protected Composition.Of4<C1, C2, C3, C4> createSpec(Composition.Builder builder) {
+                    protected CompositionData4<C1, C2, C3, C4> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
                     }
                 }
 
                 @Nested
-                class Of5Test extends AbstractTest<Composition.Of5<C1, C2, C3, C4, C5>> {
+                class Of5Test extends AbstractTest<CompositionData5<C1, C2, C3, C4, C5>> {
                     @Override
-                    protected Composition.Of5<C1, C2, C3, C4, C5> createSpec(Composition.Builder builder) {
+                    protected CompositionData5<C1, C2, C3, C4, C5> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
                     }
                 }
 
                 @Nested
-                class Of6Test extends AbstractTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
+                class Of6Test extends AbstractTest<CompositionData6<C1, C2, C3, C4, C5, C6>> {
                     @Override
-                    protected Composition.Of6<C1, C2, C3, C4, C5, C6> createSpec(Composition.Builder builder) {
+                    protected CompositionData6<C1, C2, C3, C4, C5, C6> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
                     }
                 }
 
                 @Nested
-                class Of7Test extends AbstractTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
+                class Of7Test extends AbstractTest<CompositionData7<C1, C2, C3, C4, C5, C6, C7>> {
                     @Override
-                    protected Composition.Of7<C1, C2, C3, C4, C5, C6, C7> createSpec(Composition.Builder builder) {
+                    protected CompositionData7<C1, C2, C3, C4, C5, C6, C7> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
                     }
                 }
 
                 @Nested
-                class Of8Test extends AbstractTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
+                class Of8Test extends AbstractTest<CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8>> {
                     @Override
-                    protected Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> createSpec(Composition.Builder builder) {
+                    protected CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8> createSpec(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
                     }
                 }
@@ -584,71 +592,71 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     }
                 }
 
-                // TODO @Nested
-                class Of1Test extends AbstractCompositionTest<Composition.Of1<C1>> {
+                @Nested
+                class Of1Test extends AbstractCompositionTest<CompositionData1<C1>> {
                     @Override
-                    protected Composition.Of1<C1> createComposition(Composition.Builder builder) {
+                    protected CompositionData1<C1> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class);
                     }
                 }
 
-                // TODO @Nested
-                class Of2Test extends AbstractCompositionTest<Composition.Of2<C1, C2>> {
+                @Nested
+                class Of2Test extends AbstractCompositionTest<CompositionData2<C1, C2>> {
                     @Override
-                    protected Composition.Of2<C1, C2> createComposition(Composition.Builder builder) {
+                    protected CompositionData2<C1, C2> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class);
                     }
                 }
 
-                // TODO @Nested
-                class Of3Test extends AbstractCompositionTest<Composition.Of3<C1, C2, C3>> {
+                @Nested
+                class Of3Test extends AbstractCompositionTest<CompositionData3<C1, C2, C3>> {
                     @Override
-                    protected Composition.Of3<C1, C2, C3> createComposition(Composition.Builder builder) {
+                    protected CompositionData3<C1, C2, C3> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class);
                     }
                 }
 
-                // TODO @Nested
-                class Of4Test extends AbstractCompositionTest<Composition.Of4<C1, C2, C3, C4>> {
+                @Nested
+                class Of4Test extends AbstractCompositionTest<CompositionData4<C1, C2, C3, C4>> {
                     @Override
-                    protected Composition.Of4<C1, C2, C3, C4> createComposition(Composition.Builder builder) {
+                    protected CompositionData4<C1, C2, C3, C4> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
                     }
                 }
 
-                // TODO @Nested
-                class Of5Test extends AbstractCompositionTest<Composition.Of5<C1, C2, C3, C4, C5>> {
+                @Nested
+                class Of5Test extends AbstractCompositionTest<CompositionData5<C1, C2, C3, C4, C5>> {
                     @Override
-                    protected Composition.Of5<C1, C2, C3, C4, C5> createComposition(Composition.Builder builder) {
+                    protected CompositionData5<C1, C2, C3, C4, C5> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
                     }
                 }
 
-                // TODO @Nested
-                class Of6Test extends AbstractCompositionTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
+                @Nested
+                class Of6Test extends AbstractCompositionTest<CompositionData6<C1, C2, C3, C4, C5, C6>> {
                     @Override
-                    protected Composition.Of6<C1, C2, C3, C4, C5, C6> createComposition(Composition.Builder builder) {
+                    protected CompositionData6<C1, C2, C3, C4, C5, C6> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
                     }
                 }
 
-                // TODO @Nested
-                class Of7Test extends AbstractCompositionTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
+                @Nested
+                class Of7Test extends AbstractCompositionTest<CompositionData7<C1, C2, C3, C4, C5, C6, C7>> {
                     @Override
-                    protected Composition.Of7<C1, C2, C3, C4, C5, C6, C7> createComposition(Composition.Builder builder) {
+                    protected CompositionData7<C1, C2, C3, C4, C5, C6, C7> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
                     }
                 }
 
-                // TODO @Nested
-                class Of8Test extends AbstractCompositionTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
+                @Nested
+                class Of8Test extends AbstractCompositionTest<CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8>> {
                     @Override
-                    protected Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> createComposition(Composition.Builder builder) {
+                    protected CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8> createComposition(Composition.Builder builder) {
                         return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
                     }
                 }
 
-                abstract class AbstractCompositionTest<C extends BaseComposition> {
+                abstract class AbstractCompositionTest<C extends Composition> {
 
                     protected abstract C createComposition(Composition.Builder builder);
 
@@ -1263,36 +1271,36 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition1Test extends AbstractCompositionNTest<Composition.Of1<C1>> {
+    class Composition1Test extends AbstractCompositionNTest<CompositionData1<C1>> {
 
         @Override
-        Composition.Of1<C1> composition(Composition.Builder builder) {
+        CompositionData1<C1> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class);
         }
 
         @Override
-        <T, R> Composition.Of1<R> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData1<R> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first);
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of1<R>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData1<R>) of;
             composition.inserted((entityId, result) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of1<R>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData1<R>) of;
             composition.removed((entityId, result) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of1<R>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData1<R>) of;
             composition.process((entityId, result) -> consumer.consume(entityId, result));
         }
 
@@ -1393,36 +1401,36 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition2Test extends AbstractCompositionNTest<Composition.Of2<C1, C2>> {
+    class Composition2Test extends AbstractCompositionNTest<CompositionData2<C1, C2>> {
 
         @Override
-        Composition.Of2<C1, C2> composition(Composition.Builder builder) {
+        CompositionData2<C1, C2> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class);
         }
 
         @Override
-        <T, R> Composition.Of2<R, C2> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData2<R, C2> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first, component(C2.class));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of2<R, C2>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData2<R, C2>) of;
             composition.inserted((entityId, result, c2) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of2<R, C2>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData2<R, C2>) of;
             composition.removed((entityId, result, c2) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of2<R, C2>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData2<R, C2>) of;
             composition.process((entityId, result, c2) -> consumer.consume(entityId, result));
         }
 
@@ -1529,36 +1537,36 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition3Test extends AbstractCompositionNTest<Composition.Of3<C1, C2, C3>> {
+    class Composition3Test extends AbstractCompositionNTest<CompositionData3<C1, C2, C3>> {
 
         @Override
-        Composition.Of3<C1, C2, C3> composition(Composition.Builder builder) {
+        CompositionData3<C1, C2, C3> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class);
         }
 
         @Override
-        <T, R> Composition.Of3<R, C2, C3> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData3<R, C2, C3> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first, component(C2.class), component(C3.class));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of3<R, C2, C3>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData3<R, C2, C3>) of;
             composition.inserted((entityId, result, c2, c3) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of3<R, C2, C3>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData3<R, C2, C3>) of;
             composition.removed((entityId, result, c2, c3) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of3<R, C2, C3>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData3<R, C2, C3>) of;
             composition.process((entityId, result, c2, c3) -> consumer.consume(entityId, result));
         }
 
@@ -1671,36 +1679,36 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition4Test extends AbstractCompositionNTest<Composition.Of4<C1, C2, C3, C4>> {
+    class Composition4Test extends AbstractCompositionNTest<CompositionData4<C1, C2, C3, C4>> {
 
         @Override
-        Composition.Of4<C1, C2, C3, C4> composition(Composition.Builder builder) {
+        CompositionData4<C1, C2, C3, C4> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class);
         }
 
         @Override
-        <T, R> Composition.Of4<R, C2, C3, C4> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData4<R, C2, C3, C4> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of4<R, C2, C3, C4>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData4<R, C2, C3, C4>) of;
             composition.inserted((entityId, result, c2, c3, c4) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of4<R, C2, C3, C4>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData4<R, C2, C3, C4>) of;
             composition.removed((entityId, result, c2, c3, c4) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of4<R, C2, C3, C4>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData4<R, C2, C3, C4>) of;
             composition.process((entityId, result, c2, c3, c4) -> consumer.consume(entityId, result));
         }
 
@@ -1819,36 +1827,36 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition5Test extends AbstractCompositionNTest<Composition.Of5<C1, C2, C3, C4, C5>> {
+    class Composition5Test extends AbstractCompositionNTest<CompositionData5<C1, C2, C3, C4, C5>> {
 
         @Override
-        Composition.Of5<C1, C2, C3, C4, C5> composition(Composition.Builder builder) {
+        CompositionData5<C1, C2, C3, C4, C5> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class);
         }
 
         @Override
-        <T, R> Composition.Of5<R, C2, C3, C4, C5> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData5<R, C2, C3, C4, C5> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of5<R, C2, C3, C4, C5>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData5<R, C2, C3, C4, C5>) of;
             composition.inserted((entityId, result, c2, c3, c4, c5) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of5<R, C2, C3, C4, C5>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData5<R, C2, C3, C4, C5>) of;
             composition.removed((entityId, result, c2, c3, c4, c5) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of5<R, C2, C3, C4, C5>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData5<R, C2, C3, C4, C5>) of;
             composition.process((entityId, result, c2, c3, c4, c5) -> consumer.consume(entityId, result));
         }
 
@@ -1973,36 +1981,36 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition6Test extends AbstractCompositionNTest<Composition.Of6<C1, C2, C3, C4, C5, C6>> {
+    class Composition6Test extends AbstractCompositionNTest<CompositionData6<C1, C2, C3, C4, C5, C6>> {
 
         @Override
-        Composition.Of6<C1, C2, C3, C4, C5, C6> composition(Composition.Builder builder) {
+        CompositionData6<C1, C2, C3, C4, C5, C6> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
         }
 
         @Override
-        <T, R> Composition.Of6<R, C2, C3, C4, C5, C6> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData6<R, C2, C3, C4, C5, C6> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class), component(C6.class));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of6<R, C2, C3, C4, C5, C6>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData6<R, C2, C3, C4, C5, C6>) of;
             composition.inserted((entityId, result, c2, c3, c4, c5, c6) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of6<R, C2, C3, C4, C5, C6>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData6<R, C2, C3, C4, C5, C6>) of;
             composition.removed((entityId, result, c2, c3, c4, c5, c6) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of6<R, C2, C3, C4, C5, C6>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData6<R, C2, C3, C4, C5, C6>) of;
             composition.process((entityId, result, c2, c3, c4, c5, c6) -> consumer.consume(entityId, result));
         }
 
@@ -2133,36 +2141,36 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition7Test extends AbstractCompositionNTest<Composition.Of7<C1, C2, C3, C4, C5, C6, C7>> {
+    class Composition7Test extends AbstractCompositionNTest<CompositionData7<C1, C2, C3, C4, C5, C6, C7>> {
 
         @Override
-        Composition.Of7<C1, C2, C3, C4, C5, C6, C7> composition(Composition.Builder builder) {
+        CompositionData7<C1, C2, C3, C4, C5, C6, C7> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
         }
 
         @Override
-        <T, R> Composition.Of7<R, C2, C3, C4, C5, C6, C7> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData7<R, C2, C3, C4, C5, C6, C7> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class), component(C6.class), component(C7.class));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of7<R, C2, C3, C4, C5, C6, C7>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData7<R, C2, C3, C4, C5, C6, C7>) of;
             composition.inserted((entityId, result, c2, c3, c4, c5, c6, c7) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of7<R, C2, C3, C4, C5, C6, C7>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData7<R, C2, C3, C4, C5, C6, C7>) of;
             composition.removed((entityId, result, c2, c3, c4, c5, c6, c7) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of7<R, C2, C3, C4, C5, C6, C7>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData7<R, C2, C3, C4, C5, C6, C7>) of;
             composition.process((entityId, result, c2, c3, c4, c5, c6, c7) -> consumer.consume(entityId, result));
         }
 
@@ -2299,37 +2307,37 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition8Test extends AbstractCompositionNTest<Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8>> {
+    class Composition8Test extends AbstractCompositionNTest<CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8>> {
 
         @Override
-        Composition.Of8<C1, C2, C3, C4, C5, C6, C7, C8> composition(Composition.Builder builder) {
+        CompositionData8<C1, C2, C3, C4, C5, C6, C7, C8> composition(Composition.Builder builder) {
             return world.createComposition(builder, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
         }
 
         @Override
-        <T, R> Composition.Of8<R, C2, C3, C4, C5, C6, C7, C8> composition(Builder builder, ComponentType<T, R> first) {
+        <R> CompositionData8<R, C2, C3, C4, C5, C6, C7, C8> composition(Builder builder, ComponentType<?, R> first) {
             return world.createComposition(builder, first, component(C2.class), component(C3.class), component(C4.class), component(C5.class), component(C6.class), component(C7.class),
                     component(C8.class));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void inserted(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of8<R, C2, C3, C4, C5, C6, C7, C8>) of;
+        <R> void inserted(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData8<R, C2, C3, C4, C5, C6, C7, C8>) of;
             composition.inserted((entityId, result, c2, c3, c4, c5, c6, c7, c8) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void removed(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of8<R, C2, C3, C4, C5, C6, C7, C8>) of;
+        <R> void removed(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData8<R, C2, C3, C4, C5, C6, C7, C8>) of;
             composition.removed((entityId, result, c2, c3, c4, c5, c6, c7, c8) -> consumer.consume(entityId, result));
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        <T, R> void process(Composition.Of<?> of, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer) {
-            var composition = (Composition.Of8<R, C2, C3, C4, C5, C6, C7, C8>) of;
+        <R> void process(CompositionData<?> of, ComponentType<?, R> type, TestConsumer<R> consumer) {
+            var composition = (CompositionData8<R, C2, C3, C4, C5, C6, C7, C8>) of;
             composition.process((entityId, result, c2, c3, c4, c5, c6, c7, c8) -> consumer.consume(entityId, result));
         }
 
@@ -2471,7 +2479,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
     }
 
-    abstract class AbstractCompositionNTest<C extends BaseComposition> {
+    abstract class AbstractCompositionNTest<C extends CompositionData<?>> {
 
         interface TestConsumer<T> {
             void consume(int index, T result);
@@ -2522,13 +2530,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         abstract C composition(Composition.Builder builder);
 
-        abstract <T, R> Composition.Of<?> composition(Composition.Builder builder, ComponentType<T, R> first);
+        abstract <R> CompositionData<?> composition(Composition.Builder builder, ComponentType<?, R> first);
 
-        abstract <T, R> void inserted(Composition.Of<?> composition, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer);
+        abstract <R> void inserted(CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
 
-        abstract <T, R> void removed(Composition.Of<?> composition, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer);
+        abstract <R> void removed(CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
 
-        abstract <T, R> void process(Composition.Of<?> composition, ComponentType<T, R> type, Composition.Of1.Consumer<R> consumer);
+        abstract <R> void process(CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
 
         @Test
         void testCachedInstance() {
@@ -2625,7 +2633,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             @Nested
             class ProcessTest extends AbstractTest {
                 @Override
-                <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer) {
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
                     var s = components.length;
                     var entities = new int[s];
 
@@ -2648,7 +2656,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             @Nested
             class InsertedTest extends AbstractTest {
                 @Override
-                <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer) {
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
                     var s = components.length;
                     var entities = new int[s];
 
@@ -2672,7 +2680,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             @Nested
             class RemovedTest extends AbstractTest {
                 @Override
-                <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer) {
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
                     var s = components.length;
                     var entities = new int[s];
 
@@ -2697,7 +2705,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             abstract class AbstractTest {
 
-                abstract <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer);
+                abstract <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
 
                 @Test
                 void testResultSize() {
@@ -2864,7 +2872,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             @Nested
             class ProcessTest extends AbstractTest {
                 @Override
-                <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer) {
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
                     var s = components.length;
                     var entities = new int[s];
 
@@ -2887,7 +2895,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             @Nested
             class InsertedTest extends AbstractTest {
                 @Override
-                <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer) {
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
                     var s = components.length;
                     var entities = new int[s];
 
@@ -2911,7 +2919,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             @Nested
             class RemovedTest extends AbstractTest {
                 @Override
-                <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer) {
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
                     var s = components.length;
                     var entities = new int[s];
 
@@ -2936,7 +2944,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             abstract class AbstractTest {
 
-                abstract <T, R> int[] perform(Object[][] components, Composition.Of<?> composition, ComponentType<T, R> type, TestConsumer<R> consumer);
+                abstract <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
 
                 @Nested
                 class ComponentRelationTest {

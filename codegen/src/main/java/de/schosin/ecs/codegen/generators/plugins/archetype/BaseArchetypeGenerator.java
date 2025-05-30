@@ -23,10 +23,10 @@ import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator
 
 public class BaseArchetypeGenerator {
 
-    static final ClassName ARCHETYPE = ClassName.get("de.schosin.ecs.plugins.archetype", "BaseArchetype");
-    static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
+    public static final ClassName ARCHETYPE = ClassName.get("de.schosin.ecs.plugins.archetype", "BaseArchetype");
+    public static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
 
-    static ClassName dataTypeN(int n) {
+    public static ClassName dataTypeN(int n) {
         if (n <= 1) {
             throw new IllegalArgumentException("n must be 2 or greater");
         }
@@ -188,7 +188,6 @@ public class BaseArchetypeGenerator {
                     .build();
         }
 
-
         private static MethodSpec with() {
             var archetype = ParameterizedTypeName.get(ClassName.get("", "Archetype1"), Utils.T);
 
@@ -255,7 +254,7 @@ public class BaseArchetypeGenerator {
             var supplier = Utils.supplier(dataN);
 
             var factoryN = BaseDataTypeGenerator.dataFactory(typeVariables.size(), typeVariables);
-            
+
             return MethodSpec.methodBuilder("createBatch")
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
                     .addParameter(TypeName.INT, "count")
