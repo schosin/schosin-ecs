@@ -17,7 +17,6 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
 
     protected EventManager eventManager;
     protected SingletonManager singletonManager;
-    protected IdManager idManager;
     protected BagManager bagManager;
     protected ComponentManager componentManager;
     protected ComponentMaskManager componentMaskManager;
@@ -33,7 +32,6 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
         this.eventManager = world.getSingleton(EventManager.class);
         this.singletonManager = world.getSingleton(SingletonManager.class);
         this.bagManager = world.getSingleton(BagManager.class);
-        this.idManager = world.getSingleton(IdManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);

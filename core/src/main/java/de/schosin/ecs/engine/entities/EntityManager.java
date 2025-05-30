@@ -1,10 +1,11 @@
 package de.schosin.ecs.engine.entities;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.IdManager;
-import de.schosin.ecs.engine.IdManager.Id.EntityId;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
@@ -22,19 +23,20 @@ public class EntityManager {
 
     private final World world;
 
-    private final IdManager idManager;
+    private final BagManager bagManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
 
+    private final AtomicInteger entityId = new AtomicInteger(1);
     private final Bag<Entity> entities = new Bag<>(Entity.class, 64);
     private final Pool<Entity> pool = Pool.unbounded(Entity.class, () -> new Entity(createEntityId()), Entity::reset);
 
     private ChangeManager changeManager;
 
-    public EntityManager(World world, IdManager idManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager) {
+    public EntityManager(World world, BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager) {
         this.world = world;
 
-        this.idManager = idManager;
+        this.bagManager = bagManager;
         this.componentManager = componentManager;
         this.componentMaskManager = componentMaskManager;
     }
@@ -130,8 +132,11 @@ public class EntityManager {
         return entity;
     }
 
-    private EntityId createEntityId() {
-        return idManager.createEntityId();
+    private int createEntityId() {
+        var entityId = this.entityId.getAndIncrement();
+        this.bagManager.ensureEntitySize(entityId);
+
+        return entityId;
     }
 
     public boolean isActive(int entityId) {
@@ -218,8 +223,8 @@ public class EntityManager {
 
         private ComponentMask componentMask;
 
-        private Entity(EntityId entityId) {
-            this.id = entityId.id();
+        private Entity(int entityId) {
+            this.id = entityId;
         }
 
         /**

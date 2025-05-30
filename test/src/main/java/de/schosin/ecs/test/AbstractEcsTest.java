@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.IdManager;
 import de.schosin.ecs.engine.SingletonManager;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -25,7 +24,6 @@ public abstract class AbstractEcsTest<WORLD extends World> extends AbstractEngin
 
     protected EventManager eventManager;
     protected SingletonManager singletonManager;
-    protected IdManager idManager;
     protected BagManager bagManager;
     protected ComponentManager componentManager;
     protected ComponentMaskManager componentMaskManager;
@@ -42,7 +40,6 @@ public abstract class AbstractEcsTest<WORLD extends World> extends AbstractEngin
         this.eventManager = world.getSingleton(EventManager.class);
         this.singletonManager = world.getSingleton(SingletonManager.class);
         this.bagManager = world.getSingleton(BagManager.class);
-        this.idManager = world.getSingleton(IdManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);

@@ -66,7 +66,6 @@ public class EngineWorld implements World, StorageWorld {
     private final EventManager eventManager;
     private final SingletonManager singletonManager;
     private final BagManager bagManager;
-    private final IdManager idManager;
     private final ComponentManager componentManager;
     private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
@@ -85,10 +84,9 @@ public class EngineWorld implements World, StorageWorld {
 
         this.eventManager = addSingleton(new EventManager());
         this.bagManager = addSingleton(new BagManager());
-        this.idManager = addSingleton(new IdManager(bagManager));
         this.componentManager = addSingleton(new ComponentManager(storageEngine, eventManager, classes));
         this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
-        this.entityManager = addSingleton(new EntityManager(this, idManager, componentManager, componentMaskManager));
+        this.entityManager = addSingleton(new EntityManager(this, bagManager, componentManager, componentMaskManager));
         this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
         this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager));
