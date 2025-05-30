@@ -18,6 +18,7 @@
         <module>worlds</module>
         <module>benchmark</module>
         <module>bom</module>
+        <module>examples</module>
         <module>aggregate-report</module>
     </modules>
   
