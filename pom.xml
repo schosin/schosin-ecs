@@ -17,7 +17,8 @@
         <module>worlds</module>
         <module>benchmark</module>
         <module>build-tools</module>
-	    <module>bom</module>
+        <module>bom</module>
+        <module>aggregate-report</module>
     </modules>
   
     <properties>
@@ -30,6 +31,8 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <maven.compiler.parameters>true</maven.compiler.parameters>
+        
+        <plugin.jacoco.version>0.8.13</plugin.jacoco.version>
         
         <jspecify.version>1.0.0</jspecify.version>
         <jackson.version>2.19.0</jackson.version>
@@ -141,5 +144,32 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${plugin.jacoco.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
