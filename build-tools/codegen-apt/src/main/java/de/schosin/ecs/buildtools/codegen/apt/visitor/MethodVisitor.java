@@ -5,7 +5,7 @@ import javax.lang.model.type.TypeKind;
 
 import com.palantir.javapoet.ClassName;
 
-import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
+import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.buildtools.codegen.apt.processor.CancelException;
 import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.VisitorKind;
 

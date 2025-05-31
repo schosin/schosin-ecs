@@ -1,7 +1,7 @@
 package de.schosin.ecs.buildtools.codegen.it;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
+import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.buildtools.codegen.it.components.Position;
 import de.schosin.ecs.buildtools.codegen.it.components.Velocity;
 

@@ -1,12 +1,10 @@
-package de.schosin.ecs.buildtools.codegen;
+package de.schosin.ecs.api.components;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 /**

@@ -12,7 +12,6 @@
     
     <modules>
         <module>codegen-provided</module>
-		<module>codegen-api</module>
 		<module>codegen-apt</module>
 		<module>codegen-integration-test</module>
     </modules>

@@ -18,8 +18,8 @@ import com.google.auto.service.AutoService;
 import com.palantir.javapoet.JavaFile;
 
 import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
 import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.TypeData;
 
 @AutoService(Processor.class)
@@ -27,7 +27,7 @@ import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.Ty
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
 
-    static final String CONFIG = "de.schosin.ecs.buildtools.codegen.ComponentSetConfig";
+    static final String CONFIG = "de.schosin.ecs.api.components.ComponentSetConfig";
 
     private ComponentSetsGenerator generator;
 

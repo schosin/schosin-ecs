@@ -21,11 +21,6 @@
             <artifactId>ecs-utils</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>de.schosin.ecs.buildtools</groupId>
-            <artifactId>ecs-build-tools-codegen-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.jspecify</groupId>

@@ -10,13 +10,13 @@
         <module>codegen</module>
         <module>api</module>
         <module>utils</module>
+        <module>build-tools</module>
         <module>storage</module>
         <module>core</module>
         <module>test</module>
         <module>plugins</module>
         <module>worlds</module>
         <module>benchmark</module>
-        <module>build-tools</module>
         <module>bom</module>
         <module>aggregate-report</module>
     </modules>

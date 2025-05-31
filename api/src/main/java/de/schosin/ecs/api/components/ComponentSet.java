@@ -31,15 +31,15 @@ import de.schosin.ecs.api.data.DataProcessor;
  * 
  * <p>
  * Concrete component sets are generated using an annotation processor (APT), which requires
- * the artifact "{@code de.schosin.ecs.buildtools:codegen-apt}" to be added as an APT.
+ * the artifact "{@code de.schosin.ecs.buildtools:ecs-build-tools-codegen-apt}" to be added as an APT.
  * </p>
  * 
  * <p>
  * A component set is intended to be used in combination with the composition plugin and
  * {@link de.schosin.ecs.plugins.composition.CompositionSet CompositionSet}. As such a 
  * component set is defined by the method that can process it. To create the requires types,
- * such a method must be annotated with {@code @ComponentSetConfig} and given a name for the 
- * generated component set.
+ * such a method must be annotated with {@link ComponentSetConfig @ComponentSetConfig} and 
+ * given a name for the generated component set.
  * 
  * {@snippet:
  * @ComponentSetConfig("PhysicsComponentSet")

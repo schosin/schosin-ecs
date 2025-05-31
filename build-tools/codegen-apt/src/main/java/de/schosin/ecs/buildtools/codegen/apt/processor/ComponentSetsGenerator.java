@@ -31,9 +31,9 @@ import com.palantir.javapoet.WildcardTypeName;
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.ComponentSet.ComponentAccessor;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
+import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
 import de.schosin.ecs.buildtools.codegen.apt.visitor.MethodVisitor;
 import de.schosin.ecs.utils.collections.Pool;
 
