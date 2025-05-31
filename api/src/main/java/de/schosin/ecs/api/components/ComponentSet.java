@@ -156,6 +156,11 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
         return new ComponentSetDataBuilderImpl<>(factory);
     }
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    default void process(P processor) {
+        ((DataProcessor) processor).process(entityId(), this);
+    }
+
     /**
      * Returns the id of the entity that owns the components. Must be overriden if implemented manually.
      * 

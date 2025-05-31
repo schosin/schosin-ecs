@@ -81,7 +81,7 @@ class EntityRelationFetchMapperImplTest extends AbstractMapperTest {
             assertThat(data.velocity()).isSameAs(relatedVelocity);
 
             data.process((id, pos, velocity) -> {
-                assertThat(id).isEqualTo(entityId);
+                assertThat(id).isEqualTo(relatedId);
                 assertThat(pos).isSameAs(relatedPos);
                 assertThat(velocity).isSameAs(relatedVelocity);
             });
