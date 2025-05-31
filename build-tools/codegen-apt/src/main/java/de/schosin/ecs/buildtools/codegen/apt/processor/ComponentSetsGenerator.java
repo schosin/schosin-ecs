@@ -326,6 +326,9 @@ public class ComponentSetsGenerator {
                     .addStatement("POOL.free(this)")
                     .build();
 
+            var toStringBody = CodeBlock.builder()
+                    .add("return new $1T().append(\"%s(\")".formatted(interfaceName.simpleName()), StringBuilder.class);
+
             // Iterate components
             for (int i = 0, s = components.size(); i < s; i++) {
                 var component = components.get(i);
@@ -352,11 +355,27 @@ public class ComponentSetsGenerator {
 
                 getInstance.addParameter(component.typeName, component.name);
                 getInstance.addStatement("instance.%s = %s".formatted(component.name, component.name));
+
+                if (i > 0) {
+                    toStringBody.add(".append(\", \")");
+                }
+                toStringBody.add(System.lineSeparator() + "        ");
+                toStringBody.add(".append(%s)".formatted(component.name));
             }
 
             componentSetData.initializer(componentSetDataInitializer.add(System.lineSeparator() + "        .build()").build());
             factory.addCode(factoryBody.addStatement(")").build());
             getInstance.addStatement("return instance");
+            
+            toStringBody.add(System.lineSeparator() + "        ");
+            toStringBody.addStatement(".append(')').toString()");
+
+            var toString = MethodSpec.methodBuilder("toString")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(String.class)
+                    .addCode(toStringBody.build())
+                    .build();
 
             return implementation
                     .addField(componentSetData.build())
@@ -365,6 +384,7 @@ public class ComponentSetsGenerator {
                     .addMethod(free)
                     .addMethod(factory.build())
                     .addMethod(getInstance.build())
+                    .addMethod(toString)
                     .build();
         }
 
