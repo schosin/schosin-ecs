@@ -35,8 +35,8 @@ public class BaseDataTypeGenerator {
         }
     }
 
-    public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.plugins.data.types", "DataProcessor");
-    public static final ClassName DATA_PROVIDER = ClassName.get("de.schosin.ecs.plugins.data.types", "DataProvider");
+    public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataProcessor");
+    public static final ClassName DATA_PROVIDER = ClassName.get("de.schosin.ecs.api.data", "DataProvider");
 
     public static ParameterizedTypeName dataProcessor(TypeName name) {
         return ParameterizedTypeName.get(DATA_PROCESSOR, name);

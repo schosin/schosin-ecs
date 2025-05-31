@@ -48,6 +48,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>de.schosin.ecs.buildtools</groupId>
+            <artifactId>ecs-build-tools-codegen-api</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <optional>true</optional>
@@ -59,4 +65,27 @@
             <optional>true</optional>
         </dependency>
     </dependencies>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <annotationProcessorPath>
+                                    <groupId>de.schosin.ecs.buildtools</groupId>
+                                    <artifactId>ecs-build-tools-codegen-apt</artifactId>
+                                    <version>${project.version}</version>
+                                </annotationProcessorPath>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -1,6 +1,5 @@
 package de.schosin.ecs.engine.components.mappers.fetch;
 
-import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -11,7 +10,7 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.components.mappers.AbstractMapperTest;
-import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.MyComponentSet;
+import de.schosin.ecs.engine.components.mappers.MyComponentSet;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Position;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Velocity;
 
@@ -21,7 +20,7 @@ class ExclusiveEntityRelationFetchMapperImplTest extends AbstractMapperTest {
 
     @BeforeEach
     void setupMapper() {
-        this.mapper = world.getComponents(ComponentType.exclusiveRelation(Parent.class, componentSet(MyComponentSet.class)));
+        this.mapper = world.getComponents(ComponentType.exclusiveRelation(Parent.class, MyComponentSet.TYPE));
     }
 
     @Nested

@@ -35,6 +35,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>de.schosin.ecs.buildtools</groupId>
+            <artifactId>ecs-build-tools-codegen-api</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
@@ -66,6 +72,20 @@
                         <arg>-AtransmuterParams=${codegen.transmuterParams}</arg>
                     </compilerArgs>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <annotationProcessorPath>
+                                    <groupId>de.schosin.ecs.buildtools</groupId>
+                                    <artifactId>ecs-build-tools-codegen-apt</artifactId>
+                                    <version>${project.version}</version>
+                                </annotationProcessorPath>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

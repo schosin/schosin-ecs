@@ -1,4 +1,4 @@
-package de.schosin.ecs.plugins.data.types;
+package de.schosin.ecs.api.data;
 
 import de.schosin.ecs.api.components.types.ComponentType;
 

@@ -13,7 +13,7 @@ import de.schosin.ecs.engine.utils.exceptions.EcsComponentSetException;
 
 public class ComponentSetsHelper {
 
-    public interface ComponentSetFactory<S extends ComponentSet> {
+    public interface ComponentSetFactory<S extends ComponentSet<?>> {
         List<ComponentData<S, ?, ?>> getComponents();
 
         S getInstance(int entityId, Object... components);
@@ -21,10 +21,10 @@ public class ComponentSetsHelper {
 
     private static final boolean COMPONENT_SETS_AVAILABLE = checkComponentSetsAvailable();
 
-    private static final Map<Class<? extends ComponentSet>, ComponentSetFactory<?>> COMPONENT_SET_DATA = new ConcurrentHashMap<>();
+    private static final Map<Class<? extends ComponentSet<?>>, ComponentSetFactory<?>> COMPONENT_SET_DATA = new ConcurrentHashMap<>();
 
     @SuppressWarnings("unchecked")
-    public static <S extends ComponentSet> ComponentSetFactory<S> getFactory(Class<S> componentSet) {
+    public static <S extends ComponentSet<?>> ComponentSetFactory<S> getFactory(Class<S> componentSet) {
         var result = COMPONENT_SET_DATA.get(componentSet);
         if (result != null) {
             return (ComponentSetFactory<S>) result;
@@ -33,13 +33,13 @@ public class ComponentSetsHelper {
         return (ComponentSetFactory<S>) COMPONENT_SET_DATA.computeIfAbsent(componentSet, ComponentSetsHelper::resolveFactory);
     }
 
-    private static <S extends ComponentSet> ComponentSetFactory<S> resolveFactory(Class<S> componentSet) {
+    private static <S extends ComponentSet<?>> ComponentSetFactory<S> resolveFactory(Class<S> componentSet) {
         var data = getData(componentSet);
 
         return new ComponentSetFactoryImpl<>(data);
     }
 
-    private static class ComponentSetFactoryImpl<S extends ComponentSet> implements ComponentSetFactory<S> {
+    private static class ComponentSetFactoryImpl<S extends ComponentSet<?>> implements ComponentSetFactory<S> {
 
         private final List<ComponentData<S, ?, ?>> componentTypes;
         private final Factory<S> factory;
@@ -61,7 +61,7 @@ public class ComponentSetsHelper {
     }
 
     @SuppressWarnings("unchecked")
-    private static <S extends ComponentSet> ComponentSetData<S> getData(Class<S> componentSet) {
+    private static <S extends ComponentSet<?>> ComponentSetData<S> getData(Class<S> componentSet) {
         if (COMPONENT_SETS_AVAILABLE) {
             var result = ComponentSets.getData(componentSet);
             if (result != null) {

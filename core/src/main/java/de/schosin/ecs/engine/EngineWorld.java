@@ -181,7 +181,7 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T extends ComponentSet> ComponentSetMapper<T> getComponents(ComponentSetType<T> type) {
+    public <T extends ComponentSet<?>> ComponentSetMapper<T> getComponents(ComponentSetType<T, ?> type) {
         return componentMapperManager.getComponents(type);
     }
 

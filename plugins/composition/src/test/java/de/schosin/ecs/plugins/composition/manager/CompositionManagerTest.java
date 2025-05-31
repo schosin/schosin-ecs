@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
@@ -30,6 +29,7 @@ import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
@@ -46,12 +46,6 @@ import de.schosin.ecs.plugins.composition.CompositionData6;
 import de.schosin.ecs.plugins.composition.CompositionData7;
 import de.schosin.ecs.plugins.composition.CompositionData8;
 import de.schosin.ecs.plugins.composition.Spec;
-import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.C1;
-import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.C1234;
-import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.ExclusiveRelationship;
-import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.MyComponentSet;
-import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.RelationshipComponent;
-import de.schosin.ecs.plugins.composition.manager.CompositionManagerTest.Target;
 import de.schosin.ecs.test.AbstractEcsTest;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -4008,7 +4002,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testEntityRelationFetchType() {
-            var fetchType = ComponentType.exclusiveRelation(ExclusiveRelationship.class, ComponentType.componentSet(MyComponentSet.class));
+            var fetchType = ComponentType.exclusiveRelation(ExclusiveRelationship.class, MyComponentSet.TYPE);
             var composition = world.createComposition(Composition.all(P1.class), fetchType);
 
             var nestedTarget1 = world.createEntity();
@@ -4047,6 +4041,11 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(processed.get()).isTrue();
         }
 
+        @ComponentSetConfig("MyComponentSet")
+        private void myComponentSet(int entityId, C1 c1, ComponentRelation<ExclusiveRelationship, Target> componentRelation, ComponentRelationResult<RelationshipComponent, Target> componentRelations,
+                EntityRelation<ExclusiveRelationship> entityRelation, EntityRelationResult<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
+        }
+
     }
 
     @Nested
@@ -4054,7 +4053,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testRetrieveComponentSet() {
-            var componentSet = ComponentType.componentSet(MyComponentSet.class);
+            var componentSet = MyComponentSet.TYPE;
             var composition = world.createComposition(Composition.all(C1.class), componentSet);
 
             var target1 = world.createEntity();
@@ -4070,15 +4069,15 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     new C2(), new C3(), new C4());
 
             var processed = new AtomicBoolean(false);
-            composition.process((id, components) -> {
+            composition.process((id, c1, componentRelation, componentRelations, entityRelation, entityRelations, c1234) -> {
                 assertThat(id).isEqualTo(entityId);
 
-                assertThat(components.c1()).isNotNull();
-                assertThat(components.componentRelation()).extracting("relationship.value", "target.value").contains(1, 10);
-                assertThat(components.componentRelations()).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(2, 20), tuple(3, 30));
-                assertThat(components.entityRelation()).extracting("relationship.value", "target").contains(4, target1);
-                assertThat(components.entityRelations()).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(5, target1), tuple(6, target2));
-                assertThat(components.c1234()).hasSize(4);
+                assertThat(c1).isNotNull();
+                assertThat(componentRelation).extracting("relationship.value", "target.value").contains(1, 10);
+                assertThat(componentRelations).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(2, 20), tuple(3, 30));
+                assertThat(entityRelation).extracting("relationship.value", "target").contains(4, target1);
+                assertThat(entityRelations).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(5, target1), tuple(6, target2));
+                assertThat(c1234).hasSize(4);
 
                 processed.set(true);
             });
@@ -4096,13 +4095,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     interface C12 {
     }
 
-    interface C1234 {
+    public interface C1234 {
     }
 
     interface C45 {
     }
 
-    record C1() implements C12, C1234 {
+    public record C1() implements C12, C1234 {
     }
 
     record C2() implements C12, C1234 {
@@ -4135,112 +4134,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     public record P3() implements Pooled {
     }
 
-    record RelationshipComponent(int value) {
+    public record RelationshipComponent(int value) {
     }
 
-    record ExclusiveRelationship(int value) implements Exclusive {
+    public record ExclusiveRelationship(int value) implements Exclusive {
     }
 
-    record Target(int value) {
+    public record Target(int value) {
     }
 
     record Target2(int value) {
-    }
-
-    public interface MyComponentSet extends ComponentSet {
-
-        ComponentSetData<MyComponentSet> DATA = MyComponentSetImpl.DATA;
-
-        C1 c1();
-
-        ComponentRelation<ExclusiveRelationship, Target> componentRelation();
-
-        ComponentRelationResult<RelationshipComponent, Target> componentRelations();
-
-        EntityRelation<ExclusiveRelationship> entityRelation();
-
-        EntityRelationResult<RelationshipComponent> entityRelations();
-
-        ComponentResult<C1234> c1234();
-    }
-
-}
-
-class MyComponentSetImpl implements MyComponentSet {
-
-    static final ComponentSetData<MyComponentSet> DATA = ComponentSet.builder(MyComponentSetImpl::factory)
-            .add(new ComponentAccessor<>(MyComponentSet::c1) {})
-            .add(new ComponentAccessor<>(MyComponentSet::componentRelation) {})
-            .add(new ComponentAccessor<>(MyComponentSet::componentRelations) {})
-            .add(new ComponentAccessor<>(MyComponentSet::entityRelation) {})
-            .add(new ComponentAccessor<>(MyComponentSet::entityRelations) {})
-            .add(new ComponentAccessor<>(MyComponentSet::c1234) {})
-            .build();
-
-    private final int entityId;
-    private final C1 c1;
-    private final ComponentRelation<ExclusiveRelationship, Target> componentRelation;
-    private final ComponentRelationResult<RelationshipComponent, Target> componentRelations;
-    private final EntityRelation<ExclusiveRelationship> entityRelation;
-    private final EntityRelationResult<RelationshipComponent> entityRelations;
-    private final ComponentResult<C1234> c1234;
-
-    @SuppressWarnings("unchecked")
-    private static MyComponentSet factory(int entityId, Object[] components) {
-        return new MyComponentSetImpl(entityId,
-                (C1) components[0],
-                (ComponentRelation<ExclusiveRelationship, Target>) components[1],
-                (ComponentRelationResult<RelationshipComponent, Target>) components[2],
-                (EntityRelation<ExclusiveRelationship>) components[3],
-                (EntityRelationResult<RelationshipComponent>) components[4],
-                (ComponentResult<C1234>) components[5]);
-    }
-
-    MyComponentSetImpl(int entityId, C1 c1, ComponentRelation<ExclusiveRelationship, Target> componentRelation, ComponentRelationResult<RelationshipComponent, Target> componentRelations,
-            EntityRelation<ExclusiveRelationship> entityRelation, EntityRelationResult<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
-
-        this.entityId = entityId;
-        this.c1 = c1;
-        this.componentRelation = componentRelation;
-        this.componentRelations = componentRelations;
-        this.entityRelation = entityRelation;
-        this.entityRelations = entityRelations;
-        this.c1234 = c1234;
-    }
-
-    @Override
-    public int entityId() {
-        return entityId;
-    }
-
-    @Override
-    public C1 c1() {
-        return c1;
-    }
-
-    @Override
-    public ComponentRelation<ExclusiveRelationship, Target> componentRelation() {
-        return componentRelation;
-    }
-
-    @Override
-    public ComponentRelationResult<RelationshipComponent, Target> componentRelations() {
-        return componentRelations;
-    }
-
-    @Override
-    public EntityRelation<ExclusiveRelationship> entityRelation() {
-        return entityRelation;
-    }
-
-    @Override
-    public EntityRelationResult<RelationshipComponent> entityRelations() {
-        return entityRelations;
-    }
-
-    @Override
-    public ComponentResult<C1234> c1234() {
-        return c1234;
     }
 
 }

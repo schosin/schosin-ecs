@@ -34,7 +34,7 @@ class WildcardTest extends AbstractComponentTypeTest<WildcardTest.MatchesTestCas
         equalWildcards(wildcard(Object.class), wildcard(Object.class), true),
         supertypeMatchesSubtype(wildcard(Object.class), wildcard(ComponentInterface.class), true),
         subtypeDoesNotMatchSupertype(wildcard(ComponentInterface.class), wildcard(Object.class), false),
-        componentSet(wildcard(Object.class), componentSet(MyComponentSet.class), false),
+        componentSet(wildcard(Object.class), componentSet(MyComponentSet.class, MyComponentSet.Processor.class), false),
         entityFetch(wildcard(Object.class), relation(EntityRelationshipComponent.class, FETCH), false),
         exclusiveEntityFetch(wildcard(Object.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
         wildcardComponentRelation(wildcard(Object.class), wildcardRelation(Object.class, Object.class), false),

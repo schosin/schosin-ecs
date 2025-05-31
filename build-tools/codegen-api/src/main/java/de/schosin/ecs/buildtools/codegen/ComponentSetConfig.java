@@ -33,15 +33,13 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
  * To alter the generated name, set the name via {@link #value()}. 
  * </p>
  */
-@Target(ElementType.TYPE)
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.CLASS)
 public @interface ComponentSetConfig {
 
     /**
-     * Name of the generated type. Will default to the annotated
-     * type's {@link Class#getSimpleName() simple name} with the 
-     * {@link #suffix()} declared by {@link DiscoverComponentSets#suffix()}.
+     * Name of the component set.
      */
-    String value() default "";
+    String value();
 
 }

@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
@@ -30,9 +31,10 @@ import com.palantir.javapoet.WildcardTypeName;
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.ComponentSet.ComponentAccessor;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
+import de.schosin.ecs.api.components.types.ComponentSetType;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
-import de.schosin.ecs.buildtools.codegen.apt.visitor.InterfaceVisitor;
-import de.schosin.ecs.buildtools.codegen.apt.visitor.RecordVisitor;
+import de.schosin.ecs.buildtools.codegen.apt.visitor.MethodVisitor;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class ComponentSetsGenerator {
@@ -51,6 +53,10 @@ public class ComponentSetsGenerator {
     private static final ClassName COMPONENT_SET = ClassName.get(ComponentSet.class);
     private static final ClassName COMPONENT_SET_DATA = ClassName.get(ComponentSetData.class);
     private static final ClassName COMPONENT_ACCESSOR = ClassName.get(ComponentAccessor.class);
+    private static final ClassName COMPONENT_SET_TYPE = ClassName.get(ComponentSetType.class);
+
+    public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataProcessor");
+    public static final ClassName DATA_PROCESSOR_TYPE = ClassName.get("de.schosin.ecs.api.data", "DataProcessorType");
 
     public TypeSpec generateComponentSets(List<TypeData> implementations) {
         var constructor = MethodSpec.constructorBuilder().addModifiers(Modifier.PRIVATE).build();
@@ -79,9 +85,6 @@ public class ComponentSetsGenerator {
             var outerComma = false;
             for (var implementation : implementations) {
                 var result = implementation.result;
-                if (result.implementationType != null) {
-                    continue;
-                }
 
                 if (outerComma) {
                     initializer.add(", ");
@@ -89,10 +92,8 @@ public class ComponentSetsGenerator {
                     outerComma = true;
                 }
 
-                var target = result.interfaceType != null ? result.implementationName : result.interfaceName;
-
                 initializer.add(System.lineSeparator());
-                initializer.add("    $1T.entry($2T.class, $3T.DATA)", Map.class, result.interfaceName, target);
+                initializer.add("    $1T.entry($2T.class, $2T.DATA)", Map.class, result.interfaceName);
             }
 
             var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, WildcardTypeName.subtypeOf(COMPONENT_SET));
@@ -105,7 +106,7 @@ public class ComponentSetsGenerator {
         }
 
         private static MethodSpec getData() {
-            var typeS = TypeVariableName.get("S", COMPONENT_SET);
+            var typeS = TypeVariableName.get("S", ParameterizedTypeName.get(COMPONENT_SET, WildcardTypeName.subtypeOf(Object.class)));
 
             var wildcardClass = ParameterizedTypeName.get(ClassName.get(Class.class), TypeVariableName.get("S"));
             var componentSetData = ParameterizedTypeName.get(COMPONENT_SET_DATA, TypeVariableName.get("S"));
@@ -129,6 +130,10 @@ public class ComponentSetsGenerator {
     }
 
     private boolean isValidElement(Element element) {
+        if (element instanceof ExecutableElement executable && executable.getAnnotation(ComponentSetConfig.class) != null) {
+            return true;
+        }
+
         if (!(element instanceof TypeElement typeElement)) {
             return false;
         }
@@ -178,20 +183,9 @@ public class ComponentSetsGenerator {
     }
 
     private Stream<TypeData> generate(Element element) {
-        if (element instanceof TypeElement typeElement) {
-            return createImplementation(typeElement);
-        }
-
-        return Stream.empty();
-    }
-
-    private Stream<TypeData> createImplementation(TypeElement typeElement) {
-        return switch (typeElement.getKind()) {
-            case RECORD -> ComponentSetTypes.create(typeElement.accept(new RecordVisitor(typeElement), null));
-            case INTERFACE -> ComponentSetTypes.create(typeElement.accept(new InterfaceVisitor(typeElement), null));
-            case CLASS -> Stream.empty();
-            case ANNOTATION_TYPE, BINDING_VARIABLE, CONSTRUCTOR, ENUM, ENUM_CONSTANT, EXCEPTION_PARAMETER, FIELD, INSTANCE_INIT, LOCAL_VARIABLE, METHOD, MODULE, OTHER, PACKAGE, PARAMETER, RECORD_COMPONENT, RESOURCE_VARIABLE, STATIC_INIT, TYPE_PARAMETER -> throw new CancelException(
-                    "Unsupported kind %s: %s".formatted(typeElement.getKind(), typeElement));
+        return switch (element.getKind()) {
+            case METHOD -> ComponentSetTypes.create(element.accept(new MethodVisitor((ExecutableElement) element), null));
+            default -> throw new CancelException("Unsupported kind %s: %s".formatted(element.getKind(), element));
         };
     }
 
@@ -199,11 +193,9 @@ public class ComponentSetsGenerator {
 
         private static Stream<TypeData> create(VisitorResult result) {
             var interfaceName = result.interfaceName;
-            var implementationName = result.implementationName;
-            var target = result.interfaceType == null || result.implementationType != null ? interfaceName : implementationName;
 
-            var factoryMethod = createFactoryMethod(false, result.factoryName, interfaceName, target, result.components);
-            var factoryMethodEntity = createFactoryMethod(true, result.factoryName, interfaceName, target, result.components);
+            var factoryMethod = createFactoryMethod(false, result.factoryName, interfaceName, interfaceName, result.components);
+            var factoryMethodEntity = createFactoryMethod(true, result.factoryName, interfaceName, interfaceName, result.components);
 
             var types = new ArrayList<TypeSpec>(2);
 
@@ -221,10 +213,6 @@ public class ComponentSetsGenerator {
         }
 
         private static TypeSpec createInterface(VisitorResult result) {
-            if (result.interfaceType != null) {
-                return null;
-            }
-
             var interfaceName = result.interfaceName;
             var implementationName = result.implementationName;
             var components = result.components;
@@ -234,10 +222,13 @@ public class ComponentSetsGenerator {
                     .initializer("$1T.DATA", implementationName)
                     .build();
 
+            var processor = interfaceName.nestedClass("Processor");
+            var superinterface = ParameterizedTypeName.get(ClassName.get(ComponentSet.class), processor);
+
             var componentSet = TypeSpec.interfaceBuilder(interfaceName)
                     .addAnnotation(GENERATED)
                     .addModifiers(Modifier.PUBLIC)
-                    .addSuperinterface(ComponentSet.class)
+                    .addSuperinterface(superinterface)
                     .addField(componentSetData)
                     .addMethod(createFactoryMethod(true, "get", interfaceName, implementationName, components))
                     .addMethod(createFactoryMethod(false, "get", interfaceName, implementationName, components));
@@ -250,6 +241,17 @@ public class ComponentSetsGenerator {
 
                 componentSet.addMethod(interfaceAccessor);
             }
+
+            var dataProcessorType = ParameterizedTypeName.get(DATA_PROCESSOR_TYPE, interfaceName, processor);
+            componentSet.addSuperinterface(dataProcessorType);
+            componentSet.addType(createProcessorType(result));
+
+            var type = ParameterizedTypeName.get(COMPONENT_SET_TYPE, interfaceName, processor);
+            var typeField = FieldSpec.builder(type, "TYPE", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
+                    .initializer("$1T.componentSet($2T.class, $3T.class)", ComponentType.class, interfaceName, processor)
+                    .build();
+
+            componentSet.addField(typeField);
 
             return componentSet.build();
         }
@@ -280,11 +282,52 @@ public class ComponentSetsGenerator {
                     .build();
         }
 
-        private static TypeSpec createImplementation(VisitorResult result) {
-            if (result.implementationType != null) {
-                return null;
+        private static TypeSpec createProcessorType(VisitorResult result) {
+            var superinterface = ParameterizedTypeName.get(DATA_PROCESSOR, result.interfaceName);
+
+            var process = MethodSpec.methodBuilder("process")
+                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+                    .addParameter(TypeName.INT, "entityId");
+
+            var nullCase = "process(entityId";
+            var defaultCase = "process(entityId";
+
+            for (var component : result.components) {
+                process.addParameter(component.typeName, component.name);
+
+                nullCase += ", null";
+                defaultCase += ", data.%s()".formatted(component.name);
             }
 
+            nullCase += ")";
+            defaultCase += ")";
+
+            var defaultProcessBody = CodeBlock.builder()
+                    .beginControlFlow("if (data == null)")
+                    .addStatement(nullCase)
+                    .addStatement("return")
+                    .endControlFlow()
+                    .addStatement(defaultCase)
+                    .build();
+
+            var defaultProcess = MethodSpec.methodBuilder("process")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
+                    .addParameter(TypeName.INT, "entityId")
+                    .addParameter(result.interfaceName, "data")
+                    .addCode(defaultProcessBody)
+                    .build();
+
+            return TypeSpec.interfaceBuilder("Processor")
+                    .addAnnotation(FunctionalInterface.class)
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addSuperinterface(superinterface)
+                    .addMethod(defaultProcess)
+                    .addMethod(process.build())
+                    .build();
+        }
+
+        private static TypeSpec createImplementation(VisitorResult result) {
             var interfaceName = result.interfaceName;
             var implementationName = result.implementationName;
             var components = result.components;
@@ -330,12 +373,6 @@ public class ComponentSetsGenerator {
                     .returns(implementationName)
                     .addStatement("var instance = POOL.getInstance()")
                     .addStatement("instance.entityId = entityId");
-
-            if (result.interfaceType != null) {
-                implementation.addModifiers(Modifier.PUBLIC);
-                getInstance.addModifiers(Modifier.PUBLIC);
-                componentSetData.addModifiers(Modifier.PUBLIC);
-            }
 
             var reset = MethodSpec.methodBuilder("reset")
                     .addAnnotation(Override.class)
@@ -393,7 +430,7 @@ public class ComponentSetsGenerator {
     }
 
     public enum VisitorKind {
-        RECORD, INTERFACE, MANUAL
+        RECORD, INTERFACE, METHOD, MANUAL
     }
 
     public static class VisitorResult {
@@ -403,9 +440,6 @@ public class ComponentSetsGenerator {
 
         public ClassName interfaceName;
         public ClassName implementationName;
-
-        public DeclaredType interfaceType;
-        public DeclaredType implementationType;
 
         public String factoryName;
 

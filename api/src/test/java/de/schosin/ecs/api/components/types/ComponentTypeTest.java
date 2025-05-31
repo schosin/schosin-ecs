@@ -54,7 +54,7 @@ class ComponentTypeTest {
 
         @Test
         void testComponentSet() {
-            assertThat(componentSet(MyComponentSet.class)).as("must not be refactored to something else").isInstanceOf(ComponentSetType.class);
+            assertThat(componentSet(MyComponentSet.class, MyComponentSet.Processor.class)).as("must not be refactored to something else").isInstanceOf(ComponentSetType.class);
         }
 
         @Test

@@ -15,7 +15,7 @@ import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 @SuppressWarnings("unused")
 public class ComponentSets {
 
-    public static <S extends ComponentSet> ComponentSetData<S> getData(Class<S> componentSet) {
+    public static <S extends ComponentSet<?>> ComponentSetData<S> getData(Class<S> componentSet) {
         return null;
     }
 

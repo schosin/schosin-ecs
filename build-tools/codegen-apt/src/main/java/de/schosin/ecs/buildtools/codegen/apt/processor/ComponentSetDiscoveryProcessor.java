@@ -19,14 +19,15 @@ import com.palantir.javapoet.JavaFile;
 
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
 import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.TypeData;
 
 @AutoService(Processor.class)
-@SupportedAnnotationTypes(ComponentSetDiscoveryProcessor.DISCOVER)
+@SupportedAnnotationTypes(ComponentSetDiscoveryProcessor.CONFIG)
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
 
-    static final String DISCOVER = "de.schosin.ecs.buildtools.codegen.DiscoverComponentSets";
+    static final String CONFIG = "de.schosin.ecs.buildtools.codegen.ComponentSetConfig";
 
     private ComponentSetsGenerator generator;
 
@@ -45,7 +46,7 @@ public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
         }
 
         try {
-            var implementations = generator.generate(roundEnv.getRootElements());
+            var implementations = generator.generate(roundEnv.getElementsAnnotatedWith(ComponentSetConfig.class));
             if (implementations.isEmpty()) {
                 if (generated) {
                     return true;

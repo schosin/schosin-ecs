@@ -145,7 +145,7 @@ public class ComponentMapperManager implements Components.Creator {
             case RegularComponentType<T, R> regular -> getComponents(regular);
             case EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getComponents(fetch);
             case ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getComponents(fetch);
-            case ComponentSetType<?> set -> (Components<T, R>) getComponents(set);
+            case ComponentSetType<?, ?> set -> (Components<T, R>) getComponents(set);
             case Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
             case WildcardComponentRelationType<?, ?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
             case WildcardEntityRelationType<?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
@@ -305,7 +305,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends ComponentSet> ComponentSetMapper<T> getComponents(ComponentSetType<T> type) {
+    public <T extends ComponentSet<?>> ComponentSetMapper<T> getComponents(ComponentSetType<T, ?> type) {
         var result = (ComponentSetMapper<T>) componentMappers.get(type);
         if (result != null) {
             return result;

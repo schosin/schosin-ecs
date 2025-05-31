@@ -33,7 +33,7 @@ class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestC
         wildcardObject(component(Component.class), wildcard(Object.class), false),
         wildcardSameClass(component(NonFinalComponent.class), wildcard(NonFinalComponent.class), false),
         wildcardParentInterface(component(FinalComponent.class), wildcard(ComponentInterface.class), false),
-        componentSet(component(Component.class), componentSet(MyComponentSet.class), false),
+        componentSet(component(Component.class), componentSet(MyComponentSet.class, MyComponentSet.Processor.class), false),
         entityFetch(component(Component.class), relation(EntityRelationshipComponent.class, FETCH), false),
         exclusiveEntityFetch(component(Component.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
         wildcardComponentRelation(component(Component.class), wildcardRelation(Object.class, Object.class), false),

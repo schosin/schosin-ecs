@@ -1,6 +1,5 @@
 package de.schosin.ecs.engine.components.mappers;
 
-import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -8,11 +7,15 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
+import de.schosin.ecs.buildtools.codegen.ComponentSetConfig;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Birthplace;
-import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.MyComponentSet;
+import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Location;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Position;
-import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.RelationComponentSet;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Velocity;
 
 class ComponentSetComponentsImplTest extends AbstractMapperTest {
@@ -21,7 +24,7 @@ class ComponentSetComponentsImplTest extends AbstractMapperTest {
 
     @BeforeEach
     void setupMapper() {
-        this.mapper = world.getComponents(componentSet(MyComponentSet.class));
+        this.mapper = world.getComponents(MyComponentSet.TYPE);
     }
 
     @Nested
@@ -238,7 +241,7 @@ class ComponentSetComponentsImplTest extends AbstractMapperTest {
 
         @Test
         void testRelationComponentSet() {
-            var mapper = world.getComponentSets(RelationComponentSet.class);
+            var mapper = world.getComponents(RelationComponentSet.TYPE);
 
             var birthplace = Relation.create(Birthplace.Birthplace, new Position());
             var birthplaceId = Relation.create(Birthplace.Birthplace, 1);
@@ -361,6 +364,16 @@ class ComponentSetComponentsImplTest extends AbstractMapperTest {
             });
         }
 
+    }
+
+    @ComponentSetConfig("MyComponentSet")
+    private static void myComponentSet(int entityId, Position pos, Velocity velocity) {
+    }
+
+    @ComponentSetConfig("RelationComponentSet")
+    private static void relationComponentSet(int entityId,
+            ComponentRelation<Birthplace, Position> birthplace, ComponentRelationResult<Location, Position> locations,
+            EntityRelation<Birthplace> birthplaceId, EntityRelationResult<Location> locationIds) {
     }
 
 }

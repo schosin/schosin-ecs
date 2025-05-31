@@ -21,7 +21,7 @@ import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFa
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class ComponentSetComponentsImpl<T extends ComponentSet> implements ComponentSetMapper<T>, PoolingComponents<T> {
+public class ComponentSetComponentsImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, PoolingComponents<T> {
 
     private final ComponentSetFactory<T> factory;
     private final ComponentData<T, ?, ?>[] componentTypes;
@@ -33,7 +33,7 @@ public class ComponentSetComponentsImpl<T extends ComponentSet> implements Compo
     private final Pool<Object[]> pool;
 
     @SuppressWarnings("unchecked")
-    public ComponentSetComponentsImpl(ComponentSetType<T> type, ComponentMapperManager componentMapperManager) {
+    public ComponentSetComponentsImpl(ComponentSetType<T, ?> type, ComponentMapperManager componentMapperManager) {
         this.factory = ComponentSetsHelper.getFactory(type.componentSet());
 
         this.componentTypes = this.factory.getComponents().toArray(ComponentData[]::new);

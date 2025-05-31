@@ -24,6 +24,7 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relation.Relationship;
 import de.schosin.ecs.api.components.Relation.Target;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.MatchesTestCase;
+import de.schosin.ecs.api.data.DataProcessor;
 
 public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestCase> {
 
@@ -203,23 +204,17 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
     interface ExclusiveEntityRelationshipWildcard extends EntityRelationship, Exclusive {
     }
 
-    interface MyComponentSet extends ComponentSet {
+    interface MyComponentSet extends ComponentSet<MyComponentSet.Processor> {
+        interface Processor extends DataProcessor<MyComponentSet> {
+        }
+
         Component component();
     }
 
-    class MyComponentSetClass implements MyComponentSet {
-        @Override
-        public int entityId() {
-            return -1;
+    interface OtherComponentSet extends ComponentSet<OtherComponentSet.Processor> {
+        interface Processor extends DataProcessor<OtherComponentSet> {
         }
 
-        @Override
-        public Component component() {
-            return null;
-        }
-    }
-
-    interface OtherComponentSet extends ComponentSet {
         Component component();
     }
 

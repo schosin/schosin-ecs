@@ -11,8 +11,11 @@ import java.util.stream.StreamSupport;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.data.DataProcessor;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -30,10 +33,10 @@ import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionPlugin;
+import de.schosin.ecs.plugins.composition.CompositionSet;
 import de.schosin.ecs.plugins.composition.Spec;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.BaseDataType.Data;
-import de.schosin.ecs.plugins.data.types.DataProcessor;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -83,6 +86,13 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         var composition = (CompositionImpl) createComposition(builder);
 
         return composition.createCompositionData(dataType);
+    }
+
+    @Override
+    public <T extends ComponentSet<P>, P extends DataProcessor<T>> CompositionSet<P> createComposition(Builder builder, ComponentSetType<T, P> componentSetType) {
+        var composition = (CompositionImpl) createComposition(builder);
+
+        return composition.createCompositionData(componentSetType);
     }
 
     public Composition create(Builder builder, Function<ComponentsPredicate, IntBag> entities) {
@@ -273,6 +283,26 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             }
         }
 
+        @SuppressWarnings("unchecked")
+        private <T extends ComponentSet<P>, P extends DataProcessor<T>> CompositionSet<P> createCompositionData(ComponentSetType<T, P> componentSetType) {
+            var result = (CompositionSet<P>) compositionData.get(componentSetType);
+            if (result != null) {
+                return result;
+            }
+
+            synchronized (compositionData) {
+                result = (CompositionSet<P>) compositionData.get(componentSetType);
+                if (result != null) {
+                    return result;
+                }
+
+                var compositionSet = new ComponentSetComposition<>(this, componentSetType);
+                this.compositionData.put(componentSetType, compositionSet);
+                
+                return compositionSet;
+            }
+        }
+
         protected <R> Components<?, R> getComponents(ComponentType<?, R> type) {
             return componentMapperManager.getComponents(type);
         }
@@ -446,6 +476,14 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     static class Composition1<R> extends AbstractComposition<R, DataProcessor<R>> implements CompositionData1<R> {
 
         protected Composition1(Composition composition, ComponentType<?, R> type) {
+            super(composition, type);
+        }
+
+    }
+
+    static class ComponentSetComposition<T extends ComponentSet<P>, P extends DataProcessor<T>> extends AbstractComposition<T, P> implements CompositionSet<P> {
+
+        protected ComponentSetComposition(Composition composition, ComponentSetType<T, P> type) {
             super(composition, type);
         }
 

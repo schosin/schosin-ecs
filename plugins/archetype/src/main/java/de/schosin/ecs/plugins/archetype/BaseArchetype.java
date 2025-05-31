@@ -5,8 +5,8 @@ import java.util.function.IntFunction;
 import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.data.DataProvider;
 import de.schosin.ecs.codegen.EcsCodegen;
-import de.schosin.ecs.plugins.data.types.DataProvider;
 
 @NullMarked
 @EcsCodegen

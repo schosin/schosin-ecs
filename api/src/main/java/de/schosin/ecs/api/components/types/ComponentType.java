@@ -17,6 +17,7 @@ import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRela
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
+import de.schosin.ecs.api.data.DataProcessor;
 
 /**
  * Interface to describe the supported component types.
@@ -92,8 +93,8 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
         return new ExclusiveEntityRelationFetchType<>(relationship, fetch);
     }
 
-    static <T extends ComponentSet> ComponentSetType<T> componentSet(Class<T> set) {
-        return new ComponentSetType<>(set);
+    static <T extends ComponentSet<P>, P extends DataProcessor<T>> ComponentSetType<T, P> componentSet(Class<T> set, Class<P> processor) {
+        return new ComponentSetType<>(set, processor);
     }
 
     static <T> Wildcard<T> wildcard(Class<T> bound) {

@@ -20,26 +20,26 @@ class ComponentSetTypeTest extends AbstractComponentTypeTest<ComponentSetTypeTes
 
     enum MatchesTestCases implements AbstractComponentTypeTest.MatchesTestCase {
 
-        equalClassType(componentSet(MyComponentSet.class), component(Component.class), false),
-        otherClassType(componentSet(MyComponentSet.class), component(FinalComponent.class), false),
-        componentRelation(componentSet(MyComponentSet.class), relation(RelationshipComponent.class, TargetComponent.class), false),
-        exclusiveComponentRelation(componentSet(MyComponentSet.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
-        entityRelation(componentSet(MyComponentSet.class), relation(EntityRelationshipComponent.class), false),
-        exclusiveEntityRelation(componentSet(MyComponentSet.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
-        wildcardObject(componentSet(MyComponentSet.class), wildcard(Object.class), false),
-        componentSet(componentSet(MyComponentSet.class), componentSet(MyComponentSet.class), true),
-        otherComponentSet(componentSet(MyComponentSet.class), componentSet(OtherComponentSet.class), false),
-        entityFetch(componentSet(MyComponentSet.class), relation(EntityRelationshipComponent.class, FETCH), false),
-        exclusiveEntityFetch(componentSet(MyComponentSet.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
-        wildcardComponentRelation(componentSet(MyComponentSet.class), wildcardRelation(Object.class, Object.class), false),
-        wildcardEntityRelation(componentSet(MyComponentSet.class), wildcardRelation(Object.class), false),
-        wildcardEntityFetchRelation(componentSet(MyComponentSet.class), wildcardRelation(Object.class, component(Component.class)), false);
+        equalClassType(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), component(Component.class), false),
+        otherClassType(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), component(FinalComponent.class), false),
+        componentRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), relation(RelationshipComponent.class, TargetComponent.class), false),
+        exclusiveComponentRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
+        entityRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), relation(EntityRelationshipComponent.class), false),
+        exclusiveEntityRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
+        wildcardObject(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), wildcard(Object.class), false),
+        componentSet(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), componentSet(MyComponentSet.class, MyComponentSet.Processor.class), true),
+        otherComponentSet(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), componentSet(OtherComponentSet.class, OtherComponentSet.Processor.class), false),
+        entityFetch(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), relation(EntityRelationshipComponent.class, FETCH), false),
+        exclusiveEntityFetch(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
+        wildcardComponentRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), wildcardRelation(Object.class, Object.class), false),
+        wildcardEntityRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), wildcardRelation(Object.class), false),
+        wildcardEntityFetchRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), wildcardRelation(Object.class, component(Component.class)), false);
 
-        private final ComponentSetType<?> type;
+        private final ComponentSetType<?, ?> type;
         private final ComponentType<?, ?> otherType;
         private final boolean matches;
 
-        private MatchesTestCases(ComponentSetType<?> type, ComponentType<?, ?> otherType, boolean matches) {
+        private MatchesTestCases(ComponentSetType<?, ?> type, ComponentType<?, ?> otherType, boolean matches) {
             this.type = type;
             this.otherType = otherType;
             this.matches = matches;
@@ -64,21 +64,14 @@ class ComponentSetTypeTest extends AbstractComponentTypeTest<ComponentSetTypeTes
 
     @Test
     void testToString() {
-        assertThat(componentSet(MyComponentSet.class))
+        assertThat(componentSet(MyComponentSet.class, MyComponentSet.Processor.class))
                 .extracting(Object::toString, InstanceOfAssertFactories.STRING)
                 .containsSubsequence("ComponentSetType", MyComponentSet.class.getSimpleName());
     }
 
     @Test
     void testComponentSet() {
-        assertThatCode(() -> new ComponentSetType<>(MyComponentSet.class)).doesNotThrowAnyException();
-    }
-
-    @Test
-    void testComponentSetImplementation_DoesThrow() {
-        assertThatCode(() -> new ComponentSetType<>(MyComponentSetClass.class))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll(MyComponentSetClass.class.getName(), "cannot be used as a component set", "must be interfaces");
+        assertThatCode(() -> new ComponentSetType<>(MyComponentSet.class, MyComponentSet.Processor.class)).doesNotThrowAnyException();
     }
 
 }
