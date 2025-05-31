@@ -30,9 +30,9 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
         })
         void testSameInstanceReturned(Class<? extends ComponentSet> clazz) {
             var type = componentSet(clazz);
-            var mapper = componentMapperManager.getComponentSets(type);
+            var mapper = componentMapperManager.getComponents(type);
 
-            assertThat(componentMapperManager.getComponentSets(type)).isSameAs(mapper);
+            assertThat(componentMapperManager.getComponents(type)).isSameAs(mapper);
         }
 
         @Nested
@@ -41,7 +41,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testHasAny() {
                 var type = componentSet(PhysicsComponentSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity();
@@ -59,7 +59,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testHasAll() {
                 var type = componentSet(PhysicsComponentSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity();
@@ -77,7 +77,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testGet() {
                 var type = componentSet(PhysicsComponentSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entity
                 var pos = new Position();
@@ -114,7 +114,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testGet_InstanceReusedAfterProcess() {
                 var type = componentSet(PhysicsComponentSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity(new Position(), new Velocity());
@@ -145,7 +145,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testRemove() {
                 var type = componentSet(PhysicsComponentSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity(new Acceleration());
@@ -183,7 +183,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testHasAny() {
                 var type = componentSet(RecordPhysicsComponentsSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity();
@@ -201,7 +201,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testHasAll() {
                 var type = componentSet(RecordPhysicsComponentsSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity();
@@ -219,7 +219,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testGet() {
                 var type = componentSet(RecordPhysicsComponentsSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entity
                 var pos = new Position();
@@ -256,7 +256,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testGet_InstanceReusedAfterProcess() {
                 var type = componentSet(RecordPhysicsComponentsSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity(new Position(), new Velocity());
@@ -287,7 +287,7 @@ public class ComponentSetComponentsTest extends AbstractEcsTest<World> {
             @Test
             void testRemove() {
                 var type = componentSet(RecordPhysicsComponentsSet.class);
-                var mapper = componentMapperManager.getComponentSets(type);
+                var mapper = componentMapperManager.getComponents(type);
 
                 // Create entities
                 var entity1 = world.createEntity(new Acceleration());

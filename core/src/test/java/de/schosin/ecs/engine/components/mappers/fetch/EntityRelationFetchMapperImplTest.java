@@ -22,7 +22,7 @@ class EntityRelationFetchMapperImplTest extends AbstractMapperTest {
 
     @BeforeEach
     void setupMapper() {
-        this.mapper = world.getEntityFetchRelations(ComponentType.relation(Related.class, componentSet(MyComponentSet.class)));
+        this.mapper = world.getComponents(ComponentType.relation(Related.class, componentSet(MyComponentSet.class)));
     }
 
     @Nested

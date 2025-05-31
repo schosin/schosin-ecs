@@ -16,6 +16,8 @@ import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapp
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
+import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
 import de.schosin.ecs.api.components.mappers.CustomComponents;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
@@ -124,12 +126,12 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T, R> de.schosin.ecs.api.components.mappers.Components<T, R> getComponents(ComponentType<T, R> type) {
+    public <T, R> Components<T, R> getComponents(ComponentType<T, R> type) {
         return componentMapperManager.getComponents(type);
     }
 
     @Override
-    public <T, R> de.schosin.ecs.api.components.mappers.Components<T, R> getComponents(RegularComponentType<T, R> type) {
+    public <T, R> RegularComponents<T, R> getComponents(RegularComponentType<T, R> type) {
         return componentMapperManager.getComponents(type);
     }
 
@@ -149,53 +151,53 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <R, T> ComponentRelationMapper<R, T> getComponentRelations(ComponentRelationType<R, T> relation) {
-        return componentMapperManager.getComponentRelations(relation);
+    public <R, T> ComponentRelationMapper<R, T> getComponents(ComponentRelationType<R, T> relation) {
+        return componentMapperManager.getComponents(relation);
     }
 
     @Override
-    public <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation) {
-        return componentMapperManager.getComponentRelations(relation);
+    public <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponents(ExclusiveComponentRelationType<R, T> relation) {
+        return componentMapperManager.getComponents(relation);
     }
 
     @Override
-    public <R> EntityRelationMapper<R> getEntityRelations(EntityRelationType<R> relation) {
-        return componentMapperManager.getEntityRelations(relation);
+    public <R> EntityRelationMapper<R> getComponents(EntityRelationType<R> relation) {
+        return componentMapperManager.getComponents(relation);
     }
 
     @Override
-    public <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation) {
-        return componentMapperManager.getEntityRelations(relation);
+    public <R extends Exclusive> ExclusiveEntityRelationMapper<R> getComponents(ExclusiveEntityRelationType<R> relation) {
+        return componentMapperManager.getComponents(relation);
     }
 
     @Override
-    public <R, T> EntityRelationFetchMapper<R, T> getEntityFetchRelations(EntityRelationFetchType<R, T> relation) {
-        return componentMapperManager.getEntityFetchRelations(relation);
+    public <R, T> EntityRelationFetchMapper<R, T> getComponents(EntityRelationFetchType<R, T> relation) {
+        return componentMapperManager.getComponents(relation);
     }
 
     @Override
-    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityFetchRelations(ExclusiveEntityRelationFetchType<R, T> relation) {
-        return componentMapperManager.getEntityFetchRelations(relation);
+    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getComponents(ExclusiveEntityRelationFetchType<R, T> relation) {
+        return componentMapperManager.getComponents(relation);
     }
 
     @Override
-    public <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(ComponentSetType<T> type) {
-        return componentMapperManager.getComponentSets(type);
+    public <T extends ComponentSet> ComponentSetMapper<T> getComponents(ComponentSetType<T> type) {
+        return componentMapperManager.getComponents(type);
     }
 
     @Override
-    public <R, T> WildcardComponentRelations<R, T> getWildcardComponentRelations(WildcardComponentRelationType<R, T> wildcardRelation) {
-        return componentMapperManager.getWildcardComponentRelations(wildcardRelation);
+    public <R, T> WildcardComponentRelations<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation) {
+        return componentMapperManager.getComponents(wildcardRelation);
     }
 
     @Override
-    public <R> WildcardEntityRelations<R> getWildcardEntityRelations(WildcardEntityRelationType<R> wildcardRelation) {
-        return componentMapperManager.getWildcardEntityRelations(wildcardRelation);
+    public <R> WildcardEntityRelations<R> getComponents(WildcardEntityRelationType<R> wildcardRelation) {
+        return componentMapperManager.getComponents(wildcardRelation);
     }
 
     @Override
-    public <R, T> WildcardEntityFetchRelations<R, T> getWildcardEntityFetchRelations(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
-        return componentMapperManager.getWildcardEntityFetchRelations(wildcardRelation);
+    public <R, T> WildcardEntityFetchRelations<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
+        return componentMapperManager.getComponents(wildcardRelation);
     }
 
     @Override

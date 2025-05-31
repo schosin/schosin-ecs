@@ -71,7 +71,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRe
  * <p>
  * Using a {@link EntityRelationFetchMapper} instead of {@link EntityRelationMapper} allows a
  * system to additionally fetch component data for the target entities. When creating a mapper
- * using {@link World#getEntityFetchRelations(de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType)},
+ * using {@link World#getComponents(de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType)},
  * only one {@link ComponentType} can be passed. If more than one component must be fetched, consider using a
  * {@link ComponentSet} or a {@link de.schosin.ecs.plugins.data.types.DataType DataType} from the plugin
  * "{@code de.schosin.ecs.plugins:ecs-plugins-data-types}", which are included by default when using the composition plugin.

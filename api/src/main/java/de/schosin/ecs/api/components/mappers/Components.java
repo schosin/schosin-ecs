@@ -147,7 +147,7 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
          * @return class to manage the components defined by the type argument 
          */
         @NonNull
-        <T, R> Components<T, R> getComponents(@NonNull RegularComponentType<T, R> type);
+        <T, R> RegularComponents<T, R> getComponents(@NonNull RegularComponentType<T, R> type);
 
         /**
          * Retrieves the mapper for the custom component type.

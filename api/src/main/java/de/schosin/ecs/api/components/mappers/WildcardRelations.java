@@ -26,22 +26,22 @@ public sealed interface WildcardRelations<R extends Relation<?>, T extends Resul
     interface Creator {
 
         default <R, T> WildcardComponentRelations<R, T> getWildcardComponentRelations(Class<R> relationshipBound, Class<T> targetBound) {
-            return getWildcardComponentRelations(wildcardRelation(relationshipBound, targetBound));
+            return getComponents(wildcardRelation(relationshipBound, targetBound));
         }
 
-        <R, T> WildcardComponentRelations<R, T> getWildcardComponentRelations(WildcardComponentRelationType<R, T> wildcardRelation);
+        <R, T> WildcardComponentRelations<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation);
 
         default <R> WildcardEntityRelations<R> getWildcardEntityRelations(Class<R> relationshipBound) {
-            return getWildcardEntityRelations(wildcardRelation(relationshipBound));
+            return getComponents(wildcardRelation(relationshipBound));
         }
 
-        <R> WildcardEntityRelations<R> getWildcardEntityRelations(WildcardEntityRelationType<R> wildcardRelation);
+        <R> WildcardEntityRelations<R> getComponents(WildcardEntityRelationType<R> wildcardRelation);
 
         default <R, T> WildcardEntityFetchRelations<R, T> getWildcardEntityFetchRelations(Class<R> relationshipBound, ComponentType<?, T> fetch) {
-            return getWildcardEntityFetchRelations(wildcardRelation(relationshipBound, fetch));
+            return getComponents(wildcardRelation(relationshipBound, fetch));
         }
 
-        <R, T> WildcardEntityFetchRelations<R, T> getWildcardEntityFetchRelations(WildcardEntityRelationFetchType<R, T> wildcardRelation);
+        <R, T> WildcardEntityFetchRelations<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation);
 
     }
 

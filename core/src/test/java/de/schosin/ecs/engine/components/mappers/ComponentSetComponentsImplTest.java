@@ -21,7 +21,7 @@ class ComponentSetComponentsImplTest extends AbstractMapperTest {
 
     @BeforeEach
     void setupMapper() {
-        this.mapper = world.getComponentSets(componentSet(MyComponentSet.class));
+        this.mapper = world.getComponents(componentSet(MyComponentSet.class));
     }
 
     @Nested

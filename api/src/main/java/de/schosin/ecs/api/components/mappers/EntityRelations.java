@@ -56,7 +56,7 @@ public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRe
          * @return class to manage the relations defined by the relationship class
          */
         default <R> EntityRelationMapper<R> getEntityRelations(Class<R> relationship) {
-            return getEntityRelations(relation(relationship));
+            return getComponents(relation(relationship));
         }
 
         /**
@@ -67,7 +67,7 @@ public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRe
          * @param relation {@link ComponentRelationType} of the relation
          * @return class to manage the relations defined by the type
          */
-        <R> EntityRelationMapper<R> getEntityRelations(EntityRelationType<R> relation);
+        <R> EntityRelationMapper<R> getComponents(EntityRelationType<R> relation);
 
         /**
          * Retrieves the mapper for a {@link ExclusiveEntityRelationType}. This can be used to access the relations
@@ -78,7 +78,7 @@ public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRe
          * @return class to manage the relations defined by the relationship class
          */
         default <R extends Exclusive> ExclusiveEntityRelationMapper<R> getExclusiveEntityRelations(Class<R> relationship) {
-            return getEntityRelations(exclusiveRelation(relationship));
+            return getComponents(exclusiveRelation(relationship));
         }
 
         /**
@@ -89,7 +89,7 @@ public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRe
          * @param relation {@link ExclusiveComponentRelationType} of the relation
          * @return class to manage the relations defined by the relationship type
          */
-        <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation);
+        <R extends Exclusive> ExclusiveEntityRelationMapper<R> getComponents(ExclusiveEntityRelationType<R> relation);
 
     }
 

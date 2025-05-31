@@ -18,6 +18,7 @@ import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelatio
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
 import de.schosin.ecs.api.components.mappers.CustomComponents;
 import de.schosin.ecs.api.components.mappers.CustomComponents.Factory;
 import de.schosin.ecs.api.components.mappers.CustomComponents.FactoryAdapter;
@@ -142,26 +143,26 @@ public class ComponentMapperManager implements Components.Creator {
     public <T, R> Components<T, R> getComponents(ComponentType<T, R> type) {
         return switch (type) {
             case RegularComponentType<T, R> regular -> getComponents(regular);
-            case EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityFetchRelations(fetch);
-            case ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getEntityFetchRelations(fetch);
-            case ComponentSetType<?> set -> (Components<T, R>) getComponentSets(set);
+            case EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getComponents(fetch);
+            case ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getComponents(fetch);
+            case ComponentSetType<?> set -> (Components<T, R>) getComponents(set);
             case Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
-            case WildcardComponentRelationType<?, ?> wildcardRelation -> (Components<T, R>) getWildcardComponentRelations(wildcardRelation);
-            case WildcardEntityRelationType<?> wildcardRelation -> (Components<T, R>) getWildcardEntityRelations(wildcardRelation);
-            case WildcardEntityRelationFetchType<?, ?> wildcardRelation -> (Components<T, R>) getWildcardEntityFetchRelations(wildcardRelation);
+            case WildcardComponentRelationType<?, ?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
+            case WildcardEntityRelationType<?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
+            case WildcardEntityRelationFetchType<?, ?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
             case CustomComponentType<?, ?, ?> custom -> (Components<T, R>) getComponents(custom);
         };
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T, R> Components<T, R> getComponents(RegularComponentType<T, R> type) {
-        return (Components<T, R>) switch (type) {
+    public <T, R> RegularComponents<T, R> getComponents(RegularComponentType<T, R> type) {
+        return (RegularComponents<T, R>) switch (type) {
             case ClassType<?> classType -> getComponents(classType);
-            case ComponentRelationType<?, ?> relation -> getComponentRelations(relation);
-            case ExclusiveComponentRelationType<?, ?> relation -> getComponentRelations(relation);
-            case EntityRelationType<?> relation -> getEntityRelations(relation);
-            case ExclusiveEntityRelationType<?> relation -> getEntityRelations(relation);
+            case ComponentRelationType<?, ?> relation -> getComponents(relation);
+            case ExclusiveComponentRelationType<?, ?> relation -> getComponents(relation);
+            case EntityRelationType<?> relation -> getComponents(relation);
+            case ExclusiveEntityRelationType<?> relation -> getComponents(relation);
         };
     }
 
@@ -241,28 +242,28 @@ public class ComponentMapperManager implements Components.Creator {
     }
 
     @Override
-    public <R, T> ComponentRelationMapper<R, T> getComponentRelations(ComponentRelationType<R, T> relation) {
+    public <R, T> ComponentRelationMapper<R, T> getComponents(ComponentRelationType<R, T> relation) {
         return relationMapperManager.getComponentRelationMapper(relation);
     }
 
     @Override
-    public <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation) {
+    public <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponents(ExclusiveComponentRelationType<R, T> relation) {
         return relationMapperManager.getComponentRelationMapper(relation);
     }
 
     @Override
-    public <R> EntityRelationMapper<R> getEntityRelations(EntityRelationType<R> relation) {
+    public <R> EntityRelationMapper<R> getComponents(EntityRelationType<R> relation) {
         return relationMapperManager.getEntityRelationMapper(relation);
     }
 
     @Override
-    public <R extends Exclusive> ExclusiveEntityRelationMapper<R> getEntityRelations(ExclusiveEntityRelationType<R> relation) {
+    public <R extends Exclusive> ExclusiveEntityRelationMapper<R> getComponents(ExclusiveEntityRelationType<R> relation) {
         return relationMapperManager.getEntityRelationMapper(relation);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R, T> EntityRelationFetchMapper<R, T> getEntityFetchRelations(EntityRelationFetchType<R, T> relation) {
+    public <R, T> EntityRelationFetchMapper<R, T> getComponents(EntityRelationFetchType<R, T> relation) {
         var result = (EntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
         if (result != null) {
             return result;
@@ -283,7 +284,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityFetchRelations(ExclusiveEntityRelationFetchType<R, T> relation) {
+    public <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getComponents(ExclusiveEntityRelationFetchType<R, T> relation) {
         var result = (ExclusiveEntityRelationFetchMapper<R, T>) this.componentMappers.get(relation);
         if (result != null) {
             return result;
@@ -304,7 +305,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(ComponentSetType<T> type) {
+    public <T extends ComponentSet> ComponentSetMapper<T> getComponents(ComponentSetType<T> type) {
         var result = (ComponentSetMapper<T>) componentMappers.get(type);
         if (result != null) {
             return result;
@@ -350,7 +351,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R, T> WildcardComponentRelations<R, T> getWildcardComponentRelations(WildcardComponentRelationType<R, T> wildcardRelation) {
+    public <R, T> WildcardComponentRelations<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation) {
         var result = (WildcardComponentRelations<R, T>) componentMappers.get(wildcardRelation);
         if (result != null) {
             return result;
@@ -374,7 +375,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> WildcardEntityRelations<R> getWildcardEntityRelations(WildcardEntityRelationType<R> wildcardRelation) {
+    public <R> WildcardEntityRelations<R> getComponents(WildcardEntityRelationType<R> wildcardRelation) {
         var result = (WildcardEntityRelations<R>) componentMappers.get(wildcardRelation);
         if (result != null) {
             return result;
@@ -398,7 +399,7 @@ public class ComponentMapperManager implements Components.Creator {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R, T> WildcardEntityFetchRelations<R, T> getWildcardEntityFetchRelations(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
+    public <R, T> WildcardEntityFetchRelations<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
         var result = (WildcardEntityFetchRelations<R, T>) componentMappers.get(wildcardRelation);
         if (result != null) {
             return result;

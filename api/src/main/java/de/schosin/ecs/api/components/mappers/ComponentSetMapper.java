@@ -42,7 +42,7 @@ public non-sealed interface ComponentSetMapper<T extends ComponentSet> extends C
          * @return class to manage the component sets defined by the type
          */
         default <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(Class<T> type) {
-            return getComponentSets(componentSet(type));
+            return getComponents(componentSet(type));
         }
 
         /**
@@ -53,7 +53,7 @@ public non-sealed interface ComponentSetMapper<T extends ComponentSet> extends C
          * @param type {@link ComponentSetType} of the set
          * @return class to manage the component sets defined by the type
          */
-        <T extends ComponentSet> ComponentSetMapper<T> getComponentSets(ComponentSetType<T> type);
+        <T extends ComponentSet> ComponentSetMapper<T> getComponents(ComponentSetType<T> type);
 
     }
 

@@ -1115,7 +1115,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testAddRelation_WhenProcessed_ChangesComponentMask() {
             var type = relation(C1.class, C2.class);
-            var mapper = world.getComponentRelations(type);
+            var mapper = world.getComponents(type);
             var add = world.createTransmuter(Transmuter.add(type));
 
             var entityId = world.createEntity();
@@ -1173,7 +1173,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testRemoveMultipleRelation() {
             var type = relation(C1.class, Target.class);
-            var mapper = world.getComponentRelations(type);
+            var mapper = world.getComponents(type);
             var remove = world.createTransmuter(Transmuter.remove(type));
 
             var relation1 = Relation.create(new C1(), new Target(1));
@@ -1224,7 +1224,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testAddRelation_WhenProcessed_ChangesComponentMask() {
             var type = relation(C1.class);
-            var mapper = world.getEntityRelations(type);
+            var mapper = world.getComponents(type);
             var add = world.createTransmuter(Transmuter.add(type));
 
             var target = world.createEntity();
@@ -1288,7 +1288,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         @Test
         void testRemoveMultipleRelation() {
             var type = relation(C1.class);
-            var mapper = world.getEntityRelations(type);
+            var mapper = world.getComponents(type);
             var remove = world.createTransmuter(Transmuter.remove(type));
 
             var target1 = world.createEntity();

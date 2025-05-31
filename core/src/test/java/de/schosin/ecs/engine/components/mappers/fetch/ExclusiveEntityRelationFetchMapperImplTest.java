@@ -21,7 +21,7 @@ class ExclusiveEntityRelationFetchMapperImplTest extends AbstractMapperTest {
 
     @BeforeEach
     void setupMapper() {
-        this.mapper = world.getEntityFetchRelations(ComponentType.exclusiveRelation(Parent.class, componentSet(MyComponentSet.class)));
+        this.mapper = world.getComponents(ComponentType.exclusiveRelation(Parent.class, componentSet(MyComponentSet.class)));
     }
 
     @Nested

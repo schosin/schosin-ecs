@@ -24,12 +24,12 @@ class ExclusiveComponentRelationMapperImplTest extends AbstractComponentRelation
 
         @Override
         protected ExclusiveComponentRelationMapper<Loves, Player> createMapper1() {
-            return world.getComponentRelations(exclusiveRelation(Loves.class, Player.class));
+            return world.getComponents(exclusiveRelation(Loves.class, Player.class));
         }
 
         @Override
         protected ExclusiveComponentRelationMapper<Loves, Enemy> createMapper2() {
-            return world.getComponentRelations(exclusiveRelation(Loves.class, Enemy.class));
+            return world.getComponents(exclusiveRelation(Loves.class, Enemy.class));
         }
 
         @Override

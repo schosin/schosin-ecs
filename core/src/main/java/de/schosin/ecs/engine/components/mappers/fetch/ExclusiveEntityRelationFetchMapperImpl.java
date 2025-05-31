@@ -17,7 +17,7 @@ public class ExclusiveEntityRelationFetchMapperImpl<R extends Exclusive, T> impl
     private final Components<?, T> dataMapper;
 
     public ExclusiveEntityRelationFetchMapperImpl(ExclusiveEntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager) {
-        this.relationMapper = componentMapperManager.getEntityRelations(exclusiveRelation(type.relationship()));
+        this.relationMapper = componentMapperManager.getComponents(exclusiveRelation(type.relationship()));
         this.dataMapper = componentMapperManager.getComponents(type.fetch());
     }
 

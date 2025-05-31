@@ -24,7 +24,7 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
     private final Components<?, T> dataMapper;
 
     public EntityRelationFetchMapperImpl(EntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager) {
-        this.relationMapper = componentMapperManager.getEntityRelations(relation(type.relationship()));
+        this.relationMapper = componentMapperManager.getComponents(relation(type.relationship()));
         this.dataMapper = componentMapperManager.getComponents(type.fetch());
     }
 

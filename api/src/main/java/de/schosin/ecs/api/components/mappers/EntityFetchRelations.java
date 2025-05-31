@@ -26,9 +26,9 @@ public sealed interface EntityFetchRelations<R, T, F> extends Components<EntityR
 
     interface Creator {
 
-        <R, T> EntityRelationFetchMapper<R, T> getEntityFetchRelations(EntityRelationFetchType<R, T> relation);
+        <R, T> EntityRelationFetchMapper<R, T> getComponents(EntityRelationFetchType<R, T> relation);
 
-        <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getEntityFetchRelations(ExclusiveEntityRelationFetchType<R, T> relation);
+        <R extends Exclusive, T> ExclusiveEntityRelationFetchMapper<R, T> getComponents(ExclusiveEntityRelationFetchType<R, T> relation);
 
     }
 

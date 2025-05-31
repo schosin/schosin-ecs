@@ -27,7 +27,7 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
     private final Bag<ResultImpl<R, T>> lent = new Bag<>(ResultImpl.class, 8);
 
     public WildcardEntityFetchRelationsImpl(WildcardEntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager) {
-        this.relationMapper = componentMapperManager.getWildcardEntityRelations(wildcardRelation(type.relationshipBound()));
+        this.relationMapper = componentMapperManager.getComponents(wildcardRelation(type.relationshipBound()));
         this.dataMapper = componentMapperManager.getComponents(type.fetch());
     }
 

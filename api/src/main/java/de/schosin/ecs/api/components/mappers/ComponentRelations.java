@@ -54,7 +54,7 @@ public sealed interface ComponentRelations<R, T, X> extends RegularComponents<Co
          * @return class to manage the relations defined by the relationship and target class
          */
         default <R, T> ComponentRelationMapper<R, T> getComponentRelations(Class<R> relationship, Class<T> target) {
-            return getComponentRelations(relation(relationship, target));
+            return getComponents(relation(relationship, target));
         }
 
         /**
@@ -66,7 +66,7 @@ public sealed interface ComponentRelations<R, T, X> extends RegularComponents<Co
          * @param relation {@link ComponentRelationType} of the relation
          * @return class to manage the relations defined by the relationship and target class
          */
-        <R, T> ComponentRelationMapper<R, T> getComponentRelations(ComponentRelationType<R, T> relation);
+        <R, T> ComponentRelationMapper<R, T> getComponents(ComponentRelationType<R, T> relation);
 
         /**
          * Retrieves the mapper for a {@link ExclusiveComponentRelationType}. This can be used to access the relations
@@ -79,7 +79,7 @@ public sealed interface ComponentRelations<R, T, X> extends RegularComponents<Co
          * @return class to manage the relations defined by the relationship and target class
          */
         default <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getExclusiveComponentRelations(Class<R> relationship, Class<T> target) {
-            return getComponentRelations(exclusiveRelation(relationship, target));
+            return getComponents(exclusiveRelation(relationship, target));
         }
 
         /**
@@ -91,7 +91,7 @@ public sealed interface ComponentRelations<R, T, X> extends RegularComponents<Co
          * @param relation {@link ExclusiveComponentRelationType} of the relation
          * @return class to manage the relations defined by the relationship and target class
          */
-        <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponentRelations(ExclusiveComponentRelationType<R, T> relation);
+        <R extends Exclusive, T> ExclusiveComponentRelationMapper<R, T> getComponents(ExclusiveComponentRelationType<R, T> relation);
 
     }
 
