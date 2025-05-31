@@ -1,4 +1,5 @@
 .lwjgl/
+bin/
 
 # Maven
 target/
