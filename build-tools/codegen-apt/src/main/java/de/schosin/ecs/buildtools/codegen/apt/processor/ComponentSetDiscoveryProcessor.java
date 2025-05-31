@@ -17,9 +17,6 @@ import javax.tools.Diagnostic;
 import com.google.auto.service.AutoService;
 import com.palantir.javapoet.JavaFile;
 
-import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.ComponentSetConfig;
-import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.TypeData;
 
 @AutoService(Processor.class)
@@ -27,7 +24,7 @@ import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.Ty
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
 
-    static final String CONFIG = "de.schosin.ecs.api.components.ComponentSetConfig";
+    public static final String CONFIG = "de.schosin.ecs.api.components.ComponentSetConfig";
 
     private ComponentSetsGenerator generator;
 
@@ -45,16 +42,17 @@ public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
             this.generator = new ComponentSetsGenerator();
         }
 
+        var componentSetConfig = processingEnv.getElementUtils().getTypeElement(CONFIG);
+
         try {
-            var implementations = generator.generate(roundEnv.getElementsAnnotatedWith(ComponentSetConfig.class));
+            var implementations = generator.generate(roundEnv.getElementsAnnotatedWith(componentSetConfig));
             if (implementations.isEmpty()) {
                 if (generated) {
                     return true;
                 }
 
                 var componentSets = generator.generateComponentSets(this.implementations);
-                var componentSetsFile = JavaFile.builder(ComponentSet.class.getPackageName(), componentSets)
-                        .addStaticImport(ComponentType.class, "*")
+                var componentSetsFile = JavaFile.builder(ComponentSetsGenerator.COMPONENT_SET.packageName(), componentSets)
                         .skipJavaLangImports(true)
                         .indent("    ")
                         .build();

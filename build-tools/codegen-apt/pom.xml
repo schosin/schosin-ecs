@@ -12,17 +12,6 @@
     
     <dependencies>
         <dependency>
-            <groupId>de.schosin.ecs</groupId>
-            <artifactId>ecs-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>de.schosin.ecs</groupId>
-            <artifactId>ecs-utils</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.jspecify</groupId>
             <artifactId>jspecify</artifactId>
         </dependency>

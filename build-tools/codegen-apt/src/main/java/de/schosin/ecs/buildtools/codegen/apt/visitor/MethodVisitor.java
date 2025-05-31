@@ -1,12 +1,13 @@
 package de.schosin.ecs.buildtools.codegen.apt.visitor;
 
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
 
 import com.palantir.javapoet.ClassName;
 
-import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.buildtools.codegen.apt.processor.CancelException;
+import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetDiscoveryProcessor;
 import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.VisitorKind;
 
 public class MethodVisitor extends AbstractVisitor {
@@ -14,12 +15,18 @@ public class MethodVisitor extends AbstractVisitor {
     public MethodVisitor(ExecutableElement executable) {
         super(executable);
 
-        var annotation = executable.getAnnotation(ComponentSetConfig.class);
-        if (annotation == null) {
-            throw new CancelException("Method %s defined passed to APT, but @ComponentSetConfig is not available.".formatted(executable));
+        String name = null;
+
+        for (var annotation : executable.getAnnotationMirrors()) {
+            if (annotation.getAnnotationType().asElement() instanceof TypeElement elem && ComponentSetDiscoveryProcessor.CONFIG.equals(elem.getQualifiedName().toString())) {
+                name = (String) annotation.getElementValues().values().iterator().next().getValue();
+                break;
+            }
         }
 
-        var name = annotation.value();
+        if (name == null || name.isBlank()) {
+            throw new CancelException("Method %s defined passed to APT, but @ComponentSetConfig is not available or blank value.".formatted(executable));
+        }
 
         this.data.kind = VisitorKind.RECORD;
         this.data.source = executable.toString();

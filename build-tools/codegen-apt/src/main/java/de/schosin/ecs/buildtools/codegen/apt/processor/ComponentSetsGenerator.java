@@ -10,12 +10,9 @@ import java.util.stream.Stream;
 
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
-import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeMirror;
 
 import com.palantir.javapoet.AnnotationSpec;
 import com.palantir.javapoet.ClassName;
@@ -28,14 +25,7 @@ import com.palantir.javapoet.TypeSpec;
 import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
 
-import de.schosin.ecs.api.components.ComponentSet;
-import de.schosin.ecs.api.components.ComponentSet.ComponentAccessor;
-import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
-import de.schosin.ecs.api.components.ComponentSetConfig;
-import de.schosin.ecs.api.components.types.ComponentSetType;
-import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.buildtools.codegen.apt.visitor.MethodVisitor;
-import de.schosin.ecs.utils.collections.Pool;
 
 public class ComponentSetsGenerator {
 
@@ -50,10 +40,13 @@ public class ComponentSetsGenerator {
             .addMember("date", "\"%s\"".formatted(Instant.now()))
             .build();
 
-    private static final ClassName COMPONENT_SET = ClassName.get(ComponentSet.class);
-    private static final ClassName COMPONENT_SET_DATA = ClassName.get(ComponentSetData.class);
-    private static final ClassName COMPONENT_ACCESSOR = ClassName.get(ComponentAccessor.class);
-    private static final ClassName COMPONENT_SET_TYPE = ClassName.get(ComponentSetType.class);
+    static final ClassName COMPONENT_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentType");
+    static final ClassName COMPONENT_SET = ClassName.get("de.schosin.ecs.api.components", "ComponentSet");
+    static final ClassName COMPONENT_SET_DATA = COMPONENT_SET.nestedClass("ComponentSetData");
+    static final ClassName COMPONENT_ACCESSOR = COMPONENT_SET.nestedClass("ComponentAccessor");
+    static final ClassName COMPONENT_SET_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentSetType");
+
+    private static final ClassName POOL = ClassName.get("de.schosin.ecs.utils.collections", "Pool");
 
     public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataProcessor");
     public static final ClassName DATA_PROCESSOR_TYPE = ClassName.get("de.schosin.ecs.api.data", "DataProcessorType");
@@ -96,8 +89,9 @@ public class ComponentSetsGenerator {
                 initializer.add("    $1T.entry($2T.class, $2T.DATA)", Map.class, result.interfaceName);
             }
 
-            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, WildcardTypeName.subtypeOf(COMPONENT_SET));
-            var classT = ParameterizedTypeName.get(ClassName.get(Class.class), WildcardTypeName.subtypeOf(COMPONENT_SET));
+            var componentSet = ParameterizedTypeName.get(COMPONENT_SET, WildcardTypeName.subtypeOf(Object.class));
+            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, WildcardTypeName.subtypeOf(componentSet));
+            var classT = ParameterizedTypeName.get(ClassName.get(Class.class), WildcardTypeName.subtypeOf(componentSet));
             var type = ParameterizedTypeName.get(ClassName.get(Map.class), classT, componentSetDataType);
 
             return FieldSpec.builder(type, "LOOKUP", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
@@ -112,6 +106,7 @@ public class ComponentSetsGenerator {
             var componentSetData = ParameterizedTypeName.get(COMPONENT_SET_DATA, TypeVariableName.get("S"));
 
             return MethodSpec.methodBuilder("getData")
+                    .addAnnotation(AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build())
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .addTypeVariable(typeS)
                     .addParameter(wildcardClass, "componentSet")
@@ -124,62 +119,8 @@ public class ComponentSetsGenerator {
 
     public List<TypeData> generate(Set<? extends Element> elements) {
         return elements.stream()
-                .filter(this::isValidElement)
                 .flatMap(this::generate)
                 .toList();
-    }
-
-    private boolean isValidElement(Element element) {
-        if (element instanceof ExecutableElement executable && executable.getAnnotation(ComponentSetConfig.class) != null) {
-            return true;
-        }
-
-        if (!(element instanceof TypeElement typeElement)) {
-            return false;
-        }
-
-        if (typeElement.getAnnotation(Generated.class) != null) {
-            return false;
-        }
-
-        if (typeElement.getKind() == ElementKind.RECORD) {
-            return typeElement.getAnnotation(ComponentSetConfig.class) != null;
-        }
-
-        for (var iface : typeElement.getInterfaces()) {
-            if (isOrExtendsComponentSet(iface)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private boolean isOrExtendsComponentSet(TypeMirror type) {
-        if (!(type instanceof DeclaredType declaredType)) {
-            return false;
-        }
-
-        if (declaredType.getAnnotation(Generated.class) != null) {
-            return false;
-        }
-
-        var typeElement = declaredType.asElement() instanceof TypeElement elem ? elem : null;
-        if (typeElement == null) {
-            return false;
-        }
-
-        if (ComponentSet.class.getName().equals(typeElement.getQualifiedName().toString())) {
-            return true;
-        }
-
-        for (var iface : typeElement.getInterfaces()) {
-            if (isOrExtendsComponentSet(iface)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private Stream<TypeData> generate(Element element) {
@@ -223,7 +164,7 @@ public class ComponentSetsGenerator {
                     .build();
 
             var processor = interfaceName.nestedClass("Processor");
-            var superinterface = ParameterizedTypeName.get(ClassName.get(ComponentSet.class), processor);
+            var superinterface = ParameterizedTypeName.get(COMPONENT_SET, processor);
 
             var componentSet = TypeSpec.interfaceBuilder(interfaceName)
                     .addAnnotation(GENERATED)
@@ -248,7 +189,7 @@ public class ComponentSetsGenerator {
 
             var type = ParameterizedTypeName.get(COMPONENT_SET_TYPE, interfaceName, processor);
             var typeField = FieldSpec.builder(type, "TYPE", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("$1T.componentSet($2T.class, $3T.class)", ComponentType.class, interfaceName, processor)
+                    .initializer("$1T.componentSet($2T.class, $3T.class)", COMPONENT_TYPE, interfaceName, processor)
                     .build();
 
             componentSet.addField(typeField);
@@ -332,9 +273,9 @@ public class ComponentSetsGenerator {
             var implementationName = result.implementationName;
             var components = result.components;
 
-            var parameterizedPool = ParameterizedTypeName.get(ClassName.get(Pool.class), implementationName);
+            var parameterizedPool = ParameterizedTypeName.get(POOL, implementationName);
             var pool = FieldSpec.builder(parameterizedPool, "POOL", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("$1T.unbounded($2T.class, $2T::new)", Pool.class, implementationName)
+                    .initializer("$1T.unbounded($2T.class, $2T::new)", POOL, implementationName)
                     .build();
 
             var entityId = FieldSpec.builder(TypeName.INT, "entityId", Modifier.PRIVATE).initializer("-1").build();
