@@ -1,6 +1,9 @@
 package de.schosin.ecs.utils.collections;
 
 import java.util.Arrays;
+import java.util.ConcurrentModificationException;
+import java.util.PrimitiveIterator;
+import java.util.PrimitiveIterator.OfInt;
 
 public class IntBag implements ImmutableIntBag {
 
@@ -113,6 +116,11 @@ public class IntBag implements ImmutableIntBag {
     }
 
     @Override
+    public OfInt iterator() {
+        return new IntBagIterator(this);
+    }
+
+    @Override
     public String toString() {
         StringBuilder builder = new StringBuilder().append("IntBag(");
         for (int i = 0; i < size; i++) {
@@ -122,6 +130,42 @@ public class IntBag implements ImmutableIntBag {
             builder.append(data[i]);
         }
         return builder.append(")").toString();
+    }
+
+    private static class IntBagIterator implements PrimitiveIterator.OfInt {
+
+        private final IntBag bag;
+        private final int[] data;
+
+        private int size;
+        private int index;
+
+        public IntBagIterator(IntBag bag) {
+            this.bag = bag;
+            this.data = bag.getData();
+            this.size = bag.getSize();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return index < size;
+        }
+
+        @Override
+        public int nextInt() {
+            return data[index++];
+        }
+
+        @Override
+        public void remove() {
+            if (bag.getData() != data) {
+                throw new ConcurrentModificationException("Backing array replaced by concurrent operation");
+            }
+
+            this.bag.removeIndex(--index);
+            this.size--;
+        }
+
     }
 
 }
