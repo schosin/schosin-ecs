@@ -23,6 +23,7 @@ import de.schosin.ecs.plugins.archetype.Archetype5;
 import de.schosin.ecs.plugins.archetype.Archetype6;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.transmuter.Transmuter;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 public class EngineWorldBenchmark {
 
@@ -71,6 +72,7 @@ public class EngineWorldBenchmark {
         private int compositions;
 
         private int[] entities;
+        private ImmutableIntBag entitiesBag;
 
         @Setup(Level.Trial)
         public void init(Blackhole bh) {
@@ -128,11 +130,24 @@ public class EngineWorldBenchmark {
         }
 
         @Setup(Level.Invocation)
-        public void clean() {
+        public void initInvocation() {
             for (int i = 0; i < entityCount; i++) {
-                world.deleteEntity(entities[i]);
+                world.deleteEntity(this.entities[i]);
             }
+
             world.process();
+        }
+
+        @Setup(Level.Iteration)
+        public void initIteration() {
+            if (entitiesBag != null) {
+                for (var iter = entitiesBag.iterator(); iter.hasNext();) {
+                    world.deleteEntity(iter.nextInt());
+                }
+
+                entitiesBag = null;
+                world.process();
+            }
         }
 
         @Benchmark
@@ -167,7 +182,7 @@ public class EngineWorldBenchmark {
 
         @Benchmark
         public void archetypeBatch(Blackhole bh) {
-            bh.consume(entities = switch (components) {
+            bh.consume(entitiesBag = switch (components) {
                 case 1 -> archetype1.createBatch(entityCount, () -> new Component1());
                 case 2 -> archetype2.createBatch(entityCount, init -> init.create(new Component1(), new Component2()));
                 case 3 -> archetype3.createBatch(entityCount, init -> init.create(new Component1(), new Component2(), new Component3()));
@@ -180,7 +195,7 @@ public class EngineWorldBenchmark {
 
         @Benchmark
         public void pooledArchetypeBatch(Blackhole bh) {
-            bh.consume(entities = switch (components) {
+            bh.consume(entitiesBag = switch (components) {
                 case 1 -> pooledArchetype1.createBatch(entityCount, () -> pooledArchetype1.getInstance(Pooled1.class));
                 case 2 -> pooledArchetype2.createBatch(entityCount, init -> init.create(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class)));
                 case 3 -> pooledArchetype3.createBatch(entityCount, init -> init.create(pooledArchetype1.getInstance(Pooled1.class), pooledArchetype1.getInstance(Pooled2.class),

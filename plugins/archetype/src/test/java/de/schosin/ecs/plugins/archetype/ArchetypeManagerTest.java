@@ -89,10 +89,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class);
 
                 var entityIds = archetype.createBatch(10, () -> new C1());
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class);
                     verifyComponentMaskHasComponents(entityId, C1.class);
                 }
@@ -253,10 +253,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class);
 
                 var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2()));
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class, C2.class);
                     verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
                 }
@@ -627,10 +627,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class, C3.class);
 
                 var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3()));
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class, C2.class, C3.class);
                     verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
                 }
@@ -1009,10 +1009,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
 
                 var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4()));
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class);
                     verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class);
                 }
@@ -1397,10 +1397,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
 
                 var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5()));
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
                     verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
                 }
@@ -1789,10 +1789,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
 
                 var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6()));
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
                     verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
                 }
@@ -2188,10 +2188,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
 
                 var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7()));
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
                     verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
                 }
@@ -2592,10 +2592,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
 
                 var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8()));
-                assertThat(entityIds).hasSize(10);
+                assertThat(entityIds.getSize()).isEqualTo(10);
 
-                for (int i = 0; i < 10; i++) {
-                    var entityId = entityIds[i];
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
                     verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
                     verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
                 }

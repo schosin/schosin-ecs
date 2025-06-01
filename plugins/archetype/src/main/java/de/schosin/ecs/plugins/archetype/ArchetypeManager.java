@@ -18,12 +18,16 @@ import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.ProcessEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.BaseDataType.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.RelationComponent;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen
@@ -36,6 +40,10 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
     private final Map<Class<?>, PooledComponentMapper<?>> mappers = new ConcurrentHashMap<>();
 
+    private final Pool<Bag<Object>> bagPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class, 64), Bag::clear);
+    private final Pool<Bag<Bag<Object>>> bagsPool = Pool.unbounded(Bag.class, () -> new Bag<>(Bag.class, 64), Bag::clear);
+    private final Bag<Bag<Bag<Object>>> lentBags = new Bag<>(Bag.class, 8);
+
     public ArchetypeManager(World world, DataTypePlugin dataTypePlugin) {
         world.addSingleton(this);
 
@@ -43,12 +51,40 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
+
+        var eventManager = world.getSingleton(EventManager.class);
+        eventManager.registerEventHandler(ProcessEvent.Process.class, this::handleProcess);
+    }
+
+    private void handleProcess(ProcessEvent event) {
+        var data = this.lentBags.getData();
+        for (int i = 0, s = this.lentBags.getSize(); i < s; i++) {
+            var bag = data[i];
+
+            var bagData = bag.getData();
+            for (int j = 0, js = bag.getSize(); j < js; j++) {
+                bagPool.free(bagData[j]);
+            }
+
+            bagsPool.free(data[i]);
+        }
     }
 
     private <T extends Pooled> T getInstance(Class<T> component) {
         var mapper = mappers.computeIfAbsent(component, key -> componentMapperManager.getPooledComponents(component));
 
         return component.cast(mapper.getInstance());
+    }
+
+    private Bag<Bag<Object>> getDataBags(int size, int count) {
+        var bags = this.bagsPool.getInstance();
+        this.lentBags.add(bags);
+
+        for (int i = bags.getSize(); i < size; i++) {
+            bags.add(bagPool.getInstance());
+        }
+
+        return bags;
     }
 
     static abstract class AbstractBaseArchetypeImpl<P extends DataProvider<?>> implements BaseArchetype<P> {
@@ -130,24 +166,21 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 }
 
                 // Create entity
-                return manager.entityManager.create(componentMask, components);
+                return manager.entityManager.create(componentMask, dataLookup, components);
             });
         }
 
         @Override
-        public int[] createIndexed(int count, IntFunction<P> provider) {
-            var data = fixed != null
-                    ? new Object[size + fixed.length][count]
-                    : new Object[size][count];
-
+        public ImmutableIntBag createIndexed(int count, IntFunction<P> provider) {
             var components = pool.getInstance();
+            var data = manager.getDataBags(components.length, count);
 
             for (int i = 0; i < count; i++) {
                 var provided = provider.apply(i).getData();
                 fillComponents(provided, components);
 
                 for (int c = 0, s = components.length; c < s; c++) {
-                    data[c][i] = components[c];
+                    data.get(c).set(i, components[c]);
                 }
 
                 // Free provided instance

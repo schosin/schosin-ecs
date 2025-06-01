@@ -8,7 +8,6 @@ import java.util.stream.IntStream;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
-import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
@@ -25,6 +24,7 @@ public class BaseArchetypeGenerator {
 
     public static final ClassName ARCHETYPE = ClassName.get("de.schosin.ecs.plugins.archetype", "BaseArchetype");
     public static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
+    public static final ClassName IMMUTABLE_INT_BAG = ClassName.get("de.schosin.ecs.utils.collections", "ImmutableIntBag");
 
     public static ClassName dataTypeN(int n) {
         if (n <= 1) {
@@ -183,7 +183,7 @@ public class BaseArchetypeGenerator {
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
                     .addParameter(TypeName.INT, "count")
                     .addParameter(function, "function")
-                    .returns(ArrayTypeName.get(int[].class))
+                    .returns(IMMUTABLE_INT_BAG)
                     .addStatement("return createIndexed(count, i -> () -> function.apply(i))")
                     .build();
         }
@@ -259,7 +259,7 @@ public class BaseArchetypeGenerator {
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
                     .addParameter(TypeName.INT, "count")
                     .addParameter(supplier, "supplier")
-                    .returns(ArrayTypeName.get(int[].class))
+                    .returns(IMMUTABLE_INT_BAG)
                     .addStatement("return createBatch(count, ($1T factory) -> supplier.get())", factoryN)
                     .build();
         }
@@ -272,7 +272,7 @@ public class BaseArchetypeGenerator {
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
                     .addParameter(TypeName.INT, "count")
                     .addParameter(function, "function")
-                    .returns(ArrayTypeName.get(int[].class))
+                    .returns(IMMUTABLE_INT_BAG)
                     .addStatement("return createIndexed(count, i -> factory -> function.apply(i))")
                     .build();
         }

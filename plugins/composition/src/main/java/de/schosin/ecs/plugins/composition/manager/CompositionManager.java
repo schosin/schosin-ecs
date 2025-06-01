@@ -39,6 +39,7 @@ import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.BaseDataType.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
 @EcsCodegen
@@ -134,14 +135,16 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    private void handleInserted(int[] entityIds, ComponentMask componentMask) {
+    private void handleInserted(ImmutableIntBag entityIds, ComponentMask componentMask) {
         var maskCompositions = getCompositions(componentMask);
 
         var data = maskCompositions.getData();
         for (int i = 0, s = maskCompositions.getSize(); i < s; i++) {
             var composition = data[i];
             if (composition.isInterested(componentMask)) {
-                for (var entityId : entityIds) {
+                for (int e = 0, es = entityIds.getSize(); e < es; e++) {
+                    var entityId = entityIds.get(e);
+
                     composition.inserted(entityId);
                 }
             }
@@ -298,7 +301,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
                 var compositionSet = new ComponentSetComposition<>(this, componentSetType);
                 this.compositionData.put(componentSetType, compositionSet);
-                
+
                 return compositionSet;
             }
         }

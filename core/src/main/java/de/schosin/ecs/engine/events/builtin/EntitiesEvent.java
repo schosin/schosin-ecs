@@ -3,11 +3,12 @@ package de.schosin.ecs.engine.events.builtin;
 import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 public sealed interface EntitiesEvent extends Event {
 
-    int[] entityIds();
+    ImmutableIntBag entityIds();
 
     ComponentMask componentMask();
 
@@ -21,7 +22,7 @@ public sealed interface EntitiesEvent extends Event {
      */
     sealed interface EntitiesInsertedEvent extends EntitiesEvent {
 
-        static EntitiesInsertedEvent get(int[] entityIds, ComponentMask componentMask) {
+        static EntitiesInsertedEvent get(ImmutableIntBag entityIds, ComponentMask componentMask) {
             return EntitiesInsertedEventImpl.get(entityIds, componentMask);
         }
 
@@ -31,11 +32,11 @@ public sealed interface EntitiesEvent extends Event {
 
 abstract sealed class AbstractEntitiesEvent implements EntitiesEvent {
 
-    protected int[] entityIds;
+    protected ImmutableIntBag entityIds;
     protected ComponentMask componentMask;
 
     @Override
-    public int[] entityIds() {
+    public ImmutableIntBag entityIds() {
         return entityIds;
     }
 
@@ -56,7 +57,7 @@ final class EntitiesInsertedEventImpl extends AbstractEntitiesEvent implements E
 
     private static final Pool<EntitiesInsertedEventImpl> POOL = Pool.unbounded(EntitiesInsertedEventImpl.class, EntitiesInsertedEventImpl::new);
 
-    static EntitiesInsertedEvent get(int[] entityIds, ComponentMask componentMask) {
+    static EntitiesInsertedEvent get(ImmutableIntBag entityIds, ComponentMask componentMask) {
         var instance = POOL.getInstance();
         instance.entityIds = entityIds;
         instance.componentMask = componentMask;

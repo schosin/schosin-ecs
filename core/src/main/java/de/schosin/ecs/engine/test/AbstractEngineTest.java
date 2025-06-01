@@ -34,6 +34,7 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 /**
  * Abstract class providing assertions for testing engine functionality.
@@ -272,8 +273,10 @@ public abstract class AbstractEngineTest {
             return this;
         }
 
-        private void handleInserted(int[] entityIds, ComponentMask componentMask) {
-            for (var entityId : entityIds) {
+        private void handleInserted(ImmutableIntBag entityIds, ComponentMask componentMask) {
+            for (var iter = entityIds.iterator(); iter.hasNext();) {
+                var entityId = iter.nextInt();
+
                 handleInserted(entityId, componentMask);
             }
         }

@@ -14,6 +14,7 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
 public class ChangeManager {
@@ -70,14 +71,16 @@ public class ChangeManager {
         processEntityCreation(entityId, componentMask);
     }
 
-    public void inserted(int[] entityIds, ComponentMask componentMask) {
+    public void inserted(ImmutableIntBag entityIds, ComponentMask componentMask) {
         // Dispatch event, skip if no handlers
         if (!eventManager.dispatchEvent(EntitiesInsertedEvent.get(entityIds, componentMask))) {
             return;
         }
 
         // Process composition updates
-        for (var entityId : entityIds) {
+        for (int i = 0, s = entityIds.getSize(); i < s; i++) {
+            var entityId = entityIds.get(i);
+
             processEntityCreation(entityId, componentMask);
         }
     }

@@ -5,8 +5,10 @@ import java.util.function.IntFunction;
 import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.data.DataProvider;
 import de.schosin.ecs.codegen.EcsCodegen;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 @NullMarked
 @EcsCodegen
@@ -39,9 +41,9 @@ public interface BaseArchetype<P extends DataProvider<?>> {
      * 
      * @param count number of entities
      * @param provider method accepting a factory, returning the result of invoking the {@code create} method
-     * @return array of length {@code count} containing the ids of created entities
+     * @return ids of the created entities, instance will be reused after the next {@link World#process()}.
      */
-    default int[] createBatch(int count, P provider) {
+    default ImmutableIntBag createBatch(int count, P provider) {
         return createIndexed(count, idx -> provider);
     }
 
@@ -59,9 +61,9 @@ public interface BaseArchetype<P extends DataProvider<?>> {
      * 
      * @param count
      * @param provider method accepting a zero-based index, returning a method accepting a factory, returning the result of invoking the {@code create} method.
-     * @return array of length {@code count} containing the ids of created entities
+     * @return ids of the created entities, instance will be reused after the next {@link World#process()}.
      */
-    int[] createIndexed(int count, IntFunction<P> provider);
+    ImmutableIntBag createIndexed(int count, IntFunction<P> provider);
 
     /**
      * Create a new archetype that extends this archetype by adding the passed components to

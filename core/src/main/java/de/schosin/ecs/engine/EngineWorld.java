@@ -47,6 +47,7 @@ import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
+import de.schosin.ecs.engine.events.builtin.ProcessEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
@@ -207,14 +208,23 @@ public class EngineWorld implements World, StorageWorld {
 
     @Override
     public boolean process() {
-        return process(config.processLoops);
+        var result = process(config.processLoops);
+        entityManager.process();
+
+        eventManager.dispatchEvent(ProcessEvent.PROCESS);
+
+        return result;
     }
 
     @Override
     public boolean process(int loops) {
         componentMapperManager.process();
 
-        return changeManager.process(loops);
+        var result = changeManager.process(loops);
+
+        eventManager.dispatchEvent(ProcessEvent.PROCESS_STEP);
+
+        return result;
     }
 
     @Override
