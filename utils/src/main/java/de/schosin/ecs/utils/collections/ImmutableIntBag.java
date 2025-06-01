@@ -5,7 +5,7 @@ import java.util.PrimitiveIterator.OfInt;
 
 import org.jspecify.annotations.NonNull;
 
-public interface ImmutableIntBag {
+public sealed interface ImmutableIntBag permits IntBag, ImmutableIntBagImpl {
 
     public static final ImmutableIntBag EMPTY = ImmutableIntBagImpl.EMPTY;
 
@@ -29,7 +29,7 @@ public interface ImmutableIntBag {
 
 }
 
-class ImmutableIntBagImpl implements ImmutableIntBag {
+final class ImmutableIntBagImpl implements ImmutableIntBag {
 
     static final ImmutableIntBagImpl EMPTY = new ImmutableIntBagImpl(new IntBag(0));
 

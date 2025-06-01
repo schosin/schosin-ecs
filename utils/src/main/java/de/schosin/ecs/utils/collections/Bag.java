@@ -39,7 +39,7 @@ import org.jspecify.annotations.Nullable;
  * 
  * @param <T> element type
  */
-public class Bag<T> implements ImmutableBag<T> {
+public final class Bag<T> implements ImmutableBag<T> {
 
     private T[] data;
     private int size;
@@ -52,6 +52,10 @@ public class Bag<T> implements ImmutableBag<T> {
     public Bag(Class<? super T> clazz, int size) {
         this.data = (T[]) Array.newInstance(clazz, size);
         this.size = 0;
+    }
+
+    public Bag(ImmutableBag<T> other) {
+        this(((ImmutableBagImpl<T>) other).bag);
     }
 
     public Bag(Bag<T> other) {
@@ -81,6 +85,12 @@ public class Bag<T> implements ImmutableBag<T> {
     @Override
     public T get(int index) {
         return data[index];
+    }
+
+    public void addAll(ImmutableBag<? extends T> components) {
+        for (int i = 0, s = components.getSize(); i < s; i++) {
+            add(components.get(i));
+        }
     }
 
     public void add(@NonNull T item) {

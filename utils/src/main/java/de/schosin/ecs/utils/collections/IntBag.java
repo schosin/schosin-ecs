@@ -5,7 +5,7 @@ import java.util.ConcurrentModificationException;
 import java.util.PrimitiveIterator;
 import java.util.PrimitiveIterator.OfInt;
 
-public class IntBag implements ImmutableIntBag {
+public final class IntBag implements ImmutableIntBag {
 
     private int[] data;
     private int size;

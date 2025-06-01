@@ -23,7 +23,7 @@ import org.jspecify.annotations.NonNull;
  * 
  * @param <T> element type
  */
-public interface ImmutableBag<T> extends Iterable<T> {
+public sealed interface ImmutableBag<T> extends Iterable<T> permits Bag, ImmutableBagImpl {
 
     @SuppressWarnings("unchecked")
     static <T> ImmutableBag<T> emptyBag() {
@@ -52,12 +52,12 @@ public interface ImmutableBag<T> extends Iterable<T> {
 
 }
 
-class ImmutableBagImpl<T> implements ImmutableBag<T> {
+final class ImmutableBagImpl<T> implements ImmutableBag<T> {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     static final ImmutableBagImpl EMPTY = new ImmutableBagImpl(new Bag(Object.class, 0));
 
-    private final Bag<T> bag;
+    final Bag<T> bag;
 
     ImmutableBagImpl(Bag<T> bag) {
         this.bag = bag;
