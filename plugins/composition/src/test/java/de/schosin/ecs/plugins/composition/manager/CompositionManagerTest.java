@@ -1174,7 +1174,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
-            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
+            var componentMask = storageEngine.getComponentMask(component(C1.class));
             var event = EntityUpdatedEvent.get(42, null, componentMask);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
@@ -1182,7 +1182,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testUpdatedEntities_WhenNullNewComposition_Throws() {
-            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
+            var componentMask = storageEngine.getComponentMask(component(C1.class));
             var event = EntityUpdatedEvent.get(42, componentMask, null);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
@@ -1197,9 +1197,9 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
             var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
 
-            var componentMask1 = componentMaskManager.getComponentMask(component(C1.class));
-            var componentMask12 = componentMaskManager.getComponentMask(component(C1.class), component(C2.class));
-            var componentMask2 = componentMaskManager.getComponentMask(component(C2.class));
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+            var componentMask12 = storageEngine.getComponentMask(component(C1.class), component(C2.class));
+            var componentMask2 = storageEngine.getComponentMask(component(C2.class));
 
             var mask42 = componentMask1;
             var mask1337 = componentMask2;
@@ -1228,10 +1228,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             // Setup
             bagManager.ensureEntitySize(10000);
 
-            var componentMask1 = componentMaskManager.getComponentMask(component(C1.class));
-            var componentMask12 = componentMaskManager.getComponentMask(component(C1.class), component(C2.class));
-            var componentMask2 = componentMaskManager.getComponentMask(component(C2.class));
-            var componentMask3 = componentMaskManager.getComponentMask(component(C3.class));
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+            var componentMask12 = storageEngine.getComponentMask(component(C1.class), component(C2.class));
+            var componentMask2 = storageEngine.getComponentMask(component(C2.class));
+            var componentMask3 = storageEngine.getComponentMask(component(C3.class));
 
             var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
             var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
@@ -1282,7 +1282,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             initial.add(31337);
             initial.add(9001);
 
-            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
+            var componentMask = storageEngine.getComponentMask(component(C1.class));
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Remove entity
@@ -1309,7 +1309,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             var removed = new IntBag(2);
 
-            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
+            var componentMask = storageEngine.getComponentMask(component(C1.class));
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Add callback
@@ -1339,7 +1339,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var removed2 = new ArrayList<Integer>();
             var removed3 = new HashSet<Integer>();
 
-            var componentMask = componentMaskManager.getComponentMask(component(C1.class));
+            var componentMask = storageEngine.getComponentMask(component(C1.class));
             var composition = compositionManager.create(EMPTY, spec -> initial);
 
             // Add callbacks

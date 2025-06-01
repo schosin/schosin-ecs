@@ -273,7 +273,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
             var otherWorld = World.builder().build();
             var otherEngine = otherWorld.getSingleton(StorageEngine.class);
 
-            var otherComponent = otherEngine.getComponent(type, NO_OP);
+            var otherComponent = otherEngine.getComponent(type);
 
             assumeThat(otherComponent.id()).as("assumption that component ids are in strict ascending order").isSameAs(component.id());
 
@@ -343,7 +343,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
     }
 
     protected final <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type) {
-        return engine.getComponent(type, NO_OP);
+        return engine.getComponent(type);
     }
 
     private Stream<Arguments> types() {

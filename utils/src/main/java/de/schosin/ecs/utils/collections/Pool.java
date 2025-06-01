@@ -67,7 +67,7 @@ final class BoundedPoolImpl<T> extends PoolImpl<T> {
     public String toString() {
         return new StringBuilder()
                 .append("BoundedPoolImpl(size = ").append(data.getSize())
-                .append(", limit = ").append(limit)
+                .append(", limit = ").append(limit).append(")")
                 .toString();
     }
 
@@ -129,7 +129,7 @@ sealed class PoolImpl<T> implements Pool<T> {
     @Override
     public String toString() {
         return new StringBuilder()
-                .append("PoolImpl(size = ").append(data.getSize())
+                .append("PoolImpl(size = ").append(data.getSize()).append(")")
                 .toString();
     }
 

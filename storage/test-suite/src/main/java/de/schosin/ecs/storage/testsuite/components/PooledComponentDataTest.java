@@ -116,7 +116,7 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
     }
 
     protected <TT extends Pooled> PooledComponentData<TT> getComponent(ClassType<TT> classType) {
-        return engine.getPooledComponent(classType, NO_OP);
+        return engine.getPooledComponent(classType);
     }
 
     public record P1() implements Pooled {

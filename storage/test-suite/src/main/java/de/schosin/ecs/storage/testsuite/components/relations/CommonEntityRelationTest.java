@@ -141,7 +141,7 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
     }
 
     protected <R, X> EntityRelationComponent<R, X> getComponent(RegularEntityRelationType<R, X> type) {
-        return engine.getComponent(type, NO_OP);
+        return engine.getComponent(type);
     }
 
     record RegularComponent() {

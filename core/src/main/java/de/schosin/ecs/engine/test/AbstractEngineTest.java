@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,7 +25,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.engine.components.ComponentManager;
-import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
@@ -34,6 +32,8 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 /**
@@ -282,12 +282,12 @@ public abstract class AbstractEngineTest {
         }
 
         private void handleInserted(int entityId, ComponentMask componentMask) {
-            var mask = componentMask.getMask();
+            var components = componentMask.getComponents();
             expected: for (var iter = inserted.iterator(); iter.hasNext();) {
                 var expected = iter.next();
 
                 for (var expectedComponent : expected.components) {
-                    if (!mask.get(expectedComponent.id())) {
+                    if (!components.contains(expectedComponent)) {
                         continue expected;
                     }
                 }
@@ -309,7 +309,7 @@ public abstract class AbstractEngineTest {
 
                 iter.remove();
 
-                var present = new HashSet<>(Set.of(componentMask.getComponents()));
+                var present = new Bag<>(componentMask.getComponents());
                 var missing = new ArrayList<String>();
 
                 if (expected.components == null) {
@@ -329,7 +329,7 @@ public abstract class AbstractEngineTest {
                 }
 
                 if (!present.isEmpty()) {
-                    var display = present.stream().map(Component::display).toList();
+                    var display = Arrays.stream(present.getData()).limit(present.getSize()).map(Component::type).toList();
                     softly.assertThat(display).as("Expected entity %d to have %d components, but some were unexpected.".formatted(entityId, expected.components.size())).isEmpty();
                 }
 
@@ -395,7 +395,9 @@ public abstract class AbstractEngineTest {
         }
 
         private static Set<Component<?, ?>> set(ComponentMask componentMask) {
-            return Arrays.stream(componentMask.getComponents()).collect(Collectors.toSet());
+            var components = componentMask.getComponents();
+
+            return components.stream().collect(Collectors.toSet());
         }
 
         private static String components(Set<Component<?, ?>> components) {

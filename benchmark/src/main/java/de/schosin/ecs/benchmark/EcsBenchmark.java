@@ -18,7 +18,6 @@ import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
-import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.plugins.archetype.ArchetypeManager;
@@ -37,7 +36,6 @@ public abstract class EcsBenchmark {
 
     protected BagManager bagManager;
     protected ComponentManager componentManager;
-    protected ComponentMaskManager componentMaskManager;
     protected CompositionManager compositionManager;
     protected EntityManager entityManager;
     protected ArchetypeManager archetypeManager;
@@ -51,7 +49,6 @@ public abstract class EcsBenchmark {
         try {
             this.bagManager = world.getSingleton(BagManager.class);
             this.componentManager = world.getSingleton(ComponentManager.class);
-            this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
             this.compositionManager = world.getSingleton(CompositionManager.class);
             this.entityManager = world.getSingleton(EntityManager.class);
             this.archetypeManager = world.getSingleton(ArchetypeManager.class);

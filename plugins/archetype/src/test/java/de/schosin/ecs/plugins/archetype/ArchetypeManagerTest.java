@@ -35,9 +35,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -69,13 +79,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             protected abstract <T1> Archetype1<T1> createArchetype(RegularComponentType<T1, ?> component1);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class);
 
                 var entityId = archetype.create(new C1());
-                verifyHasComponents(entityId, C1.class);
-                verifyComponentMaskHasComponents(entityId, C1.class);
+                verifyComponents(entityId, C1.class);
             }
 
             @Test
@@ -94,8 +113,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class);
+                    verifyComponents(entityId, C1.class);
                 }
             }
 
@@ -131,8 +149,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class);
+                    verifyComponents(entityId, C1.class);
                 }
             }
 
@@ -181,8 +198,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1);
-                        verifyHasComponents(entityId, type);
-                        verifyComponentMaskHasComponents(entityId, type);
+                        verifyComponents(entityId, type);
                     });
                 }
 
@@ -205,8 +221,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1);
-                        verifyHasComponents(entityId, type);
-                        verifyComponentMaskHasComponents(entityId, type);
+                        verifyComponents(entityId, type);
                     });
                 }
 
@@ -235,9 +250,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1, component2).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -269,13 +294,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             protected abstract <T1, T2> Archetype2<T1, T2> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class, C2.class);
 
                 var entityId = archetype.create(new C1(), new C2());
-                verifyHasComponents(entityId, C1.class, C2.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+                verifyComponents(entityId, C1.class, C2.class);
             }
 
             @Test
@@ -295,8 +329,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+                    verifyComponents(entityId, C1.class, C2.class);
                 }
             }
 
@@ -344,8 +377,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+                    verifyComponents(entityId, C1.class, C2.class);
                 }
             }
 
@@ -393,8 +425,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+                    verifyComponents(entityId, C1.class, C2.class);
                 }
             }
 
@@ -457,8 +488,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -479,8 +509,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2);
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -501,8 +530,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2);
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -525,8 +553,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2);
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -555,8 +582,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2);
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -588,8 +614,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -613,8 +638,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2);
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -637,8 +661,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2);
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -668,8 +691,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2);
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -705,9 +727,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1, component2, component3).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -740,13 +772,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
             protected abstract <T1, T2, T3> Archetype3<T1, T2, T3> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
                     RegularComponentType<T3, ?> component3);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class);
 
                 var entityId = archetype.create(new C1(), new C2(), new C3());
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+                verifyComponents(entityId, C1.class, C2.class, C3.class);
             }
 
             @Test
@@ -767,8 +808,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+                    verifyComponents(entityId, C1.class, C2.class, C3.class);
                 }
             }
 
@@ -834,8 +874,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -856,8 +895,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -878,8 +916,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -902,8 +939,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -932,8 +968,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -965,8 +1000,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -990,8 +1024,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1014,8 +1047,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1045,8 +1077,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1086,9 +1117,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1, component2, component3, component4).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -1121,13 +1162,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
             protected abstract <T1, T2, T3, T4> Archetype4<T1, T2, T3, T4> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
                     RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
 
                 var entityId = archetype.create(new C1(), new C2(), new C3(), new C4());
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class);
+                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class);
             }
 
             @Test
@@ -1149,8 +1199,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class);
+                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class);
                 }
             }
 
@@ -1219,8 +1268,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1241,8 +1289,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1263,8 +1310,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1287,8 +1333,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1317,8 +1362,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1350,8 +1394,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1375,8 +1418,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1399,8 +1441,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1430,8 +1471,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1471,9 +1511,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1, component2, component3, component4, component5).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -1508,13 +1558,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
             protected abstract <T1, T2, T3, T4, T5> Archetype5<T1, T2, T3, T4, T5> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
                     RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
 
                 var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5());
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
+                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
             }
 
             @Test
@@ -1537,8 +1596,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
+                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
                 }
             }
 
@@ -1610,8 +1668,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1632,8 +1689,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1654,8 +1710,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1678,8 +1733,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1708,8 +1762,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1741,8 +1794,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1766,8 +1818,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -1790,8 +1841,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1821,8 +1871,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -1862,9 +1911,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1, component2, component3, component4, component5, component6).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -1899,13 +1958,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
             protected abstract <T1, T2, T3, T4, T5, T6> Archetype6<T1, T2, T3, T4, T5, T6> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
                     RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
 
                 var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6());
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
             }
 
             @Test
@@ -1929,8 +1997,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
+                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
                 }
             }
 
@@ -2005,8 +2072,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2027,8 +2093,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2049,8 +2114,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2073,8 +2137,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2103,8 +2166,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2136,8 +2198,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2161,8 +2222,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2185,8 +2245,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2216,8 +2275,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2259,9 +2317,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1, component2, component3, component4, component5, component6, component7).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -2297,13 +2365,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                     RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6,
                     RegularComponentType<T7, ?> component7);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
 
                 var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
             }
 
             @Test
@@ -2328,8 +2405,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
+                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
                 }
             }
 
@@ -2407,8 +2483,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2429,8 +2504,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2451,8 +2525,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2475,8 +2548,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2505,8 +2577,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2538,8 +2609,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2563,8 +2633,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2587,8 +2656,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2618,8 +2686,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2661,9 +2728,19 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 return world.createArchetype(component1, component2, component3, component4, component5, component6, component7, component8).with(E1.INSTANCE, E2.INSTANCE);
             }
 
-            protected void verifyComponentMaskHasComponents(int entityId, Class<?>... components) {
+            @Override
+            protected void verifyComponents(int entityId, Class<?>... components) {
                 var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
 
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
+                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
+            }
+
+            @Override
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
+
+                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
                 ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
             }
 
@@ -2700,13 +2777,22 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                     RegularComponentType<T2, ?> component2, RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5,
                     RegularComponentType<T6, ?> component6, RegularComponentType<T7, ?> component7, RegularComponentType<T8, ?> component8);
 
+            protected void verifyComponents(int entityId, Class<?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
+            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
+                verifyHasComponents(entityId, components);
+                verifyComponentMaskHasComponents(entityId, components);
+            }
+
             @Test
             void testArchetype() {
                 var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
 
                 var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
             }
 
             @Test
@@ -2732,8 +2818,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
                 for (var iter = entityIds.iterator(); iter.hasNext();) {
                     var entityId = iter.nextInt();
-                    verifyHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
+                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
                 }
             }
 
@@ -2814,8 +2899,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), new Target(1));
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2836,8 +2920,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), new Target(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2858,8 +2941,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C1(), new Target2(2));
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2882,8 +2964,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2912,8 +2993,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -2945,8 +3025,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation1 = Relation.create(new C1(), target);
 
                         var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2970,8 +3049,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(new C2(), target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
                     });
                 }
 
@@ -2994,8 +3072,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)
@@ -3025,8 +3102,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                         var relation2 = Relation.create(relationship, target2);
 
                         var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyHasComponents(entityId, expected);
-                        verifyComponentMaskHasComponents(entityId, expected);
+                        verifyComponents(entityId, expected);
 
                         var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
                         assertThat(relations)

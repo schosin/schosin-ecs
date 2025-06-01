@@ -4,6 +4,9 @@ import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -54,12 +57,18 @@ public final class Bag<T> implements ImmutableBag<T> {
         this.size = 0;
     }
 
+    @SafeVarargs
+    public Bag(T... items) {
+        this.data = Arrays.copyOf(items, Math.max(items.length, 64));
+        this.size = items.length;
+    }
+
     public Bag(ImmutableBag<T> other) {
-        this(((ImmutableBagImpl<T>) other).bag);
+        this(other instanceof Bag<T> bag ? bag : ((ImmutableBagImpl<T>) other).bag);
     }
 
     public Bag(Bag<T> other) {
-        this.data = Arrays.copyOf(other.data, other.data.length);
+        this.data = Arrays.copyOf(other.data, Math.max(other.data.length, 64));
         this.size = other.size;
     }
 
@@ -211,6 +220,11 @@ public final class Bag<T> implements ImmutableBag<T> {
                 }
             }
         }
+    }
+
+    @Override
+    public Stream<T> stream() {
+        return StreamSupport.stream(Spliterators.spliterator(iterator(), size, 0), false);
     }
 
     @Override

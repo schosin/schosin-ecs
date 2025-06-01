@@ -1,12 +1,8 @@
 package de.schosin.ecs.engine.components;
 
-import java.util.function.Consumer;
-
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -32,6 +28,7 @@ import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
@@ -41,8 +38,7 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
  * 
  * <p>
  * Each new component class is assigned an {@link Component#id}
- * that is used in several places, including as an index into a Bags,
- * or for optimizing modifications in {@link ComponentMaskManager}.
+ * that is used in several places, including as an index into a Bags.
  * </p>
  */
 public class ComponentManager {
@@ -50,13 +46,13 @@ public class ComponentManager {
     private final StorageEngine storageEngine;
     private final EventManager eventManager;
 
-    private final Consumer<RegularComponentType<?, ?>> validate;
+    private final Classes classes;
 
     public ComponentManager(StorageEngine storageEngine, EventManager eventManager, Classes classes) {
         this.storageEngine = storageEngine;
         this.eventManager = eventManager;
 
-        this.validate = type -> ComponentManager.validateComponent(type, classes);
+        this.classes =classes;
     }
 
     public Component<?, ?> getComponent(int componentId) {
@@ -64,39 +60,39 @@ public class ComponentManager {
     }
 
     public <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     public <T> ClassComponent<T> getComponent(ClassType<T> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     public <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type) {
-        return storageEngine.getPooledComponent(type, this.validate);
+        return storageEngine.getPooledComponent(type);
     }
 
     public <R, T, X> ComponentRelationComponent<R, T, X> getComponent(RegularComponentRelationType<R, T, X> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     public <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     public <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     public <R, X> EntityRelationComponent<R, X> getComponent(RegularEntityRelationType<R, X> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     public <R> EntityRelationData<R> getComponent(EntityRelationType<R> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     public <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> type) {
-        return storageEngine.getComponent(type, this.validate);
+        return storageEngine.getComponent(type);
     }
 
     /**
@@ -109,18 +105,8 @@ public class ComponentManager {
         throw new UnsupportedComponentTypeException(type, "ComponentType '%s' not allowed, must use RegularComponentType for accessing components.".formatted(type));
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> Component<T, ?> getComponent(@NonNull T component) {
-        return switch (component) {
-            case null -> throw new IllegalArgumentException("Cannot get component type for null instance");
-            case ComponentRelation<?, ?> relation -> Exclusive.class.isAssignableFrom(relation.relationship().getClass())
-                    ? getComponent(ComponentType.exclusiveRelation((Class) relation.relationship().getClass(), relation.target().getClass()))
-                    : getComponent(ComponentType.relation((Class) relation.relationship().getClass(), relation.target().getClass()));
-            case EntityRelation<?> relation -> Exclusive.class.isAssignableFrom(relation.relationship().getClass())
-                    ? getComponent(ComponentType.exclusiveRelation((Class) relation.relationship().getClass()))
-                    : getComponent(ComponentType.relation((Class) relation.relationship().getClass()));
-            default -> getComponent(ComponentType.component((Class<T>) component.getClass()));
-        };
+        return getComponent(ComponentType.detectComponentType(component));
     }
 
     public void removed(int entityId, ComponentMask componentMask) {
@@ -175,6 +161,8 @@ public class ComponentManager {
     }
 
     public <T, R> void dispatchComponentAddedEvent(RegularComponentType<T, R> type, Component<T, R> component) {
+        validateComponent(type, classes);
+        
         eventManager.dispatchEvent(ComponentAddedEvent.get(type, component));
     }
 

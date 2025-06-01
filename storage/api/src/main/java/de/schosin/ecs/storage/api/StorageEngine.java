@@ -6,7 +6,7 @@ import java.util.ServiceLoader;
 import de.schosin.ecs.api.Plugin;
 import de.schosin.ecs.api.World;
 
-public interface StorageEngine extends ComponentStorage {
+public interface StorageEngine extends ComponentStorage, EntityStorage {
 
     /**
      * Sets the world this storage engine is used for. This will be an unproxied instance.

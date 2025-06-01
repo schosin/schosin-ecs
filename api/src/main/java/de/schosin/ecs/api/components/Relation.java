@@ -14,6 +14,7 @@ import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelatio
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
@@ -318,14 +319,10 @@ class RelationHelper {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            ComponentRelationImpl other = (ComponentRelationImpl) obj;
-            return Objects.equals(this.relationship, other.relationship) && Objects.equals(this.target, other.target) && Objects.equals(this.type, other.type);
+            return obj instanceof ComponentRelation other
+                    && Objects.equals(this.type, other.type())
+                    && Objects.equals(this.relationship, other.relationship())
+                    && Objects.equals(this.target, other.target());
         }
 
         @Override
@@ -368,19 +365,17 @@ class RelationHelper {
 
         @Override
         public int hashCode() {
+            // don't include data, not considered part of the relation
             return Objects.hash(relationship, target, type);
         }
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            EntityRelationImpl other = (EntityRelationImpl) obj;
-            return Objects.equals(this.relationship, other.relationship) && this.target == other.target && Objects.equals(this.type, other.type);
+            // don't include data, not considered part of the relation
+            return obj instanceof EntityRelationData other
+                    && this.target == other.target()
+                    && Objects.equals(this.type, other.type())
+                    && Objects.equals(this.relationship, other.relationship());
         }
 
         @Override

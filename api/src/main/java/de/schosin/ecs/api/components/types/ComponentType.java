@@ -5,6 +5,9 @@ import java.util.Set;
 
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
@@ -64,6 +67,20 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
      * Wildcard matching all {@link ClassType} components.
      */
     static Wildcard<Object> WILDCARD = Wildcard.WILDCARD;
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    static <T> RegularComponentType<T, ?> detectComponentType(T component) {
+        return switch (component) {
+            case null -> throw new IllegalArgumentException("Cannot get component type for null instance");
+            case ComponentRelation<?, ?> relation -> Exclusive.class.isAssignableFrom(relation.relationship().getClass())
+                    ? exclusiveRelation((Class) relation.relationship().getClass(), relation.target().getClass())
+                    : relation((Class) relation.relationship().getClass(), relation.target().getClass());
+            case EntityRelation<?> relation -> Exclusive.class.isAssignableFrom(relation.relationship().getClass())
+                    ? exclusiveRelation((Class) relation.relationship().getClass())
+                    : relation((Class) relation.relationship().getClass());
+            default -> component((Class<T>) component.getClass());
+        };
+    }
 
     static <T> ClassType<T> component(Class<T> clazz) {
         return new ClassType<>(clazz);

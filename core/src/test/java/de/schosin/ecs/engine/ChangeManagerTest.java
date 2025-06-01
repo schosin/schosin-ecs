@@ -225,7 +225,7 @@ class ChangeManagerTest extends AbstractWorldTest {
             verifyHasComponents(entityId, C1.class);
             verifyComponentMaskHasComponents(entityId, C1.class);
 
-            // Add component
+            // Remove component
             component1.remove(entityId);
             verifyHasComponents(entityId, C1.class);
             verifyComponentMaskHasComponents(entityId, C1.class);

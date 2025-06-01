@@ -1,6 +1,6 @@
 package de.schosin.ecs.storage.defaultimpl;
 
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import com.google.auto.service.AutoService;
 
@@ -14,6 +14,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.storage.api.ComponentStorage;
+import de.schosin.ecs.storage.api.EntityStorage;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
@@ -23,16 +24,20 @@ import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 @AutoService(StorageEngine.class)
 public class DefaultStorageEngine implements StorageEngine {
 
     private ComponentStorage componentStorage;
+    private EntityStorage entityStorage;
 
     @Override
     public void setWorld(StorageWorld world) {
         this.componentStorage = new ComponentStorageImpl(world);
+        this.entityStorage = new EntityStorageImpl(world, componentStorage);
     }
 
     @Override
@@ -41,33 +46,33 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public <T> ClassComponent<T> getComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return this.componentStorage.getComponent(type, validate);
+    public <T> ClassComponent<T> getComponent(ClassType<T> type) {
+        return this.componentStorage.getComponent(type);
     }
 
     @Override
-    public <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return this.componentStorage.getPooledComponent(type, validate);
+    public <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type) {
+        return this.componentStorage.getPooledComponent(type);
     }
 
     @Override
-    public <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return this.componentStorage.getComponent(type, validate);
+    public <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type) {
+        return this.componentStorage.getComponent(type);
     }
 
     @Override
-    public <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return this.componentStorage.getComponent(type, validate);
+    public <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> type) {
+        return this.componentStorage.getComponent(type);
     }
 
     @Override
-    public <R> EntityRelationData<R> getComponent(EntityRelationType<R> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return this.componentStorage.getComponent(type, validate);
+    public <R> EntityRelationData<R> getComponent(EntityRelationType<R> type) {
+        return this.componentStorage.getComponent(type);
     }
 
     @Override
-    public <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return this.componentStorage.getComponent(type, validate);
+    public <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> type) {
+        return this.componentStorage.getComponent(type);
     }
 
     @Override
@@ -78,6 +83,91 @@ public class DefaultStorageEngine implements StorageEngine {
     @Override
     public <T> ImmutableBag<Component<? extends T, ?>> getComponents(ComponentType<T, ?> bound) {
         return this.componentStorage.getComponents(bound);
+    }
+
+    @Override
+    public ComponentMask getComponentMaskForEntity(int entityId) {
+        return this.entityStorage.getComponentMaskForEntity(entityId);
+    }
+
+    @Override
+    public ComponentMask getComponentMaskById(int componentMaskId) {
+        return this.entityStorage.getComponentMaskById(componentMaskId);
+    }
+
+    @Override
+    public ComponentMask getComponentMask(RegularComponentType<?, ?>... componentTypes) {
+        return this.entityStorage.getComponentMask(componentTypes);
+    }
+
+    @Override
+    public ComponentMask addToComponentMask(ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
+        return this.entityStorage.addToComponentMask(componentMask, componentTypes);
+    }
+
+    @Override
+    public ComponentMask removeFromComponentMask(ComponentMask componentMask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
+        return this.entityStorage.removeFromComponentMask(componentMask, componentTypes);
+    }
+
+    @Override
+    public ImmutableBag<ComponentMask> getComponentMasks() {
+        return this.entityStorage.getComponentMasks();
+    }
+
+    @Override
+    public void getComponentMasks(Predicate<ComponentMask> predicate, Bag<ComponentMask> fill) {
+        this.entityStorage.getComponentMasks(predicate, fill);
+    }
+
+    @Override
+    public ComponentMask create(int entityId, Object[] components) {
+        return this.entityStorage.create(entityId, components);
+    }
+
+    @Override
+    public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
+        return this.entityStorage.create(entityId, componentMask, components);
+    }
+
+    @Override
+    public ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+        return this.entityStorage.create(entityId, componentMask, componentTypes, components);
+    }
+
+    @Override
+    public ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
+        return this.entityStorage.create(entityId, componentMask, componentTypes, components);
+    }
+
+    @Override
+    public ComponentMask add(int entityId, Object[] components) {
+        return this.entityStorage.add(entityId, components);
+    }
+
+    @Override
+    public ComponentMask add(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object[] components) {
+        return this.entityStorage.add(entityId, componentTypes, components);
+    }
+
+    @Override
+    public ComponentMask remove(int entityId, ImmutableBag<ComponentType<?, ?>> componentTypes) {
+        return this.entityStorage.remove(entityId, componentTypes);
+    }
+
+    @Override
+    public ComponentMask modify(int entityId, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
+        return this.entityStorage.modify(entityId, add, removeTypes);
+    }
+
+    @Override
+    public ComponentMask modify(int entityId, ImmutableBag<RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
+        return this.entityStorage.modify(entityId, addTypes, add, removeTypes);
+    }
+
+    @Override
+    public ComponentMask delete(int entityId) {
+        return this.entityStorage.delete(entityId);
     }
 
 }

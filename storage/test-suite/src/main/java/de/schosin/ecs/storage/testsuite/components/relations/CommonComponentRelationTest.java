@@ -150,7 +150,7 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
     }
 
     protected <R, T, X> ComponentRelationComponent<R, T, X> getComponent(RegularComponentRelationType<R, T, X> type) {
-        return engine.getComponent(type, NO_OP);
+        return engine.getComponent(type);
     }
 
     private enum EnumComponent {

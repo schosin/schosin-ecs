@@ -3,7 +3,6 @@ package de.schosin.ecs.storage.defaultimpl;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.Exclusive;
@@ -61,19 +60,19 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     @Override
-    public <T> ClassComponent<T> getComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return getComponentData(type, validate);
+    public <T> ClassComponent<T> getComponent(ClassType<T> type) {
+        return getComponentData(type);
     }
 
     @Override
-    public <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate) {
-        return getPooledComponentData(type, validate);
+    public <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type) {
+        return getPooledComponentData(type);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T> ClassComponent<T> getComponentData(ClassType<T> classType, Consumer<RegularComponentType<?, ?>> validate) {
+    private <T> ClassComponent<T> getComponentData(ClassType<T> classType) {
         if (Pooled.class.isAssignableFrom(classType.clazz())) {
-            return getPooledComponent((ClassType) classType, validate);
+            return getPooledComponent((ClassType) classType);
         }
 
         var result = (ComponentData<T>) componentData.get(classType);
@@ -86,8 +85,6 @@ public class ComponentStorageImpl implements ComponentStorage {
             if (result != null) {
                 return result;
             }
-
-            validate.accept(classType);
 
             var component = createComponentData(classType);
 
@@ -108,7 +105,7 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Pooled> PooledComponentData<T> getPooledComponentData(ClassType<T> classType, Consumer<RegularComponentType<?, ?>> validate) {
+    private <T extends Pooled> PooledComponentData<T> getPooledComponentData(ClassType<T> classType) {
         var result = (PooledComponentData<T>) componentData.get(classType);
         if (result != null) {
             return result;
@@ -119,8 +116,6 @@ public class ComponentStorageImpl implements ComponentStorage {
             if (result != null) {
                 return result;
             }
-
-            validate.accept(classType);
 
             var component = createPooledComponentData(classType);
 
@@ -143,7 +138,7 @@ public class ComponentStorageImpl implements ComponentStorage {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+    public <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> relationType) {
         var result = (ComponentRelationData<R, T>) componentData.get(relationType);
         if (result != null) {
             return result;
@@ -154,8 +149,6 @@ public class ComponentStorageImpl implements ComponentStorage {
             if (result != null) {
                 return result;
             }
-
-            validate.accept(relationType);
 
             var component = createComponentRelationData(relationType);
 
@@ -175,7 +168,7 @@ public class ComponentStorageImpl implements ComponentStorage {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+    public <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> relationType) {
         var result = (ExclusiveComponentRelationData<R, T>) componentData.get(relationType);
         if (result != null) {
             return result;
@@ -186,8 +179,6 @@ public class ComponentStorageImpl implements ComponentStorage {
             if (result != null) {
                 return result;
             }
-
-            validate.accept(relationType);
 
             var component = createExclusiveComponentRelationData(relationType);
 
@@ -207,7 +198,7 @@ public class ComponentStorageImpl implements ComponentStorage {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <R> EntityRelationData<R> getComponent(EntityRelationType<R> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+    public <R> EntityRelationData<R> getComponent(EntityRelationType<R> relationType) {
         var result = (EntityRelationData<R>) componentData.get(relationType);
         if (result != null) {
             return result;
@@ -218,8 +209,6 @@ public class ComponentStorageImpl implements ComponentStorage {
             if (result != null) {
                 return result;
             }
-
-            validate.accept(relationType);
 
             var component = createEntityRelationData(relationType);
 
@@ -239,7 +228,7 @@ public class ComponentStorageImpl implements ComponentStorage {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> relationType, Consumer<RegularComponentType<?, ?>> validate) {
+    public <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> relationType) {
         var result = (ExclusiveEntityRelationData<R>) componentData.get(relationType);
         if (result != null) {
             return result;
@@ -250,8 +239,6 @@ public class ComponentStorageImpl implements ComponentStorage {
             if (result != null) {
                 return result;
             }
-
-            validate.accept(relationType);
 
             var component = createExclusiveEntityRelationData(relationType);
 

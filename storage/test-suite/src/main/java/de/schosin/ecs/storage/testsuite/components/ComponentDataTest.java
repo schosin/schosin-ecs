@@ -41,7 +41,7 @@ public class ComponentDataTest extends CommonClassTypeTest<C1, C2, C3> {
     }
 
     protected <TT> ComponentData<TT> getComponent(ClassType<TT> classType) {
-        return (ComponentData<TT>) engine.getComponent(classType, NO_OP);
+        return (ComponentData<TT>) engine.getComponent(classType);
     }
 
     record C1() {

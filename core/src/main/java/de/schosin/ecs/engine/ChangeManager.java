@@ -1,19 +1,20 @@
 package de.schosin.ecs.engine;
 
-import org.jspecify.annotations.NonNull;
-
+import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.components.ComponentManager;
-import de.schosin.ecs.engine.components.ComponentMask;
-import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
+import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
@@ -21,9 +22,10 @@ public class ChangeManager {
 
     private static final int MAX_PROCESS_REPITITIONS = 10;
 
+    private final StorageEngine storageEngine;
+
     private final EventManager eventManager;
     private final ComponentManager componentManager;
-    private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
 
     private final Bag<IntBag> removedComponentsBags;
@@ -40,10 +42,11 @@ public class ChangeManager {
     private Bag<IntBag> removedComponents;
     private Bag<IntBag> removedComponentsOverflow;
 
-    public ChangeManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, EntityManager entityManager) {
+    public ChangeManager(StorageEngine storageEngine, EventManager eventManager, BagManager bagManager, ComponentManager componentManager, EntityManager entityManager) {
+        this.storageEngine = storageEngine;
+
         this.eventManager = eventManager;
         this.componentManager = componentManager;
-        this.componentMaskManager = componentMaskManager;
         this.entityManager = entityManager;
 
         this.removedComponentsBags = bagManager.createComponentBag(IntBag.class);
@@ -110,7 +113,7 @@ public class ChangeManager {
             var previousComponentMask = entityManager.getComponentMask(entityId);
 
             var componentMaskId = fromLookup(updatedEntityMasks.get(entityId));
-            var componentMask = componentMaskManager.getComponentMask(componentMaskId);
+            var componentMask = storageEngine.getComponentMaskById(componentMaskId);
 
             // Process updated entity
             flushCompositionUpdate(entityId, componentMask);
@@ -125,7 +128,7 @@ public class ChangeManager {
     public boolean flushEntityUpdates(int entityId, int loops) {
         while (updatedEntities.get(entityId) && --loops > 0) {
             var componentMaskId = fromLookup(updatedEntityMasks.get(entityId));
-            var componentMask = componentMaskManager.getComponentMask(componentMaskId);
+            var componentMask = storageEngine.getComponentMaskById(componentMaskId);
 
             flushCompositionUpdate(entityId, componentMask);
         }
@@ -211,7 +214,7 @@ public class ChangeManager {
             var entities = removedData[i];
 
             var componentId = this.removedComponentsBags.indexOfIdentity(entities);
-            processRemovedComponent(componentId, removedData[i]);
+            processRemovedComponent(componentId, entities);
 
             entities.clear();
         }
@@ -255,7 +258,7 @@ public class ChangeManager {
         }
 
         // Update entity
-        var componentMask = componentMaskManager.getComponentMask(componentMaskId);
+        var componentMask = storageEngine.getComponentMaskById(componentMaskId);
         if (entityManager.updateComponentMask(entityId, componentMask)) {
             eventManager.dispatchEvent(EntityUpdatedEvent.get(entityId, previousComponentMask, componentMask));
         }
@@ -265,36 +268,71 @@ public class ChangeManager {
         this.deletedEntities.set(entityId);
     }
 
-    public void updateEntity(int entityId, ComponentMask componentMask) {
-        this.updatedEntities.set(entityId);
-        this.updatedEntityMasks.set(entityId, fromLookup(componentMask.getId()));
-    }
+    public boolean updateEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
+        // Retrieve current component mask
+        var previousComponentMask = entityManager.getComponentMask(entityId);
 
-    public <T> boolean addComponent(int entityId, Component<T, ?> component, @NonNull T instance) {
-        var changed = !component.hasComponent(entityId);
+        // Retrieve pending component mask change if present
+        var pendingComponentMaskId = getPendingComponentMask(entityId);
+        if (pendingComponentMaskId > -1) {
+            previousComponentMask = storageEngine.getComponentMaskById(pendingComponentMaskId);
+        }
 
-        component.addComponent(entityId, instance);
-        unmarkRemoved(entityId, component);
+        // Add components to storage
+        storageEngine.add(entityId, addTypes, add);
 
-        if (changed) {
+        // Track new component mask separately due to delayed removal
+        var newComponentMask = storageEngine.addToComponentMask(previousComponentMask, addTypes);
+
+        if (!addTypes.isEmpty()) {
+            for (int i = 0, s = addTypes.getSize(); i < s; i++) {
+                var component = componentManager.getComponent(addTypes.get(i));
+                unmarkRemoved(entityId, component);
+            }
+        }
+
+        if (!removeTypes.isEmpty()) {
+            var removeComponentMask = storageEngine.removeFromComponentMask(newComponentMask, removeTypes);
+
+            // Remove previous componets no longer in component mask
+            var previousComponents = previousComponentMask.getComponents();
+            for (int i = 0, s = previousComponents.getSize(); i < s; i++) {
+                var component = previousComponents.get(i);
+
+                if (!removeComponentMask.contains(component.id())) {
+                    markRemoved(entityId, component);
+                }
+            }
+
+            // Remove added components no longer in component mask (e.g. add and remove in same operation)
+            // hard to detect properly because wildcards can match components discovered at a later time
+            var newComponents = newComponentMask.getComponents();
+            for (int i = 0, s = newComponents.getSize(); i < s; i++) {
+                var component = newComponents.get(i);
+
+                if (!removeComponentMask.contains(component.id())) {
+                    markRemoved(entityId, component);
+                }
+            }
+
+            newComponentMask = removeComponentMask;
+        }
+
+        if (previousComponentMask.getId() != newComponentMask.getId()) {
             this.updatedEntities.set(entityId);
+            this.updatedEntityMasks.set(entityId, fromLookup(newComponentMask.getId()));
+
+            return true;
         }
 
-        return changed;
-    }
-
-    public boolean removeComponent(int entityId, Component<?, ?> component) {
-        if (!component.hasComponent(entityId)) {
-            return false;
-        }
-
-        this.updatedEntities.set(entityId);
-        markRemoved(entityId, component);
-
-        return true;
+        return false;
     }
 
     private void markRemoved(int entityId, Component<?, ?> component) {
+        if (!component.hasComponent(entityId)) {
+            return;
+        }
+
         var removed = this.removedComponentsBags.get(component.id());
         if (removed == null) {
             synchronized (this.removedComponentsBags) {

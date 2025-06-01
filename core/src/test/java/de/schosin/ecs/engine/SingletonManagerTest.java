@@ -15,7 +15,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
-import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
@@ -55,10 +54,9 @@ class SingletonManagerTest extends AbstractWorldTest {
             var singletonManager = new SingletonManager(null);
             var bagManager = new BagManager();
             var componentManager = new ComponentManager(storageEngine, eventManager, null);
-            var componentMaskManager = new ComponentMaskManager(bagManager, componentManager);
-            var entityManager = new EntityManager(null, bagManager, componentManager, componentMaskManager);
-            var changeManager = new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager);
-            var transmutationManager = new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager);
+            var entityManager = new EntityManager(null, storageEngine, bagManager, componentManager);
+            var changeManager = new ChangeManager(storageEngine, eventManager, bagManager, componentManager, entityManager);
+            var transmutationManager = new TransmutationManager(changeManager);
             var relationMapperManager = new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager);
             var componentMapperManager = new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager);
 
@@ -67,7 +65,6 @@ class SingletonManagerTest extends AbstractWorldTest {
                     Arguments.of(Named.of("singletonManager", singletonManager)),
                     Arguments.of(Named.of("bagManager", bagManager)),
                     Arguments.of(Named.of("componentManager", componentManager)),
-                    Arguments.of(Named.of("componentMaskManager", componentMaskManager)),
                     Arguments.of(Named.of("entityManager", entityManager)),
                     Arguments.of(Named.of("changeManager", changeManager)),
                     Arguments.of(Named.of("transmutationManager", transmutationManager)),

@@ -21,6 +21,7 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.plugins.transmuter.Transmuter.Remove;
+import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.utils.collections.IntBag;
 
 @EcsCodegen
@@ -55,11 +56,11 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
     @Test
     void testUnknownEntity() {
-        assertThat(add1.apply(42, new C1())).isFalse();
-        assertThat(add1add2.apply(42, new C1(), new C2())).isFalse();
-        assertThat(remove2.apply(42)).isFalse();
-        assertThat(remove1remove2.apply(42)).isFalse();
-        assertThat(add1remove2.apply(42, new C1())).isFalse();
+        assertThatThrownBy(() -> add1.apply(42, new C1())).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
+        assertThatThrownBy(() -> add1add2.apply(42, new C1(), new C2())).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
+        assertThatThrownBy(() -> remove2.apply(42)).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
+        assertThatThrownBy(() -> remove1remove2.apply(42)).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
+        assertThatThrownBy(() -> add1remove2.apply(42, new C1())).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
     }
 
     @Test

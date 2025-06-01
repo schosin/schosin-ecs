@@ -1,6 +1,7 @@
 package de.schosin.ecs.utils.collections;
 
 import java.util.Iterator;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.NonNull;
 
@@ -25,13 +26,23 @@ import org.jspecify.annotations.NonNull;
  */
 public sealed interface ImmutableBag<T> extends Iterable<T> permits Bag, ImmutableBagImpl {
 
+    @SafeVarargs
+    static <T> ImmutableBag<T> of(T... items) {
+        if (items.length == 0) {
+            return emptyBag();
+        }
+
+        return create(new Bag<>(items));
+    }
+
     @SuppressWarnings("unchecked")
     static <T> ImmutableBag<T> emptyBag() {
         return ImmutableBagImpl.EMPTY;
     }
 
-    static <T> ImmutableBag<T> create(Bag<T> bag) {
-        return new ImmutableBagImpl<>(bag);
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    static <T> ImmutableBag<T> create(Bag<? extends T> bag) {
+        return new ImmutableBagImpl<>((Bag) bag);
     }
 
     boolean isEmpty();
@@ -49,6 +60,8 @@ public sealed interface ImmutableBag<T> extends Iterable<T> permits Bag, Immutab
     int indexOf(@NonNull T item);
 
     int indexOfIdentity(@NonNull T item);
+
+    Stream<T> stream();
 
 }
 
@@ -104,8 +117,18 @@ final class ImmutableBagImpl<T> implements ImmutableBag<T> {
     }
 
     @Override
+    public Stream<T> stream() {
+        return bag.stream();
+    }
+
+    @Override
     public Iterator<T> iterator() {
         return new ImmutableBagIterator<>(bag);
+    }
+
+    @Override
+    public String toString() {
+        return this.bag.toString();
     }
 
     private static class ImmutableBagIterator<T> implements Iterator<T> {

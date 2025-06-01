@@ -275,7 +275,7 @@ public class ComponentRelationDataTest extends
     }
 
     private <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type) {
-        return engine.getComponent(type, NO_OP);
+        return engine.getComponent(type);
     }
 
     @Override

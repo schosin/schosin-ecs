@@ -42,7 +42,6 @@ import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRe
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
-import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
@@ -70,7 +69,6 @@ public class EngineWorld implements World, StorageWorld {
     private final SingletonManager singletonManager;
     private final BagManager bagManager;
     private final ComponentManager componentManager;
-    private final ComponentMaskManager componentMaskManager;
     private final EntityManager entityManager;
     private final ChangeManager changeManager;
     private final TransmutationManager transmutationManager;
@@ -88,10 +86,9 @@ public class EngineWorld implements World, StorageWorld {
         this.eventManager = addSingleton(new EventManager());
         this.bagManager = addSingleton(new BagManager());
         this.componentManager = addSingleton(new ComponentManager(storageEngine, eventManager, classes));
-        this.componentMaskManager = addSingleton(new ComponentMaskManager(bagManager, componentManager));
-        this.entityManager = addSingleton(new EntityManager(this, bagManager, componentManager, componentMaskManager));
-        this.changeManager = addSingleton(new ChangeManager(eventManager, bagManager, componentManager, componentMaskManager, entityManager));
-        this.transmutationManager = addSingleton(new TransmutationManager(changeManager, componentManager, componentMaskManager, entityManager));
+        this.entityManager = addSingleton(new EntityManager(this, storageEngine, bagManager, componentManager));
+        this.changeManager = addSingleton(new ChangeManager(storageEngine, eventManager, bagManager, componentManager, entityManager));
+        this.transmutationManager = addSingleton(new TransmutationManager(changeManager));
         this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager));
         this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager));
 
@@ -218,11 +215,10 @@ public class EngineWorld implements World, StorageWorld {
 
     @Override
     public boolean process(int loops) {
-        componentMapperManager.process();
-
         var result = changeManager.process(loops);
 
         eventManager.dispatchEvent(ProcessEvent.PROCESS_STEP);
+        componentMapperManager.process();
 
         return result;
     }

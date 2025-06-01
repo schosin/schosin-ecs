@@ -413,7 +413,7 @@ public class EntityRelationDataTest
     }
 
     private <R> EntityRelationData<R> getComponent(EntityRelationType<R> type) {
-        return engine.getComponent(type, NO_OP);
+        return engine.getComponent(type);
     }
 
     @Override

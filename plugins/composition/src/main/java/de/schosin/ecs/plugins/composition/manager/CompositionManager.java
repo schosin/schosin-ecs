@@ -20,8 +20,6 @@ import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
-import de.schosin.ecs.engine.components.ComponentMask;
-import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
@@ -38,6 +36,8 @@ import de.schosin.ecs.plugins.composition.Spec;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
+import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -45,8 +45,9 @@ import de.schosin.ecs.utils.collections.IntBag;
 @EcsCodegen
 public class CompositionManager extends AbstractSpecManager implements CompositionPlugin {
 
+    private final StorageEngine storageEngine;
+
     private final BagManager bagManager;
-    private final ComponentMaskManager componentMaskManager;
     private final ComponentMapperManager componentMapperManager;
 
     private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
@@ -59,8 +60,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         world.addSingleton(this);
 
+        this.storageEngine = world.getSingleton(StorageEngine.class);
+
         this.bagManager = world.getSingleton(BagManager.class);
-        this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
         var eventManager = world.getSingleton(EventManager.class);
@@ -109,7 +111,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         // Add composition to ComponentMask lookup 
         synchronized (compositionsByMask) {
             fill.clear();
-            componentMaskManager.getComponentMasks(composition::isInterested, fill);
+            storageEngine.getComponentMasks(composition::isInterested, fill);
 
             var data = fill.getData();
             for (int i = 0, s = fill.getSize(); i < s; i++) {

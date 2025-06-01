@@ -18,6 +18,7 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
 import de.schosin.ecs.engine.components.TransmutationManager.Builder;
+import de.schosin.ecs.storage.api.StorageEngineException;
 
 class TransmutationManagerTest extends AbstractWorldTest {
 
@@ -40,10 +41,10 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
     @Test
     void testUnknownEntity() {
-        assertThat(add1.apply(42, new C1())).isFalse();
-        assertThat(add2.apply(42, new C2())).isFalse();
-        assertThat(remove1.apply(42)).isFalse();
-        assertThat(remove2.apply(42)).isFalse();
+        assertThatThrownBy(() -> add1.apply(42, new C1())).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
+        assertThatThrownBy(() -> add2.apply(42, new C2())).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
+        assertThatThrownBy(() -> remove1.apply(42)).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
+        assertThatThrownBy(() -> remove2.apply(42)).isInstanceOf(StorageEngineException.class).hasMessageContaining("not present in storage");
     }
 
     @Test
@@ -693,15 +694,15 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
-            transmuter.apply(entityId, new C1());
+            assertThatThrownBy(() -> transmuter.apply(entityId, new C1()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Expected 2", "got 1");
 
             world.process();
 
             // Verify
-            verifyHasComponents(entityId, C1.class);
-            verifyDoesNotHaveComponents(entityId, C2.class);
-
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -715,8 +716,11 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> transmuter.apply(entityId, new C1(), new C2(), new C3()))
-                    .isInstanceOf(ArrayIndexOutOfBoundsException.class)
-                    .hasMessage("Index 2 out of bounds for length 2");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Expected 2", "got 3");
+            
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
         @Test

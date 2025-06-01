@@ -5,35 +5,34 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.IntFunction;
-import java.util.stream.Stream;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.data.DataProvider;
 import de.schosin.ecs.codegen.EcsCodegen;
-import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
-import de.schosin.ecs.engine.components.ComponentMask;
-import de.schosin.ecs.engine.components.ComponentMaskManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ProcessEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.Data;
-import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.components.Component.RelationComponent;
+import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen
 public class ArchetypeManager extends BaseArchetypeManager implements ArchetypePlugin {
 
-    private final ComponentManager componentManager;
-    private final ComponentMaskManager componentMaskManager;
+    private final StorageEngine storageEngine;
+
     private final EntityManager entityManager;
     private final ComponentMapperManager componentMapperManager;
 
@@ -46,8 +45,8 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
     public ArchetypeManager(World world, DataTypePlugin dataTypePlugin) {
         world.addSingleton(this);
 
-        this.componentManager = world.getSingleton(ComponentManager.class);
-        this.componentMaskManager = world.getSingleton(ComponentMaskManager.class);
+        this.storageEngine = world.getSingleton(StorageEngine.class);
+
         this.entityManager = world.getSingleton(EntityManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
@@ -75,11 +74,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         return component.cast(mapper.getInstance());
     }
 
-    private Bag<Bag<Object>> getDataBags(int size, int count) {
+    private Bag<Bag<Object>> getDataBags(int entities) {
         var bags = this.bagsPool.getInstance();
         this.lentBags.add(bags);
 
-        for (int i = bags.getSize(); i < size; i++) {
+        for (int i = bags.getSize(); i < entities; i++) {
             bags.add(bagPool.getInstance());
         }
 
@@ -93,7 +92,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         private final ComponentMask componentMask;
 
         private final Object[] fixed;
-        private final Component<?, ?>[] dataLookup;
+        private final ImmutableBag<RegularComponentType<?, ?>> componentTypes;
         private final int size;
 
         private final Pool<Object[]> pool;
@@ -103,16 +102,20 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             validateNoPooledComponents(fixed);
 
-            this.dataLookup = Stream.concat(Arrays.stream(parent.dataLookup), Arrays.stream(fixed).map(component -> (Component<?, ?>) this.manager.componentManager.getComponent(component)))
-                    .toArray(Component<?, ?>[]::new);
+            var componentTypes = new Bag<>(parent.componentTypes);
+            for (var component : fixed) {
+                componentTypes.add(ComponentType.detectComponentType(component));
+            }
 
-            validateNoDuplicateComponents(this.dataLookup);
+            this.componentTypes = componentTypes;
+
+            validateNoDuplicateComponents(this.componentTypes);
 
             this.fixed = parent.fixed != null ? ArrayUtils.concat(Object.class, parent.fixed, fixed) : fixed;
-            this.componentMask = this.manager.componentMaskManager.getComponentMask(this.dataLookup);
-            this.size = this.dataLookup.length - (this.fixed != null ? this.fixed.length : 0);
+            this.componentMask = this.manager.storageEngine.getComponentMask(this.componentTypes.stream().toArray(RegularComponentType<?, ?>[]::new));
+            this.size = this.componentTypes.getSize() - (this.fixed != null ? this.fixed.length : 0);
 
-            var componentsSize = this.dataLookup.length;
+            var componentsSize = this.componentTypes.getSize();
             this.pool = Pool.unbounded(Object[].class, () -> new Object[componentsSize], array -> Arrays.fill(array, null));
         }
 
@@ -127,26 +130,24 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         protected AbstractBaseArchetypeImpl(BaseArchetypeManager manager, RegularComponentType<?, ?>... components) {
             this.manager = (ArchetypeManager) manager;
 
-            this.dataLookup = Arrays.stream(components)
-                    .map(this.manager.componentManager::getComponent)
-                    .toArray(Component<?, ?>[]::new);
+            this.componentTypes = new Bag<>(components);
 
-            validateNoDuplicateComponents(this.dataLookup);
+            validateNoDuplicateComponents(this.componentTypes);
 
             this.fixed = null;
-            this.componentMask = this.manager.componentMaskManager.getComponentMask(this.dataLookup);
+            this.componentMask = this.manager.storageEngine.getComponentMask(this.componentTypes.stream().toArray(RegularComponentType<?, ?>[]::new));
             this.size = components.length;
 
             this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
         }
 
-        private void validateNoDuplicateComponents(Component<?, ?>[] components) {
-            var set = HashSet.<Component<?, ?>>newHashSet(components.length);
-            for (int i = 0, s = components.length; i < s; i++) {
-                var component = components[i];
+        private void validateNoDuplicateComponents(ImmutableBag<RegularComponentType<?, ?>> components) {
+            var set = HashSet.<RegularComponentType<?, ?>>newHashSet(components.getSize());
+            for (int i = 0, s = components.getSize(); i < s; i++) {
+                var component = components.get(i);
 
-                if (!set.add(component) && !(component instanceof RelationComponent<?, ?, ?>)) {
-                    throw new IllegalArgumentException("Component '%s' already defined, cannot add duplicates.".formatted(component.display()));
+                if (!set.add(component) && !(component instanceof RelationComponentType<?, ?, ?>)) {
+                    throw new IllegalArgumentException("Component '%s' already defined, cannot add duplicates.".formatted(component));
                 }
             }
         }
@@ -165,22 +166,21 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 }
 
                 // Create entity
-                return manager.entityManager.create(componentMask, dataLookup, components);
+                return manager.entityManager.create(componentMask, componentTypes, components);
             });
         }
 
         @Override
         public ImmutableIntBag createIndexed(int count, IntFunction<P> provider) {
-            var components = pool.getInstance();
-            var data = manager.getDataBags(components.length, count);
+            var data = manager.getDataBags(count);
 
             for (int i = 0; i < count; i++) {
-                var provided = provider.apply(i).getData();
-                fillComponents(provided, components);
+                var components = data.get(i);
 
-                for (int c = 0, s = components.length; c < s; c++) {
-                    data.get(c).set(i, components[c]);
-                }
+                var provided = provider.apply(i).getData();
+
+                fillComponents(provided, components.getData());
+                components.set(componentTypes.getSize() - 1, components.get(componentTypes.getSize() - 1)); // ensure correct size
 
                 // Free provided instance
                 if (provided instanceof Data d) {
@@ -188,9 +188,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 }
             }
 
-            pool.free(components);
-
-            return manager.entityManager.createEntities(this.componentMask, data, this.dataLookup);
+            return manager.entityManager.createEntities(this.componentMask, data, this.componentTypes);
         }
 
         private void fillComponents(Object data, Object[] components) {
@@ -207,11 +205,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 var dataComponents = d.getComponents();
 
                 for (int i = 0; i < size; i++) {
-                    var expectedMetadata = this.dataLookup[i];
+                    var expectedType = this.componentTypes.get(i);
 
                     var component = dataComponents.get(i);
                     if (component == null) {
-                        throw new IllegalArgumentException("Component %d to be of type '%s' cannot be null.".formatted(i + 1, expectedMetadata.type()));
+                        throw new IllegalArgumentException("Component %d to be of type '%s' cannot be null.".formatted(i + 1, expectedType));
                     }
 
                     components[i] = component;

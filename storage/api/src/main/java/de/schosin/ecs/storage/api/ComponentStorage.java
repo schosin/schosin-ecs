@@ -1,7 +1,5 @@
 package de.schosin.ecs.storage.api;
 
-import java.util.function.Consumer;
-
 import javax.management.openmbean.CompositeData;
 
 import de.schosin.ecs.api.Pooled;
@@ -69,18 +67,17 @@ public interface ComponentStorage {
      * 
      * @param <T> type of component
      * @param type component type of component
-     * @param validate callback for component creation
      * @return component instance
      */
     @SuppressWarnings("unchecked")
-    default <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type, Consumer<RegularComponentType<?, ?>> validate) {
+    default <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type) {
         return (Component<T, R>) switch (type) {
-            case ClassType<?> classType -> getComponent(classType, validate);
+            case ClassType<?> classType -> getComponent(classType);
             case RelationComponentType<?, ?, ?> relation -> switch (relation) {
-                case ComponentRelationType<?, ?> componentRelation -> getComponent(componentRelation, validate);
-                case ExclusiveComponentRelationType<?, ?> componentRelation -> getComponent(componentRelation, validate);
-                case EntityRelationType<?> entityRelation -> getComponent(entityRelation, validate);
-                case ExclusiveEntityRelationType<?> entityRelation -> getComponent(entityRelation, validate);
+                case ComponentRelationType<?, ?> componentRelation -> getComponent(componentRelation);
+                case ExclusiveComponentRelationType<?, ?> componentRelation -> getComponent(componentRelation);
+                case EntityRelationType<?> entityRelation -> getComponent(entityRelation);
+                case ExclusiveEntityRelationType<?> entityRelation -> getComponent(entityRelation);
             };
         };
     }
@@ -102,10 +99,9 @@ public interface ComponentStorage {
      * 
      * @param <T> type of component
      * @param type component type of component
-     * @param validate callback for component creation
      * @return component instance
      */
-    <T> ClassComponent<T> getComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate);
+    <T> ClassComponent<T> getComponent(ClassType<T> type);
 
     /**
      * Returns the {@link PooledComponentData} instance for the {@link ClassType type}.
@@ -124,34 +120,33 @@ public interface ComponentStorage {
      * 
      * @param <T> type of component
      * @param type component type of component
-     * @param validate callback for component creation
      * @return component instance
      */
-    <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type, Consumer<RegularComponentType<?, ?>> validate);
+    <T extends Pooled> PooledComponentData<T> getPooledComponent(ClassType<T> type);
 
     @SuppressWarnings("unchecked")
-    default <R, T, X> ComponentRelationComponent<R, T, X> getComponent(RegularComponentRelationType<R, T, X> type, Consumer<RegularComponentType<?, ?>> validate) {
+    default <R, T, X> ComponentRelationComponent<R, T, X> getComponent(RegularComponentRelationType<R, T, X> type) {
         return (ComponentRelationComponent<R, T, X>) switch (type) {
-            case ComponentRelationType<?, ?> relation -> getComponent(relation, validate);
-            case ExclusiveComponentRelationType<?, ?> relation -> getComponent(relation, validate);
+            case ComponentRelationType<?, ?> relation -> getComponent(relation);
+            case ExclusiveComponentRelationType<?, ?> relation -> getComponent(relation);
         };
     }
 
-    <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate);
+    <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type);
 
-    <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> type, Consumer<RegularComponentType<?, ?>> validate);
+    <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> getComponent(ExclusiveComponentRelationType<R, T> type);
 
     @SuppressWarnings("unchecked")
-    default <R, X> EntityRelationComponent<R, X> getComponent(RegularEntityRelationType<R, X> type, Consumer<RegularComponentType<?, ?>> validate) {
+    default <R, X> EntityRelationComponent<R, X> getComponent(RegularEntityRelationType<R, X> type) {
         return (EntityRelationComponent<R, X>) switch (type) {
-            case EntityRelationType<?> relation -> getComponent(relation, validate);
-            case ExclusiveEntityRelationType<?> relation -> getComponent(relation, validate);
+            case EntityRelationType<?> relation -> getComponent(relation);
+            case ExclusiveEntityRelationType<?> relation -> getComponent(relation);
         };
     }
 
-    <R> EntityRelationData<R> getComponent(EntityRelationType<R> type, Consumer<RegularComponentType<?, ?>> validate);
+    <R> EntityRelationData<R> getComponent(EntityRelationType<R> type);
 
-    <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> type, Consumer<RegularComponentType<?, ?>> validate);
+    <R extends Exclusive> ExclusiveEntityRelationData<R> getComponent(ExclusiveEntityRelationType<R> type);
 
     /**
      * Returns a bag of the known components. 

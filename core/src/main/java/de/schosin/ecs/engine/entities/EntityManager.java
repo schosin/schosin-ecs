@@ -4,13 +4,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.components.ComponentManager;
-import de.schosin.ecs.engine.components.ComponentMask;
-import de.schosin.ecs.engine.components.ComponentMaskManager;
+import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
@@ -22,10 +24,10 @@ public class EntityManager {
     }
 
     private final World world;
+    private final StorageEngine storageEngine;
 
     private final BagManager bagManager;
     private final ComponentManager componentManager;
-    private final ComponentMaskManager componentMaskManager;
 
     private final AtomicInteger entityId = new AtomicInteger(1);
     private final Bag<Entity> entities = new Bag<>(Entity.class, 64);
@@ -36,12 +38,12 @@ public class EntityManager {
 
     private ChangeManager changeManager;
 
-    public EntityManager(World world, BagManager bagManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager) {
+    public EntityManager(World world, StorageEngine storageEngine, BagManager bagManager, ComponentManager componentManager) {
         this.world = world;
+        this.storageEngine = storageEngine;
 
         this.bagManager = bagManager;
         this.componentManager = componentManager;
-        this.componentMaskManager = componentMaskManager;
     }
 
     public void process() {
@@ -52,45 +54,37 @@ public class EntityManager {
     }
 
     public int createEntity(Object... components) {
-        // Retrieve component mask
-        var componentMask = componentMaskManager.getComponentMask(components);
-
         // Create entity
-        return create(componentMask, components);
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public int create(ComponentMask componentMask, Object... components) {
-        // Create entity
-        var entity = createEntity(componentMask);
-
-        for (int i = 0, s = components.length; i < s; i++) {
-            var component = components[i];
-            var metadata = (Component) componentManager.getComponent(component);
-
-            metadata.addComponentUnsafe(entity.id, component);
-        }
+        var entity = createEntityInstance();
+        entity.componentMask = storageEngine.create(entity.id, components);
 
         // Add entity
         this.entities.set(entity.id, entity);
 
         // Notify handlers
-        inserted(entity.id, componentMask);
+        inserted(entity.id, entity.componentMask);
 
         return entity.id;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public int create(ComponentMask componentMask, Component<?, ?>[] lookup, Object... components) {
+    public int create(ComponentMask componentMask, Object... components) {
         // Create entity
-        var entity = createEntity(componentMask);
+        var entity = createEntityInstance();
+        entity.componentMask = storageEngine.create(entity.id, componentMask, components);
 
-        for (int i = 0, s = components.length; i < s; i++) {
-            var component = components[i];
-            var metadata = (Component) lookup[i];
+        // Add entity
+        this.entities.set(entity.id, entity);
 
-            metadata.addComponent(entity.id, component);
-        }
+        // Notify handlers
+        inserted(entity.id, entity.componentMask);
+
+        return entity.id;
+    }
+
+    public int create(ComponentMask componentMask, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object... components) {
+        // Create entity
+        var entity = createEntityInstance();
+        entity.componentMask = storageEngine.create(entity.id, componentMask, componentTypes, components);
 
         // Add entity
         this.entities.set(entity.id, entity);
@@ -105,14 +99,12 @@ public class EntityManager {
      * Creates the number of entities described by the length of the inner arrays of data.
      * 
      * @param componentMask component mask for the entities
-     * @param data component data for the entities (outer array for components, inner array for entities) 
+     * @param data component data for the entities (outer bag for entities, inner bag for components) 
      * @param lookup lookup for {@link Component} matching the index of the outer array of data (component index)
      * @return array of entity ids
      */
-    @SuppressWarnings({ "rawtypes", "unchecked" })
-    public ImmutableIntBag createEntities(ComponentMask componentMask, Bag<Bag<Object>> data, Component<?, ?>[] lookup) {
-        var componentSize = data.getSize();
-        var count = data.get(0).getSize();
+    public ImmutableIntBag createEntities(ComponentMask componentMask, Bag<Bag<Object>> data, ImmutableBag<RegularComponentType<?, ?>> componentTypes) {
+        var count = data.getSize();
 
         // Create result bag
         var entityIds = intBagPool.getInstance();
@@ -120,21 +112,15 @@ public class EntityManager {
 
         // Create entities
         for (int i = 0; i < count; i++) {
-            var entity = createEntity(componentMask);
-            entityIds.add(entity.id);
+            var components = data.get(i);
 
+            // Create entity
+            var entity = createEntityInstance();
+            entity.componentMask = storageEngine.create(entity.id, componentMask, componentTypes, components);
+
+            // Add entity
             this.entities.set(entity.id, entity);
-        }
-
-        // Add components
-        for (int c = 0; c < componentSize; c++) {
-            var metadata = lookup[c];
-            var components = data.get(c);
-
-            for (int i = 0; i < count; i++) {
-                var entityId = entityIds.get(i);
-                ((Component) metadata).addComponent(entityId, components.get(i));
-            }
+            entityIds.add(entity.id);
         }
 
         // Notify listeners
@@ -159,11 +145,8 @@ public class EntityManager {
         changeManager.inserted(entityIds, componentMask);
     }
 
-    private Entity createEntity(ComponentMask componentMask) {
-        var entity = pool.getInstance();
-        entity.componentMask = componentMask;
-
-        return entity;
+    private Entity createEntityInstance() {
+        return pool.getInstance();
     }
 
     private int createEntityId() {
@@ -210,6 +193,7 @@ public class EntityManager {
             }
 
             this.entities.set(entityId, null);
+            storageEngine.delete(entityId);
         }
 
         // Notify managers

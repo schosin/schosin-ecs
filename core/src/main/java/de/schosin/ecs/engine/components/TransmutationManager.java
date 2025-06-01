@@ -11,8 +11,6 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.Pool;
@@ -28,20 +26,14 @@ public class TransmutationManager {
     }
 
     private final ChangeManager changeManager;
-    private final ComponentManager componentManager;
-    private final ComponentMaskManager componentMaskManager;
-    private final EntityManager entityManager;
 
     private final Map<BuilderKey, AbstractTransmuter> transmuters = new ConcurrentHashMap<>();
 
     private final Pool<BuilderKey> internalKeyPool = Pool.unbounded(BuilderKey.class, () -> new BuilderKey(true));
     private final Pool<BuilderKey> keyPool = Pool.unbounded(BuilderKey.class, () -> new BuilderKey(false));
 
-    public TransmutationManager(ChangeManager changeManager, ComponentManager componentManager, ComponentMaskManager componentMaskManager, EntityManager entityManager) {
+    public TransmutationManager(ChangeManager changeManager) {
         this.changeManager = changeManager;
-        this.componentManager = componentManager;
-        this.componentMaskManager = componentMaskManager;
-        this.entityManager = entityManager;
     }
 
     public <T> Add<T> getAddTransmuter(RegularComponentType<T, ?> component) {
@@ -112,133 +104,48 @@ public class TransmutationManager {
 
     public abstract static class AbstractTransmuter {
 
-        private static final Bag<ImmutableBag<Component<?, ?>>> EMPTY_BAG = new Bag<>(ImmutableBag.class, 0);
-
         private final TransmutationManager manager;
 
-        private final Component<?, ?>[] add;
-        private final ImmutableBag<ImmutableBag<Component<?, ?>>> remove;
-
-        private final Bag<ComponentMask> cache = new Bag<>(ComponentMask.class, 64);
+        private final ImmutableBag<RegularComponentType<?, ?>> addTypes;
+        private final ImmutableBag<ComponentType<?, ?>> removeTypes;
 
         protected AbstractTransmuter(TransmutationManager manager, Builder builder) {
             this(manager, builder.getAdd(), builder.getRemove());
         }
 
         protected AbstractTransmuter(TransmutationManager manager, Set<RegularComponentType<?, ?>> add, Set<ComponentType<?, ?>> remove) {
-            this(manager, convert(manager, add), convertRemove(manager, remove));
+            this(manager, convert(add), convertRemove(remove));
         }
 
-        private static Component<?, ?>[] convert(TransmutationManager manager, Set<RegularComponentType<?, ?>> types) {
-            return types.stream().map(manager.componentManager::getComponent).toArray(Component[]::new);
-        }
-
-        @SuppressWarnings("unchecked")
-        private static ImmutableBag<ImmutableBag<Component<?, ?>>> convertRemove(TransmutationManager manager, Set<ComponentType<?, ?>> types) {
+        private static ImmutableBag<RegularComponentType<?, ?>> convert(Set<RegularComponentType<?, ?>> types) {
             if (types.isEmpty()) {
-                return EMPTY_BAG;
+                return ImmutableBag.emptyBag();
             }
 
-            var bag = new Bag<ImmutableBag<Component<?, ?>>>(ImmutableBag.class, 64);
-
-            for (var type : types) {
-                var components = manager.componentManager.getComponents(type);
-                bag.add((ImmutableBag<Component<?, ?>>) components);
-            }
-
-            return ImmutableBag.create(bag);
+            return ImmutableBag.create(new Bag<>(types.toArray(RegularComponentType<?, ?>[]::new)));
         }
 
-        private AbstractTransmuter(TransmutationManager manager, Component<?, ?>[] add, ImmutableBag<ImmutableBag<Component<?, ?>>> remove) {
+        private static ImmutableBag<ComponentType<?, ?>> convertRemove(Set<ComponentType<?, ?>> types) {
+            if (types.isEmpty()) {
+                return ImmutableBag.emptyBag();
+            }
+
+            return ImmutableBag.create(new Bag<>(types.toArray(ComponentType<?, ?>[]::new)));
+        }
+
+        private AbstractTransmuter(TransmutationManager manager, ImmutableBag<RegularComponentType<?, ?>> addTypes, ImmutableBag<ComponentType<?, ?>> removeTypes) {
             this.manager = manager;
 
-            this.add = add;
-            this.remove = remove;
+            this.addTypes = addTypes;
+            this.removeTypes = removeTypes;
         }
 
         protected boolean apply(int entityId, Object... added) {
-            // Retrieve component mask, return early if null (entity does not exist)
-            var componentMask = manager.entityManager.getComponentMask(entityId);
-            if (componentMask == null) {
-                return false;
+            if (addTypes.getSize() != added.length) {
+                throw new IllegalArgumentException("Expected %d added components, but got %d".formatted(addTypes.getSize(), added.length));
             }
 
-            // Retrieve pending component mask change if present
-            var pendingComponentMaskId = manager.changeManager.getPendingComponentMask(entityId);
-            if (pendingComponentMaskId > -1) {
-                componentMask = manager.componentMaskManager.getComponentMask(pendingComponentMaskId);
-            }
-
-            // Modify components
-            addComponents(entityId, added);
-            removeComponents(entityId);
-
-            // Update component mask
-            var updatedComponentMask = getNewComponentMask(componentMask);
-            if (updatedComponentMask.getId() == componentMask.getId()) {
-                return false;
-            }
-
-            // Notify entity changes
-            manager.changeManager.updateEntity(entityId, updatedComponentMask);
-
-            return true;
-        }
-
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        private final void addComponents(int entityId, Object... components) {
-            if (components.length == 0) {
-                return;
-            }
-
-            for (int i = 0, s = components.length; i < s; i++) {
-                var instance = components[i];
-                var component = (Component) this.add[i];
-
-                manager.changeManager.addComponent(entityId, component, instance);
-            }
-        }
-
-        private final void removeComponents(int entityId) {
-            for (int i = 0, s = remove.getSize(); i < s; i++) {
-                var bags = remove.get(i);
-
-                for (int j = 0, js = bags.getSize(); j < js; j++) {
-                    manager.changeManager.removeComponent(entityId, bags.get(j));
-                }
-            }
-        }
-
-        private final ComponentMask getNewComponentMask(ComponentMask componentMask) {
-            // Retrieve cached value
-            var cached = cache.get(componentMask.getId());
-            if (cached != null) {
-                return cached;
-            }
-
-            // Build result
-            var result = computeNewComponentMask(componentMask);
-            cache.set(componentMask.getId(), result);
-
-            return result;
-        }
-
-        private ComponentMask computeNewComponentMask(ComponentMask componentMask) {
-            var result = componentMask;
-
-            for (var metadata : add) {
-                result = manager.componentMaskManager.addComponent(result, metadata);
-            }
-
-            for (int i = 0, s = remove.getSize(); i < s; i++) {
-                var bags = remove.get(i);
-
-                for (int j = 0, js = bags.getSize(); j < js; j++) {
-                    result = manager.componentMaskManager.removeComponent(result, bags.get(j));
-                }
-            }
-
-            return result;
+            return manager.changeManager.updateEntity(entityId, addTypes, added, removeTypes);
         }
 
     }

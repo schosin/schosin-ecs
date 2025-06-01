@@ -7,8 +7,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.engine.components.ComponentMask;
 import de.schosin.ecs.engine.entities.EntityManager;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
 
 public sealed interface EngineSpec extends EntityManager.ComponentsPredicate {
 
