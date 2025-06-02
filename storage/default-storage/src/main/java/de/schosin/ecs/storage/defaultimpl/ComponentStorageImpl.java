@@ -23,6 +23,7 @@ import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
 import de.schosin.ecs.storage.defaultimpl.components.ComponentDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.ComponentRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.EntityRelationDataImpl;
@@ -267,7 +268,7 @@ public class ComponentStorageImpl implements ComponentStorage {
         }
 
         // Dispatch event
-        world.dispatchComponentAddedEvent(type, component);
+        world.dispatchEvent(ComponentAddedEvent.get(type, component));
     }
 
     @Override

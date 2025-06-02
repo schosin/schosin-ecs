@@ -1,8 +1,7 @@
 package de.schosin.ecs.storage.api;
 
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.events.StorageEvent;
 import de.schosin.ecs.utils.collections.Bag;
 
 public interface StorageWorld extends World {
@@ -18,6 +17,6 @@ public interface StorageWorld extends World {
      */
     <T> Bag<T> createEntityBag(Class<? super T> clazz);
 
-    <T, R> void dispatchComponentAddedEvent(RegularComponentType<T, R> type, Component<T, R> component);
+    void dispatchEvent(StorageEvent event);
 
 }

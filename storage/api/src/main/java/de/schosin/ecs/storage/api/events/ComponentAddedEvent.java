@@ -1,4 +1,4 @@
-package de.schosin.ecs.engine.events.builtin;
+package de.schosin.ecs.storage.api.events;
 
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
@@ -6,15 +6,15 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ClassComponentAddedEvent;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ComponentRelationAddedEvent;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.EntityRelationAddedEvent;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ExclusiveComponentRelationAddedEvent;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent.RegularComponentAddedEvent.ExclusiveEntityRelationAddedEvent;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent.RegularComponentAddedEvent.ClassComponentAddedEvent;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent.RegularComponentAddedEvent.ComponentRelationAddedEvent;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent.RegularComponentAddedEvent.EntityRelationAddedEvent;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent.RegularComponentAddedEvent.ExclusiveComponentRelationAddedEvent;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent.RegularComponentAddedEvent.ExclusiveEntityRelationAddedEvent;
 import de.schosin.ecs.utils.collections.Pool;
 
-public sealed interface ComponentAddedEvent extends Event {
+public sealed interface ComponentAddedEvent extends StorageEvent {
 
     static ComponentAddedEvent get(RegularComponentType<?, ?> type, Component<?, ?> component) {
         return switch (type) {

@@ -15,7 +15,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponen
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
 import de.schosin.ecs.engine.utils.ClassUtils;
 import de.schosin.ecs.engine.utils.exceptions.UnsupportedComponentTypeException;
 import de.schosin.ecs.storage.api.StorageEngine;
@@ -29,6 +28,7 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelatio
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
@@ -44,15 +44,13 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 public class ComponentManager {
 
     private final StorageEngine storageEngine;
-    private final EventManager eventManager;
-
     private final Classes classes;
 
     public ComponentManager(StorageEngine storageEngine, EventManager eventManager, Classes classes) {
         this.storageEngine = storageEngine;
-        this.eventManager = eventManager;
+        this.classes = classes;
 
-        this.classes =classes;
+        eventManager.registerEventHandler(ComponentAddedEvent.class, this::handleComponentAdded);
     }
 
     public Component<?, ?> getComponent(int componentId) {
@@ -160,10 +158,8 @@ public class ComponentManager {
         return true;
     }
 
-    public <T, R> void dispatchComponentAddedEvent(RegularComponentType<T, R> type, Component<T, R> component) {
-        validateComponent(type, classes);
-        
-        eventManager.dispatchEvent(ComponentAddedEvent.get(type, component));
+    private void handleComponentAdded(ComponentAddedEvent event) {
+        validateComponent(event.type(), classes);
     }
 
 }

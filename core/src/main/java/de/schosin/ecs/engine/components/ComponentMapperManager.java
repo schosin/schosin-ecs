@@ -56,8 +56,8 @@ import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardCompon
 import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardEntityFetchRelationsImpl;
 import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardEntityRelationsImpl;
 import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
 
 public class ComponentMapperManager implements Components.Creator {

@@ -49,7 +49,7 @@ import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ProcessEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
-import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.events.StorageEvent;
 import de.schosin.ecs.utils.collections.Bag;
 
 public class EngineWorld implements World, StorageWorld {
@@ -234,8 +234,8 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <T, R> void dispatchComponentAddedEvent(RegularComponentType<T, R> type, Component<T, R> component) {
-        componentManager.dispatchComponentAddedEvent(type, component);
+    public void dispatchEvent(StorageEvent event) {
+        eventManager.dispatchEvent(event);
     }
 
 }

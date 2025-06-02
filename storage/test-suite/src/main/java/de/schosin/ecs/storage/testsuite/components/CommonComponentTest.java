@@ -20,10 +20,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.engine.events.builtin.ComponentAddedEvent;
-import de.schosin.ecs.engine.events.builtin.Event;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
+import de.schosin.ecs.storage.api.events.StorageEvent;
 import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
 
 public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends AbstractStorageEngineTest {
@@ -304,7 +304,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
     class CommonComponentAddedEventTest extends AbstractTypeTest {
 
         private record EventData(RegularComponentType<?, ?> type, Component<?, ?> component) {
-            private EventData(Event event) {
+            private EventData(StorageEvent event) {
                 this(assertThat(event).as("Must pass same ClassType as argument").asInstanceOf(InstanceOfAssertFactories.type(ComponentAddedEvent.class)).actual());
             }
 
@@ -317,7 +317,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
         @MethodSource(TYPES)
         void testComponentAddedEvent_WhenGetComponentsCalled(RegularComponentType<?, ?> type) {
             var events = new ArrayList<EventData>();
-            eventManager.registerEventHandler(Event.class, event -> events.add(new EventData(event)));
+            eventManager.registerEventHandler(StorageEvent.class, event -> events.add(new EventData(event)));
 
             var component = getComponent(type);
 
@@ -332,7 +332,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
         @MethodSource(TYPES)
         void testComponentAddedEvent_WhenGetComponentsCalled_DispatchesOnlyOnCreation(RegularComponentType<?, ?> type) {
             var events = new ArrayList<EventData>();
-            eventManager.registerEventHandler(Event.class, event -> events.add(new EventData(event)));
+            eventManager.registerEventHandler(StorageEvent.class, event -> events.add(new EventData(event)));
 
             getComponent(type);
             getComponent(type);

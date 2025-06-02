@@ -10,6 +10,7 @@ import java.util.Set;
 
 import de.schosin.ecs.engine.events.builtin.Event;
 import de.schosin.ecs.engine.utils.exceptions.EcsEventHandlerException;
+import de.schosin.ecs.storage.api.events.StorageEvent;
 import de.schosin.ecs.utils.collections.Bag;
 
 public class EventManager {
@@ -27,7 +28,7 @@ public class EventManager {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public boolean dispatchEvent(Object event) {
-        // dispatch event
+        // Dispatch event
         var handlers = getHandlers(event.getClass());
         if (handlers != null) {
             var data = handlers.getData();
@@ -37,9 +38,13 @@ public class EventManager {
             }
         }
 
-        // Free builtin events
+        // Free builtin and storage events
         if (event instanceof Event builtin) {
             builtin.free();
+        }
+
+        if (event instanceof StorageEvent storageEvent) {
+            storageEvent.free();
         }
 
         return handlers != null && !handlers.isEmpty();
