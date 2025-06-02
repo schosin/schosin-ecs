@@ -23,8 +23,7 @@ public class CompositionPluginGenerator {
     public static final ClassName COMPOSITION = ClassName.get("", "Composition");
     public static final ClassName COMPOSITION_DATA = ClassName.get("de.schosin.ecs.plugins.composition", "CompositionData");
 
-    public static final ClassName BASE_DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "BaseDataType");
-    public static final ClassName DATA = BASE_DATA_TYPE.nestedClass("Data");
+    public static final ClassName DATA = ClassName.get("de.schosin.ecs.plugins.data.types", "Data");
 
     public static final ClassName BUILDER = COMPOSITION.nestedClass("Builder");
 

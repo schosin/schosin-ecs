@@ -22,8 +22,7 @@ import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ProcessEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
-import de.schosin.ecs.plugins.data.types.BaseDataType.Data;
-import de.schosin.ecs.plugins.data.types.DataType;
+import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.RelationComponent;
 import de.schosin.ecs.utils.collections.Bag;
@@ -204,7 +203,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             }
 
             // Add components from provider
-            if (data instanceof DataType.Data d) {
+            if (data instanceof Data d) {
                 var dataComponents = d.getComponents();
 
                 for (int i = 0; i < size; i++) {

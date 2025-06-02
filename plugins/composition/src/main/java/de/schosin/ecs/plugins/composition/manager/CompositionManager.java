@@ -36,7 +36,7 @@ import de.schosin.ecs.plugins.composition.CompositionPlugin;
 import de.schosin.ecs.plugins.composition.CompositionSet;
 import de.schosin.ecs.plugins.composition.Spec;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
-import de.schosin.ecs.plugins.data.types.BaseDataType.Data;
+import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;

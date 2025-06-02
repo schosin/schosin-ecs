@@ -11,6 +11,7 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.utils.ArrayUtils;
+import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.test.AbstractEcsTest;
 
 class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
@@ -117,6 +118,43 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class);
 
                 assertThatThrownBy(() -> archetype.createBatch(10, () -> null))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContaining("cannot be null");
+            }
+
+            @Test
+            void testIndexedBatch() {
+                var archetype = createArchetype(C1.class);
+
+                var entityIds = archetype.createIndexedBatch(10, i -> new C1());
+                assertThat(entityIds.getSize()).isEqualTo(10);
+
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
+                    verifyHasComponents(entityId, C1.class);
+                    verifyComponentMaskHasComponents(entityId, C1.class);
+                }
+            }
+
+            @Test
+            void testIndexedBatchChangeHandler() {
+                var count = 10;
+                var archetype = createArchetype(C1.class);
+
+                verify(verify -> {
+                    for (int i = 0; i < count; i++) {
+                        verify.expectInserted(C1.class);
+                    }
+
+                    archetype.createIndexedBatch(count, i -> new C1());
+                });
+            }
+
+            @Test
+            void testIndexedBatch_NullInstances() {
+                var archetype = createArchetype(C1.class);
+
+                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> null))
                         .isInstanceOf(IllegalArgumentException.class)
                         .hasMessageContaining("cannot be null");
             }
@@ -293,6 +331,104 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var archetype = createArchetype(C1.class, C2.class);
 
                 assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
+                        .isInstanceOf(NullPointerException.class)
+                        .hasMessageContaining("return value cannot be null");
+            }
+
+            @Test
+            void testIndexed() {
+                var archetype = createArchetype(C1.class, C2.class);
+
+                var entityIds = archetype.createIndexed(10, i -> factory -> factory.create(new C1(), new C2()));
+                assertThat(entityIds.getSize()).isEqualTo(10);
+
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
+                    verifyHasComponents(entityId, C1.class, C2.class);
+                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+                }
+            }
+
+            @Test
+            void testIndexedChangeHandler() {
+                var count = 10;
+                var archetype = createArchetype(C1.class, C2.class);
+
+                verify(verify -> {
+                    for (int i = 0; i < count; i++) {
+                        verify.expectInserted(C1.class, C2.class);
+                    }
+
+                    archetype.createIndexed(count, i -> factory -> factory.create(new C1(), new C2()));
+                });
+            }
+
+            @Test
+            void testIndexed_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class);
+
+                assertThatThrownBy(() -> archetype.createIndexed(10, i -> factory -> factory.create(null, new C2())))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("Component 1", "cannot be null");
+                assertThatThrownBy(() -> archetype.createIndexed(10, i -> factory -> factory.create(new C1(), null)))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("Component 2", "cannot be null");
+            }
+
+            @Test
+            void testIndexedInitializeNotCalled() {
+                var archetype = createArchetype(C1.class, C2.class);
+
+                assertThatThrownBy(() -> archetype.createIndexed(10, i -> factory -> null))
+                        .isInstanceOf(NullPointerException.class)
+                        .hasMessageContaining("return value cannot be null");
+            }
+
+            @Test
+            void testIndexedBatch() {
+                var archetype = createArchetype(C1.class, C2.class);
+
+                var entityIds = archetype.createIndexedBatch(10, i -> Data.get(new C1(), new C2()));
+                assertThat(entityIds.getSize()).isEqualTo(10);
+
+                for (var iter = entityIds.iterator(); iter.hasNext();) {
+                    var entityId = iter.nextInt();
+                    verifyHasComponents(entityId, C1.class, C2.class);
+                    verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+                }
+            }
+
+            @Test
+            void testIndexedBatchChangeHandler() {
+                var count = 10;
+                var archetype = createArchetype(C1.class, C2.class);
+
+                verify(verify -> {
+                    for (int i = 0; i < count; i++) {
+                        verify.expectInserted(C1.class, C2.class);
+                    }
+
+                    archetype.createIndexedBatch(count, i -> Data.get(new C1(), new C2()));
+                });
+            }
+
+            @Test
+            void testIndexedBatch_NullInstances() {
+                var archetype = createArchetype(C1.class, C2.class);
+
+                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> Data.get(null, new C2())))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("Component 1", "cannot be null");
+                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> Data.get(new C1(), null)))
+                        .isInstanceOf(IllegalArgumentException.class)
+                        .hasMessageContainingAll("Component 2", "cannot be null");
+            }
+
+            @Test
+            void testIndexedBatchInitializeNotCalled() {
+                var archetype = createArchetype(C1.class, C2.class);
+
+                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> null))
                         .isInstanceOf(NullPointerException.class)
                         .hasMessageContaining("return value cannot be null");
             }

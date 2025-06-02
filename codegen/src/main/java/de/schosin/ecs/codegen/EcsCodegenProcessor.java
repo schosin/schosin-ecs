@@ -22,6 +22,7 @@ import de.schosin.ecs.codegen.generators.plugins.composition.CompositionDataGene
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionManagerGenerator;
 import de.schosin.ecs.codegen.generators.plugins.composition.CompositionPluginGenerator;
+import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataGenerator;
 import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator;
 import de.schosin.ecs.codegen.generators.plugins.datatypes.DataTypeMapperGenerator;
 import de.schosin.ecs.codegen.generators.plugins.transmuter.TransmutationManagerGenerator;
@@ -52,6 +53,7 @@ public class EcsCodegenProcessor extends AbstractProcessor {
     private static final String COMPOSIITON_DATA = "de.schosin.ecs.plugins.composition.CompositionData";
     private static final String COMPOSIITON_PLUGIN_MANAGER = "de.schosin.ecs.plugins.composition.manager.CompositionManager";
 
+    private static final String BASE_DATA = "de.schosin.ecs.plugins.data.types.BaseData";
     private static final String BASE_DATA_TYPE = "de.schosin.ecs.plugins.data.types.BaseDataType";
     private static final String DATA_TYPE_MAPPER = "de.schosin.ecs.plugins.data.mappers.DataTypeMapper";
 
@@ -80,6 +82,7 @@ public class EcsCodegenProcessor extends AbstractProcessor {
                     case COMPOSIITON_DATA -> writeFiles(CompositionDataGenerator.generateFiles(type, compositionParams));
                     case COMPOSIITON_PLUGIN_MANAGER -> writeFile(CompositionManagerGenerator.generateFile(type, compositionParams));
 
+                    case BASE_DATA -> writeFiles(BaseDataGenerator.generateFiles(type, maxParams));
                     case BASE_DATA_TYPE -> writeFiles(BaseDataTypeGenerator.generateFiles(type, maxParams));
                     case DATA_TYPE_MAPPER -> writeFile(DataTypeMapperGenerator.generateFile(type, maxParams));
 

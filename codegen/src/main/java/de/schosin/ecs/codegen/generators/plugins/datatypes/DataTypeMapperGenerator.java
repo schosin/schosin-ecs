@@ -19,7 +19,7 @@ import de.schosin.ecs.codegen.Utils;
 public class DataTypeMapperGenerator {
 
     static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
-    static final ClassName DATA = DATA_TYPE.nestedClass("Data");
+    static final ClassName DATA = ClassName.get("de.schosin.ecs.plugins.data.types", "Data");
 
     public static JavaFile generateFile(TypeElement type, int maxParams) {
         var packageName = ClassName.get(type).packageName();
@@ -48,7 +48,7 @@ public class DataTypeMapperGenerator {
 
             var dataTypeN = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + i);
             var parameterizedDataTypeN = ParameterizedTypeName.get(dataTypeN, typeVariables);
-            var dataN = dataTypeN.nestedClass("Data" + i);
+            var dataN = ClassName.get("de.schosin.ecs.plugins.data.types", "Data" + i);
 
             var arguments = "";
             for (int j = 0; j < i; j++) {
