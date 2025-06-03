@@ -173,8 +173,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -251,8 +251,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -267,8 +267,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
 
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Call
             world.process();
@@ -718,7 +718,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             assertThatThrownBy(() -> transmuter.apply(entityId, new C1(), new C2(), new C3()))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContainingAll("Expected 2", "got 3");
-            
+
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
         }

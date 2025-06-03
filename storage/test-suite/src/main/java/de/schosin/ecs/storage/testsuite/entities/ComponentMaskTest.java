@@ -1,0 +1,541 @@
+package de.schosin.ecs.storage.testsuite.entities;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+
+import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.storage.api.StorageEngineException;
+import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
+import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableBag;
+
+public class ComponentMaskTest extends AbstractStorageEngineTest {
+
+    @Nested
+    class GetComponentMaskTest {
+
+        @Nested
+        class EmptyComponentMask {
+
+            @Test
+            void testNoVarargs() {
+                var componentMask = engine.getComponentMask();
+                assertThat(componentMask).as("empty var args must not return null").isNotNull();
+
+                assertThat(componentMask.getId()).as("id must not be negative").isNotNegative();
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must return non-null and empty bag").isEmpty();
+                assertThat(componentMask.getComponents()).as("getComponents must return non-null and empty bag").isEmpty();
+            }
+
+            @Test
+            void testEmptyArray() {
+                var componentMask = engine.getComponentMask(new RegularComponentType<?, ?>[0]);
+                assertThat(componentMask).as("empty array must not return null").isNotNull();
+
+                assertThat(componentMask.getId()).as("id must not be negative").isNotNegative();
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must return non-null and empty bag").isEmpty();
+                assertThat(componentMask.getComponents()).as("getComponents must return non-null and empty bag").isEmpty();
+            }
+
+            @Test
+            void testSameInstanceReturned() {
+                var componentMask = engine.getComponentMask();
+
+                assertThat(engine.getComponentMask()).as("must return same component mask if queried again").isSameAs(componentMask);
+                assertThat(engine.getComponentMask(new RegularComponentType<?, ?>[0])).as("must return same component mask if queried again").isSameAs(componentMask);
+            }
+
+            @Test
+            void testNullArray() {
+                assertThatThrownBy(() -> engine.getComponentMask((RegularComponentType<?, ?>[]) null), "null array should throw an exception");
+            }
+
+            @Test
+            void testNullTypes() {
+                assertThatThrownBy(() -> engine.getComponentMask(new RegularComponentType<?, ?>[] { null }), "null types should throw an exception");
+                assertThatThrownBy(() -> engine.getComponentMask(new RegularComponentType<?, ?>[] { component(C1.class), null }), "null types should throw an exception");
+            }
+
+            @Test
+            void testGetByComponentId() {
+                var componentMask = engine.getComponentMask();
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+        }
+
+        @Nested
+        class OneComponentType {
+
+            @Test
+            void testClassType() {
+                var componentMask = engine.getComponentMask(component(C1.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(component(C1.class));
+                assertThat(componentMask.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(component(C1.class));
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testPooledClassType() {
+                var componentMask = engine.getComponentMask(component(P1.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must contain only passed component type by equality").containsExactly(component(P1.class));
+                assertThat(componentMask.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(component(P1.class));
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testComponentRelation() {
+                var componentMask = engine.getComponentMask(relation(C1.class, C2.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(relation(C1.class, C2.class));
+                assertThat(componentMask.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(relation(C1.class, C2.class));
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testExclusiveComponentRelation() {
+                var componentMask = engine.getComponentMask(exclusiveRelation(E1.class, C2.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(exclusiveRelation(E1.class, C2.class));
+                assertThat(componentMask.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(exclusiveRelation(E1.class, C2.class));
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testEntityRelation() {
+                var componentMask = engine.getComponentMask(relation(C1.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(relation(C1.class));
+                assertThat(componentMask.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(relation(C1.class));
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testExclusiveEntityRelation() {
+                var componentMask = engine.getComponentMask(exclusiveRelation(E1.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(exclusiveRelation(E1.class));
+                assertThat(componentMask.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(exclusiveRelation(E1.class));
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+        }
+
+        @Nested
+        class MultipleComponentType {
+
+            @Test
+            void testClassTypes() {
+                var componentMask = engine.getComponentMask(component(C1.class), component(C2.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes())
+                        .as("getComponentTypes must contain only passed types by equality").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
+
+                assertThat(componentMask.getComponents()).extracting("type")
+                        .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
+
+                assertThat(engine.getComponentMask(component(C2.class), component(C1.class))).as("order of types does not matter").isSameAs(componentMask);
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testPooledClassTypes() {
+                var componentMask = engine.getComponentMask(component(P1.class), component(P2.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes())
+                        .as("getComponentTypes must contain only passed component types by equality").containsExactlyInAnyOrder(component(P1.class), component(P2.class));
+
+                assertThat(componentMask.getComponents()).extracting("type")
+                        .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(component(P1.class), component(P2.class));
+
+                assertThat(engine.getComponentMask(component(P2.class), component(P1.class))).as("order of types does not matter").isSameAs(componentMask);
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testComponentRelations() {
+                var componentMask = engine.getComponentMask(relation(C1.class, C2.class), relation(C2.class, C1.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes())
+                        .as("getComponentTypes must contain only passed types by equality").containsExactlyInAnyOrder(relation(C1.class, C2.class), relation(C2.class, C1.class));
+
+                assertThat(componentMask.getComponents()).extracting("type")
+                        .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(relation(C1.class, C2.class), relation(C2.class, C1.class));
+
+                assertThat(engine.getComponentMask(relation(C2.class, C1.class), relation(C1.class, C2.class))).as("order of types does not matter").isSameAs(componentMask);
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testExclusiveComponentRelations() {
+                var componentMask = engine.getComponentMask(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes())
+                        .as("getComponentTypes must contain only passed types by equality").containsExactlyInAnyOrder(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
+
+                assertThat(componentMask.getComponents()).extracting("type")
+                        .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
+
+                assertThat(engine.getComponentMask(exclusiveRelation(E2.class, C2.class), exclusiveRelation(E1.class, C2.class))).as("order of types does not matter").isSameAs(componentMask);
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testEntityRelations() {
+                var componentMask = engine.getComponentMask(relation(C1.class), relation(C2.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes())
+                        .as("getComponentTypes must contain only passed types by equality").containsExactlyInAnyOrder(relation(C1.class), relation(C2.class));
+
+                assertThat(componentMask.getComponents()).extracting("type")
+                        .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(relation(C1.class), relation(C2.class));
+
+                assertThat(engine.getComponentMask(relation(C2.class), relation(C1.class))).as("order of types does not matter").isSameAs(componentMask);
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testExclusiveEntityRelations() {
+                var componentMask = engine.getComponentMask(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
+
+                // Verify
+                assertThat(componentMask.getComponentTypes())
+                        .as("getComponentTypes must contain only passed types by equality").containsExactlyInAnyOrder(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
+
+                assertThat(componentMask.getComponents()).extracting("type")
+                        .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
+
+                assertThat(engine.getComponentMask(exclusiveRelation(E2.class), exclusiveRelation(E1.class))).as("order of types does not matter").isSameAs(componentMask);
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testMixedTypes() {
+                var componentMask = engine.getComponentMask(
+                        component(C1.class),
+                        component(P1.class),
+                        relation(C1.class, C2.class),
+                        exclusiveRelation(E1.class, C2.class),
+                        relation(C1.class),
+                        exclusiveRelation(E1.class));
+
+                assertThat(componentMask.getComponentTypes())
+                        .as("getComponentTypes must contain only passed types by equality").containsExactlyInAnyOrder(
+                                component(C1.class),
+                                component(P1.class),
+                                relation(C1.class, C2.class),
+                                exclusiveRelation(E1.class, C2.class),
+                                relation(C1.class),
+                                exclusiveRelation(E1.class));
+
+                assertThat(componentMask.getComponents()).extracting("type")
+                        .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(
+                                component(C1.class),
+                                component(P1.class),
+                                relation(C1.class, C2.class),
+                                exclusiveRelation(E1.class, C2.class),
+                                relation(C1.class),
+                                exclusiveRelation(E1.class));
+
+                var differentOrder = engine.getComponentMask(
+                        component(P1.class),
+                        component(C1.class),
+                        relation(C1.class, C2.class),
+                        exclusiveRelation(E1.class, C2.class),
+                        relation(C1.class),
+                        exclusiveRelation(E1.class));
+
+                assertThat(differentOrder).as("order of types does not matter").isSameAs(componentMask);
+
+                assertThat(engine.getComponentMaskById(componentMask.getId())).as("getComponentMaskById must return same instance").isSameAs(componentMask);
+            }
+
+            @Test
+            void testDuplicateClassTypes() {
+                assertThatThrownBy(() -> engine.getComponentMask(component(C1.class), component(C1.class)))
+                        .isInstanceOf(StorageEngineException.class)
+                        .hasMessageContainingAll("duplicate component types", C1.class.getSimpleName());
+            }
+
+        }
+
+        @Test
+        void testGetComponentMasks() {
+            var type1 = component(C1.class);
+            var type2 = component(P1.class);
+            var type3 = relation(C1.class, C2.class);
+            var type4 = exclusiveRelation(E1.class, C2.class);
+            var type5 = relation(C1.class);
+            var type6 = exclusiveRelation(E1.class);
+
+            assertThat(engine.getComponentMasks()).as("is empty if no types known").isEmpty();
+
+            engine.getComponentMask(type1);
+            assertThat(engine.getComponentMasks()).as("returns all known types").hasSize(1);
+
+            engine.getComponentMask(type2);
+            assertThat(engine.getComponentMasks()).as("returns all known types").hasSize(2);
+
+            engine.getComponentMask(type3);
+            assertThat(engine.getComponentMasks()).as("returns all known types").hasSize(3);
+
+            engine.getComponentMask(type4);
+            assertThat(engine.getComponentMasks()).as("returns all known types").hasSize(4);
+
+            engine.getComponentMask(type5);
+            assertThat(engine.getComponentMasks()).as("returns all known types").hasSize(5);
+
+            engine.getComponentMask(type6);
+            assertThat(engine.getComponentMasks()).as("returns all known types").hasSize(6);
+        }
+
+        @Test
+        void testGetComponentMasksByPredicate() {
+            var type1 = component(C1.class);
+            var type2 = component(P1.class);
+            var type3 = relation(C1.class, C2.class);
+            var type4 = exclusiveRelation(E1.class, C2.class);
+            var type5 = relation(C1.class);
+            var type6 = exclusiveRelation(E1.class);
+
+            engine.getComponentMask(type1);
+            engine.getComponentMask(type2);
+            var mask3 = engine.getComponentMask(type3);
+            engine.getComponentMask(type4);
+            engine.getComponentMask(type5);
+            engine.getComponentMask(type6);
+            var mask135 = engine.getComponentMask(type1, type3, type5);
+
+            var result = new Bag<>(ComponentMask.class);
+            engine.getComponentMasks(mask -> mask.getComponentTypes().contains(type3), result);
+
+            assertThat(result).containsExactlyInAnyOrder(mask3, mask135);
+        }
+
+    }
+
+    @Nested
+    class AddToComponentMaskTest {
+
+        @Test
+        void testEmptyComponentTests() {
+            var componentMask = engine.getComponentMask(component(C1.class));
+            var newComponentMask = engine.addToComponentMask(componentMask, ImmutableBag.emptyBag());
+
+            // Verify
+            assertThat(newComponentMask).as("adding no types returns same instance").isSameAs(componentMask);
+
+            assertThat(componentMask.getComponentTypes()).as("addToComponentMask must not alter original component mask").containsExactly(component(C1.class));
+            assertThat(componentMask.getComponents()).extracting("type").as("addToComponentMask must not alter original component mask").containsExactly(component(C1.class));
+        }
+
+        @Test
+        void testAddToEmptyComponentMask() {
+            var componentMask = engine.getComponentMask();
+
+            var addTypes = ImmutableBag.of(component(C1.class));
+            var newComponentMask = engine.addToComponentMask(componentMask, addTypes);
+
+            // Verify
+            assertThat(componentMask.getComponentTypes()).as("addToComponentMask must not alter original component mask").isEmpty();
+            assertThat(componentMask.getComponents()).extracting("type").as("addToComponentMask must not alter original component mask").isEmpty();
+
+            assertThat(newComponentMask.getComponentTypes()).as("addToComponentMask must add types").containsExactly(component(C1.class));
+            assertThat(newComponentMask.getComponents()).extracting("type").as("addToComponentMask must add types").containsExactly(component(C1.class));
+        }
+
+        @Test
+        void testSameOperationMultipleTimes() {
+            var componentMask = engine.getComponentMask();
+
+            var addTypes = ImmutableBag.of(component(C1.class));
+            var newComponentMask1 = engine.addToComponentMask(componentMask, addTypes);
+            var newComponentMask2 = engine.addToComponentMask(componentMask, addTypes);
+
+            // Verify
+            assertThat(componentMask.getComponentTypes()).as("addToComponentMask must not alter original component mask").isEmpty();
+            assertThat(componentMask.getComponents()).extracting("type").as("addToComponentMask must not alter original component mask").isEmpty();
+
+            assertThat(newComponentMask1.getComponentTypes()).as("addToComponentMask must add types").containsExactly(component(C1.class));
+            assertThat(newComponentMask1.getComponents()).extracting("type").as("addToComponentMask must add types").containsExactly(component(C1.class));
+
+            assertThat(newComponentMask1).as("returns same instance if same operation performed multiple times").isSameAs(newComponentMask2);
+        }
+
+        @Test
+        void testAddPresentComponentType() {
+            var componentMask = engine.getComponentMask(component(C1.class));
+
+            var addTypes = ImmutableBag.of(component(C1.class));
+            assertThat(engine.addToComponentMask(componentMask, addTypes)).as("addToComponentMask returns same instance if types already present").isSameAs(componentMask);
+        }
+
+        @Test
+        void testReturnsSameInstanceIfResultAlreadyKnown() {
+            var componentMask = engine.getComponentMask();
+            var componentMaskC1 = engine.getComponentMask(component(C1.class));
+
+            var addTypes = ImmutableBag.of(component(C1.class));
+            assertThat(engine.addToComponentMask(componentMask, addTypes)).as("must return existing instance").isSameAs(componentMaskC1);
+        }
+
+    }
+
+    @Nested
+    class RemoveFromComponentMaskTest {
+
+        @Test
+        void testEmptyComponentTests() {
+            var componentMask = engine.getComponentMask(component(C1.class));
+            var newComponentMask = engine.removeFromComponentMask(componentMask, ImmutableBag.emptyBag());
+
+            // Verify
+            assertThat(newComponentMask).as("removing no types returns same instance").isSameAs(componentMask);
+
+            assertThat(componentMask.getComponentTypes()).as("removeFromComponentMask must not alter original component mask").containsExactly(component(C1.class));
+            assertThat(componentMask.getComponents()).extracting("type").as("removeFromComponentMask must not alter original component mask").containsExactly(component(C1.class));
+        }
+
+        @Test
+        void testRemoveFromComponentMask() {
+            var componentMask = engine.getComponentMask(component(C1.class));
+
+            var removeTypes = ImmutableBag.of(component(C1.class));
+            var newComponentMask = engine.removeFromComponentMask(componentMask, removeTypes);
+
+            // Verify
+            assertThat(componentMask.getComponentTypes()).as("removeFromComponentMask must not alter original component mask").containsExactly(component(C1.class));
+            assertThat(componentMask.getComponents()).extracting("type").as("removeFromComponentMask must not alter original component mask").containsExactly(component(C1.class));
+
+            assertThat(newComponentMask.getComponentTypes()).as("removeFromComponentMask must remove types").isEmpty();
+            assertThat(newComponentMask.getComponents()).extracting("type").as("removeFromComponentMask must remove types").isEmpty();
+        }
+
+        @Test
+        void testSameOperationMultipleTimes() {
+            var componentMask = engine.getComponentMask(component(C1.class));
+
+            var removeTypes = ImmutableBag.of(component(C1.class));
+            var newComponentMask1 = engine.removeFromComponentMask(componentMask, removeTypes);
+            var newComponentMask2 = engine.removeFromComponentMask(componentMask, removeTypes);
+
+            // Verify
+            assertThat(componentMask.getComponentTypes()).as("removeFromComponentMask must not alter original component mask").containsExactly(component(C1.class));
+            assertThat(componentMask.getComponents()).extracting("type").as("removeFromComponentMask must not alter original component mask").containsExactly(component(C1.class));
+
+            assertThat(newComponentMask1.getComponentTypes()).as("removeFromComponentMask must remove types").isEmpty();
+            assertThat(newComponentMask1.getComponents()).extracting("type").as("removeFromComponentMask must remove types").isEmpty();
+
+            assertThat(newComponentMask1).as("returns same instance if same operation performed multiple times").isSameAs(newComponentMask2);
+        }
+
+        @Test
+        void testRemoveMissingComponentType() {
+            var componentMask = engine.getComponentMask(component(C2.class));
+
+            var removeTypes = ImmutableBag.of(component(C1.class));
+            assertThat(engine.removeFromComponentMask(componentMask, removeTypes)).as("removeFromComponentMask returns same instance if types not present").isSameAs(componentMask);
+
+            assertThat(componentMask.getComponentTypes()).as("removeFromComponentMask must not alter original component mask").containsExactly(component(C2.class));
+            assertThat(componentMask.getComponents()).extracting("type").as("removeFromComponentMask must not alter original component mask").containsExactly(component(C2.class));
+        }
+
+        @Test
+        void testRemoveDoesNotAlterOtherClassType() {
+            var componentMask = engine.getComponentMask(component(C1.class), component(C2.class));
+
+            var removeTypes = ImmutableBag.of(component(C1.class));
+            var newComponentMask = engine.removeFromComponentMask(componentMask, removeTypes);
+
+            // Verify
+            assertThat(componentMask.getComponentTypes()).as("removeFromComponentMask must not alter original component mask").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
+            assertThat(componentMask.getComponents()).extracting("type")
+                    .as("removeFromComponentMask must not alter original component mask").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
+
+            assertThat(newComponentMask.getComponentTypes()).as("removeFromComponentMask must remove types").containsExactly(component(C2.class));
+            assertThat(newComponentMask.getComponents()).extracting("type").as("removeFromComponentMask must remove types").containsExactly(component(C2.class));
+        }
+
+        @Test
+        void testRemoveDoesNotAlterOtherComponentRelationType() {
+            var componentMask = engine.getComponentMask(relation(C1.class, C1.class), relation(C1.class, C2.class));
+
+            var removeTypes = ImmutableBag.of(relation(C1.class, C1.class));
+            var newComponentMask = engine.removeFromComponentMask(componentMask, removeTypes);
+
+            // Verify
+            assertThat(componentMask.getComponentTypes())
+                    .as("removeFromComponentMask must not alter original component mask").containsExactlyInAnyOrder(relation(C1.class, C1.class), relation(C1.class, C2.class));
+            assertThat(componentMask.getComponents()).extracting("type")
+                    .as("removeFromComponentMask must not alter original component mask").containsExactlyInAnyOrder(relation(C1.class, C1.class), relation(C1.class, C2.class));
+
+            assertThat(newComponentMask.getComponentTypes())
+                    .as("removeFromComponentMask must remove types").containsExactly(relation(C1.class, C2.class));
+            assertThat(newComponentMask.getComponents()).extracting("type")
+                    .as("removeFromComponentMask must remove types").containsExactly(relation(C1.class, C2.class));
+        }
+
+        @Test
+        void testReturnsSameInstanceIfResultAlreadyKnown() {
+            var componentMask = engine.getComponentMask();
+            var componentMaskC1 = engine.getComponentMask(component(C1.class));
+
+            var removeTypes = ImmutableBag.of(component(C1.class));
+            assertThat(engine.removeFromComponentMask(componentMaskC1, removeTypes)).as("must return existing instance").isSameAs(componentMask);
+        }
+
+    }
+
+    record C1() {
+    }
+
+    record C2() {
+    }
+
+    record P1() implements Pooled {
+    }
+
+    record P2() implements Pooled {
+    }
+
+    enum E1 implements Exclusive {
+        INSTANCE
+    }
+
+    enum E2 implements Exclusive {
+        INSTANCE
+    }
+
+}

@@ -146,7 +146,7 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public ComponentMask add(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object[] components) {
+    public ComponentMask add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         return this.entityStorage.add(entityId, componentTypes, components);
     }
 
@@ -156,12 +156,12 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public ComponentMask modify(int entityId, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
+    public ComponentMask modify(int entityId, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         return this.entityStorage.modify(entityId, add, removeTypes);
     }
 
     @Override
-    public ComponentMask modify(int entityId, ImmutableBag<RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
+    public ComponentMask modify(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         return this.entityStorage.modify(entityId, addTypes, add, removeTypes);
     }
 

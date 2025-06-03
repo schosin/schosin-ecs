@@ -284,8 +284,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -381,20 +381,19 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Call
             assertThatThrownBy(() -> add1add2.apply(entityId, null, null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             assertThatThrownBy(() -> add1add2.apply(entityId, c1, null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             assertThatThrownBy(() -> add1add2.apply(entityId, null, c2))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
-            // Verify (component1 added due to second call)
-            verifyHasComponents(entityId, C1.class);
-            verifyDoesNotHaveComponents(entityId, C2.class);
+            // Verify
+            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
@@ -407,8 +406,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -423,8 +422,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
 
             assertThatThrownBy(() -> add1.apply(entityId, null))
-                    .isInstanceOf(NullPointerException.class)
-                    .hasMessage("component cannot be null");
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("Cannot get component type for null instance");
 
             // Call
             world.process();

@@ -2,6 +2,7 @@ package de.schosin.ecs.storage.defaultimpl;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -184,40 +185,11 @@ public class EntityStorageImpl implements EntityStorage {
 
     @Override
     public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        // Validate component mask and types 
-        validateComponentTypes(mask, componentTypes);
+        // Validate component mask and types
+        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask.getComponentTypes(), componentTypes);
 
         // Create entity
         return createEntity(entityId, mask, componentTypes, components);
-    }
-
-    private void validateComponentTypes(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
-        var expected = componentTypesPool.getInstance();
-        expected.addAll(mask.getComponentTypes());
-
-        var unexpected = componentTypesPool.getInstance();
-
-        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
-            var componentType = componentTypes.get(i);
-
-            if (mask.getComponentTypes().contains(componentType)) {
-                expected.remove(componentType);
-            } else {
-                unexpected.add(componentType);
-            }
-        }
-
-        if (!expected.isEmpty()) {
-            var missingTypes = expected.stream().map(Object::toString).toList();
-
-            throw new StorageEngineException("Cannot create entity with component mask %d, the following component types are missing: %s".formatted(mask.getId(), missingTypes));
-        }
-
-        if (!unexpected.isEmpty()) {
-            var unexpectedTypes = unexpected.stream().map(Object::toString).distinct().toList();
-
-            throw new StorageEngineException("Cannot create entity with component mask %d, the following component types were unexpected: %s".formatted(mask.getId(), unexpectedTypes));
-        }
     }
 
     private ComponentMask createEntity(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
@@ -244,7 +216,7 @@ public class EntityStorageImpl implements EntityStorage {
         }
 
         // Validate component mask and types 
-        validateComponentTypes(mask, componentTypes);
+        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask.getComponentTypes(), componentTypes);
 
         var existing = componentMaskByEntity.get(entityId);
         if (existing != null) {
@@ -263,12 +235,21 @@ public class EntityStorageImpl implements EntityStorage {
         return componentTypesPool.withInstance(componentTypes -> {
             detectComponentTypes(componentTypes, components);
 
-            return add(entityId, componentTypes, components);
+            return addComponents(entityId, componentTypes, components);
         });
     }
 
     @Override
-    public ComponentMask add(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object[] components) {
+    public ComponentMask add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+        componentTypesPool.withInstanceNoResult(actual -> {
+            detectComponentTypes(actual, components);
+            validateComponentTypes("Cannot add %d components to entity %d".formatted(components.length, entityId), actual, componentTypes);
+        });
+
+        return addComponents(entityId, componentTypes, components);
+    }
+
+    private ComponentMask addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         var existing = componentMaskByEntity.get(entityId);
         if (existing == null) {
             throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId, existing));
@@ -284,6 +265,35 @@ public class EntityStorageImpl implements EntityStorage {
         componentMaskByEntity.set(entityId, componentMask);
 
         return componentMask;
+    }
+
+    private void validateComponentTypes(String context, ImmutableBag<RegularComponentType<?, ?>> expectedTypes, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
+        var expected = componentTypesPool.getInstance();
+        expected.addAll(expectedTypes);
+
+        var unexpected = componentTypesPool.getInstance();
+
+        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
+            var componentType = componentTypes.get(i);
+
+            if (expectedTypes.contains((RegularComponentType<?, ?>) componentType)) {
+                expected.remove(componentType);
+            } else {
+                unexpected.add(componentType);
+            }
+        }
+
+        if (!expected.isEmpty()) {
+            var missingTypes = expected.stream().map(Object::toString).toList();
+
+            throw new StorageEngineException("%s: The following component types are missing: %s".formatted(context, missingTypes));
+        }
+
+        if (!unexpected.isEmpty()) {
+            var unexpectedTypes = unexpected.stream().map(Object::toString).distinct().toList();
+
+            throw new StorageEngineException("%s: The following component types were unexpected: %s".formatted(context, unexpectedTypes));
+        }
     }
 
     @Override
@@ -385,20 +395,20 @@ public class EntityStorageImpl implements EntityStorage {
     }
 
     private Bag<Component<?, ?>> sortComponents(Bag<Component<?, ?>> components) {
-        var duplicateRelations = 0;
+        var duplicates = new HashSet<RegularComponentType<?, ?>>();
 
         var set = new TreeSet<>(COMPONENT_COMPARATOR);
         for (int i = 0, s = components.getSize(); i < s; i++) {
             var component = components.get(i);
 
-            if (!set.add(component) && component instanceof RelationComponent<?, ?, ?>) {
-                duplicateRelations++;
+            if (!set.add(component) && !(component instanceof RelationComponent<?, ?, ?>)) {
+                duplicates.add(component.type());
             }
         }
 
         // Check for duplicates
-        if (set.size() != components.getSize() - duplicateRelations) {
-            throw new StorageEngineException("Detected duplicate component types. %d component types contained %d unique types.".formatted(components.getSize(), set.size()));
+        if (!duplicates.isEmpty()) {
+            throw new StorageEngineException("Detected duplicate component types: %s".formatted(duplicates));
         }
 
         // Build sorted bag

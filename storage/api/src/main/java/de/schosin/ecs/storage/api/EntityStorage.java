@@ -81,7 +81,7 @@ public interface EntityStorage {
      * @param componentTypes component types of components
      * @return updated component mask of entity
      */
-    ComponentMask add(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object[] components);
+    ComponentMask add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components);
 
     /**
      * Modify an existing entity by removing the components.
@@ -108,7 +108,7 @@ public interface EntityStorage {
      * @param removeTypes component types of removed components
      * @return updated component mask of entity
      */
-    default ComponentMask modify(int entityId, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
+    default ComponentMask modify(int entityId, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         add(entityId, add);
         return remove(entityId, removeTypes);
     }
@@ -122,7 +122,7 @@ public interface EntityStorage {
      * @param removeTypes component types of removed components
      * @return updated component mask of entity
      */
-    default ComponentMask modify(int entityId, ImmutableBag<RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
+    default ComponentMask modify(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         add(entityId, addTypes, add);
         return remove(entityId, removeTypes);
     }
