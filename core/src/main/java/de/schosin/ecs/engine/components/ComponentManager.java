@@ -27,7 +27,6 @@ import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -105,12 +104,6 @@ public class ComponentManager {
 
     public <T> Component<T, ?> getComponent(@NonNull T component) {
         return getComponent(ComponentType.detectComponentType(component));
-    }
-
-    public void removed(int entityId, ComponentMask componentMask) {
-        for (var data : componentMask.getComponents()) {
-            data.removeComponent(entityId);
-        }
     }
 
     public void fillVector(BitVector vector, RegularComponentType<?, ?>... components) {

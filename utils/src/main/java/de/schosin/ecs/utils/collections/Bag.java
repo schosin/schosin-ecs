@@ -101,6 +101,12 @@ public final class Bag<T> implements ImmutableBag<T> {
             add(components.get(i));
         }
     }
+    
+    public void removeAll(ImmutableBag<? extends T> components) {
+        for (int i = 0, s = components.getSize(); i < s; i++) {
+            remove(components.get(i));
+        }
+    }
 
     public void add(@NonNull T item) {
         if (data.length == size) {

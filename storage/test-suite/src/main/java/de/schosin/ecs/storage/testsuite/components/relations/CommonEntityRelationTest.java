@@ -17,6 +17,7 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
 import de.schosin.ecs.storage.testsuite.components.CommonComponentTest;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
 public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
@@ -72,19 +73,6 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
             assertThat(component.relationshipClass()).as("relationshipClass matches type relationship").isEqualTo(type.relationship());
         }
 
-        @ParameterizedTest
-        @MethodSource(TYPES)
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testAddRelation(RegularEntityRelationType<?, ?> type) {
-            var component = (EntityRelationComponent) getComponent(type);
-            var relation = getInstance(type);
-
-            var entityId = world.createEntity();
-            component.addRelation(entityId, relation.relationship(), relation.target());
-
-            verifyRelationInstance.accept(assertThat(component.getComponent(entityId)).as("get returns equal relation after addRelation"), relation);
-        }
-
     }
 
     @Nested
@@ -130,8 +118,7 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
             var relation = Relation.create(EnumComponent.INSTANCE, target);
             var entityId = world.createEntity(relation);
 
-            var component = getComponent(relation(EnumComponent.class));
-            component.removeComponent(entityId);
+            storageEngine.remove(entityId, ImmutableBag.of(relation(EnumComponent.class)));
 
             assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
             assertThat(relation.relationship()).as("removed relation must be returned to Relation.free").isNull();

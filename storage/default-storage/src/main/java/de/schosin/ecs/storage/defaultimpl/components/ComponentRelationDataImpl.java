@@ -15,8 +15,8 @@ import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T> type, Bag<ComponentRelationResultImpl<R, T>> components,
-        Pool<ComponentRelationResultImpl<R, T>> resultPool) implements ComponentRelationData<R, T> {
+public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T> type, Bag<ComponentRelationResultImpl<R, T>> components, Pool<ComponentRelationResultImpl<R, T>> resultPool)
+        implements DefaultComponent<ComponentRelation<R, T>>, ComponentRelationData<R, T> {
 
     public ComponentRelationDataImpl(int id, ComponentRelationType<R, T> type, StorageWorld world) {
         this(id, type, world.createEntityBag(ComponentRelationResult.class),
@@ -46,11 +46,6 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
     @Override
     public ComponentRelationResult<R, T> getComponent(int entityId) {
         return this.components.get(entityId);
-    }
-
-    @Override
-    public void addRelation(int entityId, R relationship, T target) {
-        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override

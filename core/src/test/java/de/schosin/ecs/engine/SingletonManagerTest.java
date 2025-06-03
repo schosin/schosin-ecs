@@ -54,7 +54,7 @@ class SingletonManagerTest extends AbstractWorldTest {
             var singletonManager = new SingletonManager(null);
             var bagManager = new BagManager();
             var componentManager = new ComponentManager(storageEngine, eventManager, null);
-            var entityManager = new EntityManager(null, storageEngine, bagManager, componentManager);
+            var entityManager = new EntityManager(null, storageEngine, bagManager);
             var changeManager = new ChangeManager(storageEngine, eventManager, bagManager, componentManager, entityManager);
             var transmutationManager = new TransmutationManager(changeManager);
             var relationMapperManager = new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager);

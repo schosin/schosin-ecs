@@ -90,7 +90,7 @@ public interface EntityStorage {
      * @param componentTypes component types to remove from the entity
      * @return updated component mask of entity
      */
-    ComponentMask remove(int entityId, ImmutableBag<ComponentType<?, ?>> componentTypes);
+    ComponentMask remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes);
 
     /**
      * Delete an entity, clearing all stored component data.

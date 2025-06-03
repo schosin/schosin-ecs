@@ -15,6 +15,7 @@ import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P1;
 import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P2;
 import de.schosin.ecs.storage.testsuite.components.PooledComponentDataTest.P3;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
 
@@ -93,7 +94,7 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
             var instance = component.getInstance();
             var entityId = world.createEntity(instance);
 
-            component.removeComponent(entityId);
+            storageEngine.remove(entityId, ImmutableBag.of(classType));
 
             assertThat(component.getInstance()).as("getInstance reuses removed instances").isSameAs(instance);
         }

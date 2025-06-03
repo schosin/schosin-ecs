@@ -1,7 +1,6 @@
 package de.schosin.ecs.storage.testsuite.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import java.util.ArrayList;
@@ -25,6 +24,7 @@ import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
 import de.schosin.ecs.storage.api.events.StorageEvent;
 import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends AbstractStorageEngineTest {
 
@@ -140,14 +140,24 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
 
         @ParameterizedTest
         @MethodSource(TYPES)
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testHasComponent_WhenEntityModified(RegularComponentType<?, ?> type) {
+        void testHasComponent_WhenComponentAdded(RegularComponentType<?, ?> type) {
             var component = getComponent(type);
 
             var entityId = world.createEntity();
-            ((Component) component).addComponent(entityId, getInstance(type));
+            storageEngine.add(entityId, new Object[] { getInstance(type) });
 
-            assertThat(component.hasComponent(entityId)).as("hasComponent returns true if component added to existing entity and world process").isTrue();
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns true if component added to existing entity").isTrue();
+        }
+
+        @ParameterizedTest
+        @MethodSource(TYPES)
+        void testHasComponent_WhenComponentRemoved(RegularComponentType<?, ?> type) {
+            var component = getComponent(type);
+
+            var entityId = world.createEntity(getInstance(type));
+            storageEngine.remove(entityId, ImmutableBag.of(type));
+
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns false if component removed from existing entity").isFalse();
         }
 
         @ParameterizedTest
@@ -189,15 +199,25 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
 
         @ParameterizedTest
         @MethodSource(TYPES)
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testGetComponent_WhenEntityModified(RegularComponentType<?, ?> type) {
+        void testGetComponent_WhenComponentAdded(RegularComponentType<?, ?> type) {
             var component = getComponent(type);
 
             var instance = getInstance(type);
             var entityId = world.createEntity();
-            ((Component) component).addComponent(entityId, instance);
+            storageEngine.add(entityId, new Object[] { instance });
 
-            verifyComponentInstance.accept(assertThat(component.getComponent(entityId)).as("getComponent returns same instance if component added to existing entity and world process"), instance);
+            verifyComponentInstance.accept(assertThat(component.getComponent(entityId)).as("getComponent returns same instance if component added to existing entity"), instance);
+        }
+
+        @ParameterizedTest
+        @MethodSource(TYPES)
+        void testGetComponent_WhenComponentRemoved(RegularComponentType<?, ?> type) {
+            var component = getComponent(type);
+
+            var entityId = world.createEntity(getInstance(type));
+            storageEngine.remove(entityId, ImmutableBag.of(type));
+
+            assertThat(component.getComponent(entityId)).as("getComponent returns null if component removed from existing entity").isNull();
         }
 
         @ParameterizedTest
@@ -226,19 +246,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
 
             var entityId = world.createEntity(getInstance(type1()));
 
-            component.removeComponent(entityId);
-
-            assertThat(component.hasComponent(entityId)).as("hasComponent returns false when removeComponent called").isFalse();
-            assertThat(component.getComponent(entityId)).as("getComponent returns null when removeComponent called").isNull();
-        }
-
-        @Test
-        void testRemoveComponent_DoesNothingIfComponentNotPresent() {
-            var component = getComponent(type1());
-
-            var entityId = world.createEntity();
-
-            assertThatCode(() -> component.removeComponent(entityId)).doesNotThrowAnyException();
+            storageEngine.remove(entityId, ImmutableBag.of(type1()));
 
             assertThat(component.hasComponent(entityId)).as("hasComponent returns false when removeComponent called").isFalse();
             assertThat(component.getComponent(entityId)).as("getComponent returns null when removeComponent called").isNull();

@@ -7,7 +7,6 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
-import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
@@ -27,7 +26,6 @@ public class EntityManager {
     private final StorageEngine storageEngine;
 
     private final BagManager bagManager;
-    private final ComponentManager componentManager;
 
     private final AtomicInteger entityId = new AtomicInteger(1);
     private final Bag<Entity> entities = new Bag<>(Entity.class, 64);
@@ -38,12 +36,11 @@ public class EntityManager {
 
     private ChangeManager changeManager;
 
-    public EntityManager(World world, StorageEngine storageEngine, BagManager bagManager, ComponentManager componentManager) {
+    public EntityManager(World world, StorageEngine storageEngine, BagManager bagManager) {
         this.world = world;
         this.storageEngine = storageEngine;
 
         this.bagManager = bagManager;
-        this.componentManager = componentManager;
     }
 
     public void process() {
@@ -193,13 +190,8 @@ public class EntityManager {
             }
 
             this.entities.set(entityId, null);
-            storageEngine.delete(entityId);
+            this.storageEngine.delete(entityId);
         }
-
-        // Notify managers
-        var componentMask = entity.componentMask;
-
-        componentManager.removed(entityId, componentMask);
 
         // Add entity to pool for reuse
         this.pool.free(entity);

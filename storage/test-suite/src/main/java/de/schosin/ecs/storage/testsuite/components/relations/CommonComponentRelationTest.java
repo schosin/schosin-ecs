@@ -16,6 +16,7 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationComponent;
 import de.schosin.ecs.storage.testsuite.components.CommonComponentTest;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3, X3>
         extends CommonComponentTest<ComponentRelation<R1, T1>, X1, ComponentRelation<R2, T2>, X2, ComponentRelation<R3, T3>, X3> {
@@ -69,19 +70,6 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
             var component = getComponent(type);
 
             assertThat(component.targetClass()).as("targetClass matches type target").isEqualTo(type.target());
-        }
-
-        @ParameterizedTest
-        @MethodSource(TYPES)
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testAddRelation(RegularComponentRelationType<?, ?, ?> type) {
-            var component = (ComponentRelationComponent) getComponent(type);
-            var relation = getInstance(type);
-
-            var entityId = world.createEntity();
-            component.addRelation(entityId, relation.relationship(), relation.target());
-
-            verifyRelationInstance.accept(assertThat(component.getComponent(entityId)).as("get returns equal relation after addRelation"), relation);
         }
 
     }
@@ -139,8 +127,7 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
             var relation = Relation.create(EnumComponent.INSTANCE, EnumComponent.INSTANCE);
             var entityId = world.createEntity(relation);
 
-            var component = getComponent(relation(EnumComponent.class, EnumComponent.class));
-            component.removeComponent(entityId);
+            storageEngine.remove(entityId, ImmutableBag.of(relation(EnumComponent.class, EnumComponent.class)));
 
             assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
             assertThat(relation.relationship()).as("removed relation must be returned to Relation.free").isNull();

@@ -151,7 +151,7 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public ComponentMask remove(int entityId, ImmutableBag<ComponentType<?, ?>> componentTypes) {
+    public ComponentMask remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
         return this.entityStorage.remove(entityId, componentTypes);
     }
 

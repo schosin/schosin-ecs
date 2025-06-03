@@ -5,6 +5,7 @@ import java.util.Map;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.defaultimpl.components.DefaultComponent;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -58,7 +59,7 @@ public class ComponentMaskImpl implements ComponentMask {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public void addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
         for (int i = 0; i < components.getSize(); i++) {
-            var component = (Component) this.componentTypeLookup.get(componentTypes.get(i));
+            var component = (DefaultComponent) this.componentTypeLookup.get(componentTypes.get(i));
             component.addComponent(entityId, components.get(i));
         }
     }
@@ -67,7 +68,7 @@ public class ComponentMaskImpl implements ComponentMask {
     public void addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         for (int i = 0; i < components.length; i++) {
             var componentType = componentTypes.get(i);
-            var component = (Component) this.componentTypeLookup.get(componentType);
+            var component = (DefaultComponent) this.componentTypeLookup.get(componentType);
 
             component.addComponent(entityId, components[i]);
         }
@@ -76,14 +77,15 @@ public class ComponentMaskImpl implements ComponentMask {
     @SuppressWarnings("rawtypes")
     public void removeComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
         for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
-            var component = (Component) this.componentTypeLookup.get(componentTypes.get(i));
+            var component = (DefaultComponent) this.componentTypeLookup.get(componentTypes.get(i));
             component.removeComponent(entityId);
         }
     }
 
+    @SuppressWarnings("rawtypes")
     public void removeComponents(int entityId) {
         for (int i = 0, s = components.getSize(); i < s; i++) {
-            var component = this.components.get(i);
+            var component = (DefaultComponent) this.components.get(i);
             component.removeComponent(entityId);
         }
     }

@@ -8,7 +8,7 @@ import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> type, Bag<T> components, Pool<T> pool) implements PooledComponentData<T> {
+public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> type, Bag<T> components, Pool<T> pool) implements DefaultComponent<T>, PooledComponentData<T> {
 
     @Override
     public Class<T> clazz() {

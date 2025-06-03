@@ -107,14 +107,6 @@ class TestComponent<T> implements ComponentData<T> {
     }
 
     @Override
-    public void addComponentUnsafe(int id, T component) {
-    }
-
-    @Override
-    public void removeComponent(int entityId) {
-    }
-
-    @Override
     public Class<T> clazz() {
         return null;
     }

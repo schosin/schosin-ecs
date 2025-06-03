@@ -11,7 +11,7 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelatio
 import de.schosin.ecs.utils.collections.Bag;
 
 public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id, ExclusiveComponentRelationType<R, T> type, Bag<ComponentRelation<R, T>> components)
-        implements ExclusiveComponentRelationData<R, T> {
+        implements DefaultComponent<ComponentRelation<R, T>>, ExclusiveComponentRelationData<R, T> {
 
     public ExclusiveComponentRelationDataImpl(int id, ExclusiveComponentRelationType<R, T> type, StorageWorld world) {
         this(id, type, world.createEntityBag(ComponentRelation.class));
@@ -40,11 +40,6 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
     @Override
     public ComponentRelation<R, T> getComponent(int entityId) {
         return this.components.get(entityId);
-    }
-
-    @Override
-    public void addRelation(int entityId, R relationship, T target) {
-        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override

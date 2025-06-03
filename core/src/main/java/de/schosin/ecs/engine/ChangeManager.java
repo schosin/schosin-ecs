@@ -17,6 +17,7 @@ import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
+import de.schosin.ecs.utils.collections.Pool;
 
 public class ChangeManager {
 
@@ -41,6 +42,8 @@ public class ChangeManager {
 
     private Bag<IntBag> removedComponents;
     private Bag<IntBag> removedComponentsOverflow;
+
+    private final Pool<Bag<RegularComponentType<?, ?>>> componentTypesPool = Pool.unbounded(Bag.class, () -> new Bag<>(RegularComponentType.class, 8), Bag::clear);
 
     public ChangeManager(StorageEngine storageEngine, EventManager eventManager, BagManager bagManager, ComponentManager componentManager, EntityManager entityManager) {
         this.storageEngine = storageEngine;
@@ -154,17 +157,14 @@ public class ChangeManager {
     }
 
     private void flushComponentRemovals(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
-        outer: for (var component : previousComponentMask.getComponents()) {
-            // Skip if new component mask still contains previous component
-            for (var present : componentMask.getComponents()) {
-                if (component == present) {
-                    continue outer;
-                }
-            }
+        componentTypesPool.withInstanceNoResult(componentTypes -> {
+            // Gather removed component types
+            componentTypes.addAll(previousComponentMask.getComponentTypes());
+            componentTypes.removeAll(componentMask.getComponentTypes());
 
-            // Remove component if component not in new component mask
-            component.removeComponent(entityId);
-        }
+            // Remove components
+            storageEngine.remove(entityId, componentTypes);
+        });
     }
 
     /**
@@ -242,12 +242,19 @@ public class ChangeManager {
     }
 
     private void processRemovedComponent(int componentId, IntBag entities) {
+        var componentTypes = componentTypesPool.getInstance();
         var metadata = componentManager.getComponent(componentId);
 
         var data = entities.getData();
         for (int i = 0, s = entities.getSize(); i < s; i++) {
-            metadata.removeComponent(data[i]);
+            componentTypes.add(metadata.type());
+
+            storageEngine.remove(data[i], componentTypes);
+
+            componentTypes.clear();
         }
+
+        componentTypesPool.free(componentTypes);
     }
 
     private void processUpdatedEntity(int entityId, int componentMaskId) {

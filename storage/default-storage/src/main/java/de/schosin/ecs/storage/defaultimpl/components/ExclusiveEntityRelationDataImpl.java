@@ -10,7 +10,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 
 public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, ExclusiveEntityRelationType<R> type, Bag<EntityRelation<R>> components, Bag<IntBag> targetLookup)
-        implements ExclusiveEntityRelationData<R> {
+        implements DefaultComponent<EntityRelation<R>>, ExclusiveEntityRelationData<R> {
 
     public ExclusiveEntityRelationDataImpl(int id, ExclusiveEntityRelationType<R> type, StorageWorld world) {
         this(id, type, world.createEntityBag(EntityRelation.class), world.createEntityBag(IntBag.class));
@@ -34,11 +34,6 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
     @Override
     public EntityRelation<R> getComponent(int entityId) {
         return this.components.get(entityId);
-    }
-
-    @Override
-    public void addRelation(int entityId, R relationship, int target) {
-        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override
@@ -76,7 +71,6 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
         }
     }
 
-    @Override
     public void removeTarget(int target, IntBag affectedEntities) {
         var entities = targetLookup.get(target);
         if (entities == null) {

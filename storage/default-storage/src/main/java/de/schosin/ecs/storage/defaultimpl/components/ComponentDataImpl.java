@@ -6,7 +6,7 @@ import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 import de.schosin.ecs.utils.collections.Bag;
 
-public record ComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components) implements ComponentData<T> {
+public record ComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components) implements DefaultComponent<T>, ComponentData<T> {
 
     @Override
     public Class<T> clazz() {

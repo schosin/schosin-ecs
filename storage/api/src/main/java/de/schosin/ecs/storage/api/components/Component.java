@@ -1,9 +1,5 @@
 package de.schosin.ecs.storage.api.components;
 
-import java.util.Objects;
-
-import org.jspecify.annotations.NonNull;
-
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
@@ -79,16 +75,6 @@ public sealed interface Component<T, R> {
 
         Class<T> targetClass();
 
-        /**
-         * Adds the relation to the entity, overwriting an existing relation if it has
-         * an equal target component.
-         * 
-         * @param entityId id of entity
-         * @param relationship relationship component
-         * @param target target component
-         */
-        void addRelation(int entityId, R relationship, T target);
-
     }
 
     non-sealed interface ComponentRelationData<R, T> extends ComponentRelationComponent<R, T, ComponentRelationResult<R, T>> {
@@ -109,16 +95,6 @@ public sealed interface Component<T, R> {
 
         @Override
         RegularEntityRelationType<R, X> type();
-
-        /**
-         * Adds the relation to the entity, overwriting an existing relation if it has
-         * an equal target component.
-         * 
-         * @param entityId id of entity
-         * @param relationship relationship component
-         * @param target target entity
-         */
-        void addRelation(int entityId, R relationship, int target);
 
         /**
          * Removes all relations that contain the target. 
@@ -211,20 +187,6 @@ public sealed interface Component<T, R> {
      * @return component instance or null 
      */
     R getComponent(int entityId);
-
-    default void addComponent(int entityId, @NonNull T component) {
-        addComponentUnsafe(entityId, Objects.requireNonNull(component, "component cannot be null"));
-    }
-
-    /**
-     * Adds the non-null component to the entity.
-     * 
-     * @param entityId id of entity
-     * @param component non-null instance
-     */
-    void addComponentUnsafe(int entityId, T component);
-
-    void removeComponent(int entityId);
 
     /**
      * Must be overriden based on {@link #id()} only.

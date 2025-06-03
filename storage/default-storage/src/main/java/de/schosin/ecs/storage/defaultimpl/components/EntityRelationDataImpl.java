@@ -16,8 +16,8 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<EntityRelationResultImpl<R>> components, Bag<IntBag> targetLookup,
-        Pool<EntityRelationResultImpl<R>> resultPool) implements EntityRelationData<R> {
+public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<EntityRelationResultImpl<R>> components, Bag<IntBag> targetLookup, Pool<EntityRelationResultImpl<R>> resultPool)
+        implements DefaultComponent<EntityRelation<R>>, EntityRelationData<R> {
 
     public EntityRelationDataImpl(int id, EntityRelationType<R> type, StorageWorld world) {
         this(id, type, world.createEntityBag(EntityRelationResult.class), world.createEntityBag(IntBag.class),
@@ -42,11 +42,6 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
     @Override
     public EntityRelationResult<R> getComponent(int entityId) {
         return this.components.get(entityId);
-    }
-
-    @Override
-    public void addRelation(int entityId, R relationship, int target) {
-        addComponentUnsafe(entityId, Relation.create(relationship, target));
     }
 
     @Override

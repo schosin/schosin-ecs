@@ -41,8 +41,7 @@ public class ComponentRelationDataTest extends
             var entityId = world.createEntity(relation1);
 
             // Call
-            component.addComponent(entityId, relation2);
-            component.addComponent(entityId, relation3);
+            storageEngine.add(entityId, new Object[] { relation2, relation3 });
 
             // Verify
             var relations = component.getComponent(entityId);
@@ -66,8 +65,7 @@ public class ComponentRelationDataTest extends
             var entityId = world.createEntity(relation1);
 
             // Call
-            component.addComponent(entityId, relation2);
-            component.addComponent(entityId, relation3);
+            storageEngine.add(entityId, new Object[] { relation2, relation3 });
 
             // Verify
             var relations = component.getComponent(entityId);
@@ -86,7 +84,6 @@ public class ComponentRelationDataTest extends
 
         @ParameterizedTest
         @MethodSource(TYPES)
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         void testAddSameTarget_ReplacesExistingRelation(ComponentRelationType<?, ?> type) {
             var component = getComponent(type);
 
@@ -98,7 +95,7 @@ public class ComponentRelationDataTest extends
             assertThat(newRelation.relationship()).as("sanity check").isNotEqualTo(instance.relationship());
             assumeThat(newRelation.target()).isEqualTo(instance.target()).isNotSameAs(instance.target());
 
-            ((ComponentRelationData) component).addRelation(entityId, newRelation.relationship(), newRelation.target());
+            storageEngine.add(entityId, new Object[] { newRelation });
 
             // Verify
             var relations = component.getComponent(entityId);
@@ -111,7 +108,6 @@ public class ComponentRelationDataTest extends
 
         @ParameterizedTest
         @MethodSource(TYPES)
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         void testAddEqualTarget_ReplacesExistingRelation(ComponentRelationType<?, ?> type) {
             var component = getComponent(type);
 
@@ -123,7 +119,7 @@ public class ComponentRelationDataTest extends
             assertThat(newRelation.relationship()).as("sanity check").isNotEqualTo(instance.relationship());
             assertThat(newRelation.target()).as("sanity check").isEqualTo(instance.target());
 
-            ((ComponentRelationData) component).addRelation(entityId, newRelation.relationship(), newRelation.target());
+            storageEngine.add(entityId, new Object[] { newRelation });
 
             // Verify
             var relations = component.getComponent(entityId);
@@ -136,7 +132,6 @@ public class ComponentRelationDataTest extends
 
         @ParameterizedTest
         @MethodSource(TYPES)
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         void testAddEqualBoth_ReplacesExistingRelation(ComponentRelationType<?, ?> type) {
             var component = getComponent(type);
 
@@ -148,7 +143,7 @@ public class ComponentRelationDataTest extends
             assumeThat(newRelation.relationship()).isEqualTo(instance.relationship()).isNotSameAs(instance.relationship());
             assumeThat(newRelation.target()).isEqualTo(instance.target()).isNotSameAs(instance.target());
 
-            ((ComponentRelationData) component).addRelation(entityId, newRelation.relationship(), newRelation.target());
+            storageEngine.add(entityId, new Object[] { newRelation });
 
             // Verify
             var relations = component.getComponent(entityId);
@@ -161,7 +156,6 @@ public class ComponentRelationDataTest extends
 
         @ParameterizedTest
         @MethodSource(TYPES)
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         void testSameEqualBoth_ReplacesExistingRelation(ComponentRelationType<?, ?> type) {
             var component = getComponent(type);
 
@@ -173,7 +167,7 @@ public class ComponentRelationDataTest extends
             assertThat(newRelation.relationship()).as("sanity check").isEqualTo(instance.relationship());
             assertThat(newRelation.target()).as("sanity check").isEqualTo(instance.target());
 
-            ((ComponentRelationData) component).addRelation(entityId, newRelation.relationship(), newRelation.target());
+            storageEngine.add(entityId, new Object[] { newRelation });
 
             // Verify
             var relations = component.getComponent(entityId);
@@ -208,11 +202,7 @@ public class ComponentRelationDataTest extends
             protected int getEntity(ComponentRelationData<Relationship3, Target3> component, ComponentRelation<Relationship3, Target3>... relations) {
                 var entityId = world.createEntity();
 
-                for (var relation : relations) {
-                    component.addComponent(entityId, relation);
-                }
-
-                world.process();
+                storageEngine.add(entityId, relations);
 
                 return entityId;
             }
