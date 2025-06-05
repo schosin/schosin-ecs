@@ -535,6 +535,26 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
                 }
 
                 @Test
+                void testMisorderedTypes() {
+                    var component1 = new C1();
+                    var component2 = new C2();
+                    var componentMask = storageEngine.getComponentMask(component(C1.class), component(C2.class));
+                    var componentTypes = ImmutableBag.of(component(C1.class), component(C2.class));
+
+                    assertThatThrownBy(() -> storageEngine.create(1, componentMask, componentTypes, new Object[] { component2, component1 }))
+                            .isInstanceOf(StorageEngineException.class)
+                            .hasMessageContainingAll("component mask %d".formatted(componentMask.getId()),
+                                    "Expected component type '%s'".formatted(component(C2.class)),
+                                    "index 0",
+                                    "but was '%s'".formatted(component(C1.class)));
+
+                    // Verify (may store previous, valid components)
+                    assertThat(storageEngine.getComponent(component(C1.class)).getComponent(1)).as("Must not store component instance on error").isNull();
+                    assertThat(storageEngine.getComponent(component(C2.class)).getComponent(1)).as("Must not store component instance on error").isNull();
+                    assertThat(storageEngine.getComponent(component(P2.class)).getComponent(1)).as("Must not store component instance on error").isNull();
+                }
+
+                @Test
                 void testMissingTypes() {
                     var component1 = new C1();
                     var componentMask = storageEngine.getComponentMask(component(C1.class), component(C2.class));

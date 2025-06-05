@@ -107,9 +107,24 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var component2 = new C2();
-            assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C1.class)), new Object[] { component, component2 }))
+            assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C3.class)), new Object[] { component, component2 }))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId), "The following component types are missing", component(C2.class).toString());
+                    .hasMessageContainingAll("entity %d".formatted(entityId), "Expected component type '%s' at index 1".formatted(component(C2.class)));
+        }
+
+        @ParameterizedTest
+        @MethodSource(COMPONENTS_SOURCE)
+        void testAddMultiple_MisorderedTypes(Object component) {
+            var componentType = ComponentType.detectComponentType(component);
+            var entityId = world.createEntity();
+
+            // Call
+            var component1 = new C3();
+            assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C3.class)), new Object[] { component1, component }))
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContainingAll("entity %d".formatted(entityId),
+                            "Expected component type '%s' at index 0".formatted(component(C3.class)),
+                            "Expected component type '%s' at index 1".formatted(componentType));
         }
 
         @ParameterizedTest
@@ -122,7 +137,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var component2 = new C2();
             assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType), new Object[] { component, component2 }))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId), "The following component types are missing", component(C2.class).toString());
+                    .hasMessageContainingAll("entity %d".formatted(entityId), "Expected component type '%s' at index 1".formatted(component(C2.class)));
         }
 
         @ParameterizedTest

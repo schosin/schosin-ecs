@@ -1,15 +1,19 @@
 package de.schosin.ecs.storage.defaultimpl;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.EntityStorage;
 import de.schosin.ecs.storage.api.StorageEngineException;
@@ -38,6 +42,7 @@ public class EntityStorageImpl implements EntityStorage {
 
     private final Pool<BitVector> bitvectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
     private final Pool<Bag<RegularComponentType<?, ?>>> componentTypesPool = Pool.unbounded(Bag.class, () -> new Bag<>(RegularComponentType.class, 8), Bag::clear);
+    private final Pool<Bag<Object>> componentPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class, 8), Bag::clear);
 
     public EntityStorageImpl(StorageWorld world, ComponentStorage componentStorage) {
         this.componentStorage = componentStorage;
@@ -186,7 +191,7 @@ public class EntityStorageImpl implements EntityStorage {
     @Override
     public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         // Validate component mask and types
-        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask.getComponentTypes(), componentTypes);
+        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);
 
         // Create entity
         return createEntity(entityId, mask, componentTypes, components);
@@ -216,7 +221,7 @@ public class EntityStorageImpl implements EntityStorage {
         }
 
         // Validate component mask and types 
-        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask.getComponentTypes(), componentTypes);
+        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);
 
         var existing = componentMaskByEntity.get(entityId);
         if (existing != null) {
@@ -241,10 +246,7 @@ public class EntityStorageImpl implements EntityStorage {
 
     @Override
     public ComponentMask add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        componentTypesPool.withInstanceNoResult(actual -> {
-            detectComponentTypes(actual, components);
-            validateComponentTypes("Cannot add %d components to entity %d".formatted(components.length, entityId), actual, componentTypes);
-        });
+        validateComponentTypes("Cannot add %d components to entity %d".formatted(components.length, entityId), null, componentTypes, components);
 
         return addComponents(entityId, componentTypes, components);
     }
@@ -267,32 +269,85 @@ public class EntityStorageImpl implements EntityStorage {
         return componentMask;
     }
 
-    private void validateComponentTypes(String context, ImmutableBag<RegularComponentType<?, ?>> expectedTypes, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
+    private void validateComponentTypes(String context, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> expectedTypes, Object[] components) {
+        var bag = componentPool.getInstance();
+        for (int i = 0, s = components.length; i < s; i++) {
+            bag.add(components[i]);
+        }
+
+        validateComponentTypes(context, componentMask, expectedTypes, bag);
+
+        componentPool.free(bag);
+    }
+
+    private void validateComponentTypes(String context, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> expectedTypes, ImmutableBag<Object> components) {
+        List<String> errors = null;
+
+        if (expectedTypes.getSize() != components.getSize()) {
+            errors = new ArrayList<>();
+
+            errors.add("Expected %d component types, but got %d".formatted(components.getSize(), expectedTypes.getSize()));
+        }
+
         var expected = componentTypesPool.getInstance();
-        expected.addAll(expectedTypes);
+        if (componentMask != null) {
+            expected.addAll(componentMask.getComponentTypes());
+        }
 
         var unexpected = componentTypesPool.getInstance();
+        var relations = componentTypesPool.getInstance();
 
-        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
-            var componentType = componentTypes.get(i);
+        for (int i = 0, s = components.getSize(); i < s; i++) {
+            var expectedType = i < expectedTypes.getSize() ? expectedTypes.get(i) : null;
 
-            if (expectedTypes.contains((RegularComponentType<?, ?>) componentType)) {
-                expected.remove(componentType);
-            } else {
-                unexpected.add(componentType);
+            var actualType = ComponentType.detectComponentType(components.get(i));
+            if (!actualType.equals(expectedType)) {
+                if (errors == null) {
+                    errors = new ArrayList<>();
+                }
+
+                errors.add("Expected component type '%s' at index %d, but was '%s'".formatted(actualType, i, expectedType));
+            }
+
+            if (expectedType instanceof RelationComponentType<?, ?, ?> relationType) {
+                relations.add(relationType);
+            }
+
+            if (componentMask != null && !expected.remove(expectedType) && !relations.contains(expectedType)) {
+                unexpected.add(expectedType);
             }
         }
 
         if (!expected.isEmpty()) {
-            var missingTypes = expected.stream().map(Object::toString).toList();
+            if (errors == null) {
+                errors = new ArrayList<>();
+            }
 
-            throw new StorageEngineException("%s: The following component types are missing: %s".formatted(context, missingTypes));
+            var missingTypes = expected.stream().map(Object::toString).toList();
+            errors.add("The following component types are missing: %s".formatted(missingTypes));
+        }
+
+        for (int i = components.getSize(), s = expectedTypes.getSize(); i < s; i++) {
+            unexpected.add(expectedTypes.get(i));
         }
 
         if (!unexpected.isEmpty()) {
-            var unexpectedTypes = unexpected.stream().map(Object::toString).distinct().toList();
+            if (errors == null) {
+                errors = new ArrayList<>();
+            }
 
-            throw new StorageEngineException("%s: The following component types were unexpected: %s".formatted(context, unexpectedTypes));
+            var unexpectedTypes = unexpected.stream().map(Object::toString).distinct().toList();
+            errors.add("The following component types were unexpected: %s".formatted(unexpectedTypes));
+        }
+
+        // Free bags
+        componentTypesPool.free(expected);
+        componentTypesPool.free(unexpected);
+        componentTypesPool.free(relations);
+
+        if (errors != null) {
+            var message = errors.stream().map(error -> "- " + error).collect(Collectors.joining(System.lineSeparator()));
+            throw new StorageEngineException("%s:%s%s".formatted(context, System.lineSeparator(), message.indent(2)));
         }
     }
 
