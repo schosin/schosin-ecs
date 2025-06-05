@@ -163,7 +163,9 @@ public class ChangeManager {
             componentTypes.removeAll(componentMask.getComponentTypes());
 
             // Remove components
-            storageEngine.remove(entityId, componentTypes);
+            if (!componentTypes.isEmpty()) {
+                storageEngine.remove(entityId, componentTypes);
+            }
         });
     }
 
@@ -203,7 +205,6 @@ public class ChangeManager {
 
         // Process changes
         deleted.iterate(this::processDeletedEntity);
-        deleted.clear();
 
         updated.iterate(entityId -> processUpdatedEntity(entityId, fromLookup(masks.get(entityId))));
         updated.clear();
@@ -214,11 +215,13 @@ public class ChangeManager {
             var entities = removedData[i];
 
             var componentId = this.removedComponentsBags.indexOfIdentity(entities);
-            processRemovedComponent(componentId, entities);
+            processRemovedComponent(componentId, entities, deleted);
 
             entities.clear();
         }
+
         removed.clear();
+        deleted.clear();
 
         return !isDirty();
     }
@@ -241,17 +244,23 @@ public class ChangeManager {
         entityManager.deleteEntity(entityId);
     }
 
-    private void processRemovedComponent(int componentId, IntBag entities) {
-        var componentTypes = componentTypesPool.getInstance();
+    private void processRemovedComponent(int componentId, IntBag entities, BitVector deleted) {
         var metadata = componentManager.getComponent(componentId);
+
+        var componentTypes = componentTypesPool.getInstance();
+        componentTypes.add(metadata.type());
 
         var data = entities.getData();
         for (int i = 0, s = entities.getSize(); i < s; i++) {
-            componentTypes.add(metadata.type());
+            var entityId = data[i];
 
-            storageEngine.remove(data[i], componentTypes);
+            // Skip if deleted this process
+            if (deleted.get(entityId)) {
+                continue;
+            }
 
-            componentTypes.clear();
+            // If this throws "not in storage", user code is altering deleted entities in composition callbacks
+            storageEngine.remove(entityId, componentTypes);
         }
 
         componentTypesPool.free(componentTypes);
