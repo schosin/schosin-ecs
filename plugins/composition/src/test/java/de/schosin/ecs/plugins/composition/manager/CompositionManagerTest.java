@@ -46,6 +46,7 @@ import de.schosin.ecs.plugins.composition.CompositionData6;
 import de.schosin.ecs.plugins.composition.CompositionData7;
 import de.schosin.ecs.plugins.composition.CompositionData8;
 import de.schosin.ecs.plugins.composition.Spec;
+import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.test.AbstractEcsTest;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -1365,6 +1366,50 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(removed2).containsExactlyInAnyOrder(42, 1337);
 
             assertThat(removed3).containsExactlyInAnyOrder(42, 1337);
+        }
+
+        @Test
+        void testAddComponentInRemoved_ShouldThrow() {
+            var entityId = world.createEntity();
+
+            var mapper1 = world.getPooledComponents(P1.class);
+
+            var composition = world.createComposition(Composition.all());
+            composition.removed(mapper1::add);
+
+            // Call
+            world.deleteEntity(entityId);
+
+            try {
+                world.process();
+                // not throwing is okay
+            } catch (StorageEngineException ex) {
+                assertThat(ex)
+                        .isInstanceOf(StorageEngineException.class)
+                        .hasMessageContainingAll("entity %d".formatted(entityId), "not present in storage");
+            }
+        }
+
+        @Test
+        void testRemoveComponentInRemoved_ShouldThrow() {
+            var entityId = world.createEntity(new P1());
+
+            var mapper1 = world.getPooledComponents(P1.class);
+
+            var composition = world.createComposition(Composition.all());
+            composition.removed(mapper1::remove);
+
+            // Call
+            world.deleteEntity(entityId);
+
+            try {
+                world.process();
+                // not throwing is okay
+            } catch (StorageEngineException ex) {
+                assertThat(ex)
+                        .isInstanceOf(StorageEngineException.class)
+                        .hasMessageContainingAll("entity %d".formatted(entityId), "not present in storage");
+            }
         }
 
     }
