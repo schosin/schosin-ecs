@@ -85,11 +85,7 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
                 continue;
             }
 
-            this.components.set(entityId, null);
-
-            if (affectedEntities != null) {
-                affectedEntities.add(entityId);
-            }
+            affectedEntities.add(entityId);
         }
 
         entities.clear();

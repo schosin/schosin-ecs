@@ -127,12 +127,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
             result.removeTarget(target);
 
             if (result.isEmpty()) {
-                this.components.set(entityId, null);
-                this.resultPool.free(result);
-
-                if (affectedEntities != null) {
-                    affectedEntities.add(entityId);
-                }
+                affectedEntities.add(entityId);
             }
         }
 

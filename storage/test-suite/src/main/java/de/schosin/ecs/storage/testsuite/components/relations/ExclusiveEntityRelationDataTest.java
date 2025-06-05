@@ -51,26 +51,7 @@ public class ExclusiveEntityRelationDataTest
             assertThat(affectedEntities.getSize()).as("removeTarget should add entity to affectedEntities if all relations removed").isEqualTo(1);
             assertThat(affectedEntities.getData()).as("removeTarget should add entity to affectedEntities if all relations removed").startsWith(entityId);
 
-            assertThat(component.getComponent(entityId)).as("removeTarget should remove relation with target").isNull();
-        }
-
-        @Test
-        void testRemoveTarget_SingleRelation_NoAffectedEntitiesBag() {
-            var target = world.createEntity();
-
-            var component = getComponent(type1());
-            var relation = getInstance1(1, target);
-
-            var entityId = world.createEntity(relation);
-            assertThat(component.getComponent(entityId))
-                    .extracting("relationship", "target")
-                    .as("sanity check").contains(relation.relationship(), target);
-
-            // Call
-            assertThatCode(() -> component.removeTarget(target, null)).as("removeTarget should not throw if affectedEntities is null").doesNotThrowAnyException();
-
-            // Verify
-            assertThat(component.getComponent(entityId)).as("removeTarget should remove relation with target").isNull();
+            assertThat(component.getComponent(entityId)).as("removeTarget should not remove relation with target").isNotNull();
         }
 
         @Test
@@ -94,33 +75,8 @@ public class ExclusiveEntityRelationDataTest
             assertThat(affectedEntities.getSize()).as("removeTarget should add entity to affectedEntities if all relations removed").isEqualTo(2);
             assertThat(affectedEntities.getData()).as("removeTarget should add entity to affectedEntities if all relations removed").contains(entity1, entity2).doesNotContain(entity3);
 
-            assertThat(component.getComponent(entity1)).as("removeTarget should remove relation with target").isNull();
-            assertThat(component.getComponent(entity2)).as("removeTarget should remove relation with target").isNull();
-            assertThat(component.getComponent(entity3))
-                    .extracting("relationship", "target")
-                    .as("removeTarget should not remove relation with different target").contains(relation3.relationship(), target2);
-        }
-
-        @Test
-        void testRemoveTarget_MultipleRelations_NoAffectedEntitiesBag() {
-            var target = world.createEntity();
-            var target2 = world.createEntity();
-
-            var component = getComponent(type1());
-            var relation1 = getInstance1(1, target);
-            var relation2 = getInstance1(2, target);
-            var relation3 = getInstance1(3, target2);
-
-            var entity1 = world.createEntity(relation1);
-            var entity2 = world.createEntity(relation2);
-            var entity3 = world.createEntity(relation3);
-
-            // Call
-            assertThatCode(() -> component.removeTarget(target, null)).as("removeTarget should not throw if affectedEntities is null").doesNotThrowAnyException();
-
-            // Verify
-            assertThat(component.getComponent(entity1)).as("removeTarget should remove relation with target").isNull();
-            assertThat(component.getComponent(entity2)).as("removeTarget should remove relation with target").isNull();
+            assertThat(component.getComponent(entity1)).as("removeTarget should not remove relation with target").isNotNull();
+            assertThat(component.getComponent(entity2)).as("removeTarget should not remove relation with target").isNotNull();
             assertThat(component.getComponent(entity3))
                     .extracting("relationship", "target")
                     .as("removeTarget should not remove relation with different target").contains(relation3.relationship(), target2);
