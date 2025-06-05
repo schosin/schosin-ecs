@@ -147,7 +147,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("ExclusiveEntityRelationDataImpl [id=").append(this.id).append(", type=").append(this.type).append("]");
+        builder.append("EntityRelationDataImpl [id=").append(this.id).append(", type=").append(this.type).append("]");
         return builder.toString();
     }
 

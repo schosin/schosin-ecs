@@ -101,11 +101,7 @@ public class ExclusiveEntityRelationDataTest
 
     @Override
     protected EntityRelation<Relationship1> getInstance1(int relationship, int target) {
-        assertThat(relationship).as("relationship").isPositive();
         assumeThat(relationship).as("relationship").isBetween(1, 3);
-
-        assertThat(target).as("target").isPositive();
-        assumeThat(target).as("target").isBetween(1, 3);
 
         return relation(
                 switch (relationship) {

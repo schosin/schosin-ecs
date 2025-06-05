@@ -326,14 +326,15 @@ public class EntityRelationDataTest
                 var instance2 = getInstance3(5, 2);
                 var instance3 = getInstance3(6, 3);
 
-                var target1 = getInstance3(4, 1).target();
-                var target2 = getInstance3(5, 2).target();
-                var target3 = getInstance3(6, 3).target();
+                var target1 = instance1.target();
+                var target2 = instance2.target();
+                var target3 = instance3.target();
 
                 // Call
                 var entityId = getEntity(component, instance1, instance2, instance3);
 
                 var relations = component.getComponent(entityId);
+
                 // Verify
                 assertThat(relations.getRelationship(target1)).as("returns same relationship for equal target").isSameAs(instance1.relationship());
                 assertThat(relations.getRelationship(target2)).as("returns same relationship for equal target").isSameAs(instance2.relationship());
@@ -365,11 +366,7 @@ public class EntityRelationDataTest
 
     @Override
     protected EntityRelation<Relationship1> getInstance1(int relationship, int target) {
-        assertThat(relationship).as("relationship").isPositive();
         assumeThat(relationship).as("relationship").isBetween(1, 3);
-
-        assertThat(target).as("target").isPositive();
-        assumeThat(target).as("target").isBetween(1, 3);
 
         return relation(
                 switch (relationship) {

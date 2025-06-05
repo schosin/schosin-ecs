@@ -47,6 +47,15 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
     }
 
     @Test
+    void testEntityAlreadyPresentInStore_Predefined() {
+        var componentMask = storageEngine.create(42, new Object[0]);
+
+        assertThatThrownBy(() -> storageEngine.create(42, componentMask, componentMask.getComponentTypes(), new Object[0]))
+                .isInstanceOf(StorageEngineException.class)
+                .hasMessageContaining("already present in storage", "42");
+    }
+
+    @Test
     void testDuplicateClassComponent() {
         assertThatThrownBy(() -> storageEngine.create(1, new Object[] { new C1(), new C1() }))
                 .isInstanceOf(StorageEngineException.class)

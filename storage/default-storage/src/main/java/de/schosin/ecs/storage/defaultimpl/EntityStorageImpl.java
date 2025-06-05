@@ -69,7 +69,7 @@ public class EntityStorageImpl implements EntityStorage {
     @Override
     public ComponentMaskImpl addToComponentMask(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
         if (!(mask instanceof ComponentMaskImpl componentMask)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
+            throw new StorageEngineException("Detected unknown component mask. Only use component masks received from the same storage engine: %s".formatted(mask));
         }
 
         if (componentTypes.isEmpty()) {
@@ -111,7 +111,7 @@ public class EntityStorageImpl implements EntityStorage {
 
     private ComponentMask removeRegularFromComponentMask(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
         if (!(mask instanceof ComponentMaskImpl result)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
+            throw new StorageEngineException("Detected unknown component mask. Only use component masks received from the same storage engine: %s".formatted(mask));
         }
 
         if (componentTypes.isEmpty()) {
@@ -194,7 +194,7 @@ public class EntityStorageImpl implements EntityStorage {
 
     private ComponentMask createEntity(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         if (!(mask instanceof ComponentMaskImpl componentMask)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
+            throw new StorageEngineException("Detected unknown component mask. Only use component masks received from the same storage engine: %s".formatted(mask));
         }
 
         var existing = componentMaskByEntity.get(entityId);
@@ -212,7 +212,7 @@ public class EntityStorageImpl implements EntityStorage {
     @Override
     public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
         if (!(mask instanceof ComponentMaskImpl componentMask)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
+            throw new StorageEngineException("Detected unknown component mask. Only use component masks received from the same storage engine: %s".formatted(mask));
         }
 
         // Validate component mask and types 
@@ -252,7 +252,7 @@ public class EntityStorageImpl implements EntityStorage {
     private ComponentMask addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         var existing = componentMaskByEntity.get(entityId);
         if (existing == null) {
-            throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId, existing));
+            throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId));
         }
 
         // Calculate new component mask
@@ -300,7 +300,7 @@ public class EntityStorageImpl implements EntityStorage {
     public ComponentMask remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
         var existing = componentMaskByEntity.get(entityId);
         if (existing == null) {
-            throw new StorageEngineException("Cannot remove components from entity %d: Entity not present in storage".formatted(entityId, existing));
+            throw new StorageEngineException("Cannot remove components from entity %d: Entity not present in storage".formatted(entityId));
         }
 
         return componentTypesPool.withInstance(regularComponentTypes -> {
@@ -338,7 +338,7 @@ public class EntityStorageImpl implements EntityStorage {
     public ComponentMask delete(int entityId) {
         var existing = componentMaskByEntity.get(entityId);
         if (existing == null) {
-            throw new StorageEngineException("Cannot delete entity %d: Entity not present in storage".formatted(entityId, existing));
+            throw new StorageEngineException("Cannot delete entity %d: Entity not present in storage".formatted(entityId));
         }
 
         // Remove components

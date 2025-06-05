@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
@@ -115,10 +115,11 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
         void testFreeRelationInstance() {
             var target = world.createEntity();
 
-            var relation = Relation.create(EnumComponent.INSTANCE, target);
+            var relation = getInstance1(1, target);
             var entityId = world.createEntity(relation);
 
-            storageEngine.remove(entityId, ImmutableBag.of(relation(EnumComponent.class)));
+            var componentType = ComponentType.detectComponentType(relation);
+            storageEngine.remove(entityId, ImmutableBag.of(componentType));
 
             assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
             assertThat(relation.relationship()).as("removed relation must be returned to Relation.free").isNull();
@@ -132,10 +133,6 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
     }
 
     record RegularComponent() {
-    }
-
-    private enum EnumComponent {
-        INSTANCE
     }
 
 }
