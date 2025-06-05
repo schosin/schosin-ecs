@@ -16,9 +16,9 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>de.schosin.ecs.storage</groupId>
-            <artifactId>ecs-storage-default-storage</artifactId>
-            <version>${project.version}</version>
+            <groupId>${storage.impl.groupId}</groupId>
+            <artifactId>${storage.impl.artifactId}</artifactId>
+            <version>${storage.impl.version}</version>
             <scope>runtime</scope>
         </dependency>
     

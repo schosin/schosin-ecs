@@ -21,9 +21,7 @@ import de.schosin.ecs.engine.WorldBuilderTest.SimplePluginTest.SimplePlugin;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
 import de.schosin.ecs.engine.utils.exceptions.EcsWorldCreationException;
-import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
-import de.schosin.ecs.storage.defaultimpl.DefaultStorageEngine;
 import de.schosin.ecs.utils.ReflectionUtils;
 
 public class WorldBuilderTest {
@@ -337,49 +335,6 @@ public class WorldBuilderTest {
                 this.componentAccessingPlugin = this.multiPlugin.componentAccessingPlugin;
             }
 
-        }
-
-    }
-
-    @Nested
-    static class CustomStorageEngineTest {
-
-        @Test
-        void testCustomStorageEngineAccessingPlugin() {
-            var world = World.builder(CustomWorld.class).storageEngine(CustomStorageEngine.class).build();
-
-            var plugin = world.getSingleton(CustomPluginImpl.class);
-            var engine = world.getSingleton(CustomStorageEngine.class);
-
-            assertThat(engine.plugin).isSameAs(plugin);
-        }
-
-        public interface CustomWorld extends World, CustomPlugin {
-        }
-
-        @Plugin(CustomPluginImpl.class)
-        public interface CustomPlugin {
-        }
-
-        public static class CustomPluginImpl implements CustomPlugin {
-            public CustomPluginImpl(World world) {
-                world.addSingleton(this);
-            }
-        }
-
-        public static class CustomStorageEngine extends DefaultStorageEngine {
-
-            private CustomPluginImpl plugin;
-
-            @Override
-            public void setWorld(StorageWorld world) {
-                world.addSingleton(this);
-            }
-
-            @Override
-            public void setProxiedWorld(StorageWorld world) {
-                this.plugin = world.getSingleton(CustomPluginImpl.class);
-            }
         }
 
     }
