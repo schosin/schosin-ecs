@@ -85,7 +85,7 @@ public class EngineWorld implements World, StorageWorld {
 
         this.eventManager = addSingleton(new EventManager());
         this.bagManager = addSingleton(new BagManager());
-        this.componentManager = addSingleton(new ComponentManager(storageEngine, eventManager, classes));
+        this.componentManager = addSingleton(new ComponentManager(storageEngine, eventManager, bagManager, classes));
         this.entityManager = addSingleton(new EntityManager(this, storageEngine, bagManager));
         this.changeManager = addSingleton(new ChangeManager(storageEngine, eventManager, bagManager, componentManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager));

@@ -13,6 +13,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
+import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.utils.ClassUtils;
@@ -43,10 +44,12 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 public class ComponentManager {
 
     private final StorageEngine storageEngine;
+    private final BagManager bagManager;
     private final Classes classes;
 
-    public ComponentManager(StorageEngine storageEngine, EventManager eventManager, Classes classes) {
+    public ComponentManager(StorageEngine storageEngine, EventManager eventManager, BagManager bagManager, Classes classes) {
         this.storageEngine = storageEngine;
+        this.bagManager = bagManager;
         this.classes = classes;
 
         eventManager.registerEventHandler(ComponentAddedEvent.class, this::handleComponentAdded);
@@ -153,6 +156,7 @@ public class ComponentManager {
 
     private void handleComponentAdded(ComponentAddedEvent event) {
         validateComponent(event.type(), classes);
+        bagManager.ensureComponentSize(event.componentId());
     }
 
 }

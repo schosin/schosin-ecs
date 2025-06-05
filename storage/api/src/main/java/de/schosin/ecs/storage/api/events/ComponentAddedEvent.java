@@ -16,15 +16,17 @@ import de.schosin.ecs.utils.collections.Pool;
 
 public sealed interface ComponentAddedEvent extends StorageEvent {
 
-    static ComponentAddedEvent get(RegularComponentType<?, ?> type, Component<?, ?> component) {
+    static ComponentAddedEvent get(int componentId, RegularComponentType<?, ?> type, Component<?, ?> component) {
         return switch (type) {
-            case ClassType<?> classType -> ClassComponentAddedEventImpl.get(classType, component);
-            case ComponentRelationType<?, ?> relationType -> ComponentRelationAddedEventImpl.get(relationType, component);
-            case ExclusiveComponentRelationType<?, ?> exclusiveRelationType -> ExclusiveComponentRelationAddedEventImpl.get(exclusiveRelationType, component);
-            case EntityRelationType<?> relationType -> EntityRelationAddedEventImpl.get(relationType, component);
-            case ExclusiveEntityRelationType<?> exclusiveRelationType -> ExclusiveEntityRelationAddedEventImpl.get(exclusiveRelationType, component);
+            case ClassType<?> classType -> ClassComponentAddedEventImpl.get(componentId, classType, component);
+            case ComponentRelationType<?, ?> relationType -> ComponentRelationAddedEventImpl.get(componentId, relationType, component);
+            case ExclusiveComponentRelationType<?, ?> exclusiveRelationType -> ExclusiveComponentRelationAddedEventImpl.get(componentId, exclusiveRelationType, component);
+            case EntityRelationType<?> relationType -> EntityRelationAddedEventImpl.get(componentId, relationType, component);
+            case ExclusiveEntityRelationType<?> exclusiveRelationType -> ExclusiveEntityRelationAddedEventImpl.get(componentId, exclusiveRelationType, component);
         };
     }
+
+    int componentId();
 
     RegularComponentType<?, ?> type();
 
@@ -58,8 +60,14 @@ public sealed interface ComponentAddedEvent extends StorageEvent {
 
 abstract sealed class AbstractComponentAddedEvent<T extends RegularComponentType<?, ?>> implements ComponentAddedEvent {
 
+    protected int componentId = -1;
     protected T type;
     protected Component<?, ?> component;
+
+    @Override
+    public int componentId() {
+        return componentId;
+    }
 
     @Override
     public T type() {
@@ -73,6 +81,7 @@ abstract sealed class AbstractComponentAddedEvent<T extends RegularComponentType
 
     @Override
     public void reset() {
+        this.componentId = -1;
         this.type = null;
         this.component = null;
     }
@@ -83,8 +92,9 @@ final class ClassComponentAddedEventImpl extends AbstractComponentAddedEvent<Cla
 
     private static final Pool<ClassComponentAddedEventImpl> POOL = Pool.unbounded(ClassComponentAddedEventImpl.class, ClassComponentAddedEventImpl::new);
 
-    static ClassComponentAddedEvent get(ClassType<?> type, Component<?, ?> component) {
+    static ClassComponentAddedEvent get(int componentId, ClassType<?> type, Component<?, ?> component) {
         var instance = POOL.getInstance();
+        instance.componentId = componentId;
         instance.type = type;
         instance.component = component;
 
@@ -102,8 +112,9 @@ final class ComponentRelationAddedEventImpl extends AbstractComponentAddedEvent<
 
     private static final Pool<ComponentRelationAddedEventImpl> POOL = Pool.unbounded(ComponentRelationAddedEventImpl.class, ComponentRelationAddedEventImpl::new);
 
-    static ComponentRelationAddedEvent get(ComponentRelationType<?, ?> type, Component<?, ?> component) {
+    static ComponentRelationAddedEvent get(int componentId, ComponentRelationType<?, ?> type, Component<?, ?> component) {
         var instance = POOL.getInstance();
+        instance.componentId = componentId;
         instance.type = type;
         instance.component = component;
 
@@ -121,8 +132,9 @@ final class ExclusiveComponentRelationAddedEventImpl extends AbstractComponentAd
 
     private static final Pool<ExclusiveComponentRelationAddedEventImpl> POOL = Pool.unbounded(ExclusiveComponentRelationAddedEventImpl.class, ExclusiveComponentRelationAddedEventImpl::new);
 
-    static ExclusiveComponentRelationAddedEvent get(ExclusiveComponentRelationType<?, ?> type, Component<?, ?> component) {
+    static ExclusiveComponentRelationAddedEvent get(int componentId, ExclusiveComponentRelationType<?, ?> type, Component<?, ?> component) {
         var instance = POOL.getInstance();
+        instance.componentId = componentId;
         instance.type = type;
         instance.component = component;
 
@@ -140,8 +152,9 @@ final class EntityRelationAddedEventImpl extends AbstractComponentAddedEvent<Ent
 
     private static final Pool<EntityRelationAddedEventImpl> POOL = Pool.unbounded(EntityRelationAddedEventImpl.class, EntityRelationAddedEventImpl::new);
 
-    static EntityRelationAddedEvent get(EntityRelationType<?> type, Component<?, ?> component) {
+    static EntityRelationAddedEvent get(int componentId, EntityRelationType<?> type, Component<?, ?> component) {
         var instance = POOL.getInstance();
+        instance.componentId = componentId;
         instance.type = type;
         instance.component = component;
 
@@ -159,8 +172,9 @@ final class ExclusiveEntityRelationAddedEventImpl extends AbstractComponentAdded
 
     private static final Pool<ExclusiveEntityRelationAddedEventImpl> POOL = Pool.unbounded(ExclusiveEntityRelationAddedEventImpl.class, ExclusiveEntityRelationAddedEventImpl::new);
 
-    static ExclusiveEntityRelationAddedEvent get(ExclusiveEntityRelationType<?> type, Component<?, ?> component) {
+    static ExclusiveEntityRelationAddedEvent get(int componentId, ExclusiveEntityRelationType<?> type, Component<?, ?> component) {
         var instance = POOL.getInstance();
+        instance.componentId = componentId;
         instance.type = type;
         instance.component = component;
 

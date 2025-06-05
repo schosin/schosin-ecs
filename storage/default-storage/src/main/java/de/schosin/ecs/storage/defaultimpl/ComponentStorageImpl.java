@@ -93,7 +93,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             this.sortedComponents.add(component);
             this.componentData.put(classType, component);
 
-            handleNewComponent(classType, component);
+            handleNewComponent(component.id(), classType, component);
 
             return component;
         }
@@ -124,7 +124,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             this.sortedComponents.add(component);
             this.componentData.put(classType, component);
 
-            handleNewComponent(classType, component);
+            handleNewComponent(component.id(), classType, component);
 
             return component;
         }
@@ -157,7 +157,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             this.sortedComponents.add(component);
             this.componentData.put(relationType, component);
 
-            handleNewComponent(relationType, component);
+            handleNewComponent(component.id(), relationType, component);
 
             return component;
         }
@@ -187,7 +187,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             this.sortedComponents.add(component);
             this.componentData.put(relationType, component);
 
-            handleNewComponent(relationType, component);
+            handleNewComponent(component.id(), relationType, component);
 
             return component;
         }
@@ -217,7 +217,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             this.sortedComponents.add(component);
             this.componentData.put(relationType, component);
 
-            handleNewComponent(relationType, component);
+            handleNewComponent(component.id(), relationType, component);
 
             return component;
         }
@@ -247,7 +247,7 @@ public class ComponentStorageImpl implements ComponentStorage {
             this.sortedComponents.add(component);
             this.componentData.put(relationType, component);
 
-            handleNewComponent(relationType, component);
+            handleNewComponent(component.id(), relationType, component);
 
             return component;
         }
@@ -257,7 +257,7 @@ public class ComponentStorageImpl implements ComponentStorage {
         return new ExclusiveEntityRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
     }
 
-    private <T, R> void handleNewComponent(RegularComponentType<T, R> type, Component<T, R> component) {
+    private <T, R> void handleNewComponent(int componentId, RegularComponentType<T, R> type, Component<T, R> component) {
         // Update bounds
         for (var entry : this.bounds.entrySet()) {
             var componentType = entry.getKey();
@@ -268,7 +268,7 @@ public class ComponentStorageImpl implements ComponentStorage {
         }
 
         // Dispatch event
-        world.dispatchEvent(ComponentAddedEvent.get(type, component));
+        world.dispatchEvent(ComponentAddedEvent.get(componentId, type, component));
     }
 
     @Override
