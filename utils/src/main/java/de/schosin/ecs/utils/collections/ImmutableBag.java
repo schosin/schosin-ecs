@@ -53,6 +53,8 @@ public sealed interface ImmutableBag<T> extends Iterable<T> permits Bag, Immutab
 
     T get(int index);
 
+    T getSafe(int index);
+
     boolean contains(@NonNull T item);
 
     boolean containsIdentity(@NonNull T item);
@@ -94,6 +96,11 @@ final class ImmutableBagImpl<T> implements ImmutableBag<T> {
     @Override
     public T get(int index) {
         return this.bag.get(index);
+    }
+
+    @Override
+    public T getSafe(int index) {
+        return this.bag.getSafe(index);
     }
 
     @Override

@@ -8,33 +8,29 @@
     </parent>
     
     <groupId>de.schosin.ecs.storage</groupId>
-    <artifactId>ecs-storage-test-suite</artifactId>
+    <artifactId>ecs-storage-archetype-storage</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>de.schosin.ecs</groupId>
+            <artifactId>ecs-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>de.schosin.ecs</groupId>
+            <artifactId>ecs-utils</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>de.schosin.ecs.storage</groupId>
             <artifactId>ecs-storage-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>de.schosin.ecs</groupId>
-            <artifactId>ecs-test</artifactId>
-            <version>${project.version}</version>
-            <scope>provided</scope>
-        </dependency>
 
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-suite-engine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${assertj.version}</version>
+            <groupId>com.google.auto.service</groupId>
+            <artifactId>auto-service</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 </project>

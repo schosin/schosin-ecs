@@ -47,7 +47,7 @@ public final class Bag<T> implements ImmutableBag<T> {
     private T[] data;
     private int size;
 
-    public Bag(Class<T> clazz) {
+    public Bag(Class<? super T> clazz) {
         this(clazz, 64);
     }
 
@@ -96,12 +96,21 @@ public final class Bag<T> implements ImmutableBag<T> {
         return data[index];
     }
 
+    @Override
+    public T getSafe(int index) {
+        if (index >= data.length) {
+            return null;
+        }
+
+        return data[index];
+    }
+
     public void addAll(ImmutableBag<? extends T> components) {
         for (int i = 0, s = components.getSize(); i < s; i++) {
             add(components.get(i));
         }
     }
-    
+
     public void removeAll(ImmutableBag<? extends T> components) {
         for (int i = 0, s = components.getSize(); i < s; i++) {
             remove(components.get(i));

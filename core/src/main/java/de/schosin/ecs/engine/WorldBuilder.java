@@ -34,6 +34,8 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
     private final Class<T> clazz;
 
     Class<? extends StorageEngine> storageEngine;
+    Object storageConfig;
+
     int processLoops = 3;
     final Map<Class<?>, Object> singletons = new HashMap<>();
     final Map<Class<?>, PluginConfig> pluginConfigs = new HashMap<>();
@@ -58,8 +60,10 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
     }
 
     @Override
-    public Builder<T> storageEngine(Class<?> storageEngine) {
+    public Builder<T> storageEngine(Class<?> storageEngine, Object config) {
         this.storageEngine = storageEngine.asSubclass(StorageEngine.class);
+        this.storageConfig = config;
+
         return this;
     }
 
@@ -102,7 +106,7 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
         var world = new EngineWorld(this, storageEngine);
 
         // Associate world to storage engine
-        storageEngine.setWorld(world);
+        storageEngine.setWorld(world, this.storageConfig);
 
         if (World.class.equals(clazz)) {
             return (T) world;

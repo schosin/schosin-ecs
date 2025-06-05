@@ -55,6 +55,8 @@ public class RelationMapperManager {
     }
 
     private void handleEntityRemovedEvent(EntityRemovedEvent event) {
+        affectedEntities.clear();
+
         if (components == null) {
             this.components = engine.getComponents();
         }
@@ -70,6 +72,10 @@ public class RelationMapperManager {
             mapper.removeTarget(event.entityId(), affectedEntities);
             handleRemovedRelations(mapper, affectedEntities);
         }
+
+        if (!affectedEntities.isEmpty()) {
+            throw new IllegalStateException("Error while removing relations with deleted target %d: %d affected entities remaining.".formatted(event.entityId(), affectedEntities.getSize()));
+        }
     }
 
     private void handleRemovedRelations(AbstractEntityRelationMapper<?, ?, ?> mapper, IntBag affectedEntities) {
@@ -78,11 +84,11 @@ public class RelationMapperManager {
         }
 
         var data = affectedEntities.getData();
-        for (int i = 0, s = affectedEntities.getSize(); i < s; i++) {
-            mapper.remove(data[i]);
+        for (int i = affectedEntities.getSize() - 1; i >= 0; i--) {
+            if (mapper.remove(data[i])) {
+                affectedEntities.removeIndex(i);
+            }
         }
-
-        affectedEntities.clear();
     }
 
     @SuppressWarnings("unchecked")

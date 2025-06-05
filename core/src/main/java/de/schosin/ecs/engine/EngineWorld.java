@@ -51,6 +51,7 @@ import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.events.StorageEvent;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.IntBag;
 
 public class EngineWorld implements World, StorageWorld {
 
@@ -231,6 +232,11 @@ public class EngineWorld implements World, StorageWorld {
     @Override
     public <T> Bag<T> createEntityBag(Class<? super T> clazz) {
         return bagManager.createEntityBag(clazz);
+    }
+
+    @Override
+    public IntBag createEntityIntBag() {
+        return bagManager.createEntityIntBag();
     }
 
     @Override

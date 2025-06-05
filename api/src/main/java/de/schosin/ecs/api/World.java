@@ -91,7 +91,32 @@ public interface World extends Components.Creator {
          * @return this instance
          * @throws ClassCastException if class does not implement StorageEngine
          */
-        Builder<T> storageEngine(Class<?> storageEngine);
+        default Builder<T> storageEngine(Class<?> storageEngine) {
+            return storageEngine(storageEngine, null);
+        }
+
+        /**
+         * Override the storage engine used by this world. The storage engine
+         * will be loaded via {@link ServiceLoader}.
+         * 
+         * <p>
+         * See the documentation for the used storag engine to see if a configuration
+         * object is required or supported.
+         * </p>
+         * 
+         * <p>
+         * If this method is not called, a single {@link Provider} is expected
+         * to be returned by {@link ServiceLoader#stream()}. If multiple storage
+         * engines are present on the classpath, use this method to set the engine to
+         * use.
+         * </p>
+         * 
+         * @param storageEngine class of storage engine, must implement StorageEngine
+         * @param config configuration object for storage engine
+         * @return this instance
+         * @throws ClassCastException if class does not implement StorageEngine
+         */
+        Builder<T> storageEngine(Class<?> storageEngine, Object config);
 
         /**
          * Default loop count used by {@link World#process()} when delegating to {@link World#process(int)}.

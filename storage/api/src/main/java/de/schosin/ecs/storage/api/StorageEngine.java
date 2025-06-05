@@ -16,6 +16,20 @@ public interface StorageEngine extends ComponentStorage, EntityStorage {
      * </p>
      * 
      * @param world instance of world
+     * @param config configuration object passed by {@link World.Builder#storageEngine(Class, Object)}
+     */
+    default void setWorld(StorageWorld world, Object config) {
+        setWorld(world);
+    }
+
+    /**
+     * Sets the world this storage engine is used for. This will be an unproxied instance.
+     * 
+     * <p>
+     * Implementations must support access to all functionalities after this call. 
+     * </p>
+     * 
+     * @param world instance of world
      */
     default void setWorld(StorageWorld world) {
     }

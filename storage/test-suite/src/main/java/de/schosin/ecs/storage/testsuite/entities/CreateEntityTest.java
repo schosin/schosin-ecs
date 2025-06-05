@@ -1,6 +1,7 @@
 package de.schosin.ecs.storage.testsuite.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Nested;
@@ -60,6 +61,49 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
         assertThatThrownBy(() -> storageEngine.create(1, new Object[] { new C1(), new C1() }))
                 .isInstanceOf(StorageEngineException.class)
                 .hasMessageContainingAll("duplicate component types", C1.class.getSimpleName());
+    }
+
+    /*
+     * Affected archetype storage: Implementation failed to track entityId lookup based on index in certain scenarios
+     */
+    @Test
+    void testReuseDataStructuresFromAlteredEntity() {
+        // Create entities
+        for (int i = 1; i <= 11; i++) {
+            storageEngine.create(i, new Object[] { new C1() });
+        }
+
+        // Alter their composition
+        for (int i = 1; i <= 11; i++) {
+            storageEngine.add(i, new Object[] { new C2() });
+        }
+
+        var mapper1 = storageEngine.getComponent(component(C1.class));
+
+        // Reuse entity ids, creating a new with the component mask before alteration
+        for (int i = 1; i <= 11; i++) {
+            storageEngine.delete(i);
+
+            var component1 = new C1();
+            storageEngine.create(i, new Object[] { component1 });
+
+            // Verify
+            assertThat(mapper1.getComponent(i)).as("returns added components").isSameAs(component1);
+        }
+
+        for (int i = 1; i <= 11; i++) {
+            var id = i;
+
+            assertThatCode(() -> {
+                storageEngine.delete(id);
+
+                var component1 = new C1();
+                storageEngine.create(id, new Object[] { component1 });
+
+                // Verify
+                assertThat(mapper1.getComponent(id)).as("returns added components").isSameAs(component1);
+            }).doesNotThrowAnyException();
+        }
     }
 
     @Nested
