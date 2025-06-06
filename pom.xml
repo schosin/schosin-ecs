@@ -19,6 +19,7 @@
         <module>benchmark</module>
         <module>bom</module>
         <module>examples</module>
+        <module>integration-tests</module>
         <module>aggregate-report</module>
     </modules>
   
@@ -50,6 +51,7 @@
         <junit.version>5.12.2</junit.version>
         <junit-pironeer.version>2.3.0</junit-pironeer.version>
         <assertj.version>3.27.2</assertj.version>
+        <awaitility.version>4.3.0</awaitility.version>
         <archunit.version>1.4.0</archunit.version>
         <jmh.version>1.37</jmh.version>
     </properties>
@@ -137,6 +139,11 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+            </dependency>
+            <dependency>
+              <groupId>org.awaitility</groupId>
+              <artifactId>awaitility</artifactId>
+              <version>${awaitility.version}</version>
             </dependency>
 
             <dependency>
