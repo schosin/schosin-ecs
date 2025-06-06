@@ -16,8 +16,6 @@ import de.schosin.ecs.api.data.DataProvider;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.ProcessEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.Data;
@@ -40,7 +38,6 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
     private final Pool<Bag<Object>> bagPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class, 64), Bag::clear);
     private final Pool<Bag<Bag<Object>>> bagsPool = Pool.unbounded(Bag.class, () -> new Bag<>(Bag.class, 64), Bag::clear);
-    private final Bag<Bag<Bag<Object>>> lentBags = new Bag<>(Bag.class, 8);
 
     public ArchetypeManager(World world, DataTypePlugin dataTypePlugin) {
         world.addSingleton(this);
@@ -49,23 +46,6 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
         this.entityManager = world.getSingleton(EntityManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
-
-        var eventManager = world.getSingleton(EventManager.class);
-        eventManager.registerEventHandler(ProcessEvent.Process.class, this::handleProcess);
-    }
-
-    private void handleProcess(ProcessEvent event) {
-        var data = this.lentBags.getData();
-        for (int i = 0, s = this.lentBags.getSize(); i < s; i++) {
-            var bag = data[i];
-
-            var bagData = bag.getData();
-            for (int j = 0, js = bag.getSize(); j < js; j++) {
-                bagPool.free(bagData[j]);
-            }
-
-            bagsPool.free(data[i]);
-        }
     }
 
     private <T extends Pooled> T getInstance(Class<T> component) {
@@ -76,13 +56,21 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
     private Bag<Bag<Object>> getDataBags(int entities) {
         var bags = this.bagsPool.getInstance();
-        this.lentBags.add(bags);
 
         for (int i = bags.getSize(); i < entities; i++) {
             bags.add(bagPool.getInstance());
         }
 
         return bags;
+    }
+
+    private void freeDataBags(Bag<Bag<Object>> bag) {
+        var bagData = bag.getData();
+        for (int j = 0, js = bag.getSize(); j < js; j++) {
+            bagPool.free(bagData[j]);
+        }
+
+        bagsPool.free(bag);
     }
 
     static abstract class AbstractBaseArchetypeImpl<P extends DataProvider<?>> implements BaseArchetype<P> {
@@ -188,7 +176,10 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 }
             }
 
-            return manager.entityManager.createEntities(this.componentMask, data, this.componentTypes);
+            var result = manager.entityManager.createEntities(this.componentMask, data, this.componentTypes);
+
+            manager.freeDataBags(data);
+            return result;
         }
 
         private void fillComponents(Object data, Object[] components) {
