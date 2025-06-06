@@ -173,8 +173,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Cannot get component type for null instance");
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContaining(C1.class.getSimpleName());
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -251,8 +251,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Cannot get component type for null instance");
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContaining(C1.class.getSimpleName());
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -267,8 +267,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
 
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessage("Cannot get component type for null instance");
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContaining(C1.class.getSimpleName());
 
             // Call
             world.process();

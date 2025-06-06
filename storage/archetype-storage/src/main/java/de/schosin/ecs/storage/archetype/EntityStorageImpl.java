@@ -318,14 +318,20 @@ public class EntityStorageImpl implements EntityStorage {
 
         for (int i = 0, s = components.getSize(); i < s; i++) {
             var expectedType = i < expectedTypes.getSize() ? expectedTypes.get(i) : null;
+            var component = components.get(i);
 
-            var actualType = ComponentType.detectComponentType(components.get(i));
-            if (!actualType.equals(expectedType)) {
+            if (expectedType == null) {
                 if (errors == null) {
                     errors = new ArrayList<>();
                 }
 
-                errors.add("Expected component type '%s' at index %d, but was '%s'".formatted(actualType, i, expectedType));
+                errors.add("Unexpected component '%s' at index %d".formatted(component, i));
+            } else if (!expectedType.isInstance(component)) {
+                if (errors == null) {
+                    errors = new ArrayList<>();
+                }
+
+                errors.add("Expected component type '%s' at index %d, but was '%s'".formatted(expectedType, i, component));
             }
 
             if (expectedType instanceof RelationComponentType<?, ?, ?> relationType) {

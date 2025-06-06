@@ -56,6 +56,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
+        public boolean isInstance(Object component) {
+            return component instanceof ComponentRelation<?, ?> relation && this.relationship.isInstance(relation.relationship()) && this.target.isInstance(relation.target());
+        }
+
+        @Override
         public final String toString() {
             return "ComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
         }
@@ -76,6 +81,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         @Override
         public boolean matches(ComponentType<?, ?> otherType) {
             return this.equals(otherType);
+        }
+
+        @Override
+        public boolean isInstance(Object component) {
+            return component instanceof ComponentRelation<?, ?> relation && this.relationship.isInstance(relation.relationship()) && this.target.isInstance(relation.target());
         }
 
         @Override
@@ -105,6 +115,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
+        public boolean isInstance(Object component) {
+            return component instanceof EntityRelation<?> relation && this.relationship.isInstance(relation.relationship());
+        }
+
+        @Override
         public final String toString() {
             return "EntityRelationType(%s)".formatted(relationship.getSimpleName());
         }
@@ -123,6 +138,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         @Override
         public boolean matches(ComponentType<?, ?> otherType) {
             return this.equals(otherType);
+        }
+
+        @Override
+        public boolean isInstance(Object component) {
+            return component instanceof EntityRelation<?> relation && this.relationship.isInstance(relation.relationship());
         }
 
         @Override

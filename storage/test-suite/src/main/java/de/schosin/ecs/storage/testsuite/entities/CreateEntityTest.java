@@ -588,9 +588,9 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
                     assertThatThrownBy(() -> storageEngine.create(1, componentMask, componentTypes, new Object[] { component2, component1 }))
                             .isInstanceOf(StorageEngineException.class)
                             .hasMessageContainingAll("component mask %d".formatted(componentMask.getId()),
-                                    "Expected component type '%s'".formatted(component(C2.class)),
+                                    "Expected component type '%s'".formatted(component(C1.class)),
                                     "index 0",
-                                    "but was '%s'".formatted(component(C1.class)));
+                                    "but was '%s'".formatted(component2));
 
                     // Verify (may store previous, valid components)
                     assertThat(storageEngine.getComponent(component(C1.class)).getComponent(1)).as("Must not store component instance on error").isNull();

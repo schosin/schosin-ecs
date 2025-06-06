@@ -109,7 +109,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var component2 = new C2();
             assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C3.class)), new Object[] { component, component2 }))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId), "Expected component type '%s' at index 1".formatted(component(C2.class)));
+                    .hasMessageContainingAll("entity %d".formatted(entityId), "Expected component type '%s' at index 1".formatted(component(C3.class)));
         }
 
         @ParameterizedTest
@@ -123,8 +123,8 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C3.class)), new Object[] { component1, component }))
                     .isInstanceOf(StorageEngineException.class)
                     .hasMessageContainingAll("entity %d".formatted(entityId),
-                            "Expected component type '%s' at index 0".formatted(component(C3.class)),
-                            "Expected component type '%s' at index 1".formatted(componentType));
+                            "Expected component type '%s' at index 0".formatted(componentType),
+                            "Expected component type '%s' at index 1".formatted(component(C3.class)));
         }
 
         @ParameterizedTest
@@ -137,7 +137,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var component2 = new C2();
             assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType), new Object[] { component, component2 }))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId), "Expected component type '%s' at index 1".formatted(component(C2.class)));
+                    .hasMessageContainingAll("entity %d".formatted(entityId), "Unexpected component '%s' at index 1".formatted(component2));
         }
 
         @ParameterizedTest

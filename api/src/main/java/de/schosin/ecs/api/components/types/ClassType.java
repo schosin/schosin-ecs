@@ -27,6 +27,11 @@ public record ClassType<T>(Class<T> clazz) implements RegularComponentType<T, T>
     }
 
     @Override
+    public boolean isInstance(Object component) {
+        return clazz.isInstance(component);
+    }
+
+    @Override
     public final String toString() {
         return "ClassType(%s)".formatted(clazz.getSimpleName());
     }

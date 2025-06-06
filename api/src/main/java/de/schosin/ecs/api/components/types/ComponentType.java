@@ -61,6 +61,15 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
      * @param <R> type of component data when reading
      */
     sealed interface RegularComponentType<T, R> extends ComponentType<T, R> permits ClassType, RelationComponentType {
+
+        /**
+         * Check whether the component is a single instance of this type, matching the type parameter {@code T}.
+         * 
+         * @param component component to check
+         * @return true, if the component is an instance of this type
+         */
+        boolean isInstance(Object component);
+
     }
 
     /**

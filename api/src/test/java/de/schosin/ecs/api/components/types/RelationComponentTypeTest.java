@@ -17,6 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
@@ -121,6 +122,20 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
             assertThat(relation(RelationshipComponent.class, TargetComponent.class))
                     .extracting(Object::toString, InstanceOfAssertFactories.STRING)
                     .containsSubsequence("ComponentRelationType", RelationshipComponent.class.getSimpleName(), TargetComponent.class.getSimpleName());
+        }
+
+        @Test
+        void testIsInstance() {
+            var relationType = new ComponentRelationType<>(Component.class, EnumComponent.class);
+
+            assertThat(relationType.isInstance(null)).isFalse();
+            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isTrue();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isFalse();
         }
 
         @Nested
@@ -244,6 +259,20 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
                     .containsSubsequence("ExclusiveComponentRelationType", ExclusiveComponent.class.getSimpleName(), TargetComponent.class.getSimpleName());
         }
 
+        @Test
+        void testIsInstance() {
+            var relationType = new ExclusiveComponentRelationType<>(ExclusiveComponent.class, EnumComponent.class);
+
+            assertThat(relationType.isInstance(null)).isFalse();
+            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isTrue();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isFalse();
+        }
+
         @Nested
         class RelationshipComponentTest {
 
@@ -339,6 +368,20 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
                     .containsSubsequence("EntityRelationType", RelationshipComponent.class.getSimpleName());
         }
 
+        @Test
+        void testIsInstance() {
+            var relationType = new EntityRelationType<>(Component.class);
+
+            assertThat(relationType.isInstance(null)).isFalse();
+            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isTrue();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isFalse();
+        }
+
         @Override
         protected ComponentType<?, ?> type(Class<?> clazz) {
             return new EntityRelationType<>(clazz);
@@ -385,6 +428,20 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
             assertThat(exclusiveRelation(ExclusiveComponent.class))
                     .extracting(Object::toString, InstanceOfAssertFactories.STRING)
                     .containsSubsequence("ExclusiveEntityRelationType", ExclusiveComponent.class.getSimpleName());
+        }
+
+        @Test
+        void testIsInstance() {
+            var relationType = new ExclusiveEntityRelationType<>(ExclusiveComponent.class);
+
+            assertThat(relationType.isInstance(null)).isFalse();
+            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isTrue();
         }
 
         @Test

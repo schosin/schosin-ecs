@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import de.schosin.ecs.api.components.Relation;
+
 class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestCases> {
 
     public ClassTypeTest() {
@@ -104,6 +106,17 @@ class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestC
         assertThatThrownBy(() -> new ClassType<>(clazz))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContainingAll(clazz.getName(), "cannot be used as a class component", "It is marked as ");
+    }
+
+    @Test
+    void testIsInstance() {
+        var classType = new ClassType<>(Component.class);
+
+        assertThat(classType.isInstance(null)).isFalse();
+        assertThat(classType.isInstance(new Component("foo"))).isTrue();
+        assertThat(classType.isInstance(new NonFinalComponent())).isFalse();
+        assertThat(classType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
+        assertThat(classType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
     }
 
 }

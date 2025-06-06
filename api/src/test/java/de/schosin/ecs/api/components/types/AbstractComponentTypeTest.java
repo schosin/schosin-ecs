@@ -178,6 +178,7 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
     }
 
     enum ExclusiveComponent implements Exclusive {
+        A
     }
 
     enum EntityRelationshipComponent implements EntityRelationship {
