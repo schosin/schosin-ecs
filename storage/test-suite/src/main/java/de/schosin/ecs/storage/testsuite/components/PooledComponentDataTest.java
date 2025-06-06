@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.IdentityHashMap;
 
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -99,6 +100,32 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
             assertThat(component.getInstance()).as("getInstance reuses removed instances").isSameAs(instance);
         }
 
+        @Test
+        void testGetInstance_InstanceResetWhenComponentRemoved() {
+            var type = component(PooledClass.class);
+            var component = getComponent(type);
+
+            var instance = component.getInstance().init(42);
+            var entityId = world.createEntity(instance);
+
+            storageEngine.remove(entityId, ImmutableBag.of(type));
+
+            assertThat(instance.data).as("component must be reset when removed from entity").isEqualTo(-1);
+        }
+
+        @Test
+        void testGetInstance_InstanceResetWhenEntityDeleted() {
+            var type = component(PooledClass.class);
+            var component = getComponent(type);
+
+            var instance = component.getInstance().init(42);
+            var entityId = world.createEntity(instance);
+
+            storageEngine.delete(entityId);
+
+            assertThat(instance.data).as("component must be reset when removed from entity").isEqualTo(-1);
+        }
+
     }
 
     @Override
@@ -127,6 +154,20 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
     }
 
     public record P3() implements Pooled {
+    }
+
+    public static class PooledClass implements Pooled {
+        private int data = -1;
+
+        public PooledClass init(int data) {
+            this.data = data;
+            return this;
+        }
+
+        @Override
+        public void reset() {
+            this.data = -1;
+        }
     }
 
     record PackagePrivateComponent() implements Pooled {
