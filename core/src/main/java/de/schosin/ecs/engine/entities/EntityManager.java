@@ -48,6 +48,8 @@ public class EntityManager {
         for (int i = 0, s = this.lentIntBags.getSize(); i < s; i++) {
             intBagPool.free(data[i]);
         }
+
+        this.lentIntBags.clear();
     }
 
     public int createEntity(Object... components) {
