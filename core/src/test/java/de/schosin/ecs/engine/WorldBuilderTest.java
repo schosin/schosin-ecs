@@ -393,6 +393,67 @@ public class WorldBuilderTest {
     }
 
     @Nested
+    static class PluginFactoryTest {
+
+        @Test
+        void testPluginFactory() {
+            // Create
+            var firstWorld = World.builder(PluginFactoryWorld.class)
+                    .configure(new FactoryPluginConfig(true))
+                    .build();
+
+            var secondWorld = World.builder(PluginFactoryWorld.class)
+                    .configure(new FactoryPluginConfig(false))
+                    .build();
+
+            // Verify
+            assertThat(firstWorld.isFirst()).isTrue();
+            assertThat(secondWorld.isFirst()).isFalse();
+        }
+
+        public interface PluginFactoryWorld extends World, FactoryPlugin {
+        }
+
+        record FactoryPluginConfig(boolean first) implements Plugin.PluginConfig {
+        }
+
+        @Plugin(FactoryPluginFactory.class)
+        public interface FactoryPlugin {
+            boolean isFirst();
+        }
+
+        public static class FactoryPluginFactory implements Plugin.Factory {
+
+            private final FactoryPluginConfig config;
+
+            public FactoryPluginFactory(FactoryPluginConfig config) {
+                this.config = config;
+            }
+
+            @Override
+            public Object getPlugin() {
+                return config.first ? new FactoryPluginFirst() : new FactoryPluginSecond();
+            }
+
+        }
+
+        public static class FactoryPluginFirst implements FactoryPlugin {
+            @Override
+            public boolean isFirst() {
+                return true;
+            }
+        }
+
+        public static class FactoryPluginSecond implements FactoryPlugin {
+            @Override
+            public boolean isFirst() {
+                return false;
+            }
+        }
+
+    }
+
+    @Nested
     static class CombinedTypes {
 
         @Test

@@ -124,8 +124,8 @@ class DynamicWorldBuilder {
 
     private record PluginData(Class<?> plugin, Class<?> implementation) {
         public PluginData {
-            if (!plugin.isAssignableFrom(implementation)) {
-                throw new EcsPluginException("Implementation '%s' for plugin '%s' does not implement plugin. Plugin must declare implementation that implements the plugin."
+            if (!Plugin.Factory.class.isAssignableFrom(implementation) && !plugin.isAssignableFrom(implementation)) {
+                throw new EcsPluginException("Implementation '%s' for plugin '%s' does not implement plugin or Factory. Plugin must declare a factory or implementation that implements the plugin."
                         .formatted(implementation.getName(), plugin.getName()));
             }
         }
@@ -232,6 +232,10 @@ class DynamicWorldBuilder {
         while (!plugins.isEmpty()) {
             var plugin = plugins.removeFirst();
             var instance = instantiatePlugin(world, plugin, plugins, instances, configs);
+
+            if (instance instanceof Plugin.Factory factory) {
+                instance = factory.getPlugin();
+            }
 
             instances.put(plugin.plugin, instance);
             instances.put(plugin.implementation, instance);

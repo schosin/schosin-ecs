@@ -8,12 +8,13 @@ import java.lang.annotation.Target;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Annotation to declare an interface as a plugin, providing its implementation
- * in the {@link #value()} attribute.
+ * Annotation to declare an interface as a plugin, providing its factory
+ * or implementation in the {@link #value()} attribute.
  * 
  * <p>
- * A plugin can be used by creating an interface extending {@link World} as well as
- * any number of plugin interfaces.
+ * A plugin can be used by creating an interface extending {@link World}.
+ * To declare a dependency on another plugin, declare it as a constructor
+ * argument in the factory or implementation class.
  * </p>
  * 
  * <p>
@@ -33,11 +34,22 @@ import org.jspecify.annotations.Nullable;
 public @interface Plugin {
 
     /**
-     * Implementation class of the plugin interface. Will be constructed reflectivly
-     * 
-     * @return
+     * Implementation class of the plugin interface, or a class implementing {@link Factory}.
      */
     Class<?> value();
+
+    /**
+     * Factory of a plugin, providing a way to provide a different implementation based
+     * on the {@link World}, other availabl plugins or the storage implementation.
+     */
+    interface Factory {
+
+        /**
+         * Return an instance of the plugin. 
+         */
+        Object getPlugin();
+
+    }
 
     /**
      * Marker interface for configuration objects. Implementations of plugins
