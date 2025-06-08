@@ -165,6 +165,14 @@ public class ChangeManager {
             // Remove components
             if (!componentTypes.isEmpty()) {
                 storageEngine.remove(entityId, componentTypes);
+
+                // Unmark removed to avoid additional work on next process
+                for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
+                    var index = previousComponentMask.getComponentTypes().indexOf(componentTypes.get(i));
+                    var component = previousComponentMask.getComponents().get(index);
+
+                    unmarkRemoved(entityId, component);
+                }
             }
         });
     }
