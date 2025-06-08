@@ -114,7 +114,7 @@ public class EntityStorageImpl implements EntityStorage {
         });
     }
 
-    private ComponentMask removeRegularFromComponentMask(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
+    private ComponentMaskImpl removeRegularFromComponentMask(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
         if (!(mask instanceof ComponentMaskImpl result)) {
             throw new StorageEngineException("Detected unknown component mask. Only use component masks received from the same storage engine: %s".formatted(mask));
         }
@@ -264,7 +264,7 @@ public class EntityStorageImpl implements EntityStorage {
         componentMask.addComponents(entityId, componentTypes, components);
 
         // Set new component mask
-        componentMaskByEntity.set(entityId, componentMask);
+        this.componentMaskByEntity.set(entityId, componentMask);
 
         return componentMask;
     }
@@ -373,6 +373,9 @@ public class EntityStorageImpl implements EntityStorage {
             // Remove components
             existing.removeComponents(entityId, regularComponentTypes);
 
+            // Set new component mask
+            this.componentMaskByEntity.set(entityId, componentMask);
+
             return componentMask;
         });
     }
@@ -406,7 +409,7 @@ public class EntityStorageImpl implements EntityStorage {
         existing.removeComponents(entityId);
 
         // Remove entity from storage
-        componentMaskByEntity.set(entityId, null);
+        this.componentMaskByEntity.set(entityId, null);
 
         return existing;
     }

@@ -344,6 +344,54 @@ public class ComponentMaskTest extends AbstractStorageEngineTest {
             assertThat(result).containsExactlyInAnyOrder(mask3, mask135);
         }
 
+        @Test
+        void testGetComponentMaskAfterAdd() {
+            var emptyComponentMask = storageEngine.getComponentMask();
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+
+            var entityId = world.createEntity();
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns empty component mask for empty entity").isSameAs(emptyComponentMask);
+
+            // Call
+            var updatedComponentMask = storageEngine.add(entityId, new Object[] { new C1() });
+            assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(componentMask1);
+
+            // Verify
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after add").isSameAs(updatedComponentMask);
+        }
+
+        @Test
+        void testGetComponentMaskAfterRemove() {
+            var emptyComponentMask = storageEngine.getComponentMask();
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+
+            var entityId = world.createEntity(new C1());
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns correct component mask for entity").isSameAs(componentMask1);
+
+            // Call
+            var updatedComponentMask = storageEngine.remove(entityId, ImmutableBag.of(component(C1.class)));
+            assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(emptyComponentMask);
+
+            // Verify
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after add").isSameAs(updatedComponentMask);
+        }
+
+        @Test
+        void testGetComponentMaskAfterModify() {
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+            var componentMask2 = storageEngine.getComponentMask(component(C2.class));
+
+            var entityId = world.createEntity(new C1());
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns correct component mask for entity").isSameAs(componentMask1);
+
+            // Call
+            var updatedComponentMask = storageEngine.modify(entityId, new Object[] { new C2() }, ImmutableBag.of(component(C1.class)));
+            assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(componentMask2);
+
+            // Verify
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after add").isSameAs(componentMask2);
+        }
+
     }
 
     @Nested
