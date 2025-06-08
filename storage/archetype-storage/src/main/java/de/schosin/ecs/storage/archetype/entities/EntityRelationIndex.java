@@ -6,6 +6,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
+import de.schosin.ecs.storage.archetype.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -70,7 +71,7 @@ public class EntityRelationIndex {
             for (int i = 0, s = related.getSize(); i < s; i++) {
                 var relatedId = related.get(i);
 
-                var archetypeData = entityIndex.getArchetypeData(relatedId);
+                var archetypeData = entityIndex.getArchetypeDataForEntity(relatedId);
                 if (archetypeData == null) {
                     continue;
                 }

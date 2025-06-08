@@ -13,11 +13,13 @@ import java.util.stream.Collectors;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
+import de.schosin.ecs.storage.api.ArchetypeStorage;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.EntityStorage;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.RelationComponent;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.ComponentMaskImpl;
@@ -27,7 +29,7 @@ import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class EntityStorageImpl implements EntityStorage {
+public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     private static final Comparator<Component<?, ?>> COMPONENT_COMPARATOR = Comparator.comparing(Component::id);
 
@@ -54,7 +56,7 @@ public class EntityStorageImpl implements EntityStorage {
 
     @Override
     public ComponentMask getComponentMaskForEntity(int entityId) {
-        var data = entityIndex.getArchetypeData(entityId);
+        var data = entityIndex.getArchetypeDataForEntity(entityId);
         if (data == null) {
             return null;
         }
@@ -68,7 +70,7 @@ public class EntityStorageImpl implements EntityStorage {
     }
 
     @Override
-    public ComponentMask getComponentMask(RegularComponentType<?, ?>... componentTypes) {
+    public ComponentMaskImpl getComponentMask(RegularComponentType<?, ?>... componentTypes) {
         var bag = componentTypesPool.getInstance();
 
         for (var componentType : componentTypes) {
@@ -222,7 +224,7 @@ public class EntityStorageImpl implements EntityStorage {
             throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
         }
 
-        var existing = entityIndex.getArchetypeData(entityId);
+        var existing = entityIndex.getArchetypeDataForEntity(entityId);
         if (existing != null) {
             throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
         }
@@ -247,7 +249,7 @@ public class EntityStorageImpl implements EntityStorage {
         // Validate component mask and types 
         validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);
 
-        var existing = entityIndex.getArchetypeData(entityId);
+        var existing = entityIndex.getArchetypeDataForEntity(entityId);
         if (existing != null) {
             throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
         }
@@ -522,6 +524,23 @@ public class EntityStorageImpl implements EntityStorage {
         }
 
         return result;
+    }
+
+    @Override
+    public Archetype getArchetypeForEntity(int entityId) {
+        return entityIndex.getArchetypeDataForEntity(entityId);
+    }
+
+    @Override
+    public Archetype getArchetypeById(int archetypeId) {
+        return entityIndex.getArchetypeDataById(archetypeId);
+    }
+
+    @Override
+    public Archetype getArchetype(RegularComponentType<?, ?>... componentTypes) {
+        var componentMask = getComponentMask(componentTypes);
+
+        return entityIndex.getArchetype(componentMask);
     }
 
 }

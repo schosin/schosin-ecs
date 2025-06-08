@@ -1,17 +1,14 @@
-package de.schosin.ecs.storage.archetype.entities;
+package de.schosin.ecs.storage.archetype.entities.archetypes;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Objects;
-
-import org.jspecify.annotations.NonNull;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
@@ -21,13 +18,20 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponen
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.EntityData;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
+import de.schosin.ecs.storage.archetype.entities.ComponentMaskImpl;
+import de.schosin.ecs.storage.archetype.entities.EntityIndex;
+import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
+import de.schosin.ecs.storage.archetype.results.ComponentRelationResultImpl;
+import de.schosin.ecs.storage.archetype.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class ArchetypeData {
+public class ArchetypeDataImpl implements ArchetypeData {
 
     private final ComponentIndex componentIndex;
     private final EntityRelationIndex relationIndex;
@@ -43,12 +47,13 @@ public class ArchetypeData {
     // data.get(index)[componentId] // index tracked by EntityIndex
     private final Bag<Object[]> data;
     private final IntBag entities;
+    private final ImmutableIntBag immutableEntities;
     private final int size;
 
-    private int alive;
-    // TODO optimize singleton enums (tags) to not be included in data (take component id into account -> mapping required)
+    private final Map<List<RegularComponentType<?, ?>>, EntityDataImpl> entityDataMap = new HashMap<>();
+    private final Pool<List<RegularComponentType<?, ?>>> typesPool = Pool.unbounded(List.class, ArrayList::new, List::clear);
 
-    public ArchetypeData(ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, ComponentMaskImpl componentMask, StorageWorld storageWorld) {
+    public ArchetypeDataImpl(ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, ComponentMaskImpl componentMask, StorageWorld storageWorld) {
         this.componentIndex = componentIndex;
         this.relationIndex = relationIndex;
         this.entityIndex = entityIndex;
@@ -72,20 +77,24 @@ public class ArchetypeData {
 
         this.data = storageWorld.createEntityBag(Object[].class);
         this.entities = new IntBag(64);
+        this.immutableEntities = ImmutableIntBag.create(entities);
         this.size = componentTypes.getSize();
     }
 
+    @Override
     public ComponentMask getComponentMask() {
         return componentMask;
     }
 
+    @Override
     public boolean contains(RegularComponentType<?, ?> type) {
         return componentTypes.contains(type);
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public <R> R getComponent(int index, RegularComponentType<?, R> componentType) {
-        if (index >= alive) {
+        if (index >= entities.getSize()) {
             return null;
         }
 
@@ -102,18 +111,11 @@ public class ArchetypeData {
         return (R) data.get(index)[componentIndex == -1 ? 0 : componentIndex];
     }
 
-    /**
-     * Add an entity, returning its index.
-     * 
-     * @param id of entity
-     * @param componentTypes component types matching components
-     * @param components components to add
-     * @return index of entity
-     */
+    @Override
     public int addEntity(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
         // Track entity index
-        var index = alive++;
-        this.entities.set(index, entityId);
+        var index = entities.getSize();
+        this.entities.add(entityId);
 
         // Get data array
         var data = this.data.getSafe(index);
@@ -145,12 +147,13 @@ public class ArchetypeData {
         return index;
     }
 
+    @Override
     public int addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,
             ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes2, Object[] components2) {
 
         // Track entity index
-        var index = alive++;
-        this.entities.set(index, entityId);
+        var index = entities.getSize();
+        this.entities.add(entityId);
 
         // Get data array
         var data = this.data.getSafe(index);
@@ -202,6 +205,7 @@ public class ArchetypeData {
         return index;
     }
 
+    @Override
     public void updateComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         // Get data array
         var data = this.data.get(index);
@@ -269,15 +273,8 @@ public class ArchetypeData {
         };
     }
 
-    /**
-     * Delete the entity at the given index.
-     * 
-     * @param entityId id of entity
-     * @param index index of entity
-     * @param fill bag that will contain components of deleted entity
-     * @return id of entity swapped to index position, or -1 if no swap
-     */
-    public int deleteEntity(int entityId, int index, Bag<Object> fill) {
+    @Override
+    public int removeEntity(int entityId, int index, Bag<Object> fill) {
         var components = data.get(index);
         if (components == null) {
             return -1;
@@ -302,20 +299,20 @@ public class ArchetypeData {
             }
 
             // Remove row (decrement alive, move last row to removed index if needed)
-            alive--;
-            if (index < alive) {
+            var lastIndex = entities.getSize() - 1;
+            if (index < lastIndex) {
                 // Move components of last row to removed entity's row
-                var lastComponents = this.data.get(alive);
+                var lastComponents = this.data.get(lastIndex);
                 for (int i = 0; i < size; i++) {
                     components[i] = lastComponents[i];
                     lastComponents[i] = null;
                 }
 
                 // Swap entity lookup
-                var swappedEntityId = this.entities.get(alive);
+                var swappedEntityId = this.entities.get(lastIndex);
 
-                this.entities.set(alive, -1);
                 this.entities.set(index, swappedEntityId);
+                this.entities.removeLast();
 
                 // Return id of swapped entity
                 return swappedEntityId;
@@ -324,7 +321,7 @@ public class ArchetypeData {
             // Last element removed, no swap required
             Arrays.fill(components, null);
 
-            this.entities.set(alive, -1);
+            this.entities.removeLast();
 
             return -1;
         }
@@ -334,176 +331,144 @@ public class ArchetypeData {
     public String toString() {
         return new StringBuilder()
                 .append("ArchetypeData(")
-                .append("count = ").append(this.alive).append(", ")
+                .append("count = ").append(this.entities.getSize()).append(", ")
                 .append("componentMask = ").append(this.componentMask).append(")")
                 .toString();
     }
 
-}
-
-@SuppressWarnings("rawtypes")
-class ComponentRelationResultImpl implements ComponentRelationResult, Pooled {
-
-    private static final Pool<ComponentRelationResultImpl> POOL = Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new);
-
-    private final Bag<ComponentRelation<?, ?>> relations = new Bag<>(ComponentRelation.class, 4);
-
-    private ComponentRelationResultImpl() {
+    @Override
+    public int getId() {
+        return componentMask.getId();
     }
 
-    public static ComponentRelationResultImpl getInstance() {
-        return POOL.getInstance();
+    @Override
+    public int getCount() {
+        return entities.getSize();
     }
 
-    public void free() {
-        POOL.free(this);
+    @Override
+    public boolean contains(int entityId) {
+        return entityIndex.getComponentMask(entityId) == componentMask;
     }
 
-    public synchronized void add(ComponentRelation<?, ?> relation) {
-        var data = relations.getData();
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            var existing = data[i];
-            if (Objects.equals(existing.target(), relation.target())) {
-                relations.set(i, relation);
-                return;
+    @Override
+    public ImmutableIntBag getEntities() {
+        return immutableEntities;
+    }
+
+    @Override
+    public EntityData getEntityData(RegularComponentType<?, ?>... componentTypes) {
+        var key = typesPool.getInstance();
+        for (var type : componentTypes) {
+            key.add(type);
+        }
+
+        var result = entityDataMap.get(key);
+        if (result != null) {
+            typesPool.free(key);
+            return result;
+        }
+
+        synchronized (entityDataMap) {
+            result = entityDataMap.get(key);
+            if (result != null) {
+                typesPool.free(key);
+                return result;
             }
+
+            result = new EntityDataImpl(componentTypes);
+            entityDataMap.put(List.copyOf(key), result);
+
+            typesPool.free(key);
+            return result;
         }
-
-        this.relations.add(relation);
     }
 
-    @NonNull
-    @Override
-    public ComponentRelation<?, ?> get(int i) {
-        return this.relations.get(i);
-    }
+    private class EntityDataImpl implements EntityData {
 
-    @Override
-    public int size() {
-        return relations.getSize();
-    }
+        private final IntBag componentIds;
+        private final int[] mapping;
+        private final int size;
 
-    @Override
-    public boolean isEmpty() {
-        return relations.isEmpty();
-    }
+        private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
 
-    @Override
-    public Object getRelationship(Object target) {
-        var data = relations.getData();
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            var relation = data[i];
-            if (Objects.equals(relation.target(), target)) {
-                return relation.relationship();
+        public EntityDataImpl(RegularComponentType<?, ?>[] componentTypes) {
+            this.componentIds = new IntBag(componentTypes.length);
+            this.mapping = new int[componentTypes.length];
+
+            for (int i = 0, s = componentTypes.length; i < s; i++) {
+                var type = componentTypes[i];
+                var componentId = componentIndex.getId(type);
+                var id = componentTypeIds.get(componentId);
+
+                componentIds.add(componentId);
+                mapping[i] = id == 0 ? -1 : id == -1 ? 0 : id;
             }
+
+            this.size = componentTypes.length;
         }
 
-        return null;
-    }
-
-    @Override
-    public Iterator<? extends ComponentRelation<?, ?>> iterator() {
-        return relations.iterator();
-    }
-
-    @Override
-    public void reset() {
-        for (int i = 0, s = this.relations.getSize(); i < s; i++) {
-            Relation.free(this.relations.get(i));
+        @Override
+        public int getSize() {
+            return entities.getSize();
         }
 
-        this.relations.clear();
-    }
+        @Override
+        public int getId(int index) {
+            return entities.get(index);
+        }
 
-}
-
-@SuppressWarnings("rawtypes")
-class EntityRelationResultImpl implements EntityRelationResult, Pooled {
-
-    private static final Pool<EntityRelationResultImpl> POOL = Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new);
-
-    private final Bag<EntityRelation<?>> relations = new Bag<>(EntityRelation.class, 4);
-    private final Bag<EntityRelation<?>> targetLookup = new Bag<>(EntityRelation.class, 4);
-
-    private EntityRelationResultImpl() {
-    }
-
-    public static EntityRelationResultImpl getInstance() {
-        return POOL.getInstance();
-    }
-
-    public void free() {
-        POOL.free(this);
-    }
-
-    public synchronized void add(EntityRelation<?> relation) {
-        targetLookup.set(relation.target(), relation);
-
-        var data = relations.getData();
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            var existing = data[i];
-            if (Objects.equals(existing.target(), relation.target())) {
-                relations.set(i, relation);
-
-                return;
+        @Override
+        @SuppressWarnings("unchecked")
+        public <R> R getComponent(int index) {
+            if (size == 0) {
+                return null;
             }
+
+            return (R) data.get(index)[0];
         }
 
-        this.relations.add(relation);
-    }
-
-    public void removeTarget(int target) {
-        var relation = this.targetLookup.get(target);
-        if (relation == null) {
-            return;
+        @Override
+        public Accessor getAccessor() {
+            return accessors.getInstance();
         }
 
-        this.targetLookup.set(target, null);
-        this.relations.remove(relation);
-    }
+        @Override
+        public void freeAccessor(Accessor accessor) {
+            accessors.free((AccessorImpl) accessor);
+        }
 
-    @NonNull
-    @Override
-    public EntityRelation<?> get(int i) {
-        return this.relations.get(i);
-    }
+        private class AccessorImpl implements Accessor, Pooled {
 
-    @Override
-    public int size() {
-        return relations.getSize();
-    }
+            private int index = -1;
 
-    @Override
-    public boolean isEmpty() {
-        return relations.isEmpty();
-    }
-
-    @Override
-    public Object getRelationship(int target) {
-        var data = relations.getData();
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            var relation = data[i];
-            if (relation.target() == target) {
-                return relation.relationship();
+            @Override
+            public boolean hasNext() {
+                return ++index < entities.getSize();
             }
+
+            @Override
+            public int next() {
+                return entities.get(index);
+            }
+
+            @Override
+            public Object getComponent(int componentIndex) {
+                var id = mapping[componentIndex];
+                if (id == -1) {
+                    return null;
+                }
+
+                return data.get(index)[id];
+            }
+
+            @Override
+            public void reset() {
+                this.index = -1;
+            }
+
         }
 
-        return null;
-    }
-
-    @Override
-    public Iterator<? extends EntityRelation<?>> iterator() {
-        return relations.iterator();
-    }
-
-    @Override
-    public void reset() {
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            Relation.free(relations.get(i));
-        }
-
-        this.relations.clear();
-        this.targetLookup.clear();
     }
 
 }

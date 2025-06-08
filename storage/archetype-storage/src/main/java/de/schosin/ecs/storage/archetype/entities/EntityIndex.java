@@ -6,7 +6,12 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
+import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeData;
+import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeDataImpl;
+import de.schosin.ecs.storage.archetype.results.ComponentRelationResultImpl;
+import de.schosin.ecs.storage.archetype.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.Pool;
@@ -37,7 +42,11 @@ public class EntityIndex {
         this.archetypes = new Bag<>(ArchetypeData.class, 8);
     }
 
-    public ArchetypeData getArchetypeData(int entityId) {
+    public ArchetypeData getArchetypeDataById(int archetypeId) {
+        return archetypes.get(archetypeId);
+    }
+
+    public ArchetypeData getArchetypeDataForEntity(int entityId) {
         var pointer = lookup.getSafe(entityId);
         if (pointer == null) {
             return null;
@@ -46,8 +55,12 @@ public class EntityIndex {
         return pointer.archetype;
     }
 
+    public ArchetypeData getArchetype(ComponentMaskImpl componentMask) {
+        return determineArchetype(componentMask);
+    }
+
     public ComponentMask getComponentMask(int entityId) {
-        var archetype = getArchetypeData(entityId);
+        var archetype = getArchetypeDataForEntity(entityId);
         if (archetype == null) {
             return null;
         }
@@ -56,7 +69,7 @@ public class EntityIndex {
     }
 
     public boolean hasComponent(int entityId, RegularComponentType<?, ?> componentType) {
-        var archetype = getArchetypeData(entityId);
+        var archetype = getArchetypeDataForEntity(entityId);
         // TODO null should throw, shouldn't it?
 
         return archetype != null && archetype.contains(componentType);
@@ -234,13 +247,15 @@ public class EntityIndex {
 
             var archetype = createArchetype(componentMask);
             this.archetypes.set(componentMask.getId(), archetype);
+            
+            this.world.dispatchEvent(new ArchetypeAddedEvent(componentMask, archetype));
 
             return archetype;
         }
     }
 
-    private ArchetypeData createArchetype(ComponentMaskImpl componentMask) {
-        return new ArchetypeData(componentIndex, relationIndex, this, componentMask, world);
+    private ArchetypeDataImpl createArchetype(ComponentMaskImpl componentMask) {
+        return new ArchetypeDataImpl(componentIndex, relationIndex, this, componentMask, world);
     }
 
     public ComponentMask deleteEntity(int entityId) {
@@ -259,7 +274,7 @@ public class EntityIndex {
 
     public void removeEntity(int entityId, ArchetypePointer pointer, Bag<Object> fill) {
         // Remove entity
-        var swappedEntityId = pointer.archetype.deleteEntity(entityId, pointer.index, fill);
+        var swappedEntityId = pointer.archetype.removeEntity(entityId, pointer.index, fill);
         if (swappedEntityId > -1) {
             // Update pointer of swapped entity
             var swappedPointer = lookup.get(swappedEntityId);
@@ -271,7 +286,7 @@ public class EntityIndex {
         pointer.index = -1;
     }
 
-    void freeComponent(Object component) {
+    public void freeComponent(Object component) {
         switch (component) {
             case ComponentRelationResultImpl result -> result.free();
             case EntityRelationResultImpl result -> result.free();

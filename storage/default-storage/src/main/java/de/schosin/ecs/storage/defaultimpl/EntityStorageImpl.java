@@ -14,24 +14,27 @@ import java.util.stream.Collectors;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
-import de.schosin.ecs.storage.api.ComponentStorage;
+import de.schosin.ecs.storage.api.ArchetypeStorage;
 import de.schosin.ecs.storage.api.EntityStorage;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.RelationComponent;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.defaultimpl.archetype.ArchetypeManager;
 import de.schosin.ecs.storage.defaultimpl.entities.ComponentMaskImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class EntityStorageImpl implements EntityStorage {
+public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     private static final Comparator<Component<?, ?>> COMPONENT_COMPARATOR = Comparator.comparing(Component::id);
 
-    private final ComponentStorage componentStorage;
+    private final ComponentStorageImpl componentStorage;
+    private final ArchetypeManager archetypeManager;
 
     private final Bag<ComponentMaskImpl> componentMasksById = new Bag<>(ComponentMaskImpl.class, 64);
     private final ImmutableBag<ComponentMask> immutableComponentMasks = ImmutableBag.create(componentMasksById);
@@ -44,8 +47,9 @@ public class EntityStorageImpl implements EntityStorage {
     private final Pool<Bag<RegularComponentType<?, ?>>> componentTypesPool = Pool.unbounded(Bag.class, () -> new Bag<>(RegularComponentType.class, 8), Bag::clear);
     private final Pool<Bag<Object>> componentPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class, 8), Bag::clear);
 
-    public EntityStorageImpl(StorageWorld world, ComponentStorage componentStorage) {
+    public EntityStorageImpl(StorageWorld world, ComponentStorageImpl componentStorage) {
         this.componentStorage = componentStorage;
+        this.archetypeManager = new ArchetypeManager(world, componentStorage);
 
         this.componentMaskByEntity = world.createEntityBag(ComponentMaskImpl.class);
     }
@@ -210,6 +214,7 @@ public class EntityStorageImpl implements EntityStorage {
         componentMask.addComponents(entityId, componentTypes, components);
 
         this.componentMaskByEntity.set(entityId, componentMask);
+        this.archetypeManager.set(entityId, componentMask);
 
         return componentMask;
     }
@@ -231,6 +236,7 @@ public class EntityStorageImpl implements EntityStorage {
         componentMask.addComponents(entityId, componentTypes, components);
 
         this.componentMaskByEntity.set(entityId, componentMask);
+        this.archetypeManager.set(entityId, componentMask);
 
         return componentMask;
     }
@@ -265,6 +271,7 @@ public class EntityStorageImpl implements EntityStorage {
 
         // Set new component mask
         this.componentMaskByEntity.set(entityId, componentMask);
+        this.archetypeManager.set(entityId, componentMask);
 
         return componentMask;
     }
@@ -375,6 +382,7 @@ public class EntityStorageImpl implements EntityStorage {
 
             // Set new component mask
             this.componentMaskByEntity.set(entityId, componentMask);
+            this.archetypeManager.set(entityId, componentMask);
 
             return componentMask;
         });
@@ -410,6 +418,7 @@ public class EntityStorageImpl implements EntityStorage {
 
         // Remove entity from storage
         this.componentMaskByEntity.set(entityId, null);
+        this.archetypeManager.remove(entityId);
 
         return existing;
     }
@@ -482,6 +491,32 @@ public class EntityStorageImpl implements EntityStorage {
         }
 
         return result;
+    }
+
+    @Override
+    public Archetype getArchetypeForEntity(int entityId) {
+        return archetypeManager.getArchetypeForEntity(entityId);
+    }
+
+    @Override
+    public Archetype getArchetypeById(int archetypeId) {
+        return archetypeManager.getArchetypeById(archetypeId);
+    }
+
+    @Override
+    public Archetype getArchetype(RegularComponentType<?, ?>... componentTypes) {
+        var bag = componentTypesPool.getInstance();
+
+        for (var type : componentTypes) {
+            bag.add(type);
+        }
+
+        var componentMask = resolveComponentMask(bag);
+        var archetype = archetypeManager.getArchetype(componentMask);
+
+        componentTypesPool.free(bag);
+
+        return archetype;
     }
 
 }

@@ -13,8 +13,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.storage.api.ComponentStorage;
-import de.schosin.ecs.storage.api.EntityStorage;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
@@ -24,6 +22,7 @@ import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -31,8 +30,8 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 @AutoService(StorageEngine.class)
 public class DefaultStorageEngine implements StorageEngine {
 
-    private ComponentStorage componentStorage;
-    private EntityStorage entityStorage;
+    private ComponentStorageImpl componentStorage;
+    private EntityStorageImpl entityStorage;
 
     @Override
     public void setWorld(StorageWorld world) {
@@ -168,6 +167,21 @@ public class DefaultStorageEngine implements StorageEngine {
     @Override
     public ComponentMask delete(int entityId) {
         return this.entityStorage.delete(entityId);
+    }
+
+    @Override
+    public Archetype getArchetypeForEntity(int entityId) {
+        return entityStorage.getArchetypeForEntity(entityId);
+    }
+
+    @Override
+    public Archetype getArchetypeById(int archetypeId) {
+        return entityStorage.getArchetypeById(archetypeId);
+    }
+
+    @Override
+    public Archetype getArchetype(RegularComponentType<?, ?>... componentTypes) {
+        return entityStorage.getArchetype(componentTypes);
     }
 
 }
