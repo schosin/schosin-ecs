@@ -23,6 +23,7 @@ import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
@@ -68,6 +69,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         var eventManager = world.getSingleton(EventManager.class);
         eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.componentMask()));
         eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.componentMask()));
+        eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> handleBeforeUpdate(event.entityId(), event.componentMask(), event.newComponentMask()));
         eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.previousComponentMask(), event.componentMask()));
         eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.componentMask()));
     }
@@ -153,7 +155,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    private void handleUpdated(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
+    private void handleBeforeUpdate(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
         // Remove from previous composition if no longer interested
         var previousCompositions = getCompositions(previousComponentMask);
 
@@ -166,7 +168,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 composition.removed(entityId);
             }
         }
+    }
 
+    private void handleUpdated(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
         // Add to new composition if not yet contained
         var newCompositions = getCompositions(componentMask);
 

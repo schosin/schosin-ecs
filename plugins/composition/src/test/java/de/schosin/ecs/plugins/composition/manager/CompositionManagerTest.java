@@ -31,6 +31,7 @@ import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
@@ -1176,7 +1177,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Test
         void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
             var componentMask = storageEngine.getComponentMask(component(C1.class));
-            var event = EntityUpdatedEvent.get(42, null, componentMask);
+            var event = BeforeEntityUpdateEvent.get(42, null, componentMask);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
         }
@@ -1211,8 +1212,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             eventManager.dispatchEvent(EntityInsertedEvent.get(9001, mask9001));
 
             // Update entity
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(42, mask42, componentMask12));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(42, mask42, componentMask12));
+            
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(1337, mask1337, componentMask12));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, mask1337, componentMask12));
+            
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(9001, mask9001, componentMask2));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, mask9001, componentMask2));
 
             // Verify
@@ -1258,9 +1264,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             composition3.removed(removed3::add);
 
             // Update entity
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(7, mask7, componentMask1));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(7, mask7, componentMask1));
+            
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(42, mask42, componentMask12));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(42, mask42, componentMask12));
+            
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(1337, mask1337, componentMask12));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, mask1337, componentMask12));
+            
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(9001, mask9001, componentMask3));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, mask9001, componentMask3));
 
             // Verify

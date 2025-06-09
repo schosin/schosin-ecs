@@ -6,6 +6,7 @@ import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
@@ -284,6 +285,7 @@ public class ChangeManager {
         // Update entity
         var componentMask = storageEngine.getComponentMaskById(componentMaskId);
         if (entityManager.updateComponentMask(entityId, componentMask)) {
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(entityId, previousComponentMask, componentMask));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(entityId, previousComponentMask, componentMask));
         }
     }

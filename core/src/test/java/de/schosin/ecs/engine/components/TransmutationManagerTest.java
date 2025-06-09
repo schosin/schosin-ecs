@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.lang.reflect.Modifier;
 import java.util.LinkedHashSet;
 import java.util.SequencedSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -18,6 +19,7 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
 import de.schosin.ecs.engine.components.TransmutationManager.Builder;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.StorageEngineException;
 
 class TransmutationManagerTest extends AbstractWorldTest {
@@ -645,6 +647,41 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class, C3.class);
+        }
+
+        @Test
+        void testAdd1Remove2_ComponentAccessInCallbacks() {
+            // Setup listener
+            var mapper1 = world.getComponents(C1.class);
+            var mapper2 = world.getComponents(C2.class);
+
+            var removed = new AtomicBoolean(false);
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                assertThat(mapper1.get(event.entityId())).isNotNull();
+                removed.set(true);
+            });
+
+            var added = new AtomicBoolean(false);
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                assertThat(mapper2.get(event.entityId())).isNotNull();
+                added.set(true);
+            });
+
+            // Setup entity
+            var entityId = world.createEntity(new C1());
+
+            remove1.apply(entityId);
+            add2.apply(entityId, new C2());
+
+            // Call
+            world.process();
+
+            // Verify
+            assertThat(removed.get()).isTrue();
+            assertThat(added.get()).isTrue();
+
+            assertThat(mapper1.get(entityId)).isNull();
+            assertThat(mapper2.get(entityId)).isNotNull();
         }
 
     }

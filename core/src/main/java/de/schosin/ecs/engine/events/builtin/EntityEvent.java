@@ -1,6 +1,7 @@
 package de.schosin.ecs.engine.events.builtin;
 
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
@@ -26,6 +27,16 @@ public sealed interface EntityEvent extends Event {
         static EntityInsertedEvent get(int entityId, ComponentMask componentMask) {
             return EntityInsertedEventImpl.get(entityId, componentMask);
         }
+
+    }
+
+    sealed interface BeforeEntityUpdateEvent extends EntityEvent {
+
+        static BeforeEntityUpdateEvent get(int entityId, ComponentMask componentMask, ComponentMask newComponentMask) {
+            return BeforeEntityUpdateEventImpl.get(entityId, componentMask, newComponentMask);
+        }
+
+        ComponentMask newComponentMask();
 
     }
 
@@ -87,6 +98,40 @@ final class EntityInsertedEventImpl extends AbstractEntityEvent implements Entit
     @Override
     public void free() {
         POOL.free(this);
+    }
+
+}
+
+final class BeforeEntityUpdateEventImpl extends AbstractEntityEvent implements BeforeEntityUpdateEvent {
+
+    private static final Pool<BeforeEntityUpdateEventImpl> POOL = Pool.unbounded(BeforeEntityUpdateEventImpl.class, BeforeEntityUpdateEventImpl::new);
+
+    static BeforeEntityUpdateEvent get(int entityId, ComponentMask componentMask, ComponentMask newComponentMask) {
+        var instance = POOL.getInstance();
+        instance.entityId = entityId;
+        instance.componentMask = componentMask;
+        instance.newComponentMask = newComponentMask;
+
+        return instance;
+    }
+
+    private ComponentMask newComponentMask;
+
+    @Override
+    public ComponentMask newComponentMask() {
+        return newComponentMask;
+    }
+
+    @Override
+    public void free() {
+        POOL.free(this);
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+
+        this.newComponentMask = null;
     }
 
 }
