@@ -179,6 +179,16 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
+    public ComponentMask getPendingComponentMask(int entityId) {
+        return this.entityStorage.getPendingComponentMask(entityId);
+    }
+
+    @Override
+    public ComponentMask flushChanges(int entityId) {
+        return this.entityStorage.flushChanges(entityId);
+    }
+
+    @Override
     public Archetype getArchetypeForEntity(int entityId) {
         return this.entityStorage.getArchetypeForEntity(entityId);
     }

@@ -21,6 +21,8 @@ public sealed interface ImmutableIntBag permits IntBag, ImmutableIntBagImpl {
 
     int get(int index);
 
+    int getSafe(int index);
+
     boolean contains(int item);
 
     int indexOf(int item);
@@ -57,6 +59,11 @@ final class ImmutableIntBagImpl implements ImmutableIntBag {
     @Override
     public int get(int index) {
         return this.bag.get(index);
+    }
+
+    @Override
+    public int getSafe(int index) {
+        return this.bag.getSafe(index);
     }
 
     @Override

@@ -12,6 +12,7 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 
@@ -183,7 +184,12 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
                 add1(mapper1, entityId, relationship1);
                 add2(mapper2, entityId, relationship2);
 
-                verifyHasComponents(entityId, type1, type2);
+                if (type1 instanceof ExclusiveComponentRelationType<?, ?>) {
+                    verifyDoesNotHaveComponents(entityId, type1);
+                    verifyHasComponents(entityId, type2);
+                } else {
+                    verifyHasComponents(entityId, type1, type2);
+                }
                 verifyComponentMaskDoesNotHaveComponents(entityId, type1, type2);
             });
         }

@@ -1,4 +1,4 @@
-package de.schosin.ecs.storage.archetype.results;
+package de.schosin.ecs.storage.common.results;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -7,23 +7,22 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @SuppressWarnings("rawtypes")
-public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
+public class ComponentRelationResultImpl implements ComponentRelationResult, Pooled {
 
-    private static final Pool<EntityRelationResultImpl> POOL = Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new);
+    private static final Pool<ComponentRelationResultImpl> POOL = Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new);
 
-    private final Bag<EntityRelation<?>> relations = new Bag<>(EntityRelation.class, 4);
-    private final Bag<EntityRelation<?>> targetLookup = new Bag<>(EntityRelation.class, 4);
+    private final Bag<ComponentRelation<?, ?>> relations = new Bag<>(ComponentRelation.class, 4);
 
-    private EntityRelationResultImpl() {
+    private ComponentRelationResultImpl() {
     }
 
-    public static EntityRelationResultImpl getInstance() {
+    public static ComponentRelationResultImpl getInstance() {
         return POOL.getInstance();
     }
 
@@ -31,15 +30,12 @@ public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
         POOL.free(this);
     }
 
-    public synchronized void add(EntityRelation<?> relation) {
-        targetLookup.set(relation.target(), relation);
-
+    public synchronized void add(ComponentRelation<?, ?> relation) {
         var data = relations.getData();
         for (int i = 0, s = relations.getSize(); i < s; i++) {
             var existing = data[i];
             if (Objects.equals(existing.target(), relation.target())) {
                 relations.set(i, relation);
-
                 return;
             }
         }
@@ -47,19 +43,13 @@ public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
         this.relations.add(relation);
     }
 
-    public void removeTarget(int target) {
-        var relation = this.targetLookup.get(target);
-        if (relation == null) {
-            return;
-        }
-
-        this.targetLookup.set(target, null);
-        this.relations.remove(relation);
+    public ComponentRelation<?, ?> removeLast() {
+        return this.relations.removeLast();
     }
 
     @NonNull
     @Override
-    public EntityRelation<?> get(int i) {
+    public ComponentRelation<?, ?> get(int i) {
         return this.relations.get(i);
     }
 
@@ -74,11 +64,11 @@ public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
     }
 
     @Override
-    public Object getRelationship(int target) {
+    public Object getRelationship(Object target) {
         var data = relations.getData();
         for (int i = 0, s = relations.getSize(); i < s; i++) {
             var relation = data[i];
-            if (relation.target() == target) {
+            if (Objects.equals(relation.target(), target)) {
                 return relation.relationship();
             }
         }
@@ -87,18 +77,17 @@ public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
     }
 
     @Override
-    public Iterator<? extends EntityRelation<?>> iterator() {
+    public Iterator<? extends ComponentRelation<?, ?>> iterator() {
         return relations.iterator();
     }
 
     @Override
     public void reset() {
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            Relation.free(relations.get(i));
+        for (int i = 0, s = this.relations.getSize(); i < s; i++) {
+            Relation.free(this.relations.get(i));
         }
 
         this.relations.clear();
-        this.targetLookup.clear();
     }
 
 }

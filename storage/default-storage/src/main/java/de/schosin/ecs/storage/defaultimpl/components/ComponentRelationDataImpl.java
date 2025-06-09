@@ -1,26 +1,21 @@
 package de.schosin.ecs.storage.defaultimpl.components;
 
-import java.util.Iterator;
-import java.util.Objects;
-
 import org.jspecify.annotations.NonNull;
 
-import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
+import de.schosin.ecs.storage.common.PendingChanges;
+import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.Pool;
 
-public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T> type, Bag<ComponentRelationResultImpl<R, T>> components, Pool<ComponentRelationResultImpl<R, T>> resultPool)
+public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T> type, Bag<ComponentRelationResultImpl> components, Bag<PendingChanges> changes)
         implements DefaultComponent<ComponentRelation<R, T>>, ComponentRelationData<R, T> {
 
-    public ComponentRelationDataImpl(int id, ComponentRelationType<R, T> type, StorageWorld world) {
-        this(id, type, world.createEntityBag(ComponentRelationResult.class),
-                Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new));
+    public ComponentRelationDataImpl(int id, ComponentRelationType<R, T> type, StorageWorld world, Bag<PendingChanges> changes) {
+        this(id, type, world.createEntityBag(ComponentRelationResult.class), changes);
     }
 
     @Override
@@ -40,12 +35,23 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
 
     @Override
     public boolean hasComponent(int entityId) {
-        return this.components.get(entityId) != null;
+        return getComponent(entityId) != null;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public ComponentRelationResult<R, T> getComponent(int entityId) {
-        return this.components.get(entityId);
+        var result = this.components.get(entityId);
+        if (result != null) {
+            return result;
+        }
+
+        var changes = this.changes.get(entityId);
+        if (changes != null) {
+            return changes.getComponent(type);
+        }
+
+        return null;
     }
 
     @Override
@@ -63,7 +69,7 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
                 return;
             }
 
-            relations = resultPool.getInstance();
+            relations = ComponentRelationResultImpl.getInstance();
             this.components.set(entityId, relations);
         }
 
@@ -76,13 +82,7 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
         if (component != null) {
             this.components.set(entityId, null);
 
-            for (int i = 0, s = component.size(); i < s; i++) {
-                var relation = component.get(i);
-
-                Relation.free(relation);
-            }
-
-            this.resultPool.free(component);
+            component.free();
         }
     }
 
@@ -101,63 +101,6 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
         StringBuilder builder = new StringBuilder();
         builder.append("ComponentRelationDataImpl [id=").append(this.id).append(", type=").append(this.type).append("]");
         return builder.toString();
-    }
-
-}
-
-class ComponentRelationResultImpl<R, T> implements ComponentRelationResult<R, T>, Pooled {
-
-    private final Bag<ComponentRelation<R, T>> relations = new Bag<>(ComponentRelation.class, 4);
-
-    public synchronized void add(ComponentRelation<R, T> relation) {
-        var data = relations.getData();
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            var existing = data[i];
-            if (Objects.equals(existing.target(), relation.target())) {
-                relations.set(i, relation);
-                return;
-            }
-        }
-
-        this.relations.add(relation);
-    }
-
-    @Override
-    public @NonNull ComponentRelation<R, T> get(int i) {
-        return this.relations.get(i);
-    }
-
-    @Override
-    public int size() {
-        return relations.getSize();
-    }
-
-    @Override
-    public boolean isEmpty() {
-        return relations.isEmpty();
-    }
-
-    @Override
-    public R getRelationship(T target) {
-        var data = relations.getData();
-        for (int i = 0, s = relations.getSize(); i < s; i++) {
-            var relation = data[i];
-            if (Objects.equals(relation.target(), target)) {
-                return relation.relationship();
-            }
-        }
-
-        return null;
-    }
-
-    @Override
-    public Iterator<ComponentRelation<R, T>> iterator() {
-        return relations.iterator();
-    }
-
-    @Override
-    public void reset() {
-        this.relations.clear();
     }
 
 }

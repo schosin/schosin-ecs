@@ -6,14 +6,15 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
+import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 
-public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, ExclusiveEntityRelationType<R> type, Bag<EntityRelation<R>> components, Bag<IntBag> targetLookup)
-        implements DefaultComponent<EntityRelation<R>>, ExclusiveEntityRelationData<R> {
+public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, ExclusiveEntityRelationType<R> type, Bag<EntityRelation<R>> components, Bag<PendingChanges> changes,
+        Bag<IntBag> targetLookup) implements DefaultComponent<EntityRelation<R>>, ExclusiveEntityRelationData<R> {
 
-    public ExclusiveEntityRelationDataImpl(int id, ExclusiveEntityRelationType<R> type, StorageWorld world) {
-        this(id, type, world.createEntityBag(EntityRelation.class), world.createEntityBag(IntBag.class));
+    public ExclusiveEntityRelationDataImpl(int id, ExclusiveEntityRelationType<R> type, StorageWorld world, Bag<PendingChanges> changes) {
+        this(id, type, world.createEntityBag(EntityRelation.class), changes, world.createEntityBag(IntBag.class));
     }
 
     @Override
@@ -28,12 +29,22 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
 
     @Override
     public boolean hasComponent(int entityId) {
-        return this.components.get(entityId) != null;
+        return getComponent(entityId) != null;
     }
 
     @Override
     public EntityRelation<R> getComponent(int entityId) {
-        return this.components.get(entityId);
+        var result = this.components.get(entityId);
+        if (result != null) {
+            return result;
+        }
+
+        var changes = this.changes.get(entityId);
+        if (changes != null) {
+            return changes.getComponent(type);
+        }
+
+        return null;
     }
 
     @Override

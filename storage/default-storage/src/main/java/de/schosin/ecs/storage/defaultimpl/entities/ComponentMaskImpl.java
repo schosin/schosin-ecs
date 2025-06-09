@@ -144,7 +144,7 @@ public class ComponentMaskImpl implements ComponentMask {
                 builder.append(components.get(i).display());
             }
 
-            this.toString = builder.append(")").toString();
+            this.toString = builder.append("))").toString();
         }
 
         return toString;

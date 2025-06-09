@@ -357,7 +357,27 @@ public class ComponentMaskTest extends AbstractStorageEngineTest {
             assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(componentMask1);
 
             // Verify
-            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after add").isSameAs(updatedComponentMask);
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns old component mask after add").isSameAs(emptyComponentMask);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns updated component mask after add").isSameAs(updatedComponentMask);
+        }
+
+        @Test
+        void testGetComponentMaskAfterAddFlushed() {
+            var emptyComponentMask = storageEngine.getComponentMask();
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+
+            var entityId = world.createEntity();
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns empty component mask for empty entity").isSameAs(emptyComponentMask);
+
+            // Call
+            var updatedComponentMask = storageEngine.add(entityId, new Object[] { new C1() });
+            assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(componentMask1);
+
+            assertThat(storageEngine.flushChanges(entityId)).as("flushChanges returns updated component mask").isSameAs(componentMask1);
+
+            // Verify
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns old component mask after flushed add").isSameAs(componentMask1);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if no changes").isNull();
         }
 
         @Test
@@ -373,7 +393,27 @@ public class ComponentMaskTest extends AbstractStorageEngineTest {
             assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(emptyComponentMask);
 
             // Verify
-            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after add").isSameAs(updatedComponentMask);
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns old component mask after add").isSameAs(componentMask1);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns updated component mask after add").isSameAs(updatedComponentMask);
+        }
+
+        @Test
+        void testGetComponentMaskAfterRemoveFlushed() {
+            var emptyComponentMask = storageEngine.getComponentMask();
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+
+            var entityId = world.createEntity(new C1());
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns correct component mask for entity").isSameAs(componentMask1);
+
+            // Call
+            var updatedComponentMask = storageEngine.remove(entityId, ImmutableBag.of(component(C1.class)));
+            assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(emptyComponentMask);
+
+            assertThat(storageEngine.flushChanges(entityId)).as("flushChanges returns updated component mask").isSameAs(emptyComponentMask);
+
+            // Verify
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns old component mask after flushed remove").isSameAs(updatedComponentMask);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if no changes").isNull();
         }
 
         @Test
@@ -389,7 +429,62 @@ public class ComponentMaskTest extends AbstractStorageEngineTest {
             assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(componentMask2);
 
             // Verify
-            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after add").isSameAs(componentMask2);
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns old component mask after modify").isSameAs(componentMask1);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns updated component mask after modify").isSameAs(componentMask2);
+        }
+
+        @Test
+        void testGetComponentMaskAfterModifyFlushed() {
+            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
+            var componentMask2 = storageEngine.getComponentMask(component(C2.class));
+
+            var entityId = world.createEntity(new C1());
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns correct component mask for entity").isSameAs(componentMask1);
+
+            // Call
+            var updatedComponentMask = storageEngine.modify(entityId, new Object[] { new C2() }, ImmutableBag.of(component(C1.class)));
+            assertThat(updatedComponentMask).as("add returns updated component mask").isSameAs(componentMask2);
+
+            assertThat(storageEngine.flushChanges(entityId)).as("flushChanges returns updated component mask").isSameAs(componentMask2);
+
+            // Verify
+            assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after flushed modify").isSameAs(componentMask2);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if no changes").isNull();
+        }
+
+        @Test
+        void testGetPendingComponentMask_NoChanges() {
+            var entityId = world.createEntity();
+
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if no changes").isNull();
+        }
+
+        @Test
+        void testGetPendingComponentMask_ChangesFlushed() {
+            var entityId = world.createEntity();
+
+            storageEngine.add(entityId, new Object[] { new C1() });
+            storageEngine.flushChanges(entityId);
+
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if no changes").isNull();
+        }
+
+        @Test
+        void testGetPendingComponentMask_DeletedEntity() {
+            var entityId = world.createEntity();
+
+            storageEngine.delete(entityId);
+
+            assertThatThrownBy(() -> storageEngine.getPendingComponentMask(entityId), "getPendingComponentMask throws for deleted entities")
+                    .as("getPendingComponentMask throws for deleted entities").isInstanceOf(StorageEngineException.class)
+                    .as("getPendingComponentMask throws for deleted entities").hasMessageContainingAll("entity %d".formatted(entityId), "not present in storage");
+        }
+
+        @Test
+        void testGetPendingComponentMask_UnknownEntity() {
+            assertThatThrownBy(() -> storageEngine.getPendingComponentMask(42), "getPendingComponentMask throws for unknown entities")
+                    .as("getPendingComponentMask throws for unknown entities").isInstanceOf(StorageEngineException.class)
+                    .as("getPendingComponentMask throws for unknown entities").hasMessageContainingAll("entity 42", "not present in storage");
         }
 
     }

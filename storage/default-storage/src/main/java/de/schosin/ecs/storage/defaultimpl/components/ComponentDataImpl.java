@@ -4,9 +4,10 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
+import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.utils.collections.Bag;
 
-public record ComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components) implements DefaultComponent<T>, ComponentData<T> {
+public record ComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components, Bag<PendingChanges> changes) implements DefaultComponent<T>, ComponentData<T> {
 
     @Override
     public Class<T> clazz() {
@@ -20,12 +21,22 @@ public record ComponentDataImpl<T>(int id, ClassType<T> type, Bag<T> components)
 
     @Override
     public boolean hasComponent(int entityId) {
-        return this.components.get(entityId) != null;
+        return getComponent(entityId) != null;
     }
 
     @Override
     public T getComponent(int entityId) {
-        return this.components.get(entityId);
+        var result = this.components.get(entityId);
+        if (result != null) {
+            return result;
+        }
+
+        var changes = this.changes.get(entityId);
+        if (changes != null) {
+            return changes.getComponent(type);
+        }
+
+        return null;
     }
 
     @Override

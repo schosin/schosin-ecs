@@ -2,6 +2,8 @@ package de.schosin.ecs.storage.api;
 
 import java.util.function.Predicate;
 
+import org.jspecify.annotations.Nullable;
+
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
@@ -66,6 +68,12 @@ public interface EntityStorage {
     /**
      * Modify an existing entity by adding the components, overwriting existing values in case of collisions.
      * 
+     * <p>
+     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
+     * component relations that replace an existing one.
+     * </p>
+     * 
      * @param entityId id of entity
      * @param components components to add to the entity
      * @return updated component mask of entity
@@ -76,6 +84,12 @@ public interface EntityStorage {
      * Modify an existing entity by adding the components, overwriting existing values in case of collisions.
      * The component types must match the components by index.
      * 
+     * <p>
+     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
+     * component relations that replace an existing one.
+     * </p>
+     * 
      * @param entityId id of entity
      * @param components components to add to the entity
      * @param componentTypes component types of components
@@ -84,7 +98,7 @@ public interface EntityStorage {
     ComponentMask add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components);
 
     /**
-     * Modify an existing entity by removing the components.
+     * Modify an existing entity by removing the components. The actual removal is delayed.
      * 
      * @param entityId id of entity
      * @param componentTypes component types to remove from the entity
@@ -103,6 +117,12 @@ public interface EntityStorage {
     /**
      * Modify an existing entity by adding and removing components.
      * 
+     * <p>
+     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
+     * component relations that replace an existing one.
+     * </p>
+     * 
      * @param entityId id of entity
      * @param add added components
      * @param removeTypes component types of removed components
@@ -116,6 +136,12 @@ public interface EntityStorage {
     /**
      * Modify an existing entity by adding and removing components.
      * 
+     * <p>
+     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
+     * component relations that replace an existing one.
+     * </p>
+     * 
      * @param entityId id of entity
      * @param addTypes component types of added components
      * @param add added components
@@ -126,5 +152,23 @@ public interface EntityStorage {
         add(entityId, addTypes, add);
         return remove(entityId, removeTypes);
     }
+
+    /**
+     * Returns the component mask for pending changes.
+     * 
+     * @param entityId id of entity
+     * @return component mask for pending changes or null if none
+     */
+    @Nullable
+    ComponentMask getPendingComponentMask(int entityId);
+
+    /**
+     * Flushes pending changes by {@link #add(int, Object[])}, {@link #remove(int, ImmutableBag)} or
+     * {@link #modify(int, Object[], ImmutableBag)} (and overloads) for the entity.
+     * 
+     * @param entityId id of entity
+     * @return component mask after changes have been applied
+     */
+    ComponentMask flushChanges(int entityId);
 
 }

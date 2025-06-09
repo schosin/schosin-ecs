@@ -123,11 +123,24 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
     class FreeRelationTest {
 
         @Test
-        void testFreeRelationInstance() {
+        void testFreeRelationInstance_WhenNotFlushed() {
             var relation = Relation.create(EnumComponent.INSTANCE, EnumComponent.INSTANCE);
             var entityId = world.createEntity(relation);
 
             storageEngine.remove(entityId, ImmutableBag.of(relation(EnumComponent.class, EnumComponent.class)));
+
+            assertThat(relation.type()).as("removed relation must not be returned to Relation.free if not flushed").isNotNull();
+            assertThat(relation.relationship()).as("removed relation must not be returned to Relation.free if not flushed").isNotNull();
+            assertThat(relation.target()).as("removed relation must not be returned to Relation.free if not flushed").isNotNull();
+        }
+
+        @Test
+        void testFreeRelationInstance_WhenFlushed() {
+            var relation = Relation.create(EnumComponent.INSTANCE, EnumComponent.INSTANCE);
+            var entityId = world.createEntity(relation);
+
+            storageEngine.remove(entityId, ImmutableBag.of(relation(EnumComponent.class, EnumComponent.class)));
+            storageEngine.flushChanges(entityId);
 
             assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
             assertThat(relation.relationship()).as("removed relation must be returned to Relation.free").isNull();

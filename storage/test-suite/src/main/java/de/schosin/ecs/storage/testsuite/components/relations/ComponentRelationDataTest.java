@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
@@ -23,9 +25,134 @@ import de.schosin.ecs.storage.testsuite.components.relations.ComponentRelationDa
 import de.schosin.ecs.storage.testsuite.components.relations.ComponentRelationDataTest.Target1;
 import de.schosin.ecs.storage.testsuite.components.relations.ComponentRelationDataTest.Target2;
 import de.schosin.ecs.storage.testsuite.components.relations.ComponentRelationDataTest.Target3;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public class ComponentRelationDataTest extends
         CommonComponentRelationTest<Relationship1, Target1, ComponentRelationResult<Relationship1, Target1>, Relationship2, Target2, ComponentRelationResult<Relationship2, Target2>, Relationship3, Target3, ComponentRelationResult<Relationship3, Target3>> {
+
+    @Test
+    void testAddWithExistionRelation() {
+        var type = type1();
+
+        var instance1 = Relation.create(Relationship1.A, Target1.FIRST);
+        var instance2 = Relation.create(Relationship1.A, Target1.SECOND);
+
+        assertThat(instance2).as("must be different instances (test suite broken if this fails)").isNotSameAs(instance1);
+
+        var entityId = world.createEntity(instance1);
+        assertThat(getComponent(entityId, type)).as("returns instance passed at creation")
+                .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with relation").containsExactlyInAnyOrder(instance1);
+
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+
+        // Call
+        storageEngine.add(entityId, ImmutableBag.of(type), new Object[] { instance2 });
+
+        // Verify
+        assertThat(getComponent(entityId, type))
+                .as("returns result with both relations").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with both relations").containsExactlyInAnyOrder(instance1, instance2);
+
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+    }
+
+    @Test
+    void testAddMultipleWithExistionRelation() {
+        var type = type1();
+
+        var instance1 = Relation.create(Relationship1.A, Target1.FIRST);
+        var instance2 = Relation.create(Relationship1.A, Target1.SECOND);
+        var instance3 = Relation.create(Relationship1.B, Target1.THIRD);
+
+        assertThat(instance2).as("must be different instances (test suite broken if this fails)").isNotSameAs(instance1);
+
+        var entityId = world.createEntity(instance1);
+        assertThat(getComponent(entityId, type)).as("returns instance passed at creation")
+                .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with relation").containsExactlyInAnyOrder(instance1);
+
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+
+        // Call
+        storageEngine.add(entityId, ImmutableBag.of(type, type), new Object[] { instance2, instance3 });
+
+        // Verify
+        assertThat(getComponent(entityId, type))
+                .as("returns result with all relations").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with all relations").containsExactlyInAnyOrder(instance1, instance2, instance3);
+
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+    }
+
+    @Test
+    void testAddMultipleWithExistionRelation_EqualTargetReplaced() {
+        var type = type1();
+
+        var instance1 = Relation.create(Relationship1.A, Target1.FIRST);
+        var instance2 = Relation.create(Relationship1.A, Target1.SECOND);
+        var instance3 = Relation.create(Relationship1.B, Target1.FIRST);
+
+        assertThat(instance2).as("must be different instances (test suite broken if this fails)").isNotSameAs(instance1);
+
+        var entityId = world.createEntity(instance1);
+        assertThat(getComponent(entityId, type)).as("returns instance passed at creation")
+                .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with relation").containsExactlyInAnyOrder(instance1);
+
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+
+        // Call
+        storageEngine.add(entityId, ImmutableBag.of(type, type), new Object[] { instance2, instance3 });
+
+        // Verify
+        assertThat(getComponent(entityId, type))
+                .as("returns result with added relations only").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with added relations only").containsExactlyInAnyOrder(instance2, instance3);
+
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+    }
+
+    @Test
+    void testAddThenRemove_FreesRelationsOnlyOnce() {
+        var type = type1();
+
+        var instance1 = Relation.create(Relationship1.A, Target1.FIRST);
+        var instance2 = Relation.create(Relationship1.A, Target1.SECOND);
+        assertThat(instance2).as("must be different instances (test suite broken if this fails)").isNotSameAs(instance1);
+
+        var entityId = world.createEntity();
+
+        // Add relations
+        storageEngine.add(entityId, ImmutableBag.of(type, type), new Object[] { instance1, instance2 });
+
+        assertThat(instance1.target()).as("relation not reset after add").isEqualTo(Target1.FIRST);
+        assertThat(instance2.target()).as("relation not reset after add").isEqualTo(Target1.SECOND);
+
+        // Flush add
+        storageEngine.flushChanges(entityId);
+
+        assertThat(instance1.target()).as("relation not reset after flush of add").isEqualTo(Target1.FIRST);
+        assertThat(instance2.target()).as("relation not reset after flush of add").isEqualTo(Target1.SECOND);
+
+        // Remove relations
+        storageEngine.remove(entityId, ImmutableBag.of(type));
+
+        assertThat(instance1.target()).as("relation not reset before flush of removal").isEqualTo(Target1.FIRST);
+        assertThat(instance2.target()).as("relation not reset before flush of removal").isEqualTo(Target1.SECOND);
+
+        // Flush removal
+        storageEngine.flushChanges(entityId);
+
+        assertThat(instance1.target()).as("relation reset after removal flushed").isNull();
+        assertThat(instance2.target()).as("relation reset after removal flushed").isNull();
+
+        // Verify returned to pool once
+        var relations = List.of(Relation.create(Relationship2.FOO, Target1.FIRST), Relation.create(Relationship2.BAR, Target1.SECOND), Relation.create(Relationship2.BAZ, Target1.THIRD));
+        assertThat(relations).anySatisfy(relation -> assertThat(relation).as("relation returned to pool").isSameAs(instance1));
+        assertThat(relations).anySatisfy(relation -> assertThat(relation).as("relation returned to pool").isSameAs(instance2));
+        assertThat(relations).anySatisfy(relation -> assertThat(relation).as("each relation returned to pool only once").isNotSameAs(instance1).isNotSameAs(instance2));
+    }
 
     @Nested
     class AddRelationTest {

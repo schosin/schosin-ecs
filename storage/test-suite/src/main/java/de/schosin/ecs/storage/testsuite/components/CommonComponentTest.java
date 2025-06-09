@@ -157,7 +157,20 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
             var entityId = world.createEntity(getInstance(type));
             storageEngine.remove(entityId, ImmutableBag.of(type));
 
-            assertThat(component.hasComponent(entityId)).as("hasComponent returns false if component removed from existing entity").isFalse();
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns false if component removed but not flushed from existing entity").isTrue();
+        }
+
+        @ParameterizedTest
+        @MethodSource(TYPES)
+        void testHasComponent_WhenComponentRemovedAndFlushed(RegularComponentType<?, ?> type) {
+            var component = getComponent(type);
+
+            var entityId = world.createEntity(getInstance(type));
+
+            storageEngine.remove(entityId, ImmutableBag.of(type));
+            storageEngine.flushChanges(entityId);
+
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns false if component removed and flushed from existing entity").isFalse();
         }
 
         @ParameterizedTest
@@ -217,7 +230,20 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
             var entityId = world.createEntity(getInstance(type));
             storageEngine.remove(entityId, ImmutableBag.of(type));
 
-            assertThat(component.getComponent(entityId)).as("getComponent returns null if component removed from existing entity").isNull();
+            assertThat(component.getComponent(entityId)).as("getComponent returns instance if component removed but not flushed from existing entity").isNotNull();
+        }
+
+        @ParameterizedTest
+        @MethodSource(TYPES)
+        void testGetComponent_WhenComponentRemovedAndFushed(RegularComponentType<?, ?> type) {
+            var component = getComponent(type);
+
+            var entityId = world.createEntity(getInstance(type));
+
+            storageEngine.remove(entityId, ImmutableBag.of(type));
+            storageEngine.flushChanges(entityId);
+
+            assertThat(component.getComponent(entityId)).as("getComponent returns null if component removed and flushed from existing entity").isNull();
         }
 
         @ParameterizedTest
@@ -248,8 +274,43 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
 
             storageEngine.remove(entityId, ImmutableBag.of(type1()));
 
-            assertThat(component.hasComponent(entityId)).as("hasComponent returns false when removeComponent called").isFalse();
-            assertThat(component.getComponent(entityId)).as("getComponent returns null when removeComponent called").isNull();
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns true when removed component not flushed").isTrue();
+            assertThat(component.getComponent(entityId)).as("getComponent returns instance when removed component not flushed").isNotNull();
+        }
+
+        @Test
+        void testRemoveAndFlushComponent() {
+            var component = getComponent(type1());
+
+            var entityId = world.createEntity(getInstance(type1()));
+
+            storageEngine.remove(entityId, ImmutableBag.of(type1()));
+            storageEngine.flushChanges(entityId);
+
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns false when removed component flushed").isFalse();
+            assertThat(component.getComponent(entityId)).as("getComponent returns null when removed component flushed").isNull();
+        }
+
+        @Test
+        void testAddThenRemove() {
+            var type = type1();
+            var component = getComponent(type);
+
+            var entityId = world.createEntity();
+
+            // Add component
+            storageEngine.add(entityId, new Object[] { getInstance(type) });
+            storageEngine.flushChanges(entityId);
+
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns true after flushed add").isTrue();
+            assertThat(component.getComponent(entityId)).as("getComponent returns value after flushed add").isNotNull();
+
+            // Remove component
+            storageEngine.remove(entityId, ImmutableBag.of(type));
+            storageEngine.flushChanges(entityId);
+
+            assertThat(component.hasComponent(entityId)).as("hasComponent returns false after flushed remove").isFalse();
+            assertThat(component.getComponent(entityId)).as("getComponent returns null after flushed remove").isNull();
         }
 
     }

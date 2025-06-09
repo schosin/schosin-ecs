@@ -66,20 +66,6 @@ public class EntityManager {
         return entity.id;
     }
 
-    public int create(ComponentMask componentMask, Object... components) {
-        // Create entity
-        var entity = createEntityInstance();
-        entity.componentMask = storageEngine.create(entity.id, componentMask, components);
-
-        // Add entity
-        this.entities.set(entity.id, entity);
-
-        // Notify handlers
-        inserted(entity.id, entity.componentMask);
-
-        return entity.id;
-    }
-
     public int create(ComponentMask componentMask, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object... components) {
         // Create entity
         var entity = createEntityInstance();

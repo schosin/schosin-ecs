@@ -24,6 +24,7 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelatio
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
+import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.storage.defaultimpl.components.ComponentDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.ComponentRelationDataImpl;
 import de.schosin.ecs.storage.defaultimpl.components.EntityRelationDataImpl;
@@ -38,6 +39,7 @@ import de.schosin.ecs.utils.collections.Pool;
 public class ComponentStorageImpl implements ComponentStorage {
 
     private final StorageWorld world;
+    private final Bag<PendingChanges> pendingChanges;
 
     private final Bag<Component<?, ?>> components = new Bag<>(Component.class, 64);
 
@@ -51,8 +53,9 @@ public class ComponentStorageImpl implements ComponentStorage {
 
     private final AtomicInteger nextComponentId = new AtomicInteger(0);
 
-    public ComponentStorageImpl(StorageWorld world) {
+    public ComponentStorageImpl(StorageWorld world, Bag<PendingChanges> pendingChanges) {
         this.world = world;
+        this.pendingChanges = pendingChanges;
     }
 
     @Override
@@ -102,7 +105,7 @@ public class ComponentStorageImpl implements ComponentStorage {
     private <T> ComponentData<T> createComponentData(ClassType<T> classType) {
         var data = world.createEntityBag(classType.clazz());
 
-        return new ComponentDataImpl<>(nextComponentId.getAndIncrement(), classType, data);
+        return new ComponentDataImpl<>(nextComponentId.getAndIncrement(), classType, data, pendingChanges);
     }
 
     @SuppressWarnings("unchecked")
@@ -134,7 +137,7 @@ public class ComponentStorageImpl implements ComponentStorage {
         var data = world.createEntityBag(classType.clazz());
         var pool = Pool.unbounded(classType.clazz(), () -> ReflectionUtils.createComponentInstance(classType.clazz()));
 
-        return new PooledComponentDataImpl<>(nextComponentId.getAndIncrement(), classType, data, pool);
+        return new PooledComponentDataImpl<>(nextComponentId.getAndIncrement(), classType, data, pendingChanges, pool);
     }
 
     @Override
@@ -164,7 +167,7 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     private <R, T> ComponentRelationData<R, T> createComponentRelationData(ComponentRelationType<R, T> relationType) {
-        return new ComponentRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+        return new ComponentRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world, pendingChanges);
     }
 
     @Override
@@ -194,7 +197,7 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     private <R extends Exclusive, T> ExclusiveComponentRelationData<R, T> createExclusiveComponentRelationData(ExclusiveComponentRelationType<R, T> relationType) {
-        return new ExclusiveComponentRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+        return new ExclusiveComponentRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world, pendingChanges);
     }
 
     @SuppressWarnings("unchecked")
@@ -224,7 +227,7 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     private <R> EntityRelationData<R> createEntityRelationData(EntityRelationType<R> relationType) {
-        return new EntityRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+        return new EntityRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world, pendingChanges);
     }
 
     @Override
@@ -254,7 +257,7 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     private <R extends Exclusive> ExclusiveEntityRelationData<R> createExclusiveEntityRelationData(ExclusiveEntityRelationType<R> relationType) {
-        return new ExclusiveEntityRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world);
+        return new ExclusiveEntityRelationDataImpl<>(nextComponentId.getAndIncrement(), relationType, world, pendingChanges);
     }
 
     private <T, R> void handleNewComponent(int componentId, RegularComponentType<T, R> type, Component<T, R> component) {

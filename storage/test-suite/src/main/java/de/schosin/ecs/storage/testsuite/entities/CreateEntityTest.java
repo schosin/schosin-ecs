@@ -106,6 +106,43 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
         }
     }
 
+    @Test
+    void testReuseEntityIdForSamePurpose() {
+        // Create entity
+        storageEngine.create(1, new Object[] { new C1() });
+
+        verifyHasComponents(1, C1.class);
+        verifyDoesNotHaveComponents(1, C2.class);
+
+        // Add C2
+        storageEngine.add(1, new Object[] { new C2() });
+        storageEngine.flushChanges(1);
+
+        verifyHasComponents(1, C1.class, C2.class);
+
+        // Delete entity
+        storageEngine.delete(1);
+
+        verifyDoesNotHaveComponents(1, C1.class, C2.class);
+
+        // Create entity with reused id
+        storageEngine.create(1, new Object[] { new C1() });
+
+        verifyHasComponents(1, C1.class);
+        verifyDoesNotHaveComponents(1, C2.class);
+
+        // Add C2
+        storageEngine.add(1, new Object[] { new C2() });
+        storageEngine.flushChanges(1);
+
+        verifyHasComponents(1, C1.class, C2.class);
+
+        // Delete entity
+        storageEngine.delete(1);
+
+        verifyDoesNotHaveComponents(1, C1.class, C2.class);
+    }
+
     @Nested
     class ComponentMaskTest {
 

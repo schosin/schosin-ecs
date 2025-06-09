@@ -11,6 +11,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
@@ -22,7 +26,11 @@ import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.RelationComponent;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.common.PendingChanges;
+import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
+import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
 import de.schosin.ecs.storage.defaultimpl.archetype.ArchetypeManager;
+import de.schosin.ecs.storage.defaultimpl.components.DefaultComponent;
 import de.schosin.ecs.storage.defaultimpl.entities.ComponentMaskImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
@@ -42,20 +50,22 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     private final Map<BitVector, ComponentMaskImpl> componentMasks = new ConcurrentHashMap<>();
 
     private final Bag<ComponentMaskImpl> componentMaskByEntity;
+    private final Bag<PendingChanges> pendingChanges;
 
     private final Pool<BitVector> bitvectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
     private final Pool<Bag<RegularComponentType<?, ?>>> componentTypesPool = Pool.unbounded(Bag.class, () -> new Bag<>(RegularComponentType.class, 8), Bag::clear);
     private final Pool<Bag<Object>> componentPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class, 8), Bag::clear);
 
-    public EntityStorageImpl(StorageWorld world, ComponentStorageImpl componentStorage) {
+    public EntityStorageImpl(StorageWorld world, Bag<PendingChanges> pendingChanges, ComponentStorageImpl componentStorage) {
         this.componentStorage = componentStorage;
         this.archetypeManager = new ArchetypeManager(world, componentStorage);
 
         this.componentMaskByEntity = world.createEntityBag(ComponentMaskImpl.class);
+        this.pendingChanges = pendingChanges;
     }
 
     @Override
-    public ComponentMask getComponentMaskForEntity(int entityId) {
+    public ComponentMaskImpl getComponentMaskForEntity(int entityId) {
         return this.componentMaskByEntity.get(entityId);
     }
 
@@ -110,7 +120,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
-    public ComponentMask removeFromComponentMask(ComponentMask mask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
+    public ComponentMaskImpl removeFromComponentMask(ComponentMask mask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
         return componentTypesPool.withInstance(regularComponentTypes -> {
             fillRegularComponentTypes(componentTypes, regularComponentTypes);
 
@@ -211,8 +221,16 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
         }
 
+        // Set component mask for new entity on existing changes
+        var changes = pendingChanges.get(entityId);
+        if (changes != null) {
+            changes.setComponentMask(componentMask);
+        }
+
+        // Add components
         componentMask.addComponents(entityId, componentTypes, components);
 
+        // Track component mask
         this.componentMaskByEntity.set(entityId, componentMask);
         this.archetypeManager.set(entityId, componentMask);
 
@@ -233,8 +251,16 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
         }
 
+        // Set component mask for new entity on existing changes
+        var changes = pendingChanges.get(entityId);
+        if (changes != null) {
+            changes.setComponentMask(componentMask);
+        }
+
+        // Add components
         componentMask.addComponents(entityId, componentTypes, components);
 
+        // Track component mask
         this.componentMaskByEntity.set(entityId, componentMask);
         this.archetypeManager.set(entityId, componentMask);
 
@@ -258,22 +284,33 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     private ComponentMask addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        var existing = componentMaskByEntity.get(entityId);
-        if (existing == null) {
+        var componentMask = componentMaskByEntity.get(entityId);
+        if (componentMask == null) {
             throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId));
         }
 
-        // Calculate new component mask
-        var componentMask = addToComponentMask(existing, componentTypes);
+        // Get pending changes
+        var changes = pendingChanges.get(entityId);
+        if (changes == null) {
+            changes = new PendingChanges(componentMask);
+            pendingChanges.set(entityId, changes);
+        }
 
         // Add components
-        componentMask.addComponents(entityId, componentTypes, components);
+        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
+            var componentType = componentTypes.get(i);
+            var component = components[i];
 
-        // Set new component mask
-        this.componentMaskByEntity.set(entityId, componentMask);
-        this.archetypeManager.set(entityId, componentMask);
+            if (!changes.add(componentType, component)) {
+                addComponent(entityId, componentType, component);
+            } else {
+                // Discover so that a delayed addition can be removed before flush
+                componentStorage.getComponent(componentType);
+            }
+        }
 
-        return componentMask;
+        var pendingComponentMask = getPendingComponentMask(entityId);
+        return pendingComponentMask != null ? pendingComponentMask : componentMask;
     }
 
     private void validateComponentTypes(String context, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> expectedTypes, Object[] components) {
@@ -366,25 +403,28 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     @Override
     public ComponentMask remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
-        var existing = componentMaskByEntity.get(entityId);
-        if (existing == null) {
+        var componentMask = componentMaskByEntity.get(entityId);
+        if (componentMask == null) {
             throw new StorageEngineException("Cannot remove components from entity %d: Entity not present in storage".formatted(entityId));
         }
 
         return componentTypesPool.withInstance(regularComponentTypes -> {
             fillRegularComponentTypes(componentTypes, regularComponentTypes);
 
-            // Calculate new component mask
-            var componentMask = removeRegularFromComponentMask(existing, regularComponentTypes);
+            // Get pending changes
+            var changes = pendingChanges.get(entityId);
+            if (changes == null) {
+                changes = new PendingChanges(componentMask);
+                pendingChanges.set(entityId, changes);
+            }
 
             // Remove components
-            existing.removeComponents(entityId, regularComponentTypes);
+            for (int i = 0, s = regularComponentTypes.getSize(); i < s; i++) {
+                changes.remove(regularComponentTypes.get(i));
+            }
 
-            // Set new component mask
-            this.componentMaskByEntity.set(entityId, componentMask);
-            this.archetypeManager.set(entityId, componentMask);
-
-            return componentMask;
+            var pendingComponentMask = getPendingComponentMask(entityId);
+            return pendingComponentMask != null ? pendingComponentMask : componentMask;
         });
     }
 
@@ -419,6 +459,12 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         // Remove entity from storage
         this.componentMaskByEntity.set(entityId, null);
         this.archetypeManager.remove(entityId);
+
+        // Reset pending changes
+        var changes = this.pendingChanges.get(entityId);
+        if (changes != null) {
+            changes.reset();
+        }
 
         return existing;
     }
@@ -491,6 +537,90 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         }
 
         return result;
+    }
+
+    @Override
+    @Nullable
+    public ComponentMask getPendingComponentMask(int entityId) {
+        var componentMask = getComponentMaskForEntity(entityId);
+        if (componentMask == null) {
+            throw new StorageEngineException("Cannot get pending changes for entity %d: Entity not present in storage".formatted(entityId));
+        }
+
+        var changes = pendingChanges.get(entityId);
+        if (changes == null || changes.isEmpty()) {
+            return null;
+        }
+
+        componentMask = addToComponentMask(componentMask, changes.getAddedTypes());
+        return removeFromComponentMask(componentMask, changes.getRemovedTypes());
+    }
+
+    @Override
+    public ComponentMask flushChanges(int entityId) {
+        var componentMask = getComponentMaskForEntity(entityId);
+        if (componentMask == null) {
+            throw new StorageEngineException("Cannot get pending changes for entity %d: Entity not present in storage".formatted(entityId));
+        }
+
+        var changes = pendingChanges.get(entityId);
+        if (changes == null || changes.isEmpty()) {
+            throw new StorageEngineException("Cannot flush changes: Entity %d has no pending changes".formatted(entityId));
+        }
+
+        var newComponentMask = addToComponentMask(componentMask, changes.getAddedTypes());
+        newComponentMask = removeFromComponentMask(newComponentMask, changes.getRemovedTypes());
+
+        // Add components
+        var addedTypes = changes.getAddedTypes();
+        var added = changes.getAdded();
+        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
+            addComponent(entityId, addedTypes.get(i), added.get(i));
+        }
+
+        // Remove components
+        var removedTypes = changes.getRemovedTypes();
+        for (int i = 0, s = removedTypes.getSize(); i < s; i++) {
+            var component = (DefaultComponent<?>) componentStorage.getComponent(removedTypes.get(i));
+            component.removeComponent(entityId);
+        }
+
+        // Track component mask
+        this.componentMaskByEntity.set(entityId, newComponentMask);
+        this.archetypeManager.set(entityId, newComponentMask);
+
+        // Update component mask on changes, reset state
+        changes.setComponentMask(newComponentMask);
+        changes.reset();
+
+        return newComponentMask;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void addComponent(int entityId, RegularComponentType<?, ?> componentType, Object component) {
+        var mapper = (DefaultComponent) componentStorage.getComponent(componentType);
+
+        switch (component) {
+            case ComponentRelationResultImpl relations -> addRelations(mapper, entityId, relations);
+            case ComponentRelation<?, ?> relation -> mapper.addComponent(entityId, component);
+            case EntityRelationResultImpl relations -> addRelations(mapper, entityId, relations);
+            case EntityRelation<?> relation -> mapper.addComponent(entityId, component);
+            default -> mapper.addComponent(entityId, component);
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void addRelations(DefaultComponent mapper, int entityId, ComponentRelationResultImpl relations) {
+        while (!relations.isEmpty()) {
+            mapper.addComponent(entityId, relations.removeLast());
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void addRelations(DefaultComponent mapper, int entityId, EntityRelationResultImpl relations) {
+        while (!relations.isEmpty()) {
+            mapper.addComponent(entityId, relations.removeLast());
+        }
     }
 
     @Override

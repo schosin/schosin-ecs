@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -27,6 +28,87 @@ class ChangeManagerTest extends AbstractWorldTest {
 
         this.id1 = componentManager.getComponent(component(C1.class)).id();
         this.id2 = componentManager.getComponent(component(C2.class)).id();
+    }
+
+    @Nested
+    class PendingComponentMaskTest {
+
+        @Test
+        void testAdd() {
+            var entityId = world.createEntity();
+
+            // Call
+            component1.add(entityId);
+
+            // Verify
+            var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
+            assertThat(pendingComponentMask).isNotNull();
+            assertThat(pendingComponentMask.getComponentTypes()).containsExactly(component(C1.class));
+        }
+
+        @Test
+        void testAddPresent() {
+            var entityId = world.createEntity(new C1());
+
+            // Call
+            component1.add(entityId);
+
+            // Verify
+            var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
+            assertThat(pendingComponentMask).isNull();
+        }
+
+        @Test
+        void testAddAfterDelete_DoesNotCallStorage() {
+            var entityId = world.createEntity();
+
+            // Call
+            world.deleteEntity(entityId);
+            component1.add(entityId);
+
+            // Verify
+            var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
+            assertThat(pendingComponentMask).isNull();
+        }
+
+        @Test
+        void testRemove() {
+            var entityId = world.createEntity(new C1());
+
+            // Call
+            component1.remove(entityId);
+
+            // Verify
+            var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
+            assertThat(pendingComponentMask).isNotNull();
+            assertThat(pendingComponentMask.getComponentTypes()).isEmpty();
+        }
+
+        @Test
+        void testRemoveAbsent() {
+            var entityId = world.createEntity();
+
+            // Call
+            component1.remove(entityId);
+
+            // Verify
+            var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
+            assertThat(pendingComponentMask).isNull();
+        }
+
+        @Test
+        void testRemoveAfterDelete_DoesNotCallStorage() {
+            var entityId = world.createEntity(new C1());
+
+            // Call
+            world.deleteEntity(entityId);
+            component1.remove(entityId);
+
+            // Verify
+            var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
+            assertThat(pendingComponentMask).isNull();
+        }
+
     }
 
     @Nested
@@ -161,7 +243,28 @@ class ChangeManagerTest extends AbstractWorldTest {
             }
 
             @Test
-            void testCompositionUpdateBeforeComponentRemoval() {
+            void testAccessAddedComponentInEventHandler() {
+                var entityId = world.createEntity();
+
+                var c1 = new C1();
+                var mapper = world.getComponents(C1.class);
+
+                eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> {
+                    var component = mapper.get(event.entityId());
+                    assertThat(component).isSameAs(c1);
+                });
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var component = mapper.get(event.entityId());
+                    assertThat(component).isSameAs(c1);
+                });
+
+                // Call
+                world.getComponents(C1.class).add(entityId, c1);
+                world.process();
+            }
+
+            @Test
+            void testAccessRemovedComponentInEventHandler() {
                 var resetting = new Resetting().init("foobar");
 
                 var entityId = world.createEntity(resetting);
@@ -169,9 +272,13 @@ class ChangeManagerTest extends AbstractWorldTest {
 
                 var mapper = world.getComponents(Resetting.class);
 
-                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> {
                     var component = mapper.get(event.entityId());
                     removed.add(component.data.length());
+                });
+                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+                    var component = mapper.get(event.entityId());
+                    assertThat(component).isNull();
                 });
 
                 // Call
@@ -199,7 +306,7 @@ class ChangeManagerTest extends AbstractWorldTest {
         }
 
         @Test
-        void testFlushEntityUpdates_WhenComponentAdded_AddsComponentAndUpdatesComposition() {
+        void testFlushEntityUpdates_WhenComponentAdded() {
             // Setup            
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
@@ -219,7 +326,7 @@ class ChangeManagerTest extends AbstractWorldTest {
         }
 
         @Test
-        void testFlushEntityUpdates_WhenComponentRemoved_UpdatesOnlyComposition() {
+        void testFlushEntityUpdates_WhenComponentRemoved() {
             // Setup            
             var entityId = world.createEntity(new C1());
             verifyHasComponents(entityId, C1.class);
@@ -232,31 +339,6 @@ class ChangeManagerTest extends AbstractWorldTest {
 
             // Call
             assertThat(world.flushEntityUpdates(entityId)).isTrue();
-
-            // Verify
-            verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
-        }
-
-        @Test
-        void testProcess_WhenRemovedComponentFlushed_RemovesComponent() {
-            // Setup            
-            var entityId = world.createEntity(new C1());
-            verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
-
-            // Add component
-            component1.remove(entityId);
-            verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
-
-            // Flush updates
-            assertThat(world.flushEntityUpdates(entityId)).isTrue();
-            verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
-
-            // Call
-            world.process();
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);

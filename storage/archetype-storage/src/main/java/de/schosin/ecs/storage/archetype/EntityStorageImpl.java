@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
+
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
@@ -283,10 +285,12 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId));
         }
 
-        var updatedComponentMask = addToComponentMask(componentMask, componentTypes);
+        // Add components
+        entityIndex.addComponents(entityId, componentTypes, components);
 
-        entityIndex.addComponents(entityId, updatedComponentMask, componentTypes, components);
-        return updatedComponentMask;
+        // Return pending component mask if present
+        var pendingComponentMask = getPendingComponentMask(entityId);
+        return pendingComponentMask != null ? pendingComponentMask : componentMask;
     }
 
     private void validateComponentTypes(String context, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> expectedTypes, Object[] components) {
@@ -385,14 +389,18 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             throw new StorageEngineException("Cannot remove components from entity %d: Entity not present in storage".formatted(entityId));
         }
 
+        // Determine regular component types from removedTypes
         var regularComponentTypes = componentTypesPool.getInstance();
         fillRegularComponentTypes(componentTypes, regularComponentTypes);
 
-        var updatedComponentMask = removeRegularFromComponentMask(componentMask, regularComponentTypes);
-        entityIndex.removeComponents(entityId, updatedComponentMask, regularComponentTypes);
+        // Remove components
+        entityIndex.removeComponents(entityId, regularComponentTypes);
 
         componentTypesPool.free(regularComponentTypes);
-        return updatedComponentMask;
+
+        // Return pending component mask if present
+        var pendingComponentMask = getPendingComponentMask(entityId);
+        return pendingComponentMask != null ? pendingComponentMask : componentMask;
     }
 
     @Override
@@ -424,16 +432,24 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId));
         }
 
+        // Discover new component types so that fillRegularComponentTypes will take them into account
+        for (int i = 0, s = addTypes.getSize(); i < s; i++) {
+            var componentType = addTypes.get(i);
+            componentStorage.getComponent(componentType);
+        }
+
+        // Determine regular component types from removedTypes
         var regularRemoveTypes = componentTypesPool.getInstance();
         fillRegularComponentTypes(removeTypes, regularRemoveTypes);
 
-        var updatedComponentMask = addToComponentMask(componentMask, addTypes);
-        updatedComponentMask = removeFromComponentMask(updatedComponentMask, removeTypes);
-
-        entityIndex.modifyComponents(entityId, updatedComponentMask, addTypes, add, regularRemoveTypes);
+        // Modify components
+        entityIndex.modifyComponents(entityId, addTypes, add, regularRemoveTypes);
 
         componentTypesPool.free(regularRemoveTypes);
-        return updatedComponentMask;
+
+        // Return pending component mask if present
+        var pendingComponentMask = getPendingComponentMask(entityId);
+        return pendingComponentMask != null ? pendingComponentMask : componentMask;
     }
 
     private void fillRegularComponentTypes(ImmutableBag<? extends ComponentType<?, ?>> componentTypes, Bag<RegularComponentType<?, ?>> regularComponentTypes) {
@@ -524,6 +540,29 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         }
 
         return result;
+    }
+
+    @Override
+    @Nullable
+    public ComponentMaskImpl getPendingComponentMask(int entityId) {
+        var pendingChanges = entityIndex.getPendingChanges(entityId);
+        if (pendingChanges == null) {
+            return null;
+        }
+
+        var componentMask = pendingChanges.getComponentMask();
+        componentMask = addToComponentMask(componentMask, pendingChanges.getAddedTypes());
+        return removeFromComponentMask(componentMask, pendingChanges.getRemovedTypes());
+    }
+
+    @Override
+    public ComponentMask flushChanges(int entityId) {
+        var pendingComponentMask = getPendingComponentMask(entityId);
+        if (pendingComponentMask == null) {
+            throw new StorageEngineException("Cannot flush changes: Entity %d has no pending changes".formatted(entityId));
+        }
+
+        return entityIndex.flushChanges(entityId, pendingComponentMask);
     }
 
     @Override

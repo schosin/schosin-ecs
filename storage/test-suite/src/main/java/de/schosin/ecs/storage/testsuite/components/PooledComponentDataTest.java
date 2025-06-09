@@ -89,7 +89,7 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
 
         @ParameterizedTest
         @MethodSource(TYPES)
-        void testGetInstance_InstanceReusedWhenRemoved(ClassType<? extends Pooled> classType) {
+        void testGetInstance_InstanceNotYetReusedWhenOnlyRemoved(ClassType<? extends Pooled> classType) {
             var component = getComponent(classType);
 
             var instance = component.getInstance();
@@ -97,11 +97,25 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
 
             storageEngine.remove(entityId, ImmutableBag.of(classType));
 
+            assertThat(component.getInstance()).as("getInstance returns new instance if not flushed").isNotSameAs(instance);
+        }
+
+        @ParameterizedTest
+        @MethodSource(TYPES)
+        void testGetInstance_InstanceReusedWhenRemovedAndFlushed(ClassType<? extends Pooled> classType) {
+            var component = getComponent(classType);
+
+            var instance = component.getInstance();
+            var entityId = world.createEntity(instance);
+
+            storageEngine.remove(entityId, ImmutableBag.of(classType));
+            storageEngine.flushChanges(entityId);
+
             assertThat(component.getInstance()).as("getInstance reuses removed instances").isSameAs(instance);
         }
 
         @Test
-        void testGetInstance_InstanceResetWhenComponentRemoved() {
+        void testGetInstance_InstanceNotYetResetWhenComponentOnlyRemoved() {
             var type = component(PooledClass.class);
             var component = getComponent(type);
 
@@ -109,6 +123,20 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
             var entityId = world.createEntity(instance);
 
             storageEngine.remove(entityId, ImmutableBag.of(type));
+
+            assertThat(instance.data).as("component must be reset when removed from entity").isEqualTo(42);
+        }
+
+        @Test
+        void testGetInstance_InstanceResetWhenComponentRemovedAndFlushed() {
+            var type = component(PooledClass.class);
+            var component = getComponent(type);
+
+            var instance = component.getInstance().init(42);
+            var entityId = world.createEntity(instance);
+
+            storageEngine.remove(entityId, ImmutableBag.of(type));
+            storageEngine.flushChanges(entityId);
 
             assertThat(instance.data).as("component must be reset when removed from entity").isEqualTo(-1);
         }

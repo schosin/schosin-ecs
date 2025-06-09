@@ -26,6 +26,11 @@
             <artifactId>ecs-storage-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>de.schosin.ecs.storage</groupId>
+            <artifactId>ecs-storage-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.google.auto.service</groupId>

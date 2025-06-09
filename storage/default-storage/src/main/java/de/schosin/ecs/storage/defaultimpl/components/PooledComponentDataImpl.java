@@ -5,10 +5,12 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
+import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> type, Bag<T> components, Pool<T> pool) implements DefaultComponent<T>, PooledComponentData<T> {
+public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> type, Bag<T> components, Bag<PendingChanges> changes, Pool<T> pool)
+        implements DefaultComponent<T>, PooledComponentData<T> {
 
     @Override
     public Class<T> clazz() {
@@ -22,12 +24,22 @@ public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> typ
 
     @Override
     public boolean hasComponent(int entityId) {
-        return this.components.get(entityId) != null;
+        return getComponent(entityId) != null;
     }
 
     @Override
     public T getComponent(int entityId) {
-        return this.components.get(entityId);
+        var result = this.components.get(entityId);
+        if (result != null) {
+            return result;
+        }
+
+        var changes = this.changes.get(entityId);
+        if (changes != null) {
+            return changes.getComponent(type);
+        }
+
+        return null;
     }
 
     @Override

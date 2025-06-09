@@ -125,8 +125,12 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
             var entityId = world.createEntity(relation);
 
             var componentType = ComponentType.detectComponentType(relation);
+            
+            // Call
             storageEngine.remove(entityId, ImmutableBag.of(componentType));
+            storageEngine.flushChanges(entityId);
 
+            // Verify
             assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
             assertThat(relation.relationship()).as("removed relation must be returned to Relation.free").isNull();
             assertThat(relation.target()).as("removed relation must be returned to Relation.free").isEqualTo(-1);

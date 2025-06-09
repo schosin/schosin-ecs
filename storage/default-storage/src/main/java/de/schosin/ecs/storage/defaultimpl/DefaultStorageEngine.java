@@ -24,6 +24,7 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationDa
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
@@ -35,8 +36,10 @@ public class DefaultStorageEngine implements StorageEngine {
 
     @Override
     public void setWorld(StorageWorld world) {
-        this.componentStorage = new ComponentStorageImpl(world);
-        this.entityStorage = new EntityStorageImpl(world, componentStorage);
+        var pendingChanges = world.createEntityBag(PendingChanges.class);
+
+        this.componentStorage = new ComponentStorageImpl(world, pendingChanges);
+        this.entityStorage = new EntityStorageImpl(world, pendingChanges, componentStorage);
     }
 
     @Override
@@ -167,6 +170,16 @@ public class DefaultStorageEngine implements StorageEngine {
     @Override
     public ComponentMask delete(int entityId) {
         return this.entityStorage.delete(entityId);
+    }
+
+    @Override
+    public ComponentMask getPendingComponentMask(int entityId) {
+        return this.entityStorage.getPendingComponentMask(entityId);
+    }
+
+    @Override
+    public ComponentMask flushChanges(int entityId) {
+        return this.entityStorage.flushChanges(entityId);
     }
 
     @Override

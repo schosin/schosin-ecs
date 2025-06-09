@@ -1,11 +1,13 @@
 package de.schosin.ecs.storage.testsuite.entities;
 
+import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -74,15 +76,25 @@ public class ModifyEntityTest {
             var entityId = world.createEntity();
             var expectedComponentMask = storageEngine.getComponentMask();
 
-            try {
-                // Call
-                var componentMask = storageEngine.modify(entityId, ImmutableBag.of(componentType), new Object[] { component }, ImmutableBag.of(componentType));
+            // Call
+            var componentMask = storageEngine.modify(entityId, ImmutableBag.of(componentType), new Object[] { component }, ImmutableBag.of(componentType));
 
-                // Verify
-                assertThat(componentMask).as("removes component if added and removed at the same time").isSameAs(expectedComponentMask);
-            } catch (StorageEngineException ex) {
-                // throwing StorageEngineException is fine
-            }
+            // Verify
+            assertThat(componentMask).as("removes component if added and removed at the same time").isSameAs(expectedComponentMask);
+        }
+
+        @Test
+        void testRemovedWildcardMatchingAddedTypes() {
+            var entityId = world.createEntity();
+            var expectedComponentMask = storageEngine.getComponentMask();
+
+            // Call
+            var componentMask = storageEngine.modify(entityId, ImmutableBag.of(component(C1.class)), new Object[] { new C1() }, ImmutableBag.of(WILDCARD));
+
+            // Verify
+            assertThat(componentMask).as("does not add components if removed component type matches added type").isSameAs(expectedComponentMask);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("does not add components if removed component type matches added type").isNull();
+            assertThat(getComponent(entityId, C1.class)).as("does not add components if removed component type matches added type").isNull();
         }
 
     }

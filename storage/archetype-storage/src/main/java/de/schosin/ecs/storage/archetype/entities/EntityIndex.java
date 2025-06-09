@@ -10,8 +10,9 @@ import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeData;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeDataImpl;
-import de.schosin.ecs.storage.archetype.results.ComponentRelationResultImpl;
-import de.schosin.ecs.storage.archetype.results.EntityRelationResultImpl;
+import de.schosin.ecs.storage.common.PendingChanges;
+import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
+import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.Pool;
@@ -31,7 +32,6 @@ public class EntityIndex {
     private final Bag<ArchetypeData> archetypes;
 
     private final Pool<Bag<Object>> componentsPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class), Bag::clear);
-    private final Pool<Bag<RegularComponentType<?, ?>>> componentTypesPool = Pool.unbounded(Bag.class, () -> new Bag<RegularComponentType<?, ?>>(RegularComponentType.class), Bag::clear);
 
     public EntityIndex(StorageWorld world, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
         this.world = world;
@@ -69,10 +69,12 @@ public class EntityIndex {
     }
 
     public boolean hasComponent(int entityId, RegularComponentType<?, ?> componentType) {
-        var archetype = getArchetypeDataForEntity(entityId);
-        // TODO null should throw, shouldn't it?
+        var pointer = lookup.getSafe(entityId);
+        if (pointer == null || pointer.archetype == null) {
+            return false;
+        }
 
-        return archetype != null && archetype.contains(componentType);
+        return pointer.archetype.contains(pointer.index, componentType);
     }
 
     public <R> R getComponent(int entityId, RegularComponentType<?, R> componentType) {
@@ -85,87 +87,38 @@ public class EntityIndex {
         return pointer.archetype.getComponent(pointer.index, componentType);
     }
 
-    public void addComponents(int entityId, ComponentMaskImpl componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+    public void addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         // Lookup pointer
         var pointer = lookup.get(entityId);
         if (pointer == null || pointer.archetype == null) {
             return; // TODO this should throw, shouldn't it?
         }
 
-        var previousComponentMask = pointer.archetype.getComponentMask();
-
-        // If same as current, override existing data / add non-exlusive relations
-        if (pointer.archetype.getComponentMask() == componentMask) {
-            pointer.archetype.updateComponents(entityId, pointer.index, componentTypes, components);
-            return;
-        }
-
-        // Remove entity from current archetype
-        var data = componentsPool.getInstance();
-        removeEntity(entityId, pointer, data);
-
-        // Determine archetype for new component mask
-        pointer.archetype = determineArchetype(componentMask);
-
-        // Add to new archetype 
-        pointer.index = pointer.archetype.addEntity(entityId, previousComponentMask.getComponentTypes(), data, componentTypes, components);
-
-        componentsPool.free(data);
+        pointer.archetype.addComponents(entityId, pointer.index, componentTypes, components);
     }
 
-    public void removeComponents(int entityId, ComponentMaskImpl componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> removeTypes) {
+    public void removeComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> removeTypes) {
         // Lookup pointer
         var pointer = lookup.get(entityId);
         if (pointer == null || pointer.archetype == null) {
             return; // TODO this should throw, shouldn't it?
         }
 
-        var previousComponentMask = pointer.archetype.getComponentMask();
-
-        // Remove entity from current archetype
-        var data = componentsPool.getInstance();
-        removeEntity(entityId, pointer, data);
-
-        // Determine archetype for new component mask
-        pointer.archetype = determineArchetype(componentMask);
-
-        // Calculate component types
-        var componentTypes = componentTypesPool.getInstance();
-        componentTypes.addAll(previousComponentMask.getComponentTypes());
-
-        for (int i = 0, s = removeTypes.getSize(); i < s; i++) {
-            var componentType = removeTypes.get(i);
-
-            var index = componentTypes.indexOf(componentType);
-            if (index > -1) {
-                componentTypes.remove(index);
-
-                var component = data.remove(index);
-                freeComponent(component);
-            }
-        }
-
-        // Add to new archetype 
-        pointer.index = pointer.archetype.addEntity(entityId, componentTypes, data);
-
-        // Free pooled items
-        componentTypesPool.free(componentTypes);
-        componentsPool.free(data);
+        pointer.archetype.removeComponents(entityId, pointer.index, removeTypes);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void modifyComponents(int entityId, ComponentMaskImpl componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add,
+    public void modifyComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add,
             ImmutableBag<? extends RegularComponentType<?, ?>> removeTypes) {
 
         // Remove if no added components
         if (add.length == 0) {
-            removeComponents(entityId, componentMask, removeTypes);
+            removeComponents(entityId, removeTypes);
             return;
         }
 
         // Add if no removed components
         if (removeTypes.isEmpty()) {
-            addComponents(entityId, componentMask, addTypes, add);
+            addComponents(entityId, addTypes, add);
             return;
         }
 
@@ -175,47 +128,8 @@ public class EntityIndex {
             return; // TODO this should throw, shouldn't it?
         }
 
-        var previousComponentMask = pointer.archetype.getComponentMask();
-
-        // Remove entity from current archetype
-        var data = componentsPool.getInstance();
-        removeEntity(entityId, pointer, data);
-
-        // Determine archetype for new component mask
-        pointer.archetype = determineArchetype(componentMask);
-
-        // Remove components
-        var componentTypes = componentTypesPool.getInstance();
-        componentTypes.addAll(previousComponentMask.getComponentTypes());
-
-        for (int i = 0, s = removeTypes.getSize(); i < s; i++) {
-            var removeType = removeTypes.get(i);
-
-            if (((ImmutableBag) addTypes).contains(removeType)) {
-                throw new StorageEngineException("Cannot add and remove the same component type for entity %d: %s".formatted(entityId, removeType));
-            }
-
-            var index = componentTypes.indexOf(removeType);
-            if (index > -1) {
-                componentTypes.remove(index);
-
-                var component = data.remove(index);
-                freeComponent(component);
-            }
-        }
-
-        // Add components
-        componentTypes.addAll(addTypes);
-        for (int i = 0, s = add.length; i < s; i++) {
-            data.add(add[i]);
-        }
-
-        // Add to new archetype 
-        pointer.index = pointer.archetype.addEntity(entityId, componentTypes, data);
-
-        // Free pooled items
-        componentTypesPool.free(componentTypes);
-        componentsPool.free(data);
+        pointer.archetype.addComponents(entityId, pointer.index, addTypes, add);
+        pointer.archetype.removeComponents(entityId, pointer.index, removeTypes);
     }
 
     public void createEntity(int entityId, ComponentMaskImpl componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
@@ -247,7 +161,7 @@ public class EntityIndex {
 
             var archetype = createArchetype(componentMask);
             this.archetypes.set(componentMask.getId(), archetype);
-            
+
             this.world.dispatchEvent(new ArchetypeAddedEvent(componentMask, archetype));
 
             return archetype;
@@ -263,6 +177,12 @@ public class EntityIndex {
         var pointer = lookup.get(entityId);
         if (pointer == null || pointer.archetype == null) {
             throw new StorageEngineException("Cannot delete entity %d: Entity not present in storage".formatted(entityId));
+        }
+
+        // Remove pending changes
+        var changes = getPendingChanges(entityId);
+        if (changes != null) {
+            changes.reset();
         }
 
         // Delete entity from archetype
@@ -284,6 +204,41 @@ public class EntityIndex {
         // Clear pointer data
         pointer.archetype = null;
         pointer.index = -1;
+    }
+
+    public PendingChanges getPendingChanges(int entityId) {
+        // Lookup pointer
+        var pointer = lookup.get(entityId);
+        if (pointer == null || pointer.archetype == null) {
+            throw new StorageEngineException("Cannot get pending changes for entity %d: Entity not present in storage".formatted(entityId));
+        }
+
+        return pointer.archetype.getPendingChanges(pointer.index);
+    }
+
+    public ComponentMask flushChanges(int entityId, ComponentMaskImpl componentMask) {
+        // Lookup pointer
+        var pointer = lookup.get(entityId);
+        var previousComponentMask = pointer.archetype.getComponentMask();
+
+        // Retrieve changes, return early if none
+        var changes = pointer.archetype.getPendingChanges(pointer.index);
+
+        // Remove entity from current archetype
+        var data = componentsPool.getInstance();
+        removeEntity(entityId, pointer, data);
+
+        // Determine archetype for new component mask
+        pointer.archetype = determineArchetype(componentMask);
+
+        // Add to new archetype 
+        pointer.index = pointer.archetype.addEntity(entityId, previousComponentMask.getComponentTypes(), data, changes.getAddedTypes(), changes.getAdded());
+
+        // Reset changes, free data
+        changes.reset();
+        componentsPool.free(data);
+
+        return componentMask;
     }
 
     public void freeComponent(Object component) {

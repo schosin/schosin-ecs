@@ -19,6 +19,7 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
 import de.schosin.ecs.engine.components.TransmutationManager.Builder;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.StorageEngineException;
 
@@ -656,7 +657,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             var mapper2 = world.getComponents(C2.class);
 
             var removed = new AtomicBoolean(false);
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
+            eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> {
                 assertThat(mapper1.get(event.entityId())).isNotNull();
                 removed.set(true);
             });

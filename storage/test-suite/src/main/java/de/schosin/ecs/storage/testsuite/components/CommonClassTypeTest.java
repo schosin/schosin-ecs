@@ -3,14 +3,36 @@ package de.schosin.ecs.storage.testsuite.components;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public abstract class CommonClassTypeTest<T1, T2, T3> extends CommonComponentTest<T1, T1, T2, T2, T3, T3> {
+
+    @Test
+    void testOverrideExistingComponent_AppliedImmediately() {
+        var type = type1();
+
+        var instance1 = getInstance(type);
+        var instance2 = getInstance(type);
+        assertThat(instance2).as("must be different instances (test suite broken if this fails)").isNotSameAs(instance1);
+
+        var entityId = world.createEntity(instance1);
+        assertThat(getComponent(entityId, type)).as("returns instance passed at creation").isSameAs(instance1);
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+
+        // Call
+        storageEngine.add(entityId, ImmutableBag.of(type), new Object[] { instance2 });
+
+        // Verify
+        assertThat(getComponent(entityId, type)).as("returns instance passed at creation").isSameAs(instance2);
+        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+    }
 
     @Override
     @SuppressWarnings("unchecked")

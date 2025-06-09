@@ -58,6 +58,24 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
             // Verify
             assertThat(componentMask).as("object wildcard removes all class type components").isSameAs(emptyComponentMask);
 
+            assertThat(world.getComponents(C1.class).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(C2.class).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(P1.class).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testObjectWildcard_FlushedChanges() {
+            var emptyComponentMask = storageEngine.getComponentMask();
+
+            var entityId = world.createEntity(new C1(), new C2(), new P1());
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(WILDCARD));
+            storageEngine.flushChanges(entityId);
+
+            // Verify
+            assertThat(componentMask).as("object wildcard removes all class type components").isSameAs(emptyComponentMask);
+
             assertThat(world.getComponents(C1.class).get(entityId)).as("removes component from storage").isNull();
             assertThat(world.getComponents(C2.class).get(entityId)).as("removes component from storage").isNull();
             assertThat(world.getComponents(P1.class).get(entityId)).as("removes component from storage").isNull();
@@ -71,6 +89,24 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var componentMask = removeComponents(entityId, ImmutableBag.of(wildcard(C12.class)));
+
+            // Verify
+            assertThat(componentMask).as("interface wildcard removes matching class type components").isSameAs(expectedComponentMask);
+
+            assertThat(world.getComponents(C1.class).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(C2.class).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(P1.class).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testInterfaceWildcard_FlushedChanges() {
+            var expectedComponentMask = storageEngine.getComponentMask(component(P1.class));
+
+            var entityId = world.createEntity(new C1(), new C2(), new P1());
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(wildcard(C12.class)));
+            storageEngine.flushChanges(entityId);
 
             // Verify
             assertThat(componentMask).as("interface wildcard removes matching class type components").isSameAs(expectedComponentMask);
@@ -92,7 +128,8 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
             var componentMask = removeComponents(entityId, ImmutableBag.of(WILDCARD));
 
             // Verify
-            assertThat(componentMask).as("object wildcard removes all class type components").isSameAs(expectedComponentMask);
+            assertThat(componentMask).as("object wildcard does not remove relations from storage").isSameAs(expectedComponentMask);
+            assertThat(storageEngine.getPendingComponentMask(entityId)).as("object wildcard does not remove relations from storage").isNull();
 
             assertThat(world.getComponents(relation(C1.class, C2.class)).get(entityId)).as("does not remove relations from storage").isNotNull();
             assertThat(world.getComponents(exclusiveRelation(E1.class, C2.class)).get(entityId)).as("does not remove relations from storage").isNotNull();
@@ -120,6 +157,33 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(Object.class, C2.class)));
+
+            // Verify
+            assertThat(componentMask).as("object wildcard removes all matching component relations").isSameAs(expectedComponentMask);
+
+            assertThat(world.getComponents(relation(C1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C2.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testRelationship_ObjectWildcard_FlushedChanges() {
+            var expectedComponentMask = storageEngine.getComponentMask(
+                    relation(C1.class, C1.class),
+                    exclusiveRelation(E1.class, C1.class));
+
+            var entityId = world.createEntity(
+                    Relation.create(new C1(), new C1()),
+                    Relation.create(new C1(), new C2()),
+                    Relation.create(new C2(), new C2()),
+                    Relation.create(E1.INSTANCE, new C1()),
+                    Relation.create(E1.INSTANCE, new C2()));
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(Object.class, C2.class)));
+            storageEngine.flushChanges(entityId);
 
             // Verify
             assertThat(componentMask).as("object wildcard removes all matching component relations").isSameAs(expectedComponentMask);
@@ -152,6 +216,34 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
             // Verify
             assertThat(componentMask).as("interface wildcard removes all matching component relations").isSameAs(expectedComponentMask);
 
+            assertThat(world.getComponents(relation(C1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C2.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testRelationship_InterfaceWildcard_FlushedChanges() {
+            var expectedComponentMask = storageEngine.getComponentMask(
+                    relation(C1.class, C1.class),
+                    exclusiveRelation(E1.class, C1.class),
+                    exclusiveRelation(E1.class, C2.class));
+
+            var entityId = world.createEntity(
+                    Relation.create(new C1(), new C1()),
+                    Relation.create(new C1(), new C2()),
+                    Relation.create(new C2(), new C2()),
+                    Relation.create(E1.INSTANCE, new C1()),
+                    Relation.create(E1.INSTANCE, new C2()));
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C12.class, C2.class)));
+            engine.flushChanges(entityId);
+
+            // Verify
+            assertThat(componentMask).as("interface wildcard removes all matching component relations").isSameAs(expectedComponentMask);
+
             assertThat(world.getComponents(relation(C1.class, C2.class)).get(entityId)).as("removes matching component from storage").isNull();
             assertThat(world.getComponents(relation(C2.class, C2.class)).get(entityId)).as("removes matching component from storage").isNull();
 
@@ -180,6 +272,34 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
             // Verify
             assertThat(componentMask).as("object wildcard removes all matching component relations").isSameAs(expectedComponentMask);
 
+            assertThat(world.getComponents(relation(C1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C2.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testTarget_ObjectWildcard_FlushedChanges() {
+            var expectedComponentMask = storageEngine.getComponentMask(
+                    relation(C2.class, C2.class),
+                    exclusiveRelation(E1.class, C1.class),
+                    exclusiveRelation(E1.class, C2.class));
+
+            var entityId = world.createEntity(
+                    Relation.create(new C1(), new C1()),
+                    Relation.create(new C1(), new C2()),
+                    Relation.create(new C2(), new C2()),
+                    Relation.create(E1.INSTANCE, new C1()),
+                    Relation.create(E1.INSTANCE, new C2()));
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C1.class, Object.class)));
+            storageEngine.flushChanges(entityId);
+
+            // Verify
+            assertThat(componentMask).as("object wildcard removes all matching component relations").isSameAs(expectedComponentMask);
+
             assertThat(world.getComponents(relation(C1.class, C1.class)).get(entityId)).as("removes matching component from storage").isNull();
             assertThat(world.getComponents(relation(C1.class, C2.class)).get(entityId)).as("removes matching component from storage").isNull();
 
@@ -204,6 +324,34 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C1.class, C12.class)));
+
+            // Verify
+            assertThat(componentMask).as("interface wildcard removes all matching component relations").isSameAs(expectedComponentMask);
+
+            assertThat(world.getComponents(relation(C1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C2.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class, C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testTarget_InterfaceWildcard_FlushedChanges() {
+            var expectedComponentMask = storageEngine.getComponentMask(
+                    relation(C2.class, C2.class),
+                    exclusiveRelation(E1.class, C1.class),
+                    exclusiveRelation(E1.class, C2.class));
+
+            var entityId = world.createEntity(
+                    Relation.create(new C1(), new C1()),
+                    Relation.create(new C1(), new C2()),
+                    Relation.create(new C2(), new C2()),
+                    Relation.create(E1.INSTANCE, new C1()),
+                    Relation.create(E1.INSTANCE, new C2()));
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C1.class, C12.class)));
+            storageEngine.flushChanges(entityId);
 
             // Verify
             assertThat(componentMask).as("interface wildcard removes all matching component relations").isSameAs(expectedComponentMask);
@@ -265,6 +413,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
     @Nested
     class WildcardEntityRelationTypeTest {
+
         @Test
         void testRelationship_ObjectWildcard() {
             var expectedComponentMask = storageEngine.getComponentMask();
@@ -276,6 +425,27 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(Object.class)));
+
+            // Verify
+            assertThat(componentMask).as("object wildcard removes all class type components").isSameAs(expectedComponentMask);
+
+            assertThat(world.getComponents(relation(C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testRelationship_ObjectWildcard_FlushedChanges() {
+            var expectedComponentMask = storageEngine.getComponentMask();
+
+            var entityId = world.createEntity(
+                    Relation.create(new C1(), 42),
+                    Relation.create(new C2(), 42),
+                    Relation.create(E1.INSTANCE, 42));
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(Object.class)));
+            storageEngine.flushChanges(entityId);
 
             // Verify
             assertThat(componentMask).as("object wildcard removes all class type components").isSameAs(expectedComponentMask);
@@ -296,6 +466,27 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C12.class)));
+
+            // Verify
+            assertThat(componentMask).as("interface wildcard removes all class type components").isSameAs(expectedComponentMask);
+
+            assertThat(world.getComponents(relation(C1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(relation(C2.class)).get(entityId)).as("does not remove without flush").isNotNull();
+            assertThat(world.getComponents(exclusiveRelation(E1.class)).get(entityId)).as("does not remove without flush").isNotNull();
+        }
+
+        @Test
+        void testRelationship_InterfaceWildcard_FlushedChanges() {
+            var expectedComponentMask = storageEngine.getComponentMask(exclusiveRelation(E1.class));
+
+            var entityId = world.createEntity(
+                    Relation.create(new C1(), 42),
+                    Relation.create(new C2(), 42),
+                    Relation.create(E1.INSTANCE, 42));
+
+            // Call
+            var componentMask = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C12.class)));
+            storageEngine.flushChanges(entityId);
 
             // Verify
             assertThat(componentMask).as("interface wildcard removes all class type components").isSameAs(expectedComponentMask);

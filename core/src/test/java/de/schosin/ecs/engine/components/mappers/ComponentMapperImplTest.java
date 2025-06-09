@@ -54,6 +54,12 @@ class ComponentMapperImplTest extends AbstractMapperTest {
             assertThat(component1.add(entityId, instance1)).isSameAs(instance1);
             assertThat(component2.add(entityId, instance2)).isSameAs(instance2);
 
+            assertThat(component1.get(entityId)).isSameAs(instance1);
+            assertThat(component2.get(entityId)).isSameAs(instance2);
+
+            verifyHasComponents(entityId, Component1.class, Component2.class);
+            verifyComponentMaskDoesNotHaveComponents(entityId, Component1.class, Component2.class);
+
             world.process();
 
             // Verify

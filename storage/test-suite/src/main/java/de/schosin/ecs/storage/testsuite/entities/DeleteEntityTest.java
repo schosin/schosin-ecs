@@ -115,6 +115,26 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         assertThat(Relation.create(E2.INSTANCE, world.createEntity())).as("relation instance freed").isSameAs(relation);
     }
 
+    @Test
+    void testDelete_DiscardsPendingChanges() {
+        // Create empty entity, add C1, delete
+        storageEngine.create(42, new Object[0]);
+
+        storageEngine.add(42, new Object[] { new C1() });
+        assertThat(storageEngine.getPendingComponentMask(42)).as("getPendingComponentMask must return value after add").isNotNull();
+
+        storageEngine.delete(42);
+
+        assertThatThrownBy(() -> storageEngine.getPendingComponentMask(42), "getPendingComponentMask throws for deleted entities")
+                .as("getPendingComponentMask throws for deleted entities").isInstanceOf(StorageEngineException.class)
+                .as("getPendingComponentMask throws for deleted entities").hasMessageContainingAll("entity 42", "not present in storage");
+
+        // Create other entity with same id
+        storageEngine.create(42, new Object[0]);
+
+        assertThat(storageEngine.getPendingComponentMask(42)).as("getPendingComponentMask must be cleared after delete with changes").isNull();
+    }
+
     record C1() {
     }
 

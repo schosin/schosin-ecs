@@ -35,6 +35,14 @@ public final class IntBag implements ImmutableIntBag {
         return data[index];
     }
 
+    public int getSafe(int index) {
+        if (index >= data.length) {
+            return 0;
+        }
+
+        return data[index];
+    }
+
     public void add(int item) {
         if (data.length == size) {
             setCapacity(data.length * 2);

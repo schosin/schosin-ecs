@@ -8,13 +8,14 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;
+import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.utils.collections.Bag;
 
-public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id, ExclusiveComponentRelationType<R, T> type, Bag<ComponentRelation<R, T>> components)
+public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id, ExclusiveComponentRelationType<R, T> type, Bag<ComponentRelation<R, T>> components, Bag<PendingChanges> changes)
         implements DefaultComponent<ComponentRelation<R, T>>, ExclusiveComponentRelationData<R, T> {
 
-    public ExclusiveComponentRelationDataImpl(int id, ExclusiveComponentRelationType<R, T> type, StorageWorld world) {
-        this(id, type, world.createEntityBag(ComponentRelation.class));
+    public ExclusiveComponentRelationDataImpl(int id, ExclusiveComponentRelationType<R, T> type, StorageWorld world, Bag<PendingChanges> changes) {
+        this(id, type, world.createEntityBag(ComponentRelation.class), changes);
     }
 
     @Override
@@ -34,12 +35,22 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
 
     @Override
     public boolean hasComponent(int entityId) {
-        return this.components.get(entityId) != null;
+        return getComponent(entityId) != null;
     }
 
     @Override
     public ComponentRelation<R, T> getComponent(int entityId) {
-        return this.components.get(entityId);
+        var result = this.components.get(entityId);
+        if (result != null) {
+            return result;
+        }
+
+        var changes = this.changes.get(entityId);
+        if (changes != null) {
+            return changes.getComponent(type);
+        }
+
+        return null;
     }
 
     @Override

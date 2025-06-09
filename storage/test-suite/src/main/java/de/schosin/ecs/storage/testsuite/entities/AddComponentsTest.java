@@ -99,6 +99,46 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             assertThat(componentMask.getComponentTypes()).as("component mask must only contain type of passed component").containsExactlyInAnyOrder(componentType, component(C2.class));
         }
 
+        @SuppressWarnings("rawtypes")
+        @ParameterizedTest
+        @MethodSource(COMPONENTS_SOURCE)
+        void testAddToMultipleEntities_FlushChanges(Object component) {
+            var emptyComponentMask = engine.getComponentMask();
+
+            var componentType = ComponentType.detectComponentType(component);
+            var entity1 = world.createEntity();
+            var entity2 = world.createEntity();
+
+            // Call
+            var component2 = new C2();
+            addComponents(entity1, ImmutableBag.of(componentType), new Object[] { component });
+            var componentMask2 = addComponents(entity2, ImmutableBag.of(component(C2.class)), new Object[] { component2 });
+
+            storageEngine.flushChanges(entity1);
+
+            // Verify
+            var components = world.getComponents(componentType);
+
+            switch (components) {
+                case ComponentMapper mapper -> assertThat(mapper.get(entity1)).as("must store component").isSameAs(component);
+                case ComponentRelationMapper mapper -> assertThat(mapper.get(entity1)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).as("must store component").containsExactly(component);
+                case ExclusiveComponentRelationMapper mapper -> assertThat(mapper.get(entity1)).as("must store component").isSameAs(component);
+                case EntityRelationMapper mapper -> assertThat(mapper.get(entity1)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).as("must store component").containsExactly(component);
+                case ExclusiveEntityRelationMapper mapper -> assertThat(mapper.get(entity1)).as("must store component").isSameAs(component);
+            }
+
+            assertThat(storageEngine.getComponentMaskForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(emptyComponentMask);
+            assertThat(storageEngine.getPendingComponentMask(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(componentMask2);
+            assertThat(getComponent(entity2, C2.class)).as("flushing changes must not affect pending changes for other entities").isSameAs(component2);
+
+            // Flush second entity
+            storageEngine.flushChanges(entity2);
+
+            assertThat(storageEngine.getComponentMaskForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(componentMask2);
+            assertThat(storageEngine.getPendingComponentMask(entity2)).as("flushing changes must not affect pending changes for other entities").isNull();
+            assertThat(getComponent(entity2, C2.class)).as("flushing changes must not affect pending changes for other entities").isSameAs(component2);
+        }
+
         @ParameterizedTest
         @MethodSource(COMPONENTS_SOURCE)
         void testAddMultiple_MismatchingTypes(Object component) {
