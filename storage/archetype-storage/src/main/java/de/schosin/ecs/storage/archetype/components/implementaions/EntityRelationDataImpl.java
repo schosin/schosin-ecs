@@ -5,7 +5,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
-import de.schosin.ecs.utils.collections.IntBag;
 
 public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, EntityIndex index, EntityRelationIndex relationIndex) implements EntityRelationData<R> {
 
@@ -30,8 +29,8 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Enti
     }
 
     @Override
-    public void removeTarget(int target, IntBag affectedEntities) {
-        relationIndex.removeTarget(target, affectedEntities, index);
+    public void removeTarget(int target, RemovedRelationTypeHandler handler) {
+        relationIndex.removeTarget(target, handler, index);
     }
 
     @Override

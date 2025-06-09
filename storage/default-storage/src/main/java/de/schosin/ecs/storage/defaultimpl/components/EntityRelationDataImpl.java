@@ -109,7 +109,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
     }
 
     @Override
-    public void removeTarget(int target, IntBag affectedEntities) {
+    public void removeTarget(int target, RemovedRelationTypeHandler handler) {
         var entities = targetLookup.get(target);
         if (entities == null) {
             return;
@@ -127,7 +127,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
             result.removeTarget(target);
 
             if (result.isEmpty()) {
-                affectedEntities.add(entityId);
+                handler.removeRelationType(entityId, type);
             }
         }
 

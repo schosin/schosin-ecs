@@ -71,7 +71,8 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
         }
     }
 
-    public void removeTarget(int target, IntBag affectedEntities) {
+    @Override
+    public void removeTarget(int target, RemovedRelationTypeHandler handler) {
         var entities = targetLookup.get(target);
         if (entities == null) {
             return;
@@ -85,7 +86,7 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
                 continue;
             }
 
-            affectedEntities.add(entityId);
+            handler.removeRelationType(entityId, type);
         }
 
         entities.clear();

@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
-import de.schosin.ecs.utils.collections.IntBag;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent.RemovedRelationTypeHandler;
 
 public abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelationComponent<R, RR>> {
 
@@ -34,8 +34,8 @@ public abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelati
         return this.remove.apply(entityId);
     }
 
-    public void removeTarget(int entityId, IntBag affectedEntities) {
-        data.removeTarget(entityId, affectedEntities);
+    public void removeTarget(int entityId, RemovedRelationTypeHandler handler) {
+        data.removeTarget(entityId, handler);
     }
 
 }

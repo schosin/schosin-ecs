@@ -6,6 +6,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent.RemovedRelationTypeHandler;
 import de.schosin.ecs.storage.archetype.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
@@ -55,7 +56,7 @@ public class EntityRelationIndex {
         related.add(entityId);
     }
 
-    public void removeTarget(int targetId, IntBag affectedEntities, EntityIndex entityIndex) {
+    public void removeTarget(int targetId, RemovedRelationTypeHandler handler, EntityIndex entityIndex) {
         // Check bit vector (bloom filter possibly?)
         if (!this.targets.get(targetId)) {
             return;
@@ -89,16 +90,12 @@ public class EntityRelationIndex {
                             if (relations != null) {
                                 relations.removeTarget(targetId);
 
-                                if (relations.isEmpty() && !affectedEntities.contains(relatedId)) {
-                                    affectedEntities.add(relatedId);
+                                if (relations.isEmpty()) {
+                                    handler.removeRelationType(relatedId, type);
                                 }
                             }
                         }
-                        case ExclusiveEntityRelationType<?> type -> {
-                            if (!affectedEntities.contains(relatedId)) {
-                                affectedEntities.add(relatedId);
-                            }
-                        }
+                        case ExclusiveEntityRelationType<?> type -> handler.removeRelationType(relatedId, type);
                     }
                 }
             }

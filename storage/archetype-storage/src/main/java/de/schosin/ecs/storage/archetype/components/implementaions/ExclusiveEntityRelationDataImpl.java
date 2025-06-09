@@ -6,7 +6,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntity
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
-import de.schosin.ecs.utils.collections.IntBag;
 
 public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, ExclusiveEntityRelationType<R> type, EntityIndex index, EntityRelationIndex relationIndex)
         implements ExclusiveEntityRelationData<R> {
@@ -32,8 +31,8 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
     }
 
     @Override
-    public void removeTarget(int target, IntBag affectedEntities) {
-        relationIndex.removeTarget(target, affectedEntities, index);
+    public void removeTarget(int target, RemovedRelationTypeHandler handler) {
+        relationIndex.removeTarget(target, handler, index);
     }
 
     @Override

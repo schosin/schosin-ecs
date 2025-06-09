@@ -187,10 +187,11 @@ public class EntityRelationDataTest
             var component = getComponent(type1());
 
             // Call
-            assertThatCode(() -> component.removeTarget(target, affectedEntities)).as("removeTarget should do nothing if not used as target").doesNotThrowAnyException();
+            var handler = new Handler();
+            assertThatCode(() -> component.removeTarget(target, handler)).as("removeTarget should do nothing if not used as target").doesNotThrowAnyException();
 
             // Verify
-            assertThat(affectedEntities.getSize()).as("removeTarget should do nothing if not used as target").isZero();
+            assertThat(handler.data).as("removeTarget should do nothing if not used as target").isEmpty();
         }
 
         @Test
@@ -206,11 +207,11 @@ public class EntityRelationDataTest
                     .as("sanity check").containsExactlyInAnyOrder(tuple(relation.relationship(), target));
 
             // Call
-            component.removeTarget(target, affectedEntities);
+            var handler = new Handler();
+            component.removeTarget(target, handler);
 
             // Verify
-            assertThat(affectedEntities.getSize()).as("removeTarget should add entity to affectedEntities if all relations removed").isEqualTo(1);
-            assertThat(affectedEntities.getData()).as("removeTarget should add entity to affectedEntities if all relations removed").startsWith(entityId);
+            assertThat(handler.data).as("removeTarget should add entity to affectedEntities if all relations removed").containsExactly(new Handler.Data(entityId, type1()));
 
             assertThat(component.getComponent(entityId))
                     .as("removeTarget should not remove component").isNotNull()
@@ -232,11 +233,12 @@ public class EntityRelationDataTest
             var entity3 = world.createEntity(relation3);
 
             // Call
-            component.removeTarget(target, affectedEntities);
+            var handler = new Handler();
+            component.removeTarget(target, handler);
 
             // Verify
-            assertThat(affectedEntities.getSize()).as("removeTarget should add entity to affectedEntities if all relations removed").isEqualTo(2);
-            assertThat(affectedEntities.getData()).as("removeTarget should add entity to affectedEntities if all relations removed").contains(entity1, entity2).doesNotContain(entity3);
+            assertThat(handler.data).as("removeTarget should add entity to affectedEntities if all relations removed")
+                    .containsExactlyInAnyOrder(new Handler.Data(entity1, type1()), new Handler.Data(entity2, type1()));
 
             assertThat(component.getComponent(entity1))
                     .as("removeTarget should not remove component").isNotNull()
@@ -266,11 +268,11 @@ public class EntityRelationDataTest
             var entity2 = world.createEntity(relation2, relation3);
 
             // Call
-            component.removeTarget(target, affectedEntities);
+            var handler = new Handler();
+            component.removeTarget(target, handler);
 
             // Verify
-            assertThat(affectedEntities.getSize()).as("removeTarget should add entity to affectedEntities if all relations removed").isEqualTo(1);
-            assertThat(affectedEntities.getData()).as("removeTarget should add entity to affectedEntities if all relations removed").startsWith(entity1).doesNotContain(entity2);
+            assertThat(handler.data).as("removeTarget should add entity to affectedEntities if all relations removed").containsExactly(new Handler.Data(entity1, type1()));
 
             assertThat(component.getComponent(entity1))
                     .as("removeTarget should not remove component").isNotNull()

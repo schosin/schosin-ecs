@@ -12,6 +12,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.mappers.relations.AbstractEntityRelationMapper;
 import de.schosin.ecs.engine.components.mappers.relations.ComponentRelationMapperImpl;
@@ -23,11 +24,12 @@ import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent.RemovedRelationTypeHandler;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
-public class RelationMapperManager {
+public class RelationMapperManager implements RemovedRelationTypeHandler {
 
     private final StorageEngine engine;
     private final ComponentManager componentManager;
@@ -69,8 +71,7 @@ public class RelationMapperManager {
                 continue;
             }
 
-            mapper.removeTarget(event.entityId(), affectedEntities);
-            handleRemovedRelations(mapper, affectedEntities);
+            mapper.removeTarget(event.entityId(), this);
         }
 
         if (!affectedEntities.isEmpty()) {
@@ -78,16 +79,11 @@ public class RelationMapperManager {
         }
     }
 
-    private void handleRemovedRelations(AbstractEntityRelationMapper<?, ?, ?> mapper, IntBag affectedEntities) {
-        if (affectedEntities.isEmpty()) {
-            return;
-        }
-
-        var data = affectedEntities.getData();
-        for (int i = affectedEntities.getSize() - 1; i >= 0; i--) {
-            if (mapper.remove(data[i])) {
-                affectedEntities.removeIndex(i);
-            }
+    @Override
+    public void removeRelationType(int entityId, RegularEntityRelationType<?, ?> relationType) {
+        switch (relationType) {
+            case EntityRelationType<?> type -> getEntityRelationMapper(type).remove(entityId);
+            case ExclusiveEntityRelationType<?> type -> getEntityRelationMapper(type).remove(entityId);
         }
     }
 

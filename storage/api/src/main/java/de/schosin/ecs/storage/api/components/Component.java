@@ -16,7 +16,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
-import de.schosin.ecs.utils.collections.IntBag;
 
 public sealed interface Component<T, R> {
 
@@ -93,21 +92,22 @@ public sealed interface Component<T, R> {
 
     sealed interface EntityRelationComponent<R, X> extends RelationComponent<R, EntityRelation<R>, X> {
 
+        @FunctionalInterface
+        interface RemovedRelationTypeHandler {
+            void removeRelationType(int entityId, RegularEntityRelationType<?, ?> relationType);
+        }
+
         @Override
         RegularEntityRelationType<R, X> type();
 
         /**
-         * Removes all relations that contain the target. 
-         * 
-         * <p>
-         * If {@literal affectedEntities} is not {@literal null}, affected entities 
-         * who no longer pocess this relation must be added to the bag.
-         * </p>
+         * Removes all relations that contain the target. Does not clean up the last data, but 
+         * calls {@link RemovedRelationTypeHandler#handle(int, RegularEntityRelationType)} instead.
          * 
          * @param target id of target entity
-         * @param affectedEntities nullable bag for affected entities
+         * @param handler callback when the type should be removed from the entity
          */
-        void removeTarget(int target, IntBag affectedEntities);
+        void removeTarget(int target, RemovedRelationTypeHandler handler);
 
     }
 

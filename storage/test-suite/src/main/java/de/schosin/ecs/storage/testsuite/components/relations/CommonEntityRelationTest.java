@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.function.BiConsumer;
 
 import org.assertj.core.api.ObjectAssert;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -16,21 +15,28 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent.RemovedRelationTypeHandler;
 import de.schosin.ecs.storage.testsuite.components.CommonComponentTest;
+import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
-import de.schosin.ecs.utils.collections.IntBag;
 
 public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
         extends CommonComponentTest<EntityRelation<R1>, X1, EntityRelation<R2>, X2, EntityRelation<R3>, X3> {
 
-    protected final BiConsumer<ObjectAssert<?>, EntityRelation<?>> verifyRelationInstance = verifyRelationInstance();
+    protected static class Handler implements RemovedRelationTypeHandler {
 
-    protected final IntBag affectedEntities = new IntBag(4);
+        protected record Data(int entityId, RegularEntityRelationType<?, ?> relationType) {
+        }
 
-    @BeforeEach
-    void clearAffectedEntities() {
-        this.affectedEntities.clear();
+        protected final Bag<Data> data = new Bag<>(Data.class, 4);
+
+        @Override
+        public void removeRelationType(int entityId, RegularEntityRelationType<?, ?> relationType) {
+            this.data.add(new Data(entityId, relationType));
+        }
     }
+
+    protected final BiConsumer<ObjectAssert<?>, EntityRelation<?>> verifyRelationInstance = verifyRelationInstance();
 
     @Override
     protected <T> T getInstance(RegularComponentType<T, ?> type) {
