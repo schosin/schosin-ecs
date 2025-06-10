@@ -33,7 +33,6 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
@@ -95,80 +94,57 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Test
-    void testProcess() {
-        // Setup
-        var entities = new IntBag(4);
-        entities.add(1);
-        entities.add(4);
-
-        var processed = new IntBag(2);
-
-        var composition = compositionManager.create(EMPTY, spec -> entities);
-
-        // Process
-        composition.process(processed::add);
-
-        // Verify
-        assertThat(processed.getSize()).as("size").isEqualTo(2);
-        assertThat(processed.contains(1)).as("contains 1").isTrue();
-        assertThat(processed.contains(4)).as("contains 4").isTrue();
-    }
-
-    @Test
     void testStream() {
         // Setup
-        var entities = new IntBag(4);
-        for (int i = 1; i <= 10; i++) {
-            entities.add(i);
+        var entities = new ArrayList<Integer>(4);
+        for (int i = 1; i <= 1000; i++) {
+            entities.add(world.createEntity());
+            entities.add(world.createEntity(new C1()));
+            entities.add(world.createEntity(new C2()));
+            entities.add(world.createEntity(new C1(), new C2()));
+            entities.add(world.createEntity(new C1(), new C2(), new C3()));
         }
 
-        var composition = compositionManager.create(EMPTY, spec -> entities);
-
-        // Process
-        var processed = composition.stream().toArray();
+        var composition = compositionManager.createComposition(EMPTY);
 
         // Verify
-        assertThat(processed)
-                .hasSize(10)
-                .containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        assertThat(composition.stream().mapToObj(Integer::valueOf).toList()).containsExactlyInAnyOrderElementsOf(entities);
     }
 
     @Test
     void testStreamParallelized() {
         // Setup
-        var entities = new IntBag(4);
-        for (int i = 1; i <= 10; i++) {
-            entities.add(i);
+        var entities = new ArrayList<Integer>(4);
+        for (int i = 1; i <= 1000; i++) {
+            entities.add(world.createEntity());
+            entities.add(world.createEntity(new C1()));
+            entities.add(world.createEntity(new C2()));
+            entities.add(world.createEntity(new C1(), new C2()));
+            entities.add(world.createEntity(new C1(), new C2(), new C3()));
         }
 
-        var composition = compositionManager.create(EMPTY, spec -> entities);
-
-        // Process
-        var processed = composition.stream().parallel().toArray();
+        var composition = compositionManager.createComposition(EMPTY);
 
         // Verify
-        assertThat(processed)
-                .hasSize(10)
-                .containsExactlyInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        assertThat(composition.stream().parallel().mapToObj(Integer::valueOf).toList()).containsExactlyInAnyOrderElementsOf(entities);
     }
 
     @Test
     void testParallelStream() {
         // Setup
-        var entities = new IntBag(4);
-        for (int i = 1; i <= 10; i++) {
-            entities.add(i);
+        var entities = new ArrayList<Integer>(4);
+        for (int i = 1; i <= 1000; i++) {
+            entities.add(world.createEntity());
+            entities.add(world.createEntity(new C1()));
+            entities.add(world.createEntity(new C2()));
+            entities.add(world.createEntity(new C1(), new C2()));
+            entities.add(world.createEntity(new C1(), new C2(), new C3()));
         }
 
-        var composition = compositionManager.create(EMPTY, spec -> entities);
-
-        // Process
-        var processed = composition.parallelStream().toArray();
+        var composition = compositionManager.createComposition(EMPTY);
 
         // Verify
-        assertThat(processed)
-                .hasSize(10)
-                .containsExactlyInAnyOrder(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+        assertThat(composition.parallelStream().mapToObj(Integer::valueOf).toList()).containsExactlyInAnyOrderElementsOf(entities);
     }
 
     @Nested
@@ -1191,46 +1167,6 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Test
-        void testUpdatedEntities_WhenPreviousComposition_RemovesEntities() {
-            // Setup
-            var entities = new HashSet<Integer>();
-            bagManager.ensureEntitySize(10000);
-
-            var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
-            var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
-
-            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
-            var componentMask12 = storageEngine.getComponentMask(component(C1.class), component(C2.class));
-            var componentMask2 = storageEngine.getComponentMask(component(C2.class));
-
-            var mask42 = componentMask1;
-            var mask1337 = componentMask2;
-            var mask9001 = componentMask1;
-
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask42));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask1337));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, mask9001));
-
-            // Update entity
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(42, mask42, componentMask12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(42, mask42, componentMask12));
-            
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(1337, mask1337, componentMask12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, mask1337, componentMask12));
-            
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(9001, mask9001, componentMask2));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, mask9001, componentMask2));
-
-            // Verify
-            composition1.process(entities::add);
-            assertThat(entities).containsExactlyInAnyOrder(42, 1337);
-
-            entities.clear();
-            composition2.process(entities::add);
-            assertThat(entities).containsExactlyInAnyOrder(42, 1337, 9001);
-        }
-
-        @Test
         void testUpdatedEntities_WhenPreviousComposition_CallsRemoved() {
             // Setup
             bagManager.ensureEntitySize(10000);
@@ -1266,13 +1202,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             // Update entity
             eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(7, mask7, componentMask1));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(7, mask7, componentMask1));
-            
+
             eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(42, mask42, componentMask12));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(42, mask42, componentMask12));
-            
+
             eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(1337, mask1337, componentMask12));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, mask1337, componentMask12));
-            
+
             eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(9001, mask9001, componentMask3));
             eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, mask9001, componentMask3));
 
@@ -1286,100 +1222,6 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
     @Nested
     class RemovedTest {
-
-        @Test
-        void testRemovedEntities() {
-            // Setup
-            var initial = new IntBag(4);
-            initial.add(42);
-            initial.add(1337);
-            initial.add(31337);
-            initial.add(9001);
-
-            var componentMask = storageEngine.getComponentMask(component(C1.class));
-            var composition = compositionManager.create(EMPTY, spec -> initial);
-
-            // Remove entity
-            eventManager.dispatchEvent(EntityRemovedEvent.get(42, componentMask));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(1337, componentMask));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(9001, componentMask));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(9002, componentMask));
-
-            // Verify
-            var entities = new IntBag(4);
-            composition.process(entities::add);
-
-            assertThat(entities.getSize()).as("size").isEqualTo(1);
-            assertThat(entities.getData()).containsOnly(0, 31337);
-        }
-
-        @Test
-        void testRemovedCallback() {
-            // Setup
-            var initial = new IntBag(4);
-            initial.add(42);
-            initial.add(1337);
-            initial.add(31337);
-
-            var removed = new IntBag(2);
-
-            var componentMask = storageEngine.getComponentMask(component(C1.class));
-            var composition = compositionManager.create(EMPTY, spec -> initial);
-
-            // Add callback
-            composition.removed(removed::add);
-            assertThat(removed.getSize()).as("size").isZero();
-
-            // Remove entity
-            eventManager.dispatchEvent(EntityRemovedEvent.get(42, componentMask));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(1337, componentMask));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(9001, componentMask));
-
-            // Verify
-            assertThat(removed.getSize()).as("size").isEqualTo(2);
-            assertThat(removed.contains(42)).as("contains 42").isTrue();
-            assertThat(removed.contains(1337)).as("contains 1337").isTrue();
-        }
-
-        @Test
-        void testMultipleRemovedCallbacks() {
-            // Setup
-            var initial = new IntBag(4);
-            initial.add(42);
-            initial.add(1337);
-            initial.add(31337);
-
-            var removed1 = new IntBag(2);
-            var removed2 = new ArrayList<Integer>();
-            var removed3 = new HashSet<Integer>();
-
-            var componentMask = storageEngine.getComponentMask(component(C1.class));
-            var composition = compositionManager.create(EMPTY, spec -> initial);
-
-            // Add callbacks
-            composition.removed(removed1::add);
-            assertThat(removed1.getSize()).as("size").isZero();
-
-            composition.removed(removed2::add);
-            assertThat(removed2).isEmpty();
-
-            composition.removed(removed3::add);
-            assertThat(removed3).isEmpty();
-
-            // Remove entity
-            eventManager.dispatchEvent(EntityRemovedEvent.get(42, componentMask));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(1337, componentMask));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(9001, componentMask));
-
-            // Verify
-            assertThat(removed1.getSize()).as("size").isEqualTo(2);
-            assertThat(removed1.contains(42)).as("contains 42").isTrue();
-            assertThat(removed1.contains(1337)).as("contains 1337").isTrue();
-
-            assertThat(removed2).containsExactlyInAnyOrder(42, 1337);
-
-            assertThat(removed3).containsExactlyInAnyOrder(42, 1337);
-        }
 
         @Test
         void testAddComponentInRemoved_ShouldThrow() {
@@ -2790,6 +2632,134 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             assertThat(composition1.parallelStream()).hasSize(expected1.length);
             assertThat(composition8.parallelStream()).hasSize(expected8.length);
             assertThat(compositionAll.parallelStream()).hasSize(expected1.length + expected8.length + expected18.length);
+        }
+
+        @Test
+        void testProcess_WithUnprocessedComponentAddition() {
+            var entityId = world.createEntity();
+
+            var composition = composition(Composition.all(), component(C1.class));
+            var composition1 = composition(Composition.all(C1.class), component(C1.class));
+            var compositionNot1 = composition(Composition.none(C1.class), component(C1.class));
+
+            // Verify state before change
+            assertThat(composition.isInterested(entityId)).isTrue();
+            assertThat(composition.stream()).contains(entityId);
+
+            assertThat(composition1.isInterested(entityId)).isFalse();
+            assertThat(composition1.stream()).doesNotContain(entityId);
+
+            assertThat(compositionNot1.isInterested(entityId)).isTrue();
+            assertThat(compositionNot1.stream()).contains(entityId);
+
+            // Modify
+            var component = new C1();
+            world.getComponents(C1.class).add(entityId, component);
+
+            // Verify state before process of change
+            assertThat(composition.isInterested(entityId)).isTrue();
+            assertThat(composition.stream()).contains(entityId);
+
+            assertThat(composition1.isInterested(entityId)).isFalse();
+            assertThat(composition1.stream()).doesNotContain(entityId);
+
+            assertThat(compositionNot1.isInterested(entityId)).isTrue();
+            assertThat(compositionNot1.stream()).contains(entityId);
+
+            var found = new AtomicBoolean();
+            process(compositionNot1, component(C1.class), (id, c1) -> {
+                if (id == entityId) {
+                    assertThat(c1).as("read component before process").isNotNull();
+                    found.set(true);
+                }
+            });
+            assertThat(found.get()).as("process entity before process").isTrue();
+
+            // Process
+            world.process();
+
+            // Verify state after process of change
+            assertThat(composition.isInterested(entityId)).isTrue();
+            assertThat(composition.stream()).contains(entityId);
+
+            assertThat(composition1.isInterested(entityId)).isTrue();
+            assertThat(composition1.stream()).contains(entityId);
+
+            found.set(false);
+            process(composition1, component(C1.class), (id, c1) -> {
+                if (id == entityId) {
+                    assertThat(c1).as("read component after process").isSameAs(component);
+                    found.set(true);
+                }
+            });
+            assertThat(found.get()).as("process entity after process").isTrue();
+
+            assertThat(compositionNot1.isInterested(entityId)).isFalse();
+            assertThat(compositionNot1.stream()).doesNotContain(entityId);
+        }
+
+        @Test
+        void testProcess_WithUnprocessedComponentRemoval() {
+            var component = new C1();
+            var entityId = world.createEntity(component);
+
+            var composition = composition(Composition.all(), component(C1.class));
+            var composition1 = composition(Composition.all(C1.class), component(C1.class));
+            var compositionNot1 = composition(Composition.none(C1.class), component(C1.class));
+
+            // Verify state before change
+            assertThat(composition.isInterested(entityId)).isTrue();
+            assertThat(composition.stream()).contains(entityId);
+
+            assertThat(composition1.isInterested(entityId)).isTrue();
+            assertThat(composition1.stream()).contains(entityId);
+
+            assertThat(compositionNot1.isInterested(entityId)).isFalse();
+            assertThat(compositionNot1.stream()).doesNotContain(entityId);
+
+            // Modify
+            world.getComponents(C1.class).remove(entityId);
+
+            // Verify state before process of change
+            assertThat(composition.isInterested(entityId)).isTrue();
+            assertThat(composition.stream()).contains(entityId);
+
+            assertThat(composition1.isInterested(entityId)).isTrue();
+            assertThat(composition1.stream()).contains(entityId);
+
+            var found = new AtomicBoolean();
+            process(composition1, component(C1.class), (id, c1) -> {
+                if (id == entityId) {
+                    assertThat(c1).as("read component").isSameAs(component);
+                    found.set(true);
+                }
+            });
+            assertThat(found.get()).as("process entity before process").isTrue();
+
+            assertThat(compositionNot1.isInterested(entityId)).isFalse();
+            assertThat(compositionNot1.stream()).doesNotContain(entityId);
+
+            // Process
+            world.process();
+
+            // Verify state after process of change
+            assertThat(composition.isInterested(entityId)).isTrue();
+            assertThat(composition.stream()).contains(entityId);
+
+            assertThat(composition1.isInterested(entityId)).isFalse();
+            assertThat(composition1.stream()).doesNotContain(entityId);
+
+            assertThat(compositionNot1.isInterested(entityId)).isTrue();
+            assertThat(compositionNot1.stream()).contains(entityId);
+
+            found.set(false);
+            process(compositionNot1, component(C1.class), (id, c1) -> {
+                if (id == entityId) {
+                    assertThat(c1).as("read component after process").isNull();
+                    found.set(true);
+                }
+            });
+            assertThat(found.get()).as("process entity after process").isTrue();
         }
 
         @Nested

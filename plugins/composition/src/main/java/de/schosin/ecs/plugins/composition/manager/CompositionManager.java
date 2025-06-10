@@ -38,7 +38,9 @@ import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -51,6 +53,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private final BagManager bagManager;
     private final ComponentMapperManager componentMapperManager;
 
+    private final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 64);
     private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
 
     private final Bag<Bag<CompositionImpl>> compositionsByMask = new Bag<>(Bag.class, 64);
@@ -72,6 +75,16 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> handleBeforeUpdate(event.entityId(), event.componentMask(), event.newComponentMask()));
         eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.previousComponentMask(), event.componentMask()));
         eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.componentMask()));
+        eventManager.registerEventHandler(ArchetypeAddedEvent.class, this::handleArchetypeAdded);
+    }
+
+    private void handleArchetypeAdded(ArchetypeAddedEvent event) {
+        var archetype = event.archetype();
+        this.archetypes.add(archetype);
+
+        for (var composition : compositions.values()) {
+            composition.offer(archetype);
+        }
     }
 
     @Override
@@ -109,6 +122,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private CompositionImpl buildComposition(EngineSpec spec, Function<ComponentsPredicate, IntBag> entities) {
         // Create composition
         var composition = new CompositionImpl(spec, entities.apply(spec), bagManager.createEntityIntBag());
+
+        // Offer known archetypes to composition
+        for (var archetype : archetypes) {
+            composition.offer(archetype);
+        }
 
         // Add composition to ComponentMask lookup 
         synchronized (compositionsByMask) {
@@ -221,10 +239,12 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         private final EngineSpec spec;
 
-        private final IntBag entities;
         private final IntBag lookup;
-
         private final IntBag maskCache;
+
+        private final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 8);
+
+        private int count;
 
         private IntConsumer inserted;
         private Bag<IntConsumer> moreInserted;
@@ -232,20 +252,30 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         private IntConsumer removed;
         private Bag<IntConsumer> moreRemoved;
 
-        private final Map<ComponentType<?, ?>, CompositionData<?>> compositionData = new ConcurrentHashMap<>();
+        @SuppressWarnings("rawtypes")
+        private final Map<ComponentType<?, ?>, AbstractComposition> compositionData = new ConcurrentHashMap<>();
 
         private CompositionImpl(EngineSpec spec, IntBag entities, IntBag lookup) {
             this.spec = spec;
 
-            this.entities = entities;
-            this.lookup = lookup;
+            this.lookup = bagManager.createEntityIntBag();
 
-            var data = entities.getData();
             for (int i = 0, s = entities.getSize(); i < s; i++) {
-                this.lookup.set(data[i], toLookup(i));
+                this.lookup.set(entities.get(i), 1);
             }
 
             this.maskCache = new IntBag(64);
+
+            this.count = entities.getSize();
+        }
+
+        public void offer(Archetype archetype) {
+            var componentMask = archetype.getComponentMask();
+
+            if (spec.isInterested(componentMask)) {
+                archetypes.add(archetype);
+                maskCache.set(componentMask.getId(), 1);
+            }
         }
 
         @SuppressWarnings("unchecked")
@@ -285,10 +315,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                     return result;
                 }
 
-                var compositionData = (D) CompositionManagerHelper.createCompositionData(this, dataType);
+                var compositionData = (AbstractCompositionN<T, P>) CompositionManagerHelper.createCompositionData(this, dataType);
+
                 this.compositionData.put(dataType, compositionData);
 
-                return compositionData;
+                return (D) compositionData;
             }
         }
 
@@ -317,12 +348,12 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         private boolean containsEntity(int entityId) {
-            return this.lookup.get(entityId) != 0;
+            return this.lookup.get(entityId) == 1;
         }
 
         private void inserted(int entityId) {
-            this.lookup.set(entityId, toLookup(this.entities.getSize()));
-            this.entities.add(entityId);
+            this.lookup.set(entityId, 1);
+            this.count++;
 
             if (inserted == null) {
                 return;
@@ -340,19 +371,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         private void removed(int entityId) {
-            // Retrieve index for fast removal
-            var index = this.lookup.get(entityId);
-            var lookupIndex = fromLookup(index);
-
             // Remove entity
             this.lookup.set(entityId, 0);
-            this.entities.removeIndex(lookupIndex);
-
-            // Fix lookup due to implementation detail of Bag#removeIndex (moves last element to removed position)
-            var moved = this.entities.get(lookupIndex);
-            if (moved != 0) {
-                this.lookup.set(moved, index);
-            }
+            this.count--;
 
             if (removed == null) {
                 return;
@@ -367,14 +388,6 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                     data[i].accept(entityId);
                 }
             }
-        }
-
-        private int toLookup(int index) {
-            return index == 0 ? -1 : index;
-        }
-
-        private int fromLookup(int index) {
-            return index == -1 ? 0 : index;
         }
 
         public boolean isInterested(@NonNull ComponentMask componentMask) {
@@ -445,19 +458,23 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         @Override
         public int getCount() {
-            return this.entities.getSize();
+            return this.count;
         }
 
         @Override
         public boolean isEmpty() {
-            return this.entities.isEmpty();
+            return this.count == 0;
         }
 
         @Override
         public void process(@NonNull IntConsumer process) {
-            var data = this.entities.getData();
-            for (int i = 0, s = this.entities.getSize(); i < s; i++) {
-                process.accept(data[i]);
+            for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+                var archetype = archetypes.get(i);
+                var entities = archetype.getEntities();
+
+                for (int e = 0, es = entities.getSize(); e < es; e++) {
+                    process.accept(entities.get(e));
+                }
             }
         }
 
@@ -472,12 +489,12 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         private CompositionSpliterator spliterator() {
-            return new CompositionSpliterator(this.entities.getData(), 0, -1, this.entities.getSize());
+            return new CompositionSpliterator(archetypes);
         }
 
         @Override
         public String toString() {
-            return "CompositionImpl [spec=" + this.spec + ", entities=" + this.entities.getSize() + "]";
+            return "CompositionImpl(spec = " + this.spec + ", count = " + this.count + ")";
         }
 
     }
@@ -592,60 +609,82 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     private static class CompositionSpliterator implements Spliterator.OfInt {
 
-        private final int[] data;
+        private final Bag<ImmutableIntBag> bags;
         private final int size;
 
-        private int index;
-        private int fence;
+        private int currentIndex = 0;
+        private int currentEntityIndex = 0;
 
-        private CompositionSpliterator(int[] data, int index, int fence, int size) {
-            this.data = data;
-            this.index = index;
-            this.fence = fence;
+        public CompositionSpliterator(Bag<Archetype> archetypes) {
+            this.bags = new Bag<>(ImmutableIntBag.class, archetypes.getSize());
+            this.size = archetypes.getSize();
+
+            for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+                this.bags.add(archetypes.get(i).getEntities());
+            }
+        }
+
+        public CompositionSpliterator(Bag<ImmutableIntBag> bags, int size) {
+            this.bags = bags;
             this.size = size;
         }
 
         @Override
         public long estimateSize() {
-            return getFence() - index;
+            if (this.bags.isEmpty()) {
+                return 0L;
+            }
+
+            var count = 0L;
+            for (int i = currentIndex; i < size; i++) {
+                count += this.bags.get(i).getSize() - currentEntityIndex;
+            }
+
+            return count;
         }
 
         @Override
         public int characteristics() {
-            return Spliterator.SIZED | Spliterator.DISTINCT | Spliterator.NONNULL | Spliterator.SUBSIZED;
+            return Spliterator.DISTINCT | Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED;
         }
 
         @Override
         public OfInt trySplit() {
-            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
+            if (size - currentIndex <= 2) {
+                return null;
+            }
 
-            return (lo >= mid)
-                    ? null
-                    : new CompositionSpliterator(data, lo, index = mid, size);
+            var midPoint = currentIndex + size / 2;
+            var leftBag = new Bag<>(ImmutableIntBag.class, midPoint - currentIndex);
+
+            for (int i = currentIndex; i < midPoint; i++) {
+                leftBag.add(bags.get(i));
+            }
+
+            currentIndex = midPoint;
+
+            return new CompositionSpliterator(leftBag, leftBag.getSize());
         }
 
         @Override
         public boolean tryAdvance(IntConsumer action) {
-            int hi = getFence(), i = index;
+            while (currentIndex < size) {
+                var entities = bags.get(currentIndex);
 
-            if (i < hi) {
-                index = i + 1;
-                int e = data[i];
-                action.accept(e);
+                if (currentEntityIndex >= entities.getSize()) {
+                    currentIndex++;
+                    currentEntityIndex = 0;
+
+                    continue;
+                }
+
+                var entityId = entities.get(currentEntityIndex++);
+                action.accept(entityId);
 
                 return true;
             }
 
             return false;
-        }
-
-        private int getFence() {
-            int hi;
-            if ((hi = fence) < 0) {
-                hi = fence = size;
-            }
-
-            return hi;
         }
 
     }

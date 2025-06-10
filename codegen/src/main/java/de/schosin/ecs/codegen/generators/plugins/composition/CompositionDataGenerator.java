@@ -32,7 +32,6 @@ public class CompositionDataGenerator {
 
         public static JavaFile create(String packageName) {
             return JavaFile.builder(packageName, createCompositionData1())
-                    .addStaticImport(Utils.COMPONENT_TYPE, "component")
                     .skipJavaLangImports(true)
                     .indent(Utils.INDENT)
                     .build();
@@ -55,7 +54,6 @@ public class CompositionDataGenerator {
 
         public static JavaFile create(String packageName, int n) {
             return JavaFile.builder(packageName, createCompositionDataN(n))
-                    .addStaticImport(Utils.COMPONENT_TYPE, "component")
                     .skipJavaLangImports(true)
                     .indent(Utils.INDENT)
                     .build();

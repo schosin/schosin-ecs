@@ -27,6 +27,13 @@
             <version>${project.version}</version>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>de.schosin.ecs.buildtools</groupId>
+            <artifactId>ecs-build-tools-codegen-apt</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+            <scope>test</scope>
+        </dependency>
     
         <dependency>
             <groupId>de.schosin.ecs</groupId>
@@ -58,6 +65,11 @@
                             <artifactId>ecs-codegen</artifactId>
                             <version>${project.version}</version>
                         </annotationProcessorPath>
+                        <annotationProcessorPath>
+                            <groupId>de.schosin.ecs.buildtools</groupId>
+                            <artifactId>ecs-build-tools-codegen-apt</artifactId>
+                            <version>${project.version}</version>
+                        </annotationProcessorPath>
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <arg>-AcompositionParams=${codegen.compositionParams}</arg>
@@ -65,20 +77,6 @@
                         <arg>-AtransmuterParams=${codegen.transmuterParams}</arg>
                     </compilerArgs>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>default-testCompile</id>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <annotationProcessorPath>
-                                    <groupId>de.schosin.ecs.buildtools</groupId>
-                                    <artifactId>ecs-build-tools-codegen-apt</artifactId>
-                                    <version>${project.version}</version>
-                                </annotationProcessorPath>
-                            </annotationProcessorPaths>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
