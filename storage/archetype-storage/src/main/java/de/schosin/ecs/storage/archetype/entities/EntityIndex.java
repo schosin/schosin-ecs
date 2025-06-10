@@ -7,9 +7,11 @@ import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
+import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeData;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeDataImpl;
+import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeDataSoaImpl;
 import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
@@ -25,6 +27,8 @@ import de.schosin.ecs.utils.collections.Pool;
 public class EntityIndex {
 
     private final StorageWorld world;
+    private final ArchetypeStorageConfig config;
+
     private final ComponentIndex componentIndex;
     private final EntityRelationIndex relationIndex;
 
@@ -33,8 +37,10 @@ public class EntityIndex {
 
     private final Pool<Bag<Object>> componentsPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class), Bag::clear);
 
-    public EntityIndex(StorageWorld world, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
+    public EntityIndex(StorageWorld world, ArchetypeStorageConfig config, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
         this.world = world;
+        this.config = config;
+
         this.componentIndex = componentIndex;
         this.relationIndex = relationIndex;
 
@@ -168,8 +174,11 @@ public class EntityIndex {
         }
     }
 
-    private ArchetypeDataImpl createArchetype(ComponentMaskImpl componentMask) {
-        return new ArchetypeDataImpl(componentIndex, relationIndex, this, componentMask, world);
+    private ArchetypeData createArchetype(ComponentMaskImpl componentMask) {
+        return switch (config.variant()) {
+            case ArrayOfStructs -> new ArchetypeDataImpl(componentIndex, relationIndex, this, componentMask, world);
+            case StructOfArrays -> new ArchetypeDataSoaImpl(componentIndex, relationIndex, this, componentMask, world);
+        };
     }
 
     public ComponentMask deleteEntity(int entityId) {
@@ -255,7 +264,7 @@ public class EntityIndex {
     private static class ArchetypePointer {
 
         private ArchetypeData archetype;
-        private int index;
+        private long index;
 
         @Override
         public String toString() {

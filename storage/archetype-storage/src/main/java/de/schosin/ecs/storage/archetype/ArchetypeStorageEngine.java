@@ -42,7 +42,7 @@ public class ArchetypeStorageEngine implements StorageEngine {
 
         var componentIndex = new ComponentIndex(storageConfig.classIdCount(), storageConfig.relationCount());
         var relationIndex = new EntityRelationIndex(world);
-        var entityIndex = new EntityIndex(world, componentIndex, relationIndex);
+        var entityIndex = new EntityIndex(world, storageConfig, componentIndex, relationIndex);
 
         this.componentStorage = new ComponentStorageImpl(world, componentIndex, entityIndex, relationIndex);
         this.entityStorage = new EntityStorageImpl(componentIndex, entityIndex, componentStorage);
