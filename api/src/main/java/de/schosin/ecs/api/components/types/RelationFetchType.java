@@ -3,6 +3,7 @@ package de.schosin.ecs.api.components.types;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
+import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 
 /**
  * Describes entity fetch relations.
@@ -34,8 +35,8 @@ public sealed interface RelationFetchType<R, T, X> extends ComponentType<EntityR
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
-            return this.equals(otherType);
+        public boolean matches(RegularComponentType<?, ?> otherType) {
+            return otherType instanceof RegularEntityRelationType<?, ?> relationType && relationType.relationship().equals(this.relationship);
         }
 
         @Override
@@ -58,8 +59,8 @@ public sealed interface RelationFetchType<R, T, X> extends ComponentType<EntityR
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
-            return this.equals(otherType);
+        public boolean matches(RegularComponentType<?, ?> otherType) {
+            return otherType instanceof RegularEntityRelationType<?, ?> relationType && relationType.relationship().equals(this.relationship);
         }
 
         @Override

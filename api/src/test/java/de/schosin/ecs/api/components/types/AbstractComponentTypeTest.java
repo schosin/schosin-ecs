@@ -24,6 +24,7 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relation.Relationship;
 import de.schosin.ecs.api.components.Relation.Target;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.MatchesTestCase;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.data.DataProcessor;
 
 public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestCase> {
@@ -33,7 +34,7 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
     protected static final Class<?> SYNTHETIC_CLASS = ((Runnable) () -> {
     }).getClass();
 
-    private static final Set<Class<? extends ComponentType<?, ?>>> EXPECTED_COMPONENT_TYPES = resolveComponentTypeClasses();
+    private static final Set<Class<? extends RegularComponentType<?, ?>>> EXPECTED_COMPONENT_TYPES = resolveComponentTypeClasses();
 
     protected final Class<T> matchesTestCases;
 
@@ -47,7 +48,7 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
 
         ComponentType<?, ?> type();
 
-        ComponentType<?, ?> otherType();
+        RegularComponentType<?, ?> otherType();
 
         boolean matches();
 
@@ -121,8 +122,8 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static Set<Class<? extends ComponentType<?, ?>>> resolveComponentTypeClasses() {
-        return Set.copyOf(resolveComponentTypeClasses((Class) ComponentType.class, new HashSet<>()));
+    private static Set<Class<? extends RegularComponentType<?, ?>>> resolveComponentTypeClasses() {
+        return Set.copyOf(resolveComponentTypeClasses((Class) RegularComponentType.class, new HashSet<>()));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })

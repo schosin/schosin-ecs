@@ -22,8 +22,8 @@ import de.schosin.ecs.api.components.mappers.CustomComponents;
 public non-sealed interface CustomComponentType<T, R, C extends CustomComponents<T, R>> extends ComponentType<T, R> {
 
     @Override
-    default boolean matches(ComponentType<?, ?> otherType) {
-        return this.equals(otherType);
+    default boolean matches(RegularComponentType<?, ?> otherType) {
+        return false;
     }
 
 }

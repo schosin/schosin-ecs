@@ -22,7 +22,7 @@ public record ClassType<T>(Class<T> clazz) implements RegularComponentType<T, T>
     }
 
     @Override
-    public boolean matches(ComponentType<?, ?> otherType) {
+    public boolean matches(RegularComponentType<?, ?> otherType) {
         return this.equals(otherType);
     }
 

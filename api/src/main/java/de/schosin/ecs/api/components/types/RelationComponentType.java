@@ -51,7 +51,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
+        public boolean matches(RegularComponentType<?, ?> otherType) {
             return this.equals(otherType);
         }
 
@@ -79,7 +79,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
+        public boolean matches(RegularComponentType<?, ?> otherType) {
             return this.equals(otherType);
         }
 
@@ -110,7 +110,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
+        public boolean matches(RegularComponentType<?, ?> otherType) {
             return this.equals(otherType);
         }
 
@@ -136,7 +136,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
+        public boolean matches(RegularComponentType<?, ?> otherType) {
             return this.equals(otherType);
         }
 

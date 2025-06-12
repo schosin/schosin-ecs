@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 
@@ -192,7 +193,10 @@ final class EngineSpecImpl implements EngineSpec {
 class Helper {
 
     static boolean matchesComponents(Set<ComponentType<?, ?>> types, Set<ComponentType<?, ?>> otherTypes) {
-        return otherTypes == null || (types != null && otherTypes.stream().allMatch(otherType -> types.stream().anyMatch(type -> otherType.matches(type))));
+        return otherTypes == null || (types != null && otherTypes.stream().allMatch(otherType -> types.stream().anyMatch(type -> switch (type) {
+            case RegularComponentType<?, ?> regular -> otherType.matches(regular);
+            default -> otherType.equals(type);
+        })));
     }
 
     static boolean matchesSpec(Set<EngineSpec> specs, Set<EngineSpec> otherSpecs) {

@@ -41,11 +41,10 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
+        public boolean matches(RegularComponentType<?, ?> otherType) {
             return switch (otherType) {
                 case ComponentRelationType<?, ?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship()) && this.targetBound.isAssignableFrom(relation.target());
                 case ExclusiveComponentRelationType<?, ?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship()) && this.targetBound.isAssignableFrom(relation.target());
-                case WildcardComponentRelationType<?, ?> wildcard -> this.relationshipBound.isAssignableFrom(wildcard.relationshipBound()) && this.targetBound.isAssignableFrom(wildcard.targetBound());
                 default -> false;
             };
         }
@@ -72,11 +71,10 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
+        public boolean matches(RegularComponentType<?, ?> otherType) {
             return switch (otherType) {
                 case EntityRelationType<?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship());
                 case ExclusiveEntityRelationType<?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship());
-                case WildcardEntityRelationType<?> wildcard -> this.relationshipBound.isAssignableFrom(wildcard.relationshipBound());
                 default -> false;
             };
         }
@@ -100,9 +98,10 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
         }
 
         @Override
-        public boolean matches(ComponentType<?, ?> otherType) {
+        public boolean matches(RegularComponentType<?, ?> otherType) {
             return switch (otherType) {
-                case WildcardEntityRelationFetchType<?, ?> wildcard -> this.relationshipBound.isAssignableFrom(wildcard.relationshipBound()) & this.fetch.equals(wildcard.fetch);
+                case EntityRelationType<?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship());
+                case ExclusiveEntityRelationType<?> relation -> this.relationshipBound.isAssignableFrom(relation.relationship());
                 default -> false;
             };
         }

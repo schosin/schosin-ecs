@@ -15,8 +15,8 @@ public record ComponentSetType<T extends ComponentSet<P>, P extends DataProcesso
     }
 
     @Override
-    public boolean matches(ComponentType<?, ?> otherType) {
-        return this.equals(otherType);
+    public boolean matches(RegularComponentType<?, ?> otherType) {
+        return false;
     }
 
     @Override

@@ -22,12 +22,8 @@ public record Wildcard<T>(Class<T> bound) implements ComponentType<T, ComponentR
     }
 
     @Override
-    public boolean matches(ComponentType<?, ?> otherType) {
-        return switch (otherType) {
-            case ClassType<?> classType -> this.bound.isAssignableFrom(classType.clazz());
-            case Wildcard<?> wildcard -> this.bound.isAssignableFrom(wildcard.bound());
-            default -> false;
-        };
+    public boolean matches(RegularComponentType<?, ?> otherType) {
+        return otherType instanceof ClassType<?> classType && this.bound.isAssignableFrom(classType.clazz());
     }
 
     @Override

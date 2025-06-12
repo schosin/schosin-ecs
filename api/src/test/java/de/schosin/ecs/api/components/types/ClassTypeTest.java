@@ -1,11 +1,8 @@
 package de.schosin.ecs.api.components.types;
 
 import static de.schosin.ecs.api.components.types.ComponentType.component;
-import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.types.ComponentType.relation;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,6 +14,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestCases> {
 
@@ -31,22 +29,13 @@ class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestC
         componentRelation(component(Component.class), relation(RelationshipComponent.class, TargetComponent.class), false),
         exclusiveComponentRelation(component(Component.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
         entityRelation(component(Component.class), relation(EntityRelationshipComponent.class), false),
-        exclusiveEntityRelation(component(Component.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
-        wildcardObject(component(Component.class), wildcard(Object.class), false),
-        wildcardSameClass(component(NonFinalComponent.class), wildcard(NonFinalComponent.class), false),
-        wildcardParentInterface(component(FinalComponent.class), wildcard(ComponentInterface.class), false),
-        componentSet(component(Component.class), componentSet(MyComponentSet.class, MyComponentSet.Processor.class), false),
-        entityFetch(component(Component.class), relation(EntityRelationshipComponent.class, FETCH), false),
-        exclusiveEntityFetch(component(Component.class), exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), false),
-        wildcardComponentRelation(component(Component.class), wildcardRelation(Object.class, Object.class), false),
-        wildcardEntityRelation(component(Component.class), wildcardRelation(Object.class), false),
-        wildcardEntityFetchRelation(component(Component.class), wildcardRelation(Object.class, component(Component.class)), false);
+        exclusiveEntityRelation(component(Component.class), exclusiveRelation(ExclusiveEntityRelationship.class), false);
 
         private final ClassType<?> type;
-        private final ComponentType<?, ?> otherType;
+        private final RegularComponentType<?, ?> otherType;
         private final boolean matches;
 
-        private MatchesTestCases(ClassType<?> type, ComponentType<?, ?> otherType, boolean matches) {
+        private MatchesTestCases(ClassType<?> type, RegularComponentType<?, ?> otherType, boolean matches) {
             this.type = type;
             this.otherType = otherType;
             this.matches = matches;
@@ -58,7 +47,7 @@ class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestC
         }
 
         @Override
-        public ComponentType<?, ?> otherType() {
+        public RegularComponentType<?, ?> otherType() {
             return otherType;
         }
 

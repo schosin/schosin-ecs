@@ -145,14 +145,14 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
      * 
      * <p>
      * {@link RegularComponentType Regular component types} should only implement this
-     * by {@link Object#equals(Object)}. Wildcard types should return true for all
-     * component types they match against.
+     * by {@link Object#equals(Object)}. Wildcard or collection types should return true 
+     * for all regular component types they match against.
      * </p>
      * 
      * @param otherType other component type
      * @return true if this is equal to or is interested in the other component type 
      */
-    boolean matches(ComponentType<?, ?> otherType);
+    boolean matches(RegularComponentType<?, ?> otherType);
 
 }
 
