@@ -230,22 +230,26 @@ public class ComponentSetsGenerator {
                     .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
                     .addParameter(TypeName.INT, "entityId");
 
-            var nullCase = "process(entityId";
+            var nullCase = CodeBlock.builder().add("process(entityId");
             var defaultCase = "process(entityId";
 
             for (var component : result.components) {
                 process.addParameter(component.typeName, component.name);
 
-                nullCase += ", null";
+                if (result.components.size() == 1) {
+                    nullCase.add(", ($1T) null", component.type);
+                } else {
+                    nullCase.add(", null");
+                }
                 defaultCase += ", data.%s()".formatted(component.name);
             }
 
-            nullCase += ")";
+            nullCase.add(")");
             defaultCase += ")";
 
             var defaultProcessBody = CodeBlock.builder()
                     .beginControlFlow("if (data == null)")
-                    .addStatement(nullCase)
+                    .addStatement(nullCase.build())
                     .addStatement("return")
                     .endControlFlow()
                     .addStatement(defaultCase)
@@ -366,7 +370,7 @@ public class ComponentSetsGenerator {
             componentSetData.initializer(componentSetDataInitializer.add(System.lineSeparator() + "        .build()").build());
             factory.addCode(factoryBody.addStatement(")").build());
             getInstance.addStatement("return instance");
-            
+
             toStringBody.add(System.lineSeparator() + "        ");
             toStringBody.addStatement(".append(')').toString()");
 
