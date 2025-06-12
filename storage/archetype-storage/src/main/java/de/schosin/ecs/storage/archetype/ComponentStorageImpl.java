@@ -316,4 +316,23 @@ public class ComponentStorageImpl implements ComponentStorage {
         }
     }
 
+    @Override
+    public RegularComponentType<?, ?>[] getRegularComponentTypes(ComponentType<?, ?> bound) {
+        if (bound instanceof RegularComponentType<?, ?> regular) {
+            return new RegularComponentType<?, ?>[] { regular };
+        }
+
+        var components = getComponents(bound);
+        if (components.isEmpty()) {
+            return new RegularComponentType<?, ?>[0];
+        }
+
+        var result = new RegularComponentType<?, ?>[components.getSize()];
+        for (int i = 0, s = components.getSize(); i < s; i++) {
+            result[i] = components.get(i).type();
+        }
+
+        return result;
+    }
+
 }

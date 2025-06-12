@@ -15,6 +15,13 @@ public interface Archetype {
 
     ImmutableIntBag getEntities();
 
+    /**
+     * Returns the index of the component in this archetype, or -1 if not contained
+     */
+    int getComponentIndex(int componentId);
+    
+    EntityData getEntityData();
+
     EntityData getEntityData(RegularComponentType<?, ?>... componentTypes);
 
 }

@@ -90,4 +90,13 @@ public class ComponentRelationResultImpl implements ComponentRelationResult, Poo
         this.relations.clear();
     }
 
+    @Override
+    public String toString() {
+        return new StringBuilder()
+                .append("ComponentRelationResultImpl(")
+                .append("relations = ").append(this.relations)
+                .append(")")
+                .toString();
+    }
+
 }

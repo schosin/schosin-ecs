@@ -15,6 +15,7 @@ import org.jspecify.annotations.Nullable;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.ArchetypeStorage;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.EntityStorage;
@@ -57,6 +58,11 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
+    public DataAccessor getAccessor(int entityId) {
+        return entityIndex.getAccessor(entityId);
+    }
+
+    @Override
     public ComponentMask getComponentMaskForEntity(int entityId) {
         var data = entityIndex.getArchetypeDataForEntity(entityId);
         if (data == null) {
@@ -85,11 +91,8 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         return componentMask;
     }
 
-    @Override
-    public ComponentMaskImpl addToComponentMask(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
-        if (!(mask instanceof ComponentMaskImpl componentMask)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
-        }
+    private ComponentMaskImpl addToComponentMask(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
+        var componentMask = (ComponentMaskImpl) mask;
 
         if (componentTypes.isEmpty()) {
             return componentMask;
@@ -121,8 +124,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         return componentMask;
     }
 
-    @Override
-    public ComponentMaskImpl removeFromComponentMask(ComponentMask componentMask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
+    private ComponentMaskImpl removeFromComponentMask(ComponentMask componentMask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
         var regularComponentTypes = componentTypesPool.getInstance();
         fillRegularComponentTypes(componentTypes, regularComponentTypes);
 
@@ -133,31 +135,29 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     private ComponentMaskImpl removeRegularFromComponentMask(ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
-        if (!(mask instanceof ComponentMaskImpl result)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
-        }
+        var componentMask = (ComponentMaskImpl) mask;
 
         if (componentTypes.isEmpty()) {
-            return result;
+            return componentMask;
         }
 
         var nextComponentTypes = componentTypesPool.getInstance();
-        var componentMask = result;
+        var result = componentMask;
 
         for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
             var componentType = componentTypes.get(i);
             var component = componentStorage.getComponent(componentType);
 
-            if (!componentMask.contains(component.id())) {
+            if (!result.contains(component.id())) {
                 continue;
             }
 
-            var remove = componentMask.getRemove();
+            var remove = result.getRemove();
             remove.ensureCapacity(component.id());
 
             var next = remove.get(component.id());
             if (next == null) {
-                nextComponentTypes.addAll(componentMask.getComponentTypes());
+                nextComponentTypes.addAll(result.getComponentTypes());
                 nextComponentTypes.remove(componentType);
 
                 next = resolveComponentMask(nextComponentTypes);
@@ -166,11 +166,11 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
                 nextComponentTypes.clear();
             }
 
-            componentMask = next;
+            result = next;
         }
 
         componentTypesPool.free(nextComponentTypes);
-        return componentMask;
+        return result;
     }
 
     @Override
@@ -222,9 +222,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     private ComponentMask createEntity(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        if (!(mask instanceof ComponentMaskImpl componentMask)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
-        }
+        var componentMask = (ComponentMaskImpl) mask;
 
         var existing = entityIndex.getArchetypeDataForEntity(entityId);
         if (existing != null) {
@@ -244,9 +242,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     @Override
     public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
-        if (!(mask instanceof ComponentMaskImpl componentMask)) {
-            throw new StorageEngineException("Detected unknown component mask. Only use component masked received from the same storage engine: %s".formatted(mask));
-        }
+        var componentMask = (ComponentMaskImpl) mask;
 
         // Validate component mask and types 
         validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);

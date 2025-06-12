@@ -195,56 +195,6 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
 
     }
 
-    @Nested
-    class AddToComponentMaskTest {
-
-        @ParameterizedTest
-        @MethodSource(COMPONENTS_SOURCE)
-        void testMatchesAddOperation(Object component) {
-            var componentType = ComponentType.detectComponentType(component);
-
-            var entityId = world.createEntity();
-            var componentMask = storageEngine.getComponentMaskForEntity(entityId);
-            var updatedComponentMask = storageEngine.add(entityId, new Object[] { component });
-
-            // Call
-            var result = storageEngine.addToComponentMask(componentMask, ImmutableBag.of(componentType));
-
-            // Verify
-            assertThat(result).as("addToComponentMask must match storageEngine.add").isSameAs(updatedComponentMask);
-        }
-
-        @ParameterizedTest
-        @MethodSource(COMPONENTS_SOURCE)
-        void testMatchesAddOperation_MultipleTypes(Object component) {
-            var componentType = ComponentType.detectComponentType(component);
-
-            var entityId = world.createEntity();
-            var componentMask = storageEngine.getComponentMaskForEntity(entityId);
-            var updatedComponentMask = storageEngine.add(entityId, new Object[] { component, new C2() });
-
-            // Call
-            var result = storageEngine.addToComponentMask(componentMask, ImmutableBag.of(componentType, component(C2.class)));
-
-            // Verify
-            assertThat(result).as("addToComponentMask must match storageEngine.add").isSameAs(updatedComponentMask);
-        }
-
-        @ParameterizedTest
-        @MethodSource(COMPONENTS_SOURCE)
-        void testAddPresentType(Object component) {
-            var componentType = ComponentType.detectComponentType(component);
-            var componentMask = storageEngine.getComponentMask(componentType);
-
-            // Call
-            var result = storageEngine.addToComponentMask(componentMask, ImmutableBag.of(componentType));
-
-            // Verify
-            assertThat(result).as("addToComponentMask returns same instance if type already present").isSameAs(componentMask);
-        }
-
-    }
-
     static Stream<Arguments> components() {
         return Stream.of(
                 Arguments.of(Named.of("C1", new C1())),

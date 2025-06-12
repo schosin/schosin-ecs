@@ -1,17 +1,21 @@
 package de.schosin.ecs.storage.defaultimpl.archetype;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.data.DataAccessor;
+import de.schosin.ecs.api.data.IterableAccessor;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.entities.EntityData;
+import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
@@ -20,9 +24,13 @@ public class ArchetypeImpl implements Archetype {
 
     private final ComponentStorage componentStorage;
     private final ComponentMask componentMask;
+    private final IntBag componentLookup;
 
     private final IntBag entities;
     private final ImmutableIntBag immutableEntities;
+
+    private final IntBag lookup;
+    private final EntityData entityData;
 
     private final Map<List<RegularComponentType<?, ?>>, EntityDataImpl> entityDataMap = new HashMap<>();
     private final Pool<List<RegularComponentType<?, ?>>> typesPool = Pool.unbounded(List.class, ArrayList::new, List::clear);
@@ -33,14 +41,54 @@ public class ArchetypeImpl implements Archetype {
 
         this.entities = new IntBag(64);
         this.immutableEntities = ImmutableIntBag.create(entities);
+
+        this.lookup = new IntBag(64);
+
+        var componentTypes = new Bag<>(componentMask.getComponentTypes());
+        this.entityData = getEntityData(Arrays.copyOf(componentTypes.getData(), componentTypes.getSize()));
+
+        var components = componentMask.getComponents();
+        var size = components.getSize();
+
+        var largestComponentId = 0;
+        for (int i = 0; i < size; i++) {
+            var component = components.get(i);
+
+            if (component.id() > largestComponentId) {
+                largestComponentId = component.id();
+            }
+        }
+
+        this.componentLookup = new IntBag(largestComponentId);
+        Arrays.fill(this.componentLookup.getData(), -1);
+
+        for (int i = 0; i < size; i++) {
+            this.componentLookup.set(components.get(i).id(), i);
+        }
     }
 
     public void add(int entityId) {
+        var size = this.entities.getSize();
+        this.lookup.set(entityId, size == 0 ? -1 : size);
+
         this.entities.add(entityId);
     }
 
     public void remove(int entityId) {
-        this.entities.removeValue(entityId);
+        this.lookup.set(entityId, 0);
+
+        var lastIndex = entities.getSize() - 1;
+        if (entityId == entities.get(lastIndex)) {
+            this.entities.removeLast();
+            return;
+        }
+
+        var swappedEntityId = entities.get(lastIndex);
+
+        var index = this.entities.indexOf(entityId);
+        this.entities.removeIndex(index);
+
+        this.lookup.set(swappedEntityId, index == 0 ? -1 : index);
     }
 
     @Override
@@ -63,9 +111,30 @@ public class ArchetypeImpl implements Archetype {
         return this.entities.contains(entityId);
     }
 
+    public DataAccessor getAccessor(int entityId) {
+        return entityData.getAccessor(entityId);
+    }
+
     @Override
     public ImmutableIntBag getEntities() {
         return immutableEntities;
+    }
+
+    @Override
+    public int getComponentIndex(int componentId) {
+        var components = componentMask.getComponents();
+        for (int i = 0, s = components.getSize(); i < s; i++) {
+            if (components.get(i).id() == componentId) {
+                return componentId;
+            }
+        }
+
+        return -1;
+    }
+
+    @Override
+    public EntityData getEntityData() {
+        return entityData;
     }
 
     @Override
@@ -96,10 +165,20 @@ public class ArchetypeImpl implements Archetype {
         }
     }
 
+    @Override
+    public String toString() {
+        return new StringBuilder()
+                .append("ArchetypeData(")
+                .append("count = ").append(this.entities.getSize()).append(", ")
+                .append("componentMask = ").append(this.componentMask).append(")")
+                .toString();
+    }
+
     private class EntityDataImpl implements EntityData {
 
         private final int size;
         private final Component<?, ?>[] components;
+        private final IntBag componentLookup;
 
         private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
 
@@ -107,8 +186,20 @@ public class ArchetypeImpl implements Archetype {
             this.size = componentTypes.length;
             this.components = new Component<?, ?>[size];
 
+            var largestComponentId = 0;
             for (int i = 0; i < size; i++) {
-                this.components[i] = componentStorage.getComponent(componentTypes[i]);
+                var component = this.components[i] = componentStorage.getComponent(componentTypes[i]);
+
+                if (component.id() > largestComponentId) {
+                    largestComponentId = component.id();
+                }
+            }
+
+            this.componentLookup = new IntBag(largestComponentId);
+            Arrays.fill(this.componentLookup.getData(), -1);
+
+            for (int i = 0; i < size; i++) {
+                this.componentLookup.set(this.components[i].id(), i);
             }
         }
 
@@ -133,37 +224,109 @@ public class ArchetypeImpl implements Archetype {
         }
 
         @Override
-        public Accessor getAccessor() {
+        public IterableAccessor getAccessor() {
             return accessors.getInstance();
         }
 
         @Override
-        public void freeAccessor(Accessor accessor) {
-            accessors.free((AccessorImpl) accessor);
+        public DataAccessor getAccessor(int entityId) {
+            var index = lookup.get(entityId);
+            if (index == 0) {
+                return null;
+            }
+
+            var accessor = accessors.getInstance();
+            accessor.index = index == -1 ? 0 : index;
+
+            return accessor;
         }
 
-        private class AccessorImpl implements Accessor, Pooled {
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("EntityDataImpl(archetype = ").append(ArchetypeImpl.this).append(")")
+                    .toString();
+        }
+
+        private class AccessorImpl implements IterableAccessor, Pooled {
 
             private int index = -1;
 
             @Override
             public boolean hasNext() {
-                return ++index < entities.getSize();
+                return index < entities.getSize() - 1;
             }
 
             @Override
             public int next() {
+                return entities.get(++index);
+            }
+
+            @Override
+            public int entityId() {
                 return entities.get(index);
             }
 
             @Override
-            public Object getComponent(int componentIndex) {
-                return components[componentIndex].getComponent(getId(index));
+            public boolean hasComponent(int componentId) {
+                return componentStorage.getComponent(componentId).hasComponent(getId(index));
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <R> R getComponent(int componentId) {
+                if (componentId >= componentLookup.getSize()) {
+                    return (R) componentStorage.getComponent(componentId).getComponent(getId(index));
+                }
+
+                var componentIndex = componentLookup.get(componentId);
+                if (componentIndex == -1) {
+                    return (R) componentStorage.getComponent(componentId).getComponent(getId(index));
+                }
+
+                return (R) components[componentIndex].getComponent(getId(index));
+            }
+
+            @Override
+            public <R> R getComponentByIndex(int componentIndex) {
+                return getComponent(componentIndex);
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <R> R getPendingComponent(int componentId) {
+                var lookup = ArchetypeImpl.this.componentLookup;
+
+                if (componentId >= lookup.getSize()) {
+                    return (R) componentStorage.getComponent(componentId).getComponent(getId(index));
+                }
+
+                var componentIndex = lookup.get(componentId);
+                if (componentIndex != -1) {
+                    return null;
+                }
+
+                return (R) componentStorage.getComponent(componentId).getComponent(getId(index));
+
+            }
+
+            @Override
+            public void free() {
+                accessors.free(this);
             }
 
             @Override
             public void reset() {
                 this.index = -1;
+            }
+
+            @Override
+            public String toString() {
+                return new StringBuilder()
+                        .append("AccessorImpl(index = ").append(index)
+                        .append(", size = ").append(size)
+                        .append(", archetype = ").append(ArchetypeImpl.this)
+                        .append(")").toString();
             }
 
         }

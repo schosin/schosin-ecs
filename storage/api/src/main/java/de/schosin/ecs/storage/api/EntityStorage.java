@@ -6,11 +6,14 @@ import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public interface EntityStorage {
+
+    DataAccessor getAccessor(int entityId);
 
     /**
      * Retrieve the component mask of the entity.
@@ -23,10 +26,6 @@ public interface EntityStorage {
     ComponentMask getComponentMaskById(int componentMaskId);
 
     ComponentMask getComponentMask(RegularComponentType<?, ?>... componentTypes);
-
-    ComponentMask addToComponentMask(ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes);
-
-    ComponentMask removeFromComponentMask(ComponentMask componentMask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes);
 
     ImmutableBag<ComponentMask> getComponentMasks();
 

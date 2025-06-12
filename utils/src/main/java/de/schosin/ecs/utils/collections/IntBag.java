@@ -15,6 +15,15 @@ public final class IntBag implements ImmutableIntBag {
         this.size = 0;
     }
 
+    public IntBag(ImmutableIntBag other) {
+        this.data = new int[other.getSize()];
+        this.size = other.getSize();
+
+        for (int i = 0; i < size; i++) {
+            this.data[i] = other.get(i);
+        }
+    }
+
     public int[] getData() {
         return data;
     }

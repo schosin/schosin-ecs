@@ -42,6 +42,10 @@ public class PendingChanges {
         return null;
     }
 
+    public boolean isNoAdded() {
+        return this.addedTypes.isEmpty();
+    }
+
     public boolean isEmpty() {
         return this.addedTypes.isEmpty() && this.removedTypes.isEmpty();
     }

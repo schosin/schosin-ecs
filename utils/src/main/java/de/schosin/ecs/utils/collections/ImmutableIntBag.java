@@ -13,6 +13,10 @@ public sealed interface ImmutableIntBag permits IntBag, ImmutableIntBagImpl {
         return new ImmutableIntBagImpl(bag);
     }
 
+    static ImmutableIntBag copyOf(IntBag bag) {
+        return new ImmutableIntBagImpl(new IntBag(bag));
+    }
+
     boolean isEmpty();
 
     int getSize();

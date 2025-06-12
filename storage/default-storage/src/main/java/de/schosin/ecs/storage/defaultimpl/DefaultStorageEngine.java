@@ -13,6 +13,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
@@ -88,6 +89,16 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
+    public RegularComponentType<?, ?>[] getRegularComponentTypes(ComponentType<?, ?> bound) {
+        return this.componentStorage.getRegularComponentTypes(bound);
+    }
+
+    @Override
+    public DataAccessor getAccessor(int entityId) {
+        return this.entityStorage.getAccessor(entityId);
+    }
+
+    @Override
     public ComponentMask getComponentMaskForEntity(int entityId) {
         return this.entityStorage.getComponentMaskForEntity(entityId);
     }
@@ -100,16 +111,6 @@ public class DefaultStorageEngine implements StorageEngine {
     @Override
     public ComponentMask getComponentMask(RegularComponentType<?, ?>... componentTypes) {
         return this.entityStorage.getComponentMask(componentTypes);
-    }
-
-    @Override
-    public ComponentMask addToComponentMask(ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
-        return this.entityStorage.addToComponentMask(componentMask, componentTypes);
-    }
-
-    @Override
-    public ComponentMask removeFromComponentMask(ComponentMask componentMask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
-        return this.entityStorage.removeFromComponentMask(componentMask, componentTypes);
     }
 
     @Override

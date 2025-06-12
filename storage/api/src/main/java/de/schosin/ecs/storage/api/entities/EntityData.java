@@ -1,18 +1,9 @@
 package de.schosin.ecs.storage.api.entities;
 
+import de.schosin.ecs.api.data.DataAccessor;
+import de.schosin.ecs.api.data.IterableAccessor;
+
 public interface EntityData {
-
-    interface Accessor {
-
-        void reset();
-
-        boolean hasNext();
-
-        int next();
-
-        Object getComponent(int componentIndex);
-
-    }
 
     int getSize();
 
@@ -20,8 +11,8 @@ public interface EntityData {
 
     <R> R getComponent(int index);
 
-    Accessor getAccessor();
+    IterableAccessor getAccessor();
 
-    void freeAccessor(Accessor accessor);
+    DataAccessor getAccessor(int entityId);
 
 }

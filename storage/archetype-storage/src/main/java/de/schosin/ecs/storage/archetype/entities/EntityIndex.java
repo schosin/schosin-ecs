@@ -3,6 +3,7 @@ package de.schosin.ecs.storage.archetype.entities;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
@@ -63,6 +64,15 @@ public class EntityIndex {
 
     public ArchetypeData getArchetype(ComponentMaskImpl componentMask) {
         return determineArchetype(componentMask);
+    }
+
+    public DataAccessor getAccessor(int entityId) {
+        var pointer = lookup.getSafe(entityId);
+        if (pointer == null || pointer.archetype == null) {
+            throw new StorageEngineException("Cannot get accessor for entity %d: Entity not present in storage".formatted(entityId));
+        }
+
+        return pointer.archetype.getAccessor(entityId);
     }
 
     public ComponentMask getComponentMask(int entityId) {
@@ -250,6 +260,15 @@ public class EntityIndex {
         return componentMask;
     }
 
+    public int getEntityIndex(ArchetypeData archetypeData, int entityId) {
+        var pointer = lookup.get(entityId);
+        if (pointer == null || pointer.archetype != archetypeData) {
+            return -1;
+        }
+
+        return pointer.index;
+    }
+
     public void freeComponent(Object component) {
         switch (component) {
             case ComponentRelationResultImpl result -> result.free();
@@ -264,7 +283,7 @@ public class EntityIndex {
     private static class ArchetypePointer {
 
         private ArchetypeData archetype;
-        private long index;
+        private int index;
 
         @Override
         public String toString() {

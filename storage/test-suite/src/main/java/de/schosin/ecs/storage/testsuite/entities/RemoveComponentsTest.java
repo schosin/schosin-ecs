@@ -539,56 +539,6 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
     }
 
-    @Nested
-    class RemoveFromComponentMaskTest {
-
-        @ParameterizedTest
-        @MethodSource(COMPONENTS_SOURCE)
-        void testMatchesRemoveOperation(Object component) {
-            var componentType = ComponentType.detectComponentType(component);
-
-            var entityId = world.createEntity(component);
-            var componentMask = storageEngine.getComponentMaskForEntity(entityId);
-            var updatedComponentMask = removeComponents(entityId, ImmutableBag.of(componentType));
-
-            // Call
-            var result = storageEngine.removeFromComponentMask(componentMask, ImmutableBag.of(componentType));
-
-            // Verify
-            assertThat(result).as("removeFromComponentMask must match storageEngine.remove").isSameAs(updatedComponentMask);
-        }
-
-        @ParameterizedTest
-        @MethodSource(COMPONENTS_SOURCE)
-        void testMatchesRemoveOperation_MultipleTypes(Object component) {
-            var componentType = ComponentType.detectComponentType(component);
-
-            var entityId = world.createEntity(component, new C2());
-            var componentMask = storageEngine.getComponentMaskForEntity(entityId);
-            var updatedComponentMask = removeComponents(entityId, ImmutableBag.of(componentType, component(C2.class)));
-
-            // Call
-            var result = storageEngine.removeFromComponentMask(componentMask, ImmutableBag.of(componentType, component(C2.class)));
-
-            // Verify
-            assertThat(result).as("removeFromComponentMask must match storageEngine.remove").isSameAs(updatedComponentMask);
-        }
-
-        @ParameterizedTest
-        @MethodSource(COMPONENTS_SOURCE)
-        void testRemoveAbsentType(Object component) {
-            var componentType = ComponentType.detectComponentType(component);
-            var componentMask = storageEngine.getComponentMask();
-
-            // Call
-            var result = storageEngine.removeFromComponentMask(componentMask, ImmutableBag.of(componentType));
-
-            // Verify
-            assertThat(result).as("removeFromComponentMask returns same instance if type already absent").isSameAs(componentMask);
-        }
-
-    }
-
     static Stream<Arguments> components() {
         return Stream.of(
                 Arguments.of(Named.of("C1", new C1())),

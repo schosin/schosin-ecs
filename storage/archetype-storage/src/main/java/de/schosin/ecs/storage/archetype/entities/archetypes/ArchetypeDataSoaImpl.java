@@ -1,9 +1,8 @@
 package de.schosin.ecs.storage.archetype.entities.archetypes;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
@@ -16,6 +15,8 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.data.DataAccessor;
+import de.schosin.ecs.api.data.IterableAccessor;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.entities.EntityData;
@@ -27,7 +28,6 @@ import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -50,17 +50,17 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     private final Bag<RegularEntityRelationType<?, ?>> entityRelationTypes;
 
     // data.get(index)[componentId] // index tracked by EntityIndex
-    private final List<Bag<Object>> data;
+    private final Bag<Object>[] data;
     private final IntBag entities;
     private final int size;
 
     private final Bag<PendingChanges> pendingChanges;
+    private final EntityDataImpl entityData;
 
-    private final Map<BitVector, EntityDataImpl> entityDataMap = new ConcurrentHashMap<>();
+    private final Map<ImmutableIntBag, EntityDataImpl> entityDataMap = new HashMap<>();
     private final Pool<IntBag> intBagPool = Pool.unbounded(IntBag.class, () -> new IntBag(16), IntBag::clear);
 
     private int alive;
-    // TODO optimize singleton enums (tags) to not be included in data (take component id into account -> mapping required)
 
     @SuppressWarnings("unchecked")
     public ArchetypeDataSoaImpl(ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, ComponentMaskImpl componentMask, StorageWorld storageWorld) {
@@ -69,16 +69,17 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         this.entityIndex = entityIndex;
 
         this.componentMask = componentMask;
-
         this.componentTypes = new Bag<>(componentMask.getComponentTypes());
+
         this.entityRelationTypes = new Bag<>(RegularEntityRelationType.class, componentMask.getComponentTypes().getSize());
 
-        this.componentTypeIds = new IntBag(64);
+        this.componentTypeIds = componentIndex.createIntBag();
+
         for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
             var componentType = componentTypes.get(i);
 
             var componentId = componentIndex.getId(componentType);
-            this.componentTypeIds.set(componentId, i == 0 ? -1 : i);
+            this.componentTypeIds.set(componentId, i);
 
             if (componentType instanceof RegularEntityRelationType<?, ?> relationType) {
                 this.entityRelationTypes.set(i, relationType);
@@ -88,9 +89,10 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         this.entities = new IntBag(64);
         this.size = componentTypes.getSize();
 
-        this.pendingChanges = storageWorld.createEntityBag(PendingChanges.class);
+        this.pendingChanges = new Bag<>(PendingChanges.class, 1024);
+        this.entityData = getEntityData(Arrays.copyOf(componentTypes.getData(), componentTypes.getSize()));
 
-        var data = new ArrayList<Bag<Object>>(size);
+        this.data = new Bag[size];
         for (int i = 0; i < size; i++) {
             var clazz = switch (componentTypes.get(i)) {
                 case ClassType<?> type -> type.clazz();
@@ -100,10 +102,8 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 case ExclusiveEntityRelationType<?> type -> EntityRelation.class;
             };
 
-            data.add(storageWorld.createEntityBag((Class<Object>) clazz));
+            data[i] = storageWorld.createEntityBag((Class<Object>) clazz);
         }
-
-        this.data = List.copyOf(data);
     }
 
     @Override
@@ -122,16 +122,47 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public EntityData getEntityData(RegularComponentType<?, ?>... componentTypes) {
-        var vector = new BitVector();
+    public int getComponentIndex(int componentId) {
+        return componentTypeIds.get(componentId);
+    }
 
+    @Override
+    public EntityData getEntityData() {
+        return entityData;
+    }
+
+    @Override
+    public EntityDataImpl getEntityData(RegularComponentType<?, ?>... componentTypes) {
+        // Lookup key must be ordered
+        var componentIds = intBagPool.getInstance();
         for (var type : componentTypes) {
-            var componentId = componentIndex.getId(type);
-
-            vector.set(componentId);
+            componentIds.add(componentIndex.getId(type));
         }
 
-        return entityDataMap.computeIfAbsent(vector, key -> new EntityDataImpl(componentTypes));
+        // Retrieve cached value
+        var result = entityDataMap.get(componentIds);
+        if (result != null) {
+            intBagPool.free(componentIds);
+            return result;
+        }
+
+        synchronized (entityDataMap) {
+            // Retrieve cached value
+            result = entityDataMap.get(componentIds);
+            if (result != null) {
+                intBagPool.free(componentIds);
+                return result;
+            }
+
+            // Create new instance
+            result = new EntityDataImpl(componentTypes);
+
+            var key = ImmutableIntBag.copyOf(componentIds);
+            entityDataMap.put(key, result);
+
+            intBagPool.free(componentIds);
+            return result;
+        }
     }
 
     @Override
@@ -140,7 +171,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public boolean contains(long index, RegularComponentType<?, ?> type) {
+    public boolean contains(int index, RegularComponentType<?, ?> type) {
         if (componentTypes.contains(type)) {
             return true;
         }
@@ -151,35 +182,27 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> R getComponent(long indexL, RegularComponentType<?, R> componentType) {
-        var index = (int) indexL;
+    public <R> R getComponent(int index, RegularComponentType<?, R> componentType) {
         if (index >= alive) {
             return null;
         }
 
         var componentId = componentIndex.getId(componentType);
-        if (componentId >= this.componentTypeIds.getSize()) {
-            return getPendingComponent(index, componentType);
+        var componentIndex = this.componentTypeIds.get(componentId);
+        if (componentIndex == -1) {
+            return retrievePendingComponent(index, componentType);
         }
 
-        var componentIndex = this.componentTypeIds.getSafe(componentId);
-        if (componentIndex == 0) {
-            return getPendingComponent(index, componentType);
-        }
-
-        return (R) data.get(componentIndex == -1 ? 0 : componentIndex).get(index);
+        return (R) data[componentIndex].get(index);
     }
 
-    /**
-     * Add an entity, returning its index.
-     *
-     * @param id of entity
-     * @param componentTypes component types matching components
-     * @param components components to add
-     * @return index of entity
-     */
     @Override
-    public long addEntity(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
+    public DataAccessor getAccessor(int entityId) {
+        return entityData.getAccessor(entityId);
+    }
+
+    @Override
+    public int addEntity(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
         // Track entity index
         var index = alive++;
         this.entities.add(entityId);
@@ -195,14 +218,10 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             var componentType = componentTypes.get(i);
             var componentId = componentIds.get(i);
 
-            var componentIndex = this.componentTypeIds.getSafe(componentId);
-            if (componentIndex == 0) {
+            var componentIndex = this.componentTypeIds.get(componentId);
+            if (componentIndex == -1) {
                 entityIndex.freeComponent(components.get(i));
                 continue; // removed comonent
-            }
-
-            if (componentIndex == -1) {
-                componentIndex = 0;
             }
 
             var component = addComponent(index, componentIndex, componentType, components.get(i));
@@ -220,81 +239,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public long addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,
-            ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes2, Object[] components2) {
-
-        // Track entity index
-        var index = alive++;
-        this.entities.add(entityId);
-
-        var componentIds = intBagPool.getInstance();
-        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
-            componentIds.set(i, componentIndex.getId(componentTypes.get(i)));
-        }
-
-        var componentIds2 = intBagPool.getInstance();
-        for (int i = 0, s = componentTypes2.getSize(); i < s; i++) {
-            componentIds2.set(i, componentIndex.getId(componentTypes2.get(i)));
-        }
-
-        // Fill data array (components 1)
-        for (int i = 0, s = components.getSize(); i < s; i++) {
-            // Add component to data
-            var componentType = componentTypes.get(i);
-            var componentId = componentIds.get(i);
-
-            var componentIndex = this.componentTypeIds.getSafe(componentId);
-            if (componentIndex == 0) {
-                entityIndex.freeComponent(components.get(i));
-                continue; // removed comonent
-            }
-
-            if (componentIndex == -1) {
-                componentIndex = 0;
-            }
-
-            var component = addComponent(index, componentIndex, componentType, components.get(i));
-
-            // Track entity relations
-            var relationType = this.entityRelationTypes.get(componentIndex);
-            if (relationType != null) {
-                relationIndex.add(entityId, relationType, component);
-            }
-        }
-
-        // Fill data array (components 2)
-        for (int i = 0, s = components2.length; i < s; i++) {
-            // Add component to data
-            var componentType = componentTypes2.get(i);
-            var componentId = componentIds2.get(i);
-
-            var componentIndex = this.componentTypeIds.getSafe(componentId);
-            if (componentIndex == 0) {
-                entityIndex.freeComponent(components.get(i));
-                continue; // removed comonent
-            }
-
-            if (componentIndex == -1) {
-                componentIndex = 0;
-            }
-
-            var component = addComponent(index, componentIndex, componentType, components2[i]);
-
-            // Track entity relations
-            var relationType = this.entityRelationTypes.get(componentIndex);
-            if (relationType != null) {
-                relationIndex.add(entityId, relationType, component);
-            }
-        }
-
-        intBagPool.free(componentIds);
-        intBagPool.free(componentIds2);
-
-        return index;
-    }
-
-    @Override
-    public long addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,
+    public int addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,
             ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes2, ImmutableBag<Object> components2) {
 
         // Track entity index
@@ -317,14 +262,10 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             var componentType = componentTypes.get(i);
             var componentId = componentIds.get(i);
 
-            var componentIndex = this.componentTypeIds.getSafe(componentId);
-            if (componentIndex == 0) {
+            var componentIndex = this.componentTypeIds.get(componentId);
+            if (componentIndex == -1) {
                 entityIndex.freeComponent(components.get(i));
                 continue; // removed comonent
-            }
-
-            if (componentIndex == -1) {
-                componentIndex = 0;
             }
 
             var component = addComponent(index, componentIndex, componentType, components.get(i));
@@ -342,14 +283,10 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             var componentType = componentTypes2.get(i);
             var componentId = componentIds2.get(i);
 
-            var componentIndex = this.componentTypeIds.getSafe(componentId);
-            if (componentIndex == 0) {
-                entityIndex.freeComponent(components.get(i));
-                continue; // removed comonent
-            }
-
+            var componentIndex = this.componentTypeIds.get(componentId);
             if (componentIndex == -1) {
-                componentIndex = 0;
+                entityIndex.freeComponent(components2.get(i));
+                continue; // removed comonent
             }
 
             var component = addComponent(index, componentIndex, componentType, components2.get(i));
@@ -365,13 +302,12 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         intBagPool.free(componentIds2);
 
         return index;
+
     }
 
     @Override
-    public void addComponents(int entityId, long indexL, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        var index = (int) indexL;
-
-        var changes = pendingChanges.get(index);
+    public void addComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+        var changes = pendingChanges.getSafe(index);
         if (changes == null) {
             changes = new PendingChanges(componentMask);
             pendingChanges.set(index, changes);
@@ -385,11 +321,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             if (!changes.add(componentType, component)) {
                 // No archetype change, apply directly
                 var componentId = componentIndex.getId(componentType);
-
                 var componentIndex = this.componentTypeIds.get(componentId);
-                if (componentIndex == -1) {
-                    componentIndex = 0;
-                }
 
                 var result = addComponent(index, componentIndex, componentType, component);
 
@@ -403,10 +335,8 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public void removeComponents(int entityId, long indexL, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
-        var index = (int) indexL;
-
-        var changes = pendingChanges.get(index);
+    public void removeComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
+        var changes = pendingChanges.getSafe(index);
         if (changes == null) {
             changes = new PendingChanges(componentMask);
             pendingChanges.set(index, changes);
@@ -425,14 +355,14 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             case EntityRelationResultImpl relations -> addRelations(index, componentIndex, relations);
             case EntityRelation<?> relation -> addRelation(index, componentIndex, (RegularEntityRelationType<?, ?>) componentType, relation);
             default -> {
-                data.get(componentIndex).set(index, component);
+                data[componentIndex].set(index, component);
                 yield component;
             }
         };
     }
 
     private Object addRelations(int index, int componentIndex, ComponentRelationResultImpl relations) {
-        var componentData = data.get(componentIndex);
+        var componentData = data[componentIndex];
 
         var result = (ComponentRelationResultImpl) componentData.get(index);
         if (result == null) {
@@ -449,7 +379,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     private Object addRelation(int index, int componentIndex, RegularComponentRelationType<?, ?, ?> relationType, ComponentRelation<?, ?> relation) {
-        var componentData = data.get(componentIndex);
+        var componentData = data[componentIndex];
 
         return switch (relationType) {
             case ComponentRelationType<?, ?> type -> {
@@ -471,7 +401,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     private Object addRelations(int index, int componentIndex, EntityRelationResultImpl relations) {
-        var componentData = data.get(componentIndex);
+        var componentData = data[componentIndex];
 
         var result = (EntityRelationResultImpl) componentData.get(index);
         if (result == null) {
@@ -488,7 +418,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     private Object addRelation(int index, int componentIndex, RegularEntityRelationType<?, ?> relationType, EntityRelation<?> relation) {
-        var componentData = data.get(componentIndex);
+        var componentData = data[componentIndex];
 
         return switch (relationType) {
             case EntityRelationType<?> type -> {
@@ -509,18 +439,8 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         };
     }
 
-    /**
-     * Delete the entity at the given index.
-     *
-     * @param entityId id of entity
-     * @param index index of entity
-     * @param fill bag that will contain components of deleted entity
-     * @return id of entity swapped to index position, or -1 if no swap
-     */
     @Override
-    public int removeEntity(int entityId, long indexL, Bag<Object> fill) {
-        int index = (int) indexL;
-
+    public int removeEntity(int entityId, int index, Bag<Object> fill) {
         if (entities.get(index) != entityId) {
             return -1;
         }
@@ -532,7 +452,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Process components
             for (int i = 0; i < size; i++) {
-                var component = data.get(i).get(index);
+                var component = data[i].get(index);
 
                 if (fill != null) {
                     // Put component into fill bag, required from caller
@@ -547,7 +467,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             if (index < lastIndex) {
                 // Move components of last row to removed entity's row
                 for (int i = 0; i < size; i++) {
-                    var components = data.get(i);
+                    var components = data[i];
                     components.set(index, components.get(lastIndex));
                     components.set(lastIndex, null);
                 }
@@ -558,8 +478,8 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 this.entities.set(index, swappedEntityId);
                 this.entities.removeLast();
 
-                var pending = this.pendingChanges.get(lastIndex);
-                this.pendingChanges.set(lastIndex, this.pendingChanges.get(index));
+                var pending = this.pendingChanges.getSafe(lastIndex);
+                this.pendingChanges.set(lastIndex, this.pendingChanges.getSafe(index));
                 this.pendingChanges.set(index, pending);
 
                 // Return id of swapped entity
@@ -568,7 +488,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Last element removed, no swap required
             for (int i = 0; i < size; i++) {
-                data.get(i).set(lastIndex, null);
+                data[i].set(lastIndex, null);
             }
 
             this.entities.removeLast();
@@ -578,16 +498,28 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public PendingChanges getPendingChanges(long indexL) {
-        var index = (int) indexL;
-
-        var changes = pendingChanges.get(index);
+    public PendingChanges getPendingChanges(int index) {
+        var changes = pendingChanges.getSafe(index);
         return changes == null || changes.isEmpty() ? null : changes;
     }
 
-    private <R> R getPendingComponent(int index, RegularComponentType<?, R> componentType) {
-        var changes = pendingChanges.get(index);
-        if (changes == null) {
+    private <R> R retrievePendingComponent(int index, int componentId) {
+        var changes = pendingChanges.getSafe(index);
+        if (changes == null || changes.isNoAdded()) {
+            return null;
+        }
+
+        var componentType = componentIndex.<R>getType(componentId);
+        if (componentType == null) {
+            return null;
+        }
+
+        return changes.getComponent(componentType);
+    }
+
+    private <R> R retrievePendingComponent(int index, RegularComponentType<?, R> componentType) {
+        var changes = pendingChanges.getSafe(index);
+        if (changes == null || changes.isNoAdded()) {
             return null;
         }
 
@@ -608,30 +540,45 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 .toString();
     }
 
-    private class EntityDataImpl implements EntityData {
+    private final class EntityDataImpl implements EntityData {
 
         private final RegularComponentType<?, ?>[] componentTypes;
         private final IntBag componentIds;
+        private final IntBag componentLookup;
+
         private final int[] mapping;
         private final int size;
 
         private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
 
         public EntityDataImpl(RegularComponentType<?, ?>[] componentTypes) {
+            this.size = componentTypes.length;
+
             this.componentTypes = componentTypes;
             this.componentIds = new IntBag(componentTypes.length);
             this.mapping = new int[componentTypes.length];
 
-            for (int i = 0, s = componentTypes.length; i < s; i++) {
+            var largestComponentId = 0;
+            for (int i = 0, s = size; i < s; i++) {
                 var type = componentTypes[i];
                 var componentId = componentIndex.getId(type);
-                var id = componentTypeIds.getSafe(componentId);
+                var id = componentTypeIds.get(componentId);
 
                 componentIds.add(componentId);
-                mapping[i] = id == 0 ? -1 : id == -1 ? 0 : id;
+                mapping[i] = id;
+                if (componentId > largestComponentId) {
+                    largestComponentId = componentId;
+                }
             }
 
-            this.size = componentTypes.length;
+            this.componentLookup = new IntBag(largestComponentId);
+            for (int i = 0; i < largestComponentId; i++) {
+                this.componentLookup.set(i, -1);
+            }
+
+            for (int i = 0; i < size; i++) {
+                this.componentLookup.set(componentIds.get(i), i);
+            }
         }
 
         @Override
@@ -651,46 +598,107 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 return null;
             }
 
-            return (R) data.get(0).get(index);
+            var id = mapping[0];
+            if (id > -1) {
+                return (R) data[id].get(index);
+            }
+
+            return (R) retrievePendingComponent(index, componentTypes[0]);
         }
 
         @Override
-        public Accessor getAccessor() {
+        public IterableAccessor getAccessor() {
             return accessors.getInstance();
         }
 
         @Override
-        public void freeAccessor(Accessor accessor) {
-            accessors.free((AccessorImpl) accessor);
+        public DataAccessor getAccessor(int entityId) {
+            var index = entityIndex.getEntityIndex(ArchetypeDataSoaImpl.this, entityId);
+            if (index == -1) {
+                return null;
+            }
+
+            var accessor = accessors.getInstance();
+            accessor.index = index;
+
+            return accessor;
         }
 
-        private class AccessorImpl implements Accessor, Pooled {
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("EntityDataImpl(archetype = ").append(ArchetypeDataSoaImpl.this).append(")")
+                    .toString();
+        }
+
+        private class AccessorImpl implements IterableAccessor, Pooled {
 
             private int index = -1;
 
             @Override
             public boolean hasNext() {
-                return ++index < entities.getSize();
+                return index < entities.getSize() - 1;
             }
 
             @Override
             public int next() {
+                return entities.get(++index);
+            }
+
+            @Override
+            public int entityId() {
                 return entities.get(index);
             }
 
             @Override
-            public Object getComponent(int componentIndex) {
-                var id = mapping[componentIndex];
-                if (id > -1) {
-                    return data.get(id).get(index);
+            public boolean hasComponent(int componentId) {
+                var componentIndex = componentTypeIds.get(componentId);
+                if (componentIndex > -1) {
+                    return true;
                 }
 
-                return getPendingComponent(componentIndex, componentTypes[componentIndex]);
+                return retrievePendingComponent(index, componentId) != null;
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <R> R getComponent(int componentId) {
+                var componentIndex = componentTypeIds.get(componentId);
+                if (componentIndex > -1) {
+                    return (R) data[componentIndex].get(index);
+                }
+
+                return retrievePendingComponent(index, componentId);
+            }
+
+            @Override
+            public <R> R getPendingComponent(int componentId) {
+                return retrievePendingComponent(index, componentId);
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public <R> R getComponentByIndex(int componentIndex) {
+                return (R) data[componentIndex].get(index);
+            }
+
+            @Override
+            public void free() {
+                accessors.free(this);
             }
 
             @Override
             public void reset() {
                 this.index = -1;
+            }
+
+            @Override
+            public String toString() {
+                return new StringBuilder()
+                        .append("AccessorImpl(index = ").append(index)
+                        .append(", size = ").append(size)
+                        .append(", archetype = ").append(ArchetypeDataSoaImpl.this)
+                        .append(")").toString();
             }
 
         }

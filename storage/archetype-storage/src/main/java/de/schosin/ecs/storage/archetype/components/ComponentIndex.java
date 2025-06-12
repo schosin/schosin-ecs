@@ -1,5 +1,6 @@
 package de.schosin.ecs.storage.archetype.components;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -11,6 +12,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponen
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.utils.ReflectionUtils;
+import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
@@ -19,6 +21,8 @@ public class ComponentIndex {
     private final AtomicInteger nextComponentId = new AtomicInteger(0);
 
     private final Map<RegularComponentType<?, ?>, Integer> lookup = new HashMap<>();
+    private final Bag<RegularComponentType<?, ?>> reverseLookup = new Bag<>(RegularComponentType.class, 64);
+
     private final Map<Class<? extends Pooled>, Pool<Pooled>> pools = new HashMap<>();
 
     private final IntBag reservedClassIds;
@@ -27,10 +31,28 @@ public class ComponentIndex {
     private final Map<Class<?>, IntBag> reservedComponentRelationIds = new HashMap<>();
     private final Map<Class<?>, IntBag> reservedEntityRelationIds = new HashMap<>();
 
+    private final Bag<IntBag> intBags = new Bag<>(IntBag.class, 16);
+
     public ComponentIndex(int classIdCount, int relationCount) {
         this.relationCount = relationCount;
 
         this.reservedClassIds = reserveClassIds(classIdCount);
+    }
+
+    public IntBag createIntBag() {
+        synchronized (this.pools) {
+            var maxComponentId = nextComponentId.get() + 1;
+
+            var intBag = new IntBag(maxComponentId);
+            Arrays.fill(intBag.getData(), -1);
+
+            for (int i = 0; i < maxComponentId; i++) {
+                intBag.set(i, -1);
+            }
+
+            this.intBags.add(intBag);
+            return intBag;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -80,9 +102,19 @@ public class ComponentIndex {
 
             var id = createId(componentType);
             this.lookup.put(componentType, id);
+            this.reverseLookup.set(id, componentType);
+
+            for (int i = 0, s = intBags.getSize(); i < s; i++) {
+                intBags.get(i).set(id, -1);
+            }
 
             return id;
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <R> RegularComponentType<?, R> getType(int componentId) {
+        return (RegularComponentType<?, R>) this.reverseLookup.getSafe(componentId);
     }
 
     private int createId(RegularComponentType<?, ?> componentType) {

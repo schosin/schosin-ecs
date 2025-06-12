@@ -1,7 +1,6 @@
 package de.schosin.ecs.storage.common.results;
 
 import java.util.Iterator;
-import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
 
@@ -37,7 +36,7 @@ public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
         var data = relations.getData();
         for (int i = 0, s = relations.getSize(); i < s; i++) {
             var existing = data[i];
-            if (Objects.equals(existing.target(), relation.target())) {
+            if (existing.target() == relation.target()) {
                 relations.set(i, relation);
 
                 return;
@@ -103,6 +102,15 @@ public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
 
         this.relations.clear();
         this.targetLookup.clear();
+    }
+
+    @Override
+    public String toString() {
+        return new StringBuilder()
+                .append("EntityRelationResultImpl(")
+                .append("relations = ").append(this.relations)
+                .append(")")
+                .toString();
     }
 
 }

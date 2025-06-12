@@ -91,6 +91,20 @@ public abstract class CommonClassTypeTest<T1, T2, T3> extends CommonComponentTes
             assertThat(component.display()).as("component.display() must contain the id").contains(Integer.toString(component.id()));
         }
 
+        @ParameterizedTest
+        @MethodSource(TYPES)
+        void testToStringIncludesSimpleName(ClassType<?> type) {
+            assertThat(getComponent(type).toString()).as("component.toString() must contain clazz.getSimpleName()").contains(type.clazz().getSimpleName());
+        }
+
+        @ParameterizedTest
+        @MethodSource(TYPES)
+        void testToStringIncludesId(ClassType<?> type) {
+            var component = getComponent(type);
+
+            assertThat(component.toString()).as("component.toString() must contain the id").contains(Integer.toString(component.id()));
+        }
+
     }
 
 }

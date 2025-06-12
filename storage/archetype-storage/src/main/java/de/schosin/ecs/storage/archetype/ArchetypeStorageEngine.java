@@ -13,7 +13,9 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
@@ -24,6 +26,7 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationDa
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig.Variant;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
@@ -38,7 +41,7 @@ public class ArchetypeStorageEngine implements StorageEngine {
 
     @Override
     public void setWorld(StorageWorld world, Object config) {
-        var storageConfig = config != null ? (ArchetypeStorageConfig) config : ArchetypeStorageConfig.DEFAULT;
+        var storageConfig = retrieveStorageConfig(config);
 
         var componentIndex = new ComponentIndex(storageConfig.classIdCount(), storageConfig.relationCount());
         var relationIndex = new EntityRelationIndex(world);
@@ -46,6 +49,33 @@ public class ArchetypeStorageEngine implements StorageEngine {
 
         this.componentStorage = new ComponentStorageImpl(world, componentIndex, entityIndex, relationIndex);
         this.entityStorage = new EntityStorageImpl(componentIndex, entityIndex, componentStorage);
+    }
+
+    static ArchetypeStorageConfig retrieveStorageConfig(Object config) {
+        // User supplied config
+        if (config != null) {
+            if (config instanceof ArchetypeStorageConfig archetypeConfig) {
+                return archetypeConfig;
+            }
+
+            throw new StorageEngineException("ArchetypeStorage requires config object of type ArchetypeStorageConfig, but received: " + config);
+        }
+
+        // System variable
+        var classIdCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
+        var relationCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT);
+        var variantProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_VARIANT);
+
+        if (classIdCountProp != null || relationCountProp != null || variantProp != null) {
+            var classIdCount = classIdCountProp != null ? Integer.parseInt(classIdCountProp) : ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT;
+            var relationCount = relationCountProp != null ? Integer.parseInt(relationCountProp) : ArchetypeStorageConfig.DEFAULT_RELATION_COUNT;
+            var variant = variantProp != null ? Variant.valueOf(variantProp) : ArchetypeStorageConfig.DEFAULT_VARIANT;
+
+            return new ArchetypeStorageConfig(classIdCount, relationCount, variant);
+        }
+
+        // Default config
+        return ArchetypeStorageConfig.DEFAULT;
     }
 
     @Override
@@ -94,6 +124,16 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
+    public RegularComponentType<?, ?>[] getRegularComponentTypes(ComponentType<?, ?> bound) {
+        return this.componentStorage.getRegularComponentTypes(bound);
+    }
+
+    @Override
+    public DataAccessor getAccessor(int entityId) {
+        return this.entityStorage.getAccessor(entityId);
+    }
+
+    @Override
     public ComponentMask getComponentMaskForEntity(int entityId) {
         return this.entityStorage.getComponentMaskForEntity(entityId);
     }
@@ -106,16 +146,6 @@ public class ArchetypeStorageEngine implements StorageEngine {
     @Override
     public ComponentMask getComponentMask(RegularComponentType<?, ?>... componentTypes) {
         return this.entityStorage.getComponentMask(componentTypes);
-    }
-
-    @Override
-    public ComponentMask addToComponentMask(ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
-        return this.entityStorage.addToComponentMask(componentMask, componentTypes);
-    }
-
-    @Override
-    public ComponentMask removeFromComponentMask(ComponentMask componentMask, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
-        return this.entityStorage.removeFromComponentMask(componentMask, componentTypes);
     }
 
     @Override
