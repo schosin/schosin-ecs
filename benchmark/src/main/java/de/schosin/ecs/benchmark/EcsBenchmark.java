@@ -1,15 +1,5 @@
 package de.schosin.ecs.benchmark;
 
-import java.util.concurrent.TimeUnit;
-
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.OutputTimeUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
@@ -24,13 +14,7 @@ import de.schosin.ecs.plugins.archetype.ArchetypeManager;
 import de.schosin.ecs.plugins.composition.manager.CompositionManager;
 import de.schosin.ecs.worlds.DefaultWorld;
 
-@BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@State(Scope.Thread)
-@Fork(value = 1)
-@Warmup(iterations = 3, timeUnit = TimeUnit.MILLISECONDS, time = 5000)
-@Measurement(iterations = 3, timeUnit = TimeUnit.MILLISECONDS, time = 5000)
-public abstract class EcsBenchmark {
+public abstract class EcsBenchmark extends BaseBenchmark {
 
     protected DefaultWorld world;
 
@@ -43,8 +27,8 @@ public abstract class EcsBenchmark {
     protected TransmutationManager transmutationManager;
     protected ComponentMapperManager componentMapperManager;
 
-    protected void setupWorld() {
-        this.world = DefaultWorld.create();
+    protected void setupWorld(int expectedEntities) {
+        this.world = DefaultWorld.builder().expectedEntities(expectedEntities).build();
 
         try {
             this.bagManager = world.getSingleton(BagManager.class);
@@ -58,10 +42,6 @@ public abstract class EcsBenchmark {
         } catch (Exception ex) {
             throw new UnsupportedOperationException("Failed to get managers via reflection: " + ex.getMessage(), ex);
         }
-    }
-
-    public static String benchmarkName(Class<?> clazz) {
-        return clazz.getName().replace('$', '.');
     }
 
     public static void main(String[] args) throws Exception {

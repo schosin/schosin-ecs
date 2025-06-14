@@ -1,6 +1,6 @@
 package de.schosin.ecs.benchmark.utils.collections;
 
-import static de.schosin.ecs.benchmark.EcsBenchmark.benchmarkName;
+import static de.schosin.ecs.benchmark.BaseBenchmark.benchmarkName;
 
 import java.util.concurrent.TimeUnit;
 

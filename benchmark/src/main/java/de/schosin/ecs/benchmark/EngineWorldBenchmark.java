@@ -1,6 +1,6 @@
 package de.schosin.ecs.benchmark;
 
-import static de.schosin.ecs.benchmark.EcsBenchmark.benchmarkName;
+import static de.schosin.ecs.benchmark.BaseBenchmark.benchmarkName;
 
 import java.util.ArrayList;
 
@@ -76,7 +76,7 @@ public class EngineWorldBenchmark {
 
         @Setup(Level.Trial)
         public void init(Blackhole bh) {
-            setupWorld();
+            setupWorld(entityCount);
 
             if (components < 1 || components > 6) {
                 throw new IllegalArgumentException("components parameter only implemented for values 1..6 inclusive");
@@ -243,7 +243,7 @@ public class EngineWorldBenchmark {
 
         @Setup(Level.Trial)
         public void init(Blackhole bh) {
-            setupWorld();
+            setupWorld(entityCount);
 
             if (components < 1 || components > 6) {
                 throw new IllegalArgumentException("components parameter only implemented for values 1..6 inclusive");
@@ -354,7 +354,7 @@ public class EngineWorldBenchmark {
 
         @Setup(Level.Trial)
         public void init(Blackhole bh) {
-            setupWorld();
+            setupWorld(entityCount);
 
             if (components < 1 || components > 6) {
                 throw new IllegalArgumentException("components parameter only implemented for values 1..6 inclusive");
@@ -504,7 +504,7 @@ public class EngineWorldBenchmark {
 
         @Setup(Level.Trial)
         public void init() {
-            setupWorld();
+            setupWorld(entityCount);
 
             this.archetype1 = world.createArchetype(Component1.class);
             this.archetype12 = world.createArchetype(Component1.class, Component2.class);
