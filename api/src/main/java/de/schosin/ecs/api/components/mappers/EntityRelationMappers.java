@@ -6,7 +6,7 @@ import static de.schosin.ecs.api.components.types.ComponentType.relation;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
@@ -31,7 +31,7 @@ public sealed interface EntityRelationMappers<R, X> extends RegularComponents<En
         return add(entityId, Relation.create(relationship, target));
     }
 
-    non-sealed interface EntityRelationMapper<R> extends EntityRelationMappers<R, EntityRelationResult<R>> {
+    non-sealed interface EntityRelationMapper<R> extends EntityRelationMappers<R, EntityRelations<R>> {
 
         @Override
         EntityRelationType<R> componentType();

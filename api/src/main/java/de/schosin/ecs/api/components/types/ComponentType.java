@@ -8,6 +8,8 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
@@ -87,6 +89,8 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
             case EntityRelation<?> relation -> Exclusive.class.isAssignableFrom(relation.relationship().getClass())
                     ? exclusiveRelation((Class) relation.relationship().getClass())
                     : relation((Class) relation.relationship().getClass());
+            case ComponentRelations<?, ?> relations -> relation((Class) relations.get(0).relationship().getClass(), (Class) relations.get(0).target().getClass());
+            case EntityRelations<?> relations -> relation((Class) relations.get(0).relationship().getClass());
             default -> component((Class<T>) component.getClass());
         };
     }

@@ -9,8 +9,8 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
-import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelationsData;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
@@ -22,7 +22,7 @@ import de.schosin.ecs.engine.utils.components.EntityRelationDataImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchMapper<R, T>, PoolingComponents<EntityRelationDataResult<R, T>> {
+public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchMapper<R, T>, PoolingComponents<EntityRelationsData<R, T>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -41,7 +41,7 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
     }
 
     @Override
-    public void free(EntityRelationDataResult<R, T> result) {
+    public void free(EntityRelationsData<R, T> result) {
         EntityRelationDataResultImpl.free(result);
     }
 
@@ -51,13 +51,13 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
     }
 
     @Override
-    public EntityRelationDataResult<R, T> get(int entityId) {
+    public EntityRelationsData<R, T> get(int entityId) {
         return get(accessor.apply(entityId));
     }
 
     @Override
-    public EntityRelationDataResult<R, T> get(DataAccessor accessor) {
-        EntityRelationResult<R> relations = accessor.getComponent(componentId);
+    public EntityRelationsData<R, T> get(DataAccessor accessor) {
+        EntityRelations<R> relations = accessor.getComponent(componentId);
         if (relations == null) {
             return null;
         }
@@ -70,28 +70,28 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
         return relationMapper.remove(entityId);
     }
 
-    public static <R, T> EntityRelationDataResult<R, T> getEntityRelationDataResult(EntityRelationResult<R> relations, Components<?, T> mapper) {
+    public static <R, T> EntityRelationsData<R, T> getEntityRelationsData(EntityRelations<R> relations, Components<?, T> mapper) {
         return EntityRelationDataResultImpl.getInstance(relations, mapper);
     }
 
-    public static <R, T> void freeResult(EntityRelationDataResult<R, T> result) {
+    public static <R, T> void freeResult(EntityRelationsData<R, T> result) {
         if (result instanceof EntityRelationDataResultImpl impl) {
             EntityRelationDataResultImpl.POOL.free(impl);
         }
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    static class EntityRelationDataResultImpl implements EntityRelationDataResult, Pooled {
+    static class EntityRelationDataResultImpl implements EntityRelationsData, Pooled {
 
         static final Pool<EntityRelationDataResultImpl> POOL = Pool.unbounded(EntityRelationDataResultImpl.class, EntityRelationDataResultImpl::new);
 
-        private EntityRelationResult<?> result;
+        private EntityRelations<?> result;
         private Components<?, ?> mapper;
         private boolean initialized;
 
         private final Bag<EntityRelationData<?, ?>> relations = new Bag<>(EntityRelationData.class, 8);
 
-        private static <R, T> EntityRelationDataResult<R, T> getInstance(EntityRelationResult<R> result, Components<?, T> mapper) {
+        private static <R, T> EntityRelationsData<R, T> getInstance(EntityRelations<R> result, Components<?, T> mapper) {
             var instance = POOL.getInstance();
             instance.result = result;
             instance.mapper = mapper;
@@ -101,7 +101,7 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
             return instance;
         }
 
-        public static void free(EntityRelationDataResult relations) {
+        public static void free(EntityRelationsData relations) {
             if (relations instanceof EntityRelationDataResultImpl impl) {
                 POOL.free(impl);
             }

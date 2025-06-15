@@ -109,6 +109,11 @@ class EntityManagerTest extends AbstractWorldTest {
                     .hasMessageContaining("duplicate component types");
         }
 
+        @Test
+        void testComponentRelations() {
+            
+        }
+        
     }
 
     @Nested

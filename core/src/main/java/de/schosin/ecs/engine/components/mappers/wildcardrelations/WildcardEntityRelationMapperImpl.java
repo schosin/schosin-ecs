@@ -8,7 +8,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
@@ -20,7 +20,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntityRelationMapper<R>, PoolingComponents<EntityRelationResult<R>>, WildcardMapper<EntityRelationMappers<R, ?>> {
+public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntityRelationMapper<R>, PoolingComponents<EntityRelations<R>>, WildcardMapper<EntityRelationMappers<R, ?>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -60,7 +60,7 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
     }
 
     @Override
-    public void free(EntityRelationResult<R> result) {
+    public void free(EntityRelations<R> result) {
         if (result instanceof EntityRelationResultImpl impl && this.lent.removeIdentity(impl)) {
             this.pool.free(impl);
         }
@@ -96,12 +96,12 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
     }
 
     @Override
-    public EntityRelationResult<? extends R> get(int entityId) {
+    public EntityRelations<? extends R> get(int entityId) {
         return get(accessor.apply(entityId));
     }
 
     @Override
-    public EntityRelationResult<? extends R> get(DataAccessor accessor) {
+    public EntityRelations<? extends R> get(DataAccessor accessor) {
         var result = pool.getInstance().init(accessor);
         lent.add(result);
 
@@ -125,7 +125,7 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
         return removed;
     }
 
-    private class EntityRelationResultImpl implements EntityRelationResult<R>, Iterator<EntityRelation<R>>, Pooled {
+    private class EntityRelationResultImpl implements EntityRelations<R>, Iterator<EntityRelation<R>>, Pooled {
 
         private final IntBag data = new IntBag(4);
         private final IntBag dataIndex = new IntBag(4);
@@ -160,7 +160,7 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
             }
 
             var componentId = this.data.get(i);
-            var relations = this.accessor.<EntityRelationResult<R>>getComponent(componentId);
+            var relations = this.accessor.<EntityRelations<R>>getComponent(componentId);
 
             return relations.get(this.dataIndex.get(i));
         }
@@ -186,7 +186,7 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
                 for (int i = 0; i < componentIds.getSize(); i++) {
                     var componentId = componentIds.get(i);
 
-                    var relations = this.accessor.<EntityRelationResult<R>>getComponent(componentId);
+                    var relations = this.accessor.<EntityRelations<R>>getComponent(componentId);
                     if (relations != null) {
                         for (int r = 0, rs = relations.size(); r < rs; r++) {
                             size++;

@@ -29,10 +29,10 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.Result;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
@@ -3811,8 +3811,8 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @SuppressWarnings("unused")
                 @ComponentSetConfig("MyComponentSet")
                 private void myComponentSet(int entityId, C1 c1, ComponentRelation<ExclusiveRelationship, Target> componentRelation,
-                        ComponentRelationResult<RelationshipComponent, Target> componentRelations, EntityRelation<ExclusiveRelationship> entityRelation,
-                        EntityRelationResult<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
+                        ComponentRelations<RelationshipComponent, Target> componentRelations, EntityRelation<ExclusiveRelationship> entityRelation,
+                        EntityRelations<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
                 }
 
             }

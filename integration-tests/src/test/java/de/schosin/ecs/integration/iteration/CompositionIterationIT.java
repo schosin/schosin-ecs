@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.integration.AbstractEcsIT;
 import de.schosin.ecs.integration.components.Favorite;
@@ -108,7 +108,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData1<ComponentRelationResult<Position, Velocity>> composition;
+        private final CompositionData1<ComponentRelations<Position, Velocity>> composition;
 
         public ComponentRelationsIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class), relation(Position.class, Velocity.class));
@@ -125,7 +125,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             this.composition.process(this::processEntity);
         }
 
-        private void processEntity(int entityId, ComponentRelationResult<Position, Velocity> relations) {
+        private void processEntity(int entityId, ComponentRelations<Position, Velocity> relations) {
             for (int i = 0, s = relations.size(); i < s; i++) {
                 var relation = relations.get(i);
 
@@ -148,7 +148,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData1<EntityRelationResult<Position>> composition;
+        private final CompositionData1<EntityRelations<Position>> composition;
 
         public EntityRelationsIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class), relation(Position.class));
@@ -168,7 +168,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             this.composition.process(this::processEntity);
         }
 
-        private void processEntity(int entityId, EntityRelationResult<Position> relations) {
+        private void processEntity(int entityId, EntityRelations<Position> relations) {
             for (int i = 0, s = relations.size(); i < s; i++) {
                 var relation = relations.get(i);
 
@@ -230,7 +230,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData1<ComponentRelationResult<Object, Position>> composition;
+        private final CompositionData1<ComponentRelations<Object, Position>> composition;
 
         public WildcardComponentRelationsIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class), wildcardRelation(Object.class, Position.class));
@@ -248,7 +248,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             this.composition.process(this::processEntity);
         }
 
-        private void processEntity(int entityId, ComponentRelationResult<Object, Position> relations) {
+        private void processEntity(int entityId, ComponentRelations<Object, Position> relations) {
             for (int i = 0, s = relations.size(); i < s; i++) {
                 var relation = relations.get(i);
 
@@ -273,7 +273,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData2<Position, EntityRelationResult<Object>> composition;
+        private final CompositionData2<Position, EntityRelations<Object>> composition;
 
         public WildcardEntityRelationsIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class), component(Position.class), wildcardRelation(Object.class));
@@ -296,7 +296,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             this.composition.process(this::processEntity);
         }
 
-        private void processEntity(int entityId, Position pos, EntityRelationResult<Object> relations) {
+        private void processEntity(int entityId, Position pos, EntityRelations<Object> relations) {
             for (int i = 0, s = relations.size(); i < s; i++) {
                 var relation = relations.get(i);
 

@@ -1,7 +1,7 @@
 package de.schosin.ecs.storage.defaultimpl.components;
 
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
@@ -14,7 +14,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
         implements DefaultComponent<EntityRelation<R>>, EntityRelationData<R> {
 
     public EntityRelationDataImpl(int id, EntityRelationType<R> type, StorageWorld world, Bag<PendingChanges> changes) {
-        this(id, type, world.createEntityBag(EntityRelationResult.class), changes, world.createEntityBag(IntBag.class));
+        this(id, type, world.createEntityBag(EntityRelations.class), changes, world.createEntityBag(IntBag.class));
     }
 
     @Override
@@ -34,7 +34,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
 
     @Override
     @SuppressWarnings("unchecked")
-    public EntityRelationResult<R> getComponent(int entityId) {
+    public EntityRelations<R> getComponent(int entityId) {
         var result = this.components.get(entityId);
         if (result != null) {
             return result;

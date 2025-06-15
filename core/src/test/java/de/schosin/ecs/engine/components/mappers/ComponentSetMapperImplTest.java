@@ -10,8 +10,8 @@ import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Birthplace;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Location;
@@ -374,8 +374,8 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
     @SuppressWarnings("unused")
     @ComponentSetConfig("RelationComponentSet")
     private static void relationComponentSet(int entityId,
-            ComponentRelation<Birthplace, Position> birthplace, ComponentRelationResult<Location, Position> locations,
-            EntityRelation<Birthplace> birthplaceId, EntityRelationResult<Location> locationIds) {
+            ComponentRelation<Birthplace, Position> birthplace, ComponentRelations<Location, Position> locations,
+            EntityRelation<Birthplace> birthplaceId, EntityRelations<Location> locationIds) {
     }
 
 }

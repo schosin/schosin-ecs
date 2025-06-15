@@ -3,10 +3,10 @@ package de.schosin.ecs.api.components.types;
 import java.lang.reflect.Modifier;
 
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelationsData;
 import de.schosin.ecs.api.components.Result;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
@@ -35,7 +35,7 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
      * @param <R> type of relationship component bound
      * @param <T> type of target component bound
      */
-    record WildcardComponentRelationType<R, T>(Class<R> relationshipBound, Class<T> targetBound) implements WildcardRelationType<R, ComponentRelationResult<R, T>> {
+    record WildcardComponentRelationType<R, T>(Class<R> relationshipBound, Class<T> targetBound) implements WildcardRelationType<R, ComponentRelations<R, T>> {
         public WildcardComponentRelationType {
             WildcardRelationTypeHelper.validateWildcardComponentRelation(relationshipBound, targetBound);
         }
@@ -65,7 +65,7 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
      * 
      * @param <R> type of relationship bound
      */
-    record WildcardEntityRelationType<R>(Class<R> relationshipBound) implements WildcardRelationType<R, EntityRelationResult<R>> {
+    record WildcardEntityRelationType<R>(Class<R> relationshipBound) implements WildcardRelationType<R, EntityRelations<R>> {
         public WildcardEntityRelationType {
             WildcardRelationTypeHelper.validateWildcardEntityRelation(relationshipBound);
         }
@@ -92,7 +92,7 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
      * @param <R> type of relationship bound
      * @param <T> type of fetched data for target entities
      */
-    record WildcardEntityRelationFetchType<R, T>(Class<R> relationshipBound, ComponentType<?, T> fetch) implements WildcardRelationType<R, EntityRelationDataResult<R, T>> {
+    record WildcardEntityRelationFetchType<R, T>(Class<R> relationshipBound, ComponentType<?, T> fetch) implements WildcardRelationType<R, EntityRelationsData<R, T>> {
         public WildcardEntityRelationFetchType {
             WildcardRelationTypeHelper.validateWildcardEntityRelation(relationshipBound);
         }

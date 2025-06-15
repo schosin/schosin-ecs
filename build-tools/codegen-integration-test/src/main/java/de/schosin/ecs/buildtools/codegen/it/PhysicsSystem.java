@@ -7,9 +7,10 @@ import de.schosin.ecs.buildtools.codegen.it.components.Velocity;
 
 public class PhysicsSystem {
 
+    private int entityId;
+
     private Position position;
     private Velocity velocity;
-    private int entityId;
 
     public PhysicsSystem(World world) {
         var mapper = world.getComponents(MethodBasedPhysicsComponentSet.TYPE);

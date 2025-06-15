@@ -3,7 +3,7 @@ package de.schosin.ecs.storage.defaultimpl.components;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
@@ -15,7 +15,7 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
         implements DefaultComponent<ComponentRelation<R, T>>, ComponentRelationData<R, T> {
 
     public ComponentRelationDataImpl(int id, ComponentRelationType<R, T> type, StorageWorld world, Bag<PendingChanges> changes) {
-        this(id, type, world.createEntityBag(ComponentRelationResult.class), changes);
+        this(id, type, world.createEntityBag(ComponentRelations.class), changes);
     }
 
     @Override
@@ -40,7 +40,7 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
 
     @Override
     @SuppressWarnings("unchecked")
-    public ComponentRelationResult<R, T> getComponent(int entityId) {
+    public ComponentRelations<R, T> getComponent(int entityId) {
         var result = this.components.get(entityId);
         if (result != null) {
             return result;

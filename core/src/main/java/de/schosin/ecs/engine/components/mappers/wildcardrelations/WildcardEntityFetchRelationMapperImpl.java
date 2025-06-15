@@ -8,7 +8,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
-import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
+import de.schosin.ecs.api.components.Relations.EntityRelationsData;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityFetchRelationMapper;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
@@ -19,7 +19,7 @@ import de.schosin.ecs.engine.utils.components.EntityRelationDataImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardEntityFetchRelationMapperImpl<R, T> implements WildcardEntityFetchRelationMapper<R, T>, PoolingComponents<EntityRelationDataResult<? extends R, T>> {
+public final class WildcardEntityFetchRelationMapperImpl<R, T> implements WildcardEntityFetchRelationMapper<R, T>, PoolingComponents<EntityRelationsData<? extends R, T>> {
 
     private final WildcardEntityRelationMapper<R> relationMapper;
     private final Components<?, T> dataMapper;
@@ -32,7 +32,7 @@ public final class WildcardEntityFetchRelationMapperImpl<R, T> implements Wildca
     }
 
     @Override
-    public void free(EntityRelationDataResult<? extends R, T> result) {
+    public void free(EntityRelationsData<? extends R, T> result) {
         if (result instanceof ResultImpl<? extends R, T> impl && this.lent.removeIdentity(impl)) {
             ResultImpl.POOL.free(impl);
         }
@@ -54,7 +54,7 @@ public final class WildcardEntityFetchRelationMapperImpl<R, T> implements Wildca
     }
 
     @Override
-    public EntityRelationDataResult<? extends R, T> get(int entityId) {
+    public EntityRelationsData<? extends R, T> get(int entityId) {
         var relations = relationMapper.get(entityId);
 
         var result = ResultImpl.getInstance(relations, dataMapper);
@@ -64,7 +64,7 @@ public final class WildcardEntityFetchRelationMapperImpl<R, T> implements Wildca
     }
 
     @Override
-    public EntityRelationDataResult<? extends R, T> get(DataAccessor accessor) {
+    public EntityRelationsData<? extends R, T> get(DataAccessor accessor) {
         var relations = relationMapper.get(accessor);
 
         var result = ResultImpl.getInstance(relations, dataMapper);
@@ -79,17 +79,17 @@ public final class WildcardEntityFetchRelationMapperImpl<R, T> implements Wildca
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static class ResultImpl<R, T> implements EntityRelationDataResult<R, T>, Pooled {
+    private static class ResultImpl<R, T> implements EntityRelationsData<R, T>, Pooled {
 
         private static final Pool<ResultImpl<?, ?>> POOL = Pool.unbounded(ResultImpl.class, ResultImpl::new);
 
-        private EntityRelationResult<? extends R> result;
+        private EntityRelations<? extends R> result;
         private Components<?, ?> mapper;
         private boolean initialized;
 
         private final Bag<EntityRelationData<?, ?>> relations = new Bag<>(EntityRelationData.class, 8);
 
-        static <R, T> ResultImpl<? extends R, T> getInstance(EntityRelationResult<? extends R> result, Components<?, T> mapper) {
+        static <R, T> ResultImpl<? extends R, T> getInstance(EntityRelations<? extends R> result, Components<?, T> mapper) {
             var instance = (ResultImpl<R, T>) POOL.getInstance();
             instance.result = result;
             instance.mapper = mapper;

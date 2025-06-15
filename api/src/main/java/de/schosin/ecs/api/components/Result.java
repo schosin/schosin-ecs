@@ -5,17 +5,8 @@ import java.util.Iterator;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
-import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.Wildcard;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 
 /**
  * Represents a result containing no, one or more components matching
@@ -61,96 +52,6 @@ public interface Result<T> extends Iterable<T> {
          */
         @Nullable
         <R extends T> R get(Class<R> clazz);
-
-    }
-
-    /**
-     * Specialized type used by {@link ComponentRelationType} that allows accessing
-     * the relationship given an equal target component.
-     * 
-     * @param <R> type of relationship component
-     * @param <T> type of target component
-     */
-    interface ComponentRelationResult<R, T> extends Result<ComponentRelation<R, T>> {
-
-        /**
-         * Retrieves the relationship given the target component. The target will be
-         * checked by {@link #equals(Object)} against existing relations, returning 
-         * its relationship if it is equal.
-         * 
-         * <p>
-         * In the case of {@link WildcardComponentRelationType} this method
-         * will always return null, as a target component can have multiple 
-         * relationships with the entity.
-         * </p>
-         * 
-         * @param target target component
-         * @return relationship component, or null if not present
-         */
-        R getRelationship(T target);
-
-    }
-
-    /**
-     * Specialized type used by {@link EntityRelationType} that allows accessing
-     * the relationship given a target entity.
-     * 
-     * @param <R> type of relationship component
-     */
-    interface EntityRelationResult<R> extends Result<EntityRelation<R>> {
-
-        /**
-         * Retrieves the relationship given the target entity.
-         * 
-         * <p>
-         * In the case of {@link WildcardEntityRelationType} this method
-         * will always return null, as a target entity can have multiple 
-         * relationships with the entity.
-         * </p>
-         * 
-         * @param target target entity
-         * @return relationship component, or null if not present
-         */
-        R getRelationship(int target);
-
-    }
-
-    /**
-     * Specialized type used by {@link EntityRelationFetchType} and {@link WildcardEntityRelationFetchType}
-     * that allows accessing components of the target entity.
-     * 
-     * @param <R> type of relationship component
-     * @param <T> type of component retrieved from target entity
-     */
-    interface EntityRelationDataResult<R, T> extends Result<EntityRelationData<R, T>> {
-
-        /**
-         * Retrieves the relationship given the target entity.
-         * 
-         * <p>
-         * In the case of {@link WildcardEntityRelationType} this method
-         * will always return null, as a target entity can have multiple 
-         * relationships with the entity.
-         * </p>
-         * 
-         * @param target target entity
-         * @return relationship component, or null if not present
-         */
-        R getRelationship(int target);
-
-        /**
-         * Retrieves the data given the target entity.
-         * 
-         * <p>
-         * In the case of {@link WildcardEntityRelationType} this method
-         * will always return null, as a target entity can have multiple 
-         * relationships with the entity.
-         * </p>
-         * 
-         * @param target target entity
-         * @return data of fetch component, or null unknown parent or no data for parent
-         */
-        T getData(int target);
 
     }
 

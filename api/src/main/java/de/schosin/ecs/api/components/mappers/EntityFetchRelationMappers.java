@@ -2,7 +2,7 @@ package de.schosin.ecs.api.components.mappers;
 
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
+import de.schosin.ecs.api.components.Relations.EntityRelationsData;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
@@ -18,7 +18,7 @@ import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRela
  */
 public sealed interface EntityFetchRelationMappers<R, T, F> extends Components<EntityRelationData<R, T>, F> {
 
-    non-sealed interface EntityRelationFetchMapper<R, T> extends EntityFetchRelationMappers<R, T, EntityRelationDataResult<R, T>> {
+    non-sealed interface EntityRelationFetchMapper<R, T> extends EntityFetchRelationMappers<R, T, EntityRelationsData<R, T>> {
     }
 
     non-sealed interface ExclusiveEntityRelationFetchMapper<R extends Exclusive, T> extends EntityFetchRelationMappers<R, T, EntityRelationData<R, T>> {

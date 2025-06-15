@@ -6,10 +6,10 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelationsData;
 import de.schosin.ecs.api.components.Result;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
@@ -17,13 +17,13 @@ import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRe
 
 public sealed interface WildcardRelationMappers<R extends Relation<?>, T extends Result<?>> extends Components<R, T> {
 
-    non-sealed interface WildcardComponentRelationMapper<R, T> extends WildcardRelationMappers<ComponentRelation<? extends R, ? extends T>, ComponentRelationResult<? extends R, ? extends T>> {
+    non-sealed interface WildcardComponentRelationMapper<R, T> extends WildcardRelationMappers<ComponentRelation<? extends R, ? extends T>, ComponentRelations<? extends R, ? extends T>> {
     }
 
-    non-sealed interface WildcardEntityRelationMapper<R> extends WildcardRelationMappers<EntityRelation<? extends R>, EntityRelationResult<? extends R>> {
+    non-sealed interface WildcardEntityRelationMapper<R> extends WildcardRelationMappers<EntityRelation<? extends R>, EntityRelations<? extends R>> {
     }
 
-    non-sealed interface WildcardEntityFetchRelationMapper<R, T> extends WildcardRelationMappers<EntityRelationData<? extends R, T>, EntityRelationDataResult<? extends R, T>> {
+    non-sealed interface WildcardEntityFetchRelationMapper<R, T> extends WildcardRelationMappers<EntityRelationData<? extends R, T>, EntityRelationsData<? extends R, T>> {
     }
 
     interface Creator {

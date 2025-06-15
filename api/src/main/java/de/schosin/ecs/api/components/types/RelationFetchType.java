@@ -2,7 +2,7 @@ package de.schosin.ecs.api.components.types;
 
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
-import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
+import de.schosin.ecs.api.components.Relations.EntityRelationsData;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 
 /**
@@ -29,7 +29,7 @@ public sealed interface RelationFetchType<R, T, X> extends ComponentType<EntityR
      * @param <R> type of relationship component, must not extend {@link Relation.Exclusive}
      * @param <T> type of fetched data of target entity
      */
-    record EntityRelationFetchType<R, T>(Class<R> relationship, ComponentType<?, T> fetch) implements RelationFetchType<R, T, EntityRelationDataResult<R, T>> {
+    record EntityRelationFetchType<R, T>(Class<R> relationship, ComponentType<?, T> fetch) implements RelationFetchType<R, T, EntityRelationsData<R, T>> {
         public EntityRelationFetchType {
             RelationComponentTypeHelper.validateNonExclusiveEntityRelationship(relationship);
         }

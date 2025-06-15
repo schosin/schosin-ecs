@@ -17,7 +17,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.testsuite.components.relations.EntityRelationDataTest.Relationship1;
@@ -26,7 +26,7 @@ import de.schosin.ecs.storage.testsuite.components.relations.EntityRelationDataT
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public class EntityRelationDataTest
-        extends CommonEntityRelationTest<Relationship1, EntityRelationResult<Relationship1>, Relationship2, EntityRelationResult<Relationship2>, Relationship3, EntityRelationResult<Relationship3>> {
+        extends CommonEntityRelationTest<Relationship1, EntityRelations<Relationship1>, Relationship2, EntityRelations<Relationship2>, Relationship3, EntityRelations<Relationship3>> {
 
     @Test
     void testAddWithExistionRelation() {

@@ -8,12 +8,12 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @SuppressWarnings("rawtypes")
-public class ComponentRelationResultImpl implements ComponentRelationResult, Pooled {
+public class ComponentRelationResultImpl implements ComponentRelations, Pooled {
 
     private static final Pool<ComponentRelationResultImpl> POOL = Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new);
 

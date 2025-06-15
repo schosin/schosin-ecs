@@ -5,8 +5,8 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
@@ -76,7 +76,7 @@ public sealed interface Component<T, R> {
 
     }
 
-    non-sealed interface ComponentRelationData<R, T> extends ComponentRelationComponent<R, T, ComponentRelationResult<R, T>> {
+    non-sealed interface ComponentRelationData<R, T> extends ComponentRelationComponent<R, T, ComponentRelations<R, T>> {
 
         @Override
         ComponentRelationType<R, T> type();
@@ -111,7 +111,7 @@ public sealed interface Component<T, R> {
 
     }
 
-    non-sealed interface EntityRelationData<R> extends EntityRelationComponent<R, EntityRelationResult<R>> {
+    non-sealed interface EntityRelationData<R> extends EntityRelationComponent<R, EntityRelations<R>> {
 
         @Override
         EntityRelationType<R> type();

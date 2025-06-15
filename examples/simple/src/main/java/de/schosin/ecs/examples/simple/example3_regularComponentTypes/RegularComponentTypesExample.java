@@ -4,8 +4,8 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
@@ -23,7 +23,6 @@ import de.schosin.ecs.examples.simple.compositions.Position;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData2;
-import de.schosin.ecs.worlds.DefaultWorld;
 
 /**
  * <b>Notes:</b> 
@@ -302,7 +301,7 @@ public class RegularComponentTypesExample extends AbstractExample {
              * When used as a component type, the type parameter T (write) will be assigned to a single instance,
              * whereas the type parameter R (read) will be assigned to an iterable type of component relations.
              */
-            ComponentType<ComponentRelation<Location, Position>, ComponentRelationResult<Location, Position>> componentType = relationType;
+            ComponentType<ComponentRelation<Location, Position>, ComponentRelations<Location, Position>> componentType = relationType;
 
             /*
              * When creating a new entity, the library will analyze its components and detect the correct
@@ -342,7 +341,7 @@ public class RegularComponentTypesExample extends AbstractExample {
             System.out.println("---- Non-exclusive component mappers");
 
             ComponentRelationType<Location, Position> relationType = ComponentType.relation(Location.class, Position.class);
-            ComponentType<ComponentRelation<Location, Position>, ComponentRelationResult<Location, Position>> componentType = relationType;
+            ComponentType<ComponentRelation<Location, Position>, ComponentRelations<Location, Position>> componentType = relationType;
 
             int entityId = world.createEntity(
                     Relation.create(Location.Start, new Position(0, 0)),
@@ -353,7 +352,7 @@ public class RegularComponentTypesExample extends AbstractExample {
              */
             ComponentRelationMapper<Location, Position> mapper = world.getComponents(relationType);
             {
-                ComponentRelationResult<Location, Position> relations = mapper.get(entityId);
+                ComponentRelations<Location, Position> relations = mapper.get(entityId);
                 for (ComponentRelation<Location, Position> relation : relations) {
                     Location location = relation.relationship();
                     Position position = relation.target();
@@ -366,9 +365,9 @@ public class RegularComponentTypesExample extends AbstractExample {
              * The base type for component mappers is Components, which also carries matching type
              * arguments T and R.
              */
-            Components<ComponentRelation<Location, Position>, ComponentRelationResult<Location, Position>> components = mapper;
+            Components<ComponentRelation<Location, Position>, ComponentRelations<Location, Position>> components = mapper;
             {
-                ComponentRelationResult<Location, Position> relations = mapper.get(entityId);
+                ComponentRelations<Location, Position> relations = mapper.get(entityId);
                 for (ComponentRelation<Location, Position> relation : relations) {
                     Location location = relation.relationship();
                     Position position = relation.target();
@@ -478,7 +477,7 @@ public class RegularComponentTypesExample extends AbstractExample {
              * Note how non-exclusive and exclusive relations have different type arguments. These map to
              * the ComponentType R, which is used for read operations like compositions.
              */
-            CompositionData1<ComponentRelationResult<Location, Position>> locationComposition = world.createComposition(locationBuilder, locationType);
+            CompositionData1<ComponentRelations<Location, Position>> locationComposition = world.createComposition(locationBuilder, locationType);
             CompositionData1<ComponentRelation<Birth, Position>> birthComposition = world.createComposition(birthBuilder, birthType);
 
             /*
@@ -523,7 +522,7 @@ public class RegularComponentTypesExample extends AbstractExample {
             Composition.Builder locationOrBirth = Composition.one(locationType, birthType);
 
             // this is where using var or component sets can become benefical
-            CompositionData2<ComponentRelationResult<Location, Position>, ComponentRelation<Birth, Position>> composition = world.createComposition(locationOrBirth, locationType, birthType);
+            CompositionData2<ComponentRelations<Location, Position>, ComponentRelation<Birth, Position>> composition = world.createComposition(locationOrBirth, locationType, birthType);
 
             /**
              * When processing a composition that only specifies "one", any component can be null and must be checked.
@@ -598,7 +597,7 @@ public class RegularComponentTypesExample extends AbstractExample {
              * When used as a component type, the type parameter T (write) will be assigned to a single instance,
              * whereas the type parameter R (read) will be assigned to an iterable type of entity relations.
              */
-            ComponentType<EntityRelation<Parent>, EntityRelationResult<Parent>> componentType = relationType;
+            ComponentType<EntityRelation<Parent>, EntityRelations<Parent>> componentType = relationType;
 
             /*
              * When creating a new entity, the library will analyze its components and detect the correct
@@ -645,7 +644,7 @@ public class RegularComponentTypesExample extends AbstractExample {
             System.out.println("---- Non-exclusive component mappers");
 
             EntityRelationType<Parent> relationType = ComponentType.relation(Parent.class);
-            ComponentType<EntityRelation<Parent>, EntityRelationResult<Parent>> componentType = relationType;
+            ComponentType<EntityRelation<Parent>, EntityRelations<Parent>> componentType = relationType;
 
             var motherId = world.createEntity();
             var fatherId = world.createEntity();
@@ -659,7 +658,7 @@ public class RegularComponentTypesExample extends AbstractExample {
              */
             EntityRelationMapper<Parent> mapper = world.getComponents(relationType);
             {
-                EntityRelationResult<Parent> relations = mapper.get(entityId);
+                EntityRelations<Parent> relations = mapper.get(entityId);
                 for (EntityRelation<Parent> relation : relations) {
                     Parent parent = relation.relationship();
                     int parentId = relation.target();
@@ -672,9 +671,9 @@ public class RegularComponentTypesExample extends AbstractExample {
              * The base type for component mappers is Components, which also carries matching type
              * arguments T and R.
              */
-            Components<EntityRelation<Parent>, EntityRelationResult<Parent>> components = mapper;
+            Components<EntityRelation<Parent>, EntityRelations<Parent>> components = mapper;
             {
-                EntityRelationResult<Parent> relations = mapper.get(entityId);
+                EntityRelations<Parent> relations = mapper.get(entityId);
                 for (EntityRelation<Parent> relation : relations) {
                     Parent parent = relation.relationship();
                     int parentId = relation.target();
@@ -784,7 +783,7 @@ public class RegularComponentTypesExample extends AbstractExample {
              * Create a composition matching all entities having a parent or a favorite media
              */
             Composition.Builder parentOrMedia = Composition.one(parentType, favoriteMediaType);
-            CompositionData2<EntityRelationResult<Parent>, EntityRelation<FavoriteMedia>> composition = world.createComposition(parentOrMedia, parentType, favoriteMediaType);
+            CompositionData2<EntityRelations<Parent>, EntityRelation<FavoriteMedia>> composition = world.createComposition(parentOrMedia, parentType, favoriteMediaType);
 
             /**
              * Process all entities with parents or favorite media

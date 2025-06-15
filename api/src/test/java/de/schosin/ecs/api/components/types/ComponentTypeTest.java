@@ -8,15 +8,23 @@ import static de.schosin.ecs.api.components.types.ComponentType.relation;
 import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.Component;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.ComponentInterface;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.ExclusiveComponent;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.MyComponentSet;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.RelationshipComponent;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.TargetComponent;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
@@ -65,6 +73,34 @@ class ComponentTypeTest {
         @Test
         void testWildcardConstant() {
             assertThat(WILDCARD).as("must not be refactored to something else").isInstanceOf(Wildcard.class);
+        }
+
+    }
+
+    @Nested
+    class DetectTypeTest {
+
+        @ParameterizedTest
+        @MethodSource("tests")
+        void testDetectComponentType(Object component, RegularComponentType<?, ?> expected) {
+            assertThat(ComponentType.detectComponentType(component)).isEqualTo(expected);
+        }
+
+        static Stream<Arguments> tests() {
+            return Stream.of(
+                    Arguments.argumentSet("ClassType", new C1(), component(C1.class)),
+                    Arguments.argumentSet("ComponentRelationType", Relation.create(new C1(), new C2(1)), relation(C1.class, C2.class)),
+                    Arguments.argumentSet("ComponentRelations", Relations.create(Relation.create(new C1(), new C2(1)), Relation.create(new C1(), new C2(2))), relation(C1.class, C2.class)),
+                    Arguments.argumentSet("ExclusiveComponentRelationType", Relation.create(ExclusiveComponent.A, new C2(1)), exclusiveRelation(ExclusiveComponent.class, C2.class)),
+                    Arguments.argumentSet("EntityRelationType", Relation.create(new C1(), 42), relation(C1.class)),
+                    Arguments.argumentSet("EntityRelations", Relations.create(Relation.create(new C1(), 42), Relation.create(new C1(), 9001)), relation(C1.class)),
+                    Arguments.argumentSet("ExclusiveEntityRelationType", Relation.create(ExclusiveComponent.A, 42), exclusiveRelation(ExclusiveComponent.class)));
+        }
+
+        record C1() {
+        }
+
+        record C2(int value) {
         }
 
     }

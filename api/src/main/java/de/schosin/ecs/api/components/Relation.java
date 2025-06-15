@@ -9,7 +9,7 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRelationFetchMapper;
@@ -42,7 +42,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRe
  * <p>
  * A system could then query for entities that have the Relation {@code (Location, Position)} 
  * using {@link ComponentRelationMapper} and would retrieve a 
- * {@link ComponentRelationResult ComponentRelationResult<Location, Position>} that allows the system
+ * {@link ComponentRelations ComponentRelations<Location, Position>} that allows the system
  * to iterate through the the assigned relations.
  * </p>
  * 

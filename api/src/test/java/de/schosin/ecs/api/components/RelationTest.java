@@ -1,11 +1,19 @@
 package de.schosin.ecs.api.components;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.Relation.Relationship;
+import de.schosin.ecs.api.components.Relation.Target;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
@@ -16,37 +24,50 @@ class RelationTest {
     @Nested
     class ComponentRelationTest {
 
-        @Test
-        void testCreate() {
-            var relation = Relation.create(RelationshipComponent.A, TargetComponent.A);
+        @ParameterizedTest
+        @MethodSource("relations")
+        void testCreate(Class<?> relationshipClass, Class<?> targetClass) {
+            var relationship = relationshipClass.getEnumConstants()[0];
+            var target = targetClass.getEnumConstants()[0];
+
+            var relation = Relation.create(relationship, target);
 
             // Verify
             var type = relation.type();
             assertThat(type).isInstanceOf(ComponentRelationType.class);
-            assertThat(type.relationship()).isSameAs(RelationshipComponent.class);
-            assertThat(type.target()).isSameAs(TargetComponent.class);
+            assertThat(type.relationship()).isSameAs(relationshipClass);
+            assertThat(type.target()).isSameAs(targetClass);
 
-            assertThat(relation.relationship()).isSameAs(RelationshipComponent.A);
-            assertThat(relation.target()).isSameAs(TargetComponent.A);
+            assertThat(relation.relationship()).isSameAs(relationship);
+            assertThat(relation.target()).isSameAs(target);
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidRelations")
+        void testCreateInvalidRelation(Class<?> relationshipClass, Class<?> targetClass) {
+            var relationship = relationshipClass.getEnumConstants()[0];
+            var target = targetClass.getEnumConstants()[0];
+
+            assertThatThrownBy(() -> Relation.create(relationship, target)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
         void testCreateExclusive() {
-            var relation = Relation.create(ExclusiveRelationshipComponent.A, TargetComponent.A);
+            var relation = Relation.create(ExclusiveRelationshipComponent.A, Component2.A);
 
             // Verify
             var type = relation.type();
             assertThat(type).isInstanceOf(ExclusiveComponentRelationType.class);
             assertThat(type.relationship()).isSameAs(ExclusiveRelationshipComponent.class);
-            assertThat(type.target()).isSameAs(TargetComponent.class);
+            assertThat(type.target()).isSameAs(Component2.class);
 
             assertThat(relation.relationship()).isSameAs(ExclusiveRelationshipComponent.A);
-            assertThat(relation.target()).isSameAs(TargetComponent.A);
+            assertThat(relation.target()).isSameAs(Component2.A);
         }
 
         @Test
         void testFree() {
-            var relation = Relation.create(RelationshipComponent.A, TargetComponent.A);
+            var relation = Relation.create(Component1.A, Component2.A);
 
             // Call
             Relation.free(relation);
@@ -57,22 +78,43 @@ class RelationTest {
             assertThat(relation.target()).isNull();
         }
 
+        static Stream<Arguments> relations() {
+            return Stream.of(
+                    Arguments.of(Component1.class, Component2.class),
+                    Arguments.of(Component1.class, TargetComponent.class),
+                    Arguments.of(RelationshipComponent.class, Component2.class),
+                    Arguments.of(RelationshipComponent.class, TargetComponent.class));
+        }
+
+        static Stream<Arguments> invalidRelations() {
+            return Stream.of(
+                    Arguments.of(TargetComponent.class, Component2.class),
+                    Arguments.of(Component1.class, RelationshipComponent.class));
+        }
+
     }
 
     @Nested
     class EntityRelationTest {
 
-        @Test
-        void testCreate() {
-            var relation = Relation.create(RelationshipComponent.A, 42);
+        @ParameterizedTest
+        @MethodSource("relations")
+        void testCreate(Class<?> relationshipClass) {
+            var relationship = relationshipClass.getEnumConstants()[0];
+            var relation = Relation.create(relationship, 42);
 
             // Verify
             var type = relation.type();
             assertThat(type).isInstanceOf(EntityRelationType.class);
-            assertThat(type.relationship()).isSameAs(RelationshipComponent.class);
+            assertThat(type.relationship()).isSameAs(relationshipClass);
 
-            assertThat(relation.relationship()).isSameAs(RelationshipComponent.A);
+            assertThat(relation.relationship()).isSameAs(relationship);
             assertThat(relation.target()).isEqualTo(42);
+        }
+
+        @Test
+        void testCreateInvalidRelation() {
+            assertThatThrownBy(() -> Relation.create(TargetComponent.A, 42)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -90,7 +132,7 @@ class RelationTest {
 
         @Test
         void testFree() {
-            var relation = Relation.create(RelationshipComponent.A, 42);
+            var relation = Relation.create(Component1.A, 42);
 
             // Call
             Relation.free(relation);
@@ -101,9 +143,19 @@ class RelationTest {
             assertThat(relation.target()).isEqualTo(-1);
         }
 
+        static Stream<Arguments> relations() {
+            return Stream.of(
+                    Arguments.of(Component1.class, 42),
+                    Arguments.of(RelationshipComponent.class, 9001));
+        }
+
     }
 
-    enum RelationshipComponent {
+    enum Component1 {
+        A, B
+    }
+
+    enum Component2 {
         A, B
     }
 
@@ -111,8 +163,12 @@ class RelationTest {
         A, B
     }
 
-    enum TargetComponent {
-        A, B
+    enum RelationshipComponent implements Relationship {
+        A
+    }
+
+    enum TargetComponent implements Target {
+        A
     }
 
 }

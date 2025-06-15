@@ -1,5 +1,7 @@
 package de.schosin.ecs.api;
 
+import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+
 /**
  * Marker interface for pooled objects and components. 
  * 

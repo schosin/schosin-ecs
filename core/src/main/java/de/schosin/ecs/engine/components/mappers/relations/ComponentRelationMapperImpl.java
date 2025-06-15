@@ -1,13 +1,13 @@
 package de.schosin.ecs.engine.components.mappers.relations;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.storage.api.components.Component.ComponentRelationData;
 
-public final class ComponentRelationMapperImpl<R, T> extends AbstractComponentRelationMapper<R, T, ComponentRelationResult<R, T>, ComponentRelationData<R, T>> implements ComponentRelationMapper<R, T> {
+public final class ComponentRelationMapperImpl<R, T> extends AbstractComponentRelationMapper<R, T, ComponentRelations<R, T>, ComponentRelationData<R, T>> implements ComponentRelationMapper<R, T> {
 
     private final ComponentRelationType<R, T> componentType;
 

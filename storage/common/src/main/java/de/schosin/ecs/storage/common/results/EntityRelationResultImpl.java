@@ -7,12 +7,12 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @SuppressWarnings("rawtypes")
-public class EntityRelationResultImpl implements EntityRelationResult, Pooled {
+public class EntityRelationResultImpl implements EntityRelations, Pooled {
 
     private static final Pool<EntityRelationResultImpl> POOL = Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new);
 

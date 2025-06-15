@@ -15,9 +15,9 @@ import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.Result.ComponentResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
@@ -175,8 +175,8 @@ public class ComponentManagerTest extends AbstractWorldTest {
         @SuppressWarnings("unused")
         @ComponentSetConfig("SimpleComponentSet")
         private void simpleComponentSet(int entityId, C3 c3,
-                ComponentRelation<Exclusive1, C2> componentRelation, ComponentRelationResult<C1, C2> componentRelations,
-                EntityRelation<Exclusive1> entityRelation, EntityRelationResult<C1> entityRelations) {
+                ComponentRelation<Exclusive1, C2> componentRelation, ComponentRelations<C1, C2> componentRelations,
+                EntityRelation<Exclusive1> entityRelation, EntityRelations<C1> entityRelations) {
         }
 
         @SuppressWarnings("unused")

@@ -18,9 +18,9 @@ import de.schosin.ecs.api.components.ComponentSet.IterableProcessor;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.Result.ComponentResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -284,7 +284,7 @@ abstract class AbstractComponent<S extends ComponentSet<?>, R> {
                 return (ComponentType<?, R>) ComponentType.exclusiveRelation(relationship.asSubclass(Exclusive.class), target);
             }
 
-            if (rawType == ComponentRelationResult.class) {
+            if (rawType == ComponentRelations.class) {
                 var relationship = (Class<?>) parameterized.getActualTypeArguments()[0];
                 var target = (Class<?>) parameterized.getActualTypeArguments()[1];
 
@@ -297,7 +297,7 @@ abstract class AbstractComponent<S extends ComponentSet<?>, R> {
                 return (ComponentType<?, R>) ComponentType.exclusiveRelation(relationship.asSubclass(Exclusive.class));
             }
 
-            if (rawType == EntityRelationResult.class) {
+            if (rawType == EntityRelations.class) {
                 var relationship = (Class<?>) parameterized.getActualTypeArguments()[0];
 
                 return (ComponentType<?, R>) ComponentType.relation(relationship);

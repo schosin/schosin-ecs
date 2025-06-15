@@ -3,8 +3,8 @@ package de.schosin.ecs.api.components.types;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 /**
@@ -44,7 +44,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
      * @param <R> type of relationship component, must not extend {@link Relation.Exclusive}
      * @param <T> type of target component
      */
-    record ComponentRelationType<R, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelationResult<R, T>> {
+    record ComponentRelationType<R, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelations<R, T>> {
         public ComponentRelationType {
             RelationComponentTypeHelper.validateNonExclusiveComponentRelationship(relationship);
             RelationComponentTypeHelper.validateComponentTarget(target);
@@ -104,7 +104,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
      * 
      * @param <R> type of relationship component, must not extend {@link Relation.Exclusive}
      */
-    record EntityRelationType<R>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelationResult<R>> {
+    record EntityRelationType<R>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelations<R>> {
         public EntityRelationType {
             RelationComponentTypeHelper.validateNonExclusiveEntityRelationship(relationship);
         }

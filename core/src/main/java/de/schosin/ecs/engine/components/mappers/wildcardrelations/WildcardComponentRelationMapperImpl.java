@@ -8,7 +8,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
@@ -20,7 +20,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardComponentRelationMapperImpl<R, T> implements WildcardComponentRelationMapper<R, T>, PoolingComponents<ComponentRelationResult<R, T>>, WildcardMapper<ComponentRelationMappers<R, T, ?>> {
+public final class WildcardComponentRelationMapperImpl<R, T> implements WildcardComponentRelationMapper<R, T>, PoolingComponents<ComponentRelations<R, T>>, WildcardMapper<ComponentRelationMappers<R, T, ?>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -60,7 +60,7 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
     }
 
     @Override
-    public void free(ComponentRelationResult<R, T> result) {
+    public void free(ComponentRelations<R, T> result) {
         if (result instanceof ComponentRelationResultImpl impl && this.lent.removeIdentity(impl)) {
             this.pool.free(impl);
         }
@@ -96,12 +96,12 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
     }
 
     @Override
-    public ComponentRelationResult<R, T> get(int entityId) {
+    public ComponentRelations<R, T> get(int entityId) {
         return get(accessor.apply(entityId));
     }
 
     @Override
-    public ComponentRelationResult<R, T> get(DataAccessor accessor) {
+    public ComponentRelations<R, T> get(DataAccessor accessor) {
         var result = pool.getInstance().init(accessor);
         lent.add(result);
 
@@ -133,7 +133,7 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
      * {@link #data}: Holds the componentIds for all indexes until {@link #size}, beginning with exclusive relations
      * </li>
      * <li>
-     * {@link #dataIndex}: Holds the indexes for {@link ComponentRelationResult} and -1 for exclusive relations
+     * {@link #dataIndex}: Holds the indexes for {@link ComponentRelations} and -1 for exclusive relations
      * </li>
      * <li>
      * {@link #accessor}: Currently assigned {@link DataAccessor}
@@ -149,7 +149,7 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
      * </li>
      * <ul> 
      */
-    private class ComponentRelationResultImpl implements ComponentRelationResult<R, T>, Iterator<ComponentRelation<R, T>>, Pooled {
+    private class ComponentRelationResultImpl implements ComponentRelations<R, T>, Iterator<ComponentRelation<R, T>>, Pooled {
 
         private final IntBag data = new IntBag(4);
         private final IntBag dataIndex = new IntBag(4);
@@ -184,7 +184,7 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
             }
 
             var componentId = this.data.get(i);
-            var relations = this.accessor.<ComponentRelationResult<R, T>>getComponent(componentId);
+            var relations = this.accessor.<ComponentRelations<R, T>>getComponent(componentId);
 
             return relations.get(this.dataIndex.get(i));
         }
@@ -210,7 +210,7 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
                 for (int i = 0; i < componentIds.getSize(); i++) {
                     var componentId = componentIds.get(i);
 
-                    var relations = this.accessor.<ComponentRelationResult<R, T>>getComponent(componentId);
+                    var relations = this.accessor.<ComponentRelations<R, T>>getComponent(componentId);
                     if (relations != null) {
                         for (int r = 0, rs = relations.size(); r < rs; r++) {
                             size++;

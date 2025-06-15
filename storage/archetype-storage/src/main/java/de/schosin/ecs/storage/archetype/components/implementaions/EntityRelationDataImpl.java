@@ -1,6 +1,6 @@
 package de.schosin.ecs.storage.archetype.components.implementaions;
 
-import de.schosin.ecs.api.components.Result.EntityRelationResult;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationData;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
@@ -24,7 +24,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Enti
     }
 
     @Override
-    public EntityRelationResult<R> getComponent(int entityId) {
+    public EntityRelations<R> getComponent(int entityId) {
         return index.getComponent(entityId, type);
     }
 

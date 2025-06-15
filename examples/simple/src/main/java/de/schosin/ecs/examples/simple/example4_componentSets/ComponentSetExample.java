@@ -3,7 +3,7 @@ package de.schosin.ecs.examples.simple.example4_componentSets;
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result.ComponentRelationResult;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -30,7 +30,7 @@ public class ComponentSetExample extends AbstractExample {
      * 
      * <p>
      * A valid component argument in this case is any type that can occur in the {@code R} of the built-in
-     * {@link ComponentType ComponentType<T, R>}. A regular POJO component, a {@link ComponentRelationResult},
+     * {@link ComponentType ComponentType<T, R>}. A regular POJO component, a {@link ComponentRelations},
      * or a {@link EntityRelation} are just examples of valid parameter types.
      */
     public static void main(String[] args) {
