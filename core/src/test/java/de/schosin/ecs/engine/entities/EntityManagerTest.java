@@ -9,6 +9,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
@@ -111,9 +113,38 @@ class EntityManagerTest extends AbstractWorldTest {
 
         @Test
         void testComponentRelations() {
-            
+            var relation1 = Relation.create(new C1(11), new C2(21));
+            var relation2 = Relation.create(new C1(12), new C2(22));
+
+            var relations = Relations.create(relation1, relation2);
+
+            // Call
+            var entityId = world.createEntity(relations);
+
+            // Verify
+            assertThat(relations).as("relations freed").isEmpty();
+
+            var components = getComponent(entityId, relation(C1.class, C2.class));
+            assertThat(components).containsExactlyInAnyOrder(relation1, relation2);
         }
-        
+
+        @Test
+        void testEntityRelations() {
+            var relation1 = Relation.create(new C1(11), world.createEntity());
+            var relation2 = Relation.create(new C1(12), world.createEntity());
+
+            var relations = Relations.create(relation1, relation2);
+
+            // Call
+            var entityId = world.createEntity(relations);
+
+            // Verify
+            assertThat(relations).as("relations freed").isEmpty();
+
+            var components = getComponent(entityId, relation(C1.class));
+            assertThat(components).containsExactlyInAnyOrder(relation1, relation2);
+        }
+
     }
 
     @Nested
@@ -578,10 +609,16 @@ class EntityManagerTest extends AbstractWorldTest {
     private record Component3() {
     }
 
-    public record C1() implements Pooled {
+    public record C1(int value) implements Pooled {
+        public C1() {
+            this(0);
+        }
     }
 
-    public record C2() implements Pooled {
+    public record C2(int value) implements Pooled {
+        public C2() {
+            this(0);
+        }
     }
 
     public record C3() implements Pooled {

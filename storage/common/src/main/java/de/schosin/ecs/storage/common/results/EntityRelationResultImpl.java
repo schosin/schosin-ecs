@@ -39,6 +39,7 @@ public class EntityRelationResultImpl implements EntityRelations, Pooled {
             if (existing.target() == relation.target()) {
                 relations.set(i, relation);
 
+                Relation.free(existing);
                 return;
             }
         }
@@ -47,7 +48,7 @@ public class EntityRelationResultImpl implements EntityRelations, Pooled {
     }
 
     public void removeTarget(int target) {
-        var relation = this.targetLookup.get(target);
+        var relation = this.targetLookup.getSafe(target);
         if (relation == null) {
             return;
         }

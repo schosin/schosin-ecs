@@ -2,6 +2,9 @@ package de.schosin.ecs.storage.common;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relations;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
@@ -89,9 +92,31 @@ public class PendingChanges {
 
         // Add component
         switch (type) {
-            case ComponentRelationType<?, ?> relationType -> addComponentRelation(relationType, (ComponentRelation<?, ?>) component);
+            case ComponentRelationType<?, ?> relationType -> {
+                if (!(component instanceof ComponentRelations<?, ?> relations)) {
+                    addComponentRelation(relationType, (ComponentRelation<?, ?>) component);
+                    return true;
+                }
+
+                for (int i = 0, s = relations.size(); i < s; i++) {
+                    addComponentRelation(relationType, relations.get(i));
+                }
+
+                Relations.free(relations);
+            }
             case ExclusiveComponentRelationType<?, ?> relationType -> addExclusiveComponentRelation(relationType, component);
-            case EntityRelationType<?> relationType -> addEntityRelation(relationType, (EntityRelation<?>) component);
+            case EntityRelationType<?> relationType -> {
+                if (!(component instanceof EntityRelations<?> relations)) {
+                    addEntityRelation(relationType, (EntityRelation<?>) component);
+                    return true;
+                }
+
+                for (int i = 0, s = relations.size(); i < s; i++) {
+                    addEntityRelation(relationType, relations.get(i));
+                }
+
+                Relations.free(relations);
+            }
             case ExclusiveEntityRelationType<?> relationType -> addExclusiveEntityRelation(relationType, (EntityRelation<?>) component);
             default -> addRegularComponent(type, component);
         }

@@ -51,10 +51,10 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
     public void addComponentUnsafe(int entityId, EntityRelation<R> component) {
         this.components.set(entityId, component);
 
-        var entities = this.targetLookup.get(component.target());
+        var entities = this.targetLookup.getSafe(component.target());
         if (entities == null) {
             synchronized (this.targetLookup) {
-                entities = this.targetLookup.get(component.target());
+                entities = this.targetLookup.getSafe(component.target());
                 if (entities == null) {
                     entities = new IntBag(4);
                     this.targetLookup.set(component.target(), entities);
@@ -73,7 +73,7 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
         if (component != null) {
             this.components.set(entityId, null);
 
-            var entities = this.targetLookup.get(component.target());
+            var entities = this.targetLookup.getSafe(component.target());
             if (entities != null) {
                 entities.removeValue(entityId);
             }
@@ -84,7 +84,7 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
 
     @Override
     public void removeTarget(int target, RemovedRelationTypeHandler handler) {
-        var entities = targetLookup.get(target);
+        var entities = targetLookup.getSafe(target);
         if (entities == null) {
             return;
         }

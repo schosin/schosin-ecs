@@ -9,6 +9,9 @@ import java.util.Map;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relations;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
@@ -270,15 +273,17 @@ public class ArchetypeDataImpl implements ArchetypeData {
 
     private Object addComponent(Object[] data, int index, RegularComponentType<?, ?> componentType, Object component) {
         return switch (component) {
-            case ComponentRelationResultImpl relations -> addRelations(data, index, relations);
+            case ComponentRelationResultImpl relations -> moveRelations(data, index, relations);
+            case ComponentRelations<?, ?> relations -> addRelations(data, index, relations);
             case ComponentRelation<?, ?> relation -> addRelation(data, index, (RegularComponentRelationType<?, ?, ?>) componentType, relation);
-            case EntityRelationResultImpl relations -> addRelations(data, index, relations);
+            case EntityRelationResultImpl relations -> moveRelations(data, index, relations);
+            case EntityRelations<?> relations -> addRelations(data, index, relations);
             case EntityRelation<?> relation -> addRelation(data, index, (RegularEntityRelationType<?, ?>) componentType, relation);
             default -> data[index] = component;
         };
     }
 
-    private Object addRelations(Object[] data, int index, ComponentRelationResultImpl relations) {
+    private Object moveRelations(Object[] data, int index, ComponentRelationResultImpl relations) {
         var result = (ComponentRelationResultImpl) data[index];
         if (result == null) {
             result = ComponentRelationResultImpl.getInstance();
@@ -293,7 +298,25 @@ public class ArchetypeDataImpl implements ArchetypeData {
         return result;
     }
 
-    private Object addRelations(Object[] data, int index, EntityRelationResultImpl relations) {
+    private Object addRelations(Object[] data, int index, ComponentRelations<?, ?> relations) {
+        var result = (ComponentRelationResultImpl) data[index];
+        if (result == null) {
+            result = ComponentRelationResultImpl.getInstance();
+            data[index] = result;
+        }
+
+        // Copy data over as relations will be freed
+        for (int i = 0, s = relations.size(); i < s; i++) {
+            result.add(relations.get(i));
+        }
+
+        // Free relations
+        Relations.free(relations);
+
+        return result;
+    }
+
+    private Object moveRelations(Object[] data, int index, EntityRelationResultImpl relations) {
         var result = (EntityRelationResultImpl) data[index];
         if (result == null) {
             result = EntityRelationResultImpl.getInstance();
@@ -304,6 +327,24 @@ public class ArchetypeDataImpl implements ArchetypeData {
         while (!relations.isEmpty()) {
             result.add(relations.removeLast());
         }
+
+        return result;
+    }
+
+    private Object addRelations(Object[] data, int index, EntityRelations<?> relations) {
+        var result = (EntityRelationResultImpl) data[index];
+        if (result == null) {
+            result = EntityRelationResultImpl.getInstance();
+            data[index] = result;
+        }
+
+        // Copy data over as relations will be freed
+        for (int i = 0, s = relations.size(); i < s; i++) {
+            result.add(relations.get(i));
+        }
+
+        // Free relations
+        Relations.free(relations);
 
         return result;
     }

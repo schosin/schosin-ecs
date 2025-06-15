@@ -7,6 +7,9 @@ import java.util.Map;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relations;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
@@ -350,9 +353,11 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
 
     private Object addComponent(int index, int componentIndex, RegularComponentType<?, ?> componentType, Object component) {
         return switch (component) {
-            case ComponentRelationResultImpl relations -> addRelations(index, componentIndex, relations);
+            case ComponentRelationResultImpl relations -> moveRelations(index, componentIndex, relations);
+            case ComponentRelations<?, ?> relations -> addRelations(index, componentIndex, relations);
             case ComponentRelation<?, ?> relation -> addRelation(index, componentIndex, (RegularComponentRelationType<?, ?, ?>) componentType, relation);
-            case EntityRelationResultImpl relations -> addRelations(index, componentIndex, relations);
+            case EntityRelationResultImpl relations -> moveRelations(index, componentIndex, relations);
+            case EntityRelations<?> relations -> addRelations(index, componentIndex, relations);
             case EntityRelation<?> relation -> addRelation(index, componentIndex, (RegularEntityRelationType<?, ?>) componentType, relation);
             default -> {
                 data[componentIndex].set(index, component);
@@ -361,7 +366,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         };
     }
 
-    private Object addRelations(int index, int componentIndex, ComponentRelationResultImpl relations) {
+    private Object moveRelations(int index, int componentIndex, ComponentRelationResultImpl relations) {
         var componentData = data[componentIndex];
 
         var result = (ComponentRelationResultImpl) componentData.get(index);
@@ -374,6 +379,26 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         while (!relations.isEmpty()) {
             result.add(relations.removeLast());
         }
+
+        return result;
+    }
+
+    private Object addRelations(int index, int componentIndex, ComponentRelations<?, ?> relations) {
+        var componentData = data[componentIndex];
+
+        var result = (ComponentRelationResultImpl) componentData.get(index);
+        if (result == null) {
+            result = ComponentRelationResultImpl.getInstance();
+            componentData.set(index, result);
+        }
+
+        // Copy data over as relations will be freed
+        for (int i = 0, s = relations.size(); i < s; i++) {
+            result.add(relations.get(i));
+        }
+
+        // Free relations
+        Relations.free(relations);
 
         return result;
     }
@@ -400,7 +425,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         };
     }
 
-    private Object addRelations(int index, int componentIndex, EntityRelationResultImpl relations) {
+    private Object moveRelations(int index, int componentIndex, EntityRelationResultImpl relations) {
         var componentData = data[componentIndex];
 
         var result = (EntityRelationResultImpl) componentData.get(index);
@@ -413,6 +438,26 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         while (!relations.isEmpty()) {
             result.add(relations.removeLast());
         }
+
+        return result;
+    }
+
+    private Object addRelations(int index, int componentIndex, EntityRelations<?> relations) {
+        var componentData = data[componentIndex];
+
+        var result = (EntityRelationResultImpl) componentData.get(index);
+        if (result == null) {
+            result = EntityRelationResultImpl.getInstance();
+            componentData.set(index, result);
+        }
+
+        // Copy data over as relations will be freed
+        for (int i = 0, s = relations.size(); i < s; i++) {
+            result.add(relations.get(i));
+        }
+
+        // Free relations
+        Relations.free(relations);
 
         return result;
     }

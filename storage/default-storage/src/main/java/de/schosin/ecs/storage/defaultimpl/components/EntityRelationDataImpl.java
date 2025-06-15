@@ -74,10 +74,10 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
         synchronized (relations) {
             relations.add(component);
 
-            var entities = this.targetLookup.get(component.target());
+            var entities = this.targetLookup.getSafe(component.target());
             if (entities == null) {
                 synchronized (this.targetLookup) {
-                    entities = this.targetLookup.get(component.target());
+                    entities = this.targetLookup.getSafe(component.target());
                     if (entities == null) {
                         entities = new IntBag(4);
                         this.targetLookup.set(component.target(), entities);
@@ -103,7 +103,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Bag<
 
     @Override
     public void removeTarget(int target, RemovedRelationTypeHandler handler) {
-        var entities = targetLookup.get(target);
+        var entities = targetLookup.getSafe(target);
         if (entities == null) {
             return;
         }

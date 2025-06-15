@@ -36,6 +36,8 @@ public class ComponentRelationResultImpl implements ComponentRelations, Pooled {
             var existing = data[i];
             if (Objects.equals(existing.target(), relation.target())) {
                 relations.set(i, relation);
+
+                Relation.free(existing);
                 return;
             }
         }

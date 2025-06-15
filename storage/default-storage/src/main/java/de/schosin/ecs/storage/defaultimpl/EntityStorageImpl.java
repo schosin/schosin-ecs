@@ -15,6 +15,9 @@ import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relations;
+import de.schosin.ecs.api.components.Relations.ComponentRelations;
+import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
@@ -606,8 +609,22 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
         switch (component) {
             case ComponentRelationResultImpl relations -> addRelations(mapper, entityId, relations);
+            case ComponentRelations<?, ?> relations -> {
+                for (int i = 0, s = relations.size(); i < s; i++) {
+                    mapper.addComponent(entityId, relations.get(i));
+                }
+
+                Relations.free(relations);
+            }
             case ComponentRelation<?, ?> relation -> mapper.addComponent(entityId, component);
             case EntityRelationResultImpl relations -> addRelations(mapper, entityId, relations);
+            case EntityRelations<?> relations -> {
+                for (int i = 0, s = relations.size(); i < s; i++) {
+                    mapper.addComponent(entityId, relations.get(i));
+                }
+
+                Relations.free(relations);
+            }
             case EntityRelation<?> relation -> mapper.addComponent(entityId, component);
             default -> mapper.addComponent(entityId, component);
         }

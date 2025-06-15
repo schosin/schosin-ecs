@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
+import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
@@ -270,7 +271,7 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
         }
 
         @Test
-        void testComponentRelations() {
+        void testMultipleComponentRelationInstaces() {
             var component1 = Relation.create(new C1(), new C2());
             var component2 = Relation.create(new C2(), new C1());
 
@@ -279,6 +280,42 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             // Verify
             assertThat(storageEngine.getComponent(relation(C1.class, C2.class)).getComponent(1)).as("Must store component instance").containsExactly(component1);
             assertThat(storageEngine.getComponent(relation(C2.class, C1.class)).getComponent(1)).as("Must store component instance").containsExactly(component2);
+        }
+
+        @Test
+        void testComponentRelations() {
+            var relation1 = Relation.create(new C1(11), new C2(12));
+            var relation2 = Relation.create(new C1(12), new C2(22));
+
+            var relations = Relations.create(relation1, relation2);
+
+            storageEngine.create(1, new Object[] { relations });
+
+            // Verify
+            assertThat(storageEngine.getComponent(relation(C1.class, C2.class)).getComponent(1)).as("Must store relations").containsExactlyInAnyOrder(relation1, relation2);
+
+            assertThat(relations).as("must return relations back to the pool").isEmpty();
+            assertThat(Relations.create(Relation.create(new C1(13), new C2(13)))).as("must return relations back to the pool").isSameAs(relations);
+        }
+
+        @Test
+        void testComponentRelations_EqualTargets() {
+            var relation1 = Relation.create(new C1(11), new C2(12));
+            var relation2 = Relation.create(new C1(12), new C2(12));
+
+            var relations = Relations.create(relation1, relation2);
+
+            storageEngine.create(1, new Object[] { relations });
+
+            // Verify
+            assertThat(storageEngine.getComponent(relation(C1.class, C2.class)).getComponent(1)).as("Must only store last relation for a given target").containsExactly(relation2);
+
+            assertThat(relation1.relationship()).as("must return replaced relation back to pool").isNull();
+            assertThat(relation1.target()).as("must return replaced relation back to pool").isNull();
+            assertThat(Relation.create(new C1(4), new C2(4))).as("must return replaced relation back to pool").isSameAs(relation1);
+
+            assertThat(relations).as("must return relations back to the pool").isEmpty();
+            assertThat(Relations.create(Relation.create(new C1(13), new C2(13)))).as("must return relations back to the pool").isSameAs(relations);
         }
 
         @Test
@@ -294,7 +331,7 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
         }
 
         @Test
-        void testEntityRelations() {
+        void testMultupleEntityRelationInstances() {
             var component1 = Relation.create(new C1(), 2);
             var component2 = Relation.create(new C2(), 2);
 
@@ -303,6 +340,42 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             // Verify
             assertThat(storageEngine.getComponent(relation(C1.class)).getComponent(1)).as("Must store component instance").containsExactly(component1);
             assertThat(storageEngine.getComponent(relation(C2.class)).getComponent(1)).as("Must store component instance").containsExactly(component2);
+        }
+
+        @Test
+        void testEntityRelations() {
+            var relation1 = Relation.create(new C1(1), 2);
+            var relation2 = Relation.create(new C1(2), 3);
+
+            var relations = Relations.create(relation1, relation2);
+
+            storageEngine.create(1, new Object[] { relations });
+
+            // Verify
+            assertThat(storageEngine.getComponent(relation(C1.class)).getComponent(1)).as("Must store relations").containsExactlyInAnyOrder(relation1, relation2);
+
+            assertThat(relations).as("must return relations back to the pool").isEmpty();
+            assertThat(Relations.create(Relation.create(new C1(3), 4))).as("must return relations back to the pool").isSameAs(relations);
+        }
+
+        @Test
+        void testEntityRelations_EqualTargets() {
+            var relation1 = Relation.create(new C1(1), 2);
+            var relation2 = Relation.create(new C1(2), 2);
+
+            var relations = Relations.create(relation1, relation2);
+
+            storageEngine.create(1, new Object[] { relations });
+
+            // Verify
+            assertThat(storageEngine.getComponent(relation(C1.class)).getComponent(1)).as("Must only store last relation for a given target").containsExactly(relation2);
+
+            assertThat(relation1.relationship()).as("must return replaced relation back to pool").isNull();
+            assertThat(relation1.target()).as("must return replaced relation back to pool").isEqualTo(-1);
+            assertThat(Relation.create(new C1(4), 4)).as("must return replaced relation back to pool").isSameAs(relation1);
+
+            assertThat(relations).as("must return relations back to the pool").isEmpty();
+            assertThat(Relations.create(Relation.create(new C1(3), 4))).as("must return relations back to the pool").isSameAs(relations);
         }
 
         @Test
@@ -673,10 +746,16 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
 
     }
 
-    record C1() {
+    record C1(int value) {
+        public C1() {
+            this(0);
+        }
     }
 
-    record C2() {
+    record C2(int value) {
+        public C2() {
+            this(0);
+        }
     }
 
     record P1() implements Pooled {

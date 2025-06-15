@@ -2,6 +2,7 @@ package de.schosin.ecs.storage.defaultimpl.entities;
 
 import java.util.Map;
 
+import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
@@ -60,7 +61,17 @@ public class ComponentMaskImpl implements ComponentMask {
     public void addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
         for (int i = 0; i < components.getSize(); i++) {
             var component = (DefaultComponent) this.componentTypeLookup.get(componentTypes.get(i));
-            component.addComponent(entityId, components.get(i));
+
+            var instance = components.get(i);
+            if (instance instanceof Relations<?> relations) {
+                for (int r = 0, rs = relations.size(); r < rs; r++) {
+                    component.addComponent(entityId, relations.get(r));
+                }
+
+                Relations.free(relations);
+            } else {
+                component.addComponent(entityId, instance);
+            }
         }
     }
 
@@ -70,7 +81,16 @@ public class ComponentMaskImpl implements ComponentMask {
             var componentType = componentTypes.get(i);
             var component = (DefaultComponent) this.componentTypeLookup.get(componentType);
 
-            component.addComponent(entityId, components[i]);
+            var instance = components[i];
+            if (instance instanceof Relations<?> relations) {
+                for (int r = 0, rs = relations.size(); r < rs; r++) {
+                    component.addComponent(entityId, relations.get(r));
+                }
+
+                Relations.free(relations);
+            } else {
+                component.addComponent(entityId, instance);
+            }
         }
     }
 

@@ -57,7 +57,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
 
         @Override
         public boolean isInstance(Object component) {
-            return component instanceof ComponentRelation<?, ?> relation && this.relationship.isInstance(relation.relationship()) && this.target.isInstance(relation.target());
+            return switch (component) {
+                case ComponentRelation<?, ?> relation -> this.relationship.isInstance(relation.relationship()) && this.target.isInstance(relation.target());
+                case ComponentRelations<?, ?> relations -> this.relationship.isInstance(relations.get(0).relationship()) && this.target.isInstance(relations.get(0).target());
+                case null, default -> false;
+            };
         }
 
         @Override
@@ -116,7 +120,11 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
 
         @Override
         public boolean isInstance(Object component) {
-            return component instanceof EntityRelation<?> relation && this.relationship.isInstance(relation.relationship());
+            return switch (component) {
+                case EntityRelation<?> relation -> this.relationship.isInstance(relation.relationship());
+                case EntityRelations<?> relations -> this.relationship.isInstance(relations.get(0).relationship());
+                case null, default -> false;
+            };
         }
 
         @Override
