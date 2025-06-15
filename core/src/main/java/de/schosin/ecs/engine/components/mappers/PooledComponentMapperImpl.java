@@ -7,7 +7,7 @@ import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapp
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 
-public class PooledComponentMapperImpl<T extends Pooled> extends ComponentMapperImpl<T> implements PooledComponentMapper<T> {
+public final class PooledComponentMapperImpl<T extends Pooled> extends ComponentMapperImpl<T> implements PooledComponentMapper<T> {
 
     private final PooledComponentData<T> data;
 

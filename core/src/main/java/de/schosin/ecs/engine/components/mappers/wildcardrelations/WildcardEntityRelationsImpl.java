@@ -1,40 +1,67 @@
 package de.schosin.ecs.engine.components.mappers.wildcardrelations;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.IntFunction;
 
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Result;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.EntityRelations;
+import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardEntityRelations;
-import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class WildcardEntityRelationsImpl<R> implements WildcardEntityRelations<R>, PoolingComponents<Result<EntityRelation<? extends R>>>, WildcardMapper<EntityRelations<R, ?>> {
+public final class WildcardEntityRelationsImpl<R> implements WildcardEntityRelations<R>, PoolingComponents<EntityRelationResult<R>>, WildcardMapper<EntityRelations<R, ?>> {
 
-    private final Bag<EntityRelations<R, ?>> mappers;
+    private final IntFunction<DataAccessor> accessor;
 
-    private final Pool<EntityRelationResultImpl<R>> pool = Pool.unbounded(EntityRelationResultImpl.class, this::createResultInstance);
-    private final Bag<EntityRelationResultImpl<R>> lent = new Bag<>(EntityRelationResultImpl.class, 8);
+    private final Bag<EntityRelationMapper<R>> mappers;
+    private final IntBag componentIds;
 
-    public WildcardEntityRelationsImpl(BagManager bagManager) {
-        this.mappers = bagManager.createComponentBag(EntityRelations.class);
+    @SuppressWarnings("rawtypes")
+    private final Bag<ExclusiveEntityRelationMapper> exclusiveMappers;
+    private final IntBag exclusiveComponentIds;
+
+    private final Pool<EntityRelationResultImpl> pool = Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new);
+    private final Bag<EntityRelationResultImpl> lent = new Bag<>(EntityRelationResultImpl.class, 8);
+
+    public WildcardEntityRelationsImpl(IntFunction<DataAccessor> accessor) {
+        this.accessor = accessor;
+
+        this.mappers = new Bag<>(EntityRelationMapper.class, 4);
+        this.componentIds = new IntBag(4);
+
+        this.exclusiveMappers = new Bag<>(ExclusiveEntityRelationMapper.class, 4);
+        this.exclusiveComponentIds = new IntBag(4);
     }
 
     @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void addMapper(EntityRelations<R, ?> components) {
-        this.mappers.add(components);
+        switch (components) {
+            case EntityRelationMapper mapper -> {
+                this.mappers.add(mapper);
+                this.componentIds.add(components.componentId());
+            }
+            case ExclusiveEntityRelationMapper<?> exclusiveMapper -> {
+                this.exclusiveMappers.add(exclusiveMapper);
+                this.exclusiveComponentIds.add(components.componentId());
+            }
+        }
     }
 
     @Override
-    public void free(Result<EntityRelation<? extends R>> result) {
-        if (result instanceof EntityRelationResultImpl<R> impl) {
-            this.lent.removeIdentity(impl);
+    public void free(EntityRelationResult<R> result) {
+        if (result instanceof EntityRelationResultImpl impl && this.lent.removeIdentity(impl)) {
             this.pool.free(impl);
         }
     }
@@ -51,19 +78,31 @@ public class WildcardEntityRelationsImpl<R> implements WildcardEntityRelations<R
 
     @Override
     public boolean has(int entityId) {
-        var data = mappers.getData();
-        for (int i = 0, s = mappers.getSize(); i < s; i++) {
-            if (data[i].has(entityId)) {
-                return true;
+        try (var accessor = this.accessor.apply(entityId)) {
+            for (int i = 0, s = exclusiveComponentIds.getSize(); i < s; i++) {
+                if (accessor.getComponent(exclusiveComponentIds.get(i)) != null) {
+                    return true;
+                }
             }
-        }
 
-        return false;
+            for (int i = 0, s = componentIds.getSize(); i < s; i++) {
+                if (accessor.getComponent(componentIds.get(i)) != null) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     @Override
-    public Result<EntityRelation<? extends R>> get(int entityId) {
-        var result = pool.getInstance().init(entityId);
+    public EntityRelationResult<? extends R> get(int entityId) {
+        return get(accessor.apply(entityId));
+    }
+
+    @Override
+    public EntityRelationResult<? extends R> get(DataAccessor accessor) {
+        var result = pool.getInstance().init(accessor);
         lent.add(result);
 
         return result;
@@ -78,64 +117,87 @@ public class WildcardEntityRelationsImpl<R> implements WildcardEntityRelations<R
             removed |= data[i].remove(entityId);
         }
 
+        var exclusiveData = exclusiveMappers.getData();
+        for (int i = 0, s = exclusiveMappers.getSize(); i < s; i++) {
+            removed |= exclusiveData[i].remove(entityId);
+        }
+
         return removed;
     }
 
-    private EntityRelationResultImpl<R> createResultInstance() {
-        return new EntityRelationResultImpl<>(mappers);
-    }
+    private class EntityRelationResultImpl implements EntityRelationResult<R>, Iterator<EntityRelation<R>>, Pooled {
 
-    private static class EntityRelationResultImpl<R> implements Result<EntityRelation<? extends R>>, Pooled {
+        private final IntBag data = new IntBag(4);
+        private final IntBag dataIndex = new IntBag(4);
 
-        private final Bag<EntityRelations<R, ?>> mappers;
-        private final Bag<EntityRelation<? extends R>> components;
+        private DataAccessor accessor;
 
-        private int entityId = -1;
+        private int exclusiveSize = -1;
         private int size = -1;
 
-        public EntityRelationResultImpl(Bag<EntityRelations<R, ?>> mappers) {
-            this.mappers = mappers;
-            this.components = new Bag<>(EntityRelation.class, 4);
+        private int id = -1;
+
+        public EntityRelationResultImpl() {
+            Arrays.fill(this.data.getData(), -1);
+            Arrays.fill(this.dataIndex.getData(), -1);
         }
 
-        public EntityRelationResultImpl<R> init(int entityId) {
-            this.entityId = entityId;
+        public EntityRelationResultImpl init(DataAccessor accessor) {
+            this.accessor = accessor;
 
             return this;
         }
 
+        @NonNull
         @Override
-        public @NonNull EntityRelation<? extends R> get(int i) {
+        public EntityRelation<R> get(int i) {
             if (i >= size()) {
                 throw new ArrayIndexOutOfBoundsException(i);
             }
 
-            return this.components.get(i);
+            if (i < exclusiveSize) {
+                return this.accessor.getComponent(this.data.get(i));
+            }
+
+            var componentId = this.data.get(i);
+            var relations = this.accessor.<EntityRelationResult<R>>getComponent(componentId);
+
+            return relations.get(this.dataIndex.get(i));
         }
 
         @Override
-        @SuppressWarnings("unchecked")
         public int size() {
             if (size == -1) {
-                var data = mappers.getData();
-                for (int i = 0, s = mappers.getSize(); i < s; i++) {
-                    var component = data[i].get(entityId);
-                    if (component == null) {
-                        continue;
-                    }
+                this.exclusiveSize = 0;
+                var size = 0;
 
-                    switch (component) {
-                        case EntityRelation<?> relation -> components.add((EntityRelation<R>) relation);
-                        case EntityRelationResult<?> result -> {
-                            for (var relation : result) {
-                                components.add((EntityRelation<R>) relation);
-                            }
-                        }
-                        default -> throw new IllegalStateException("Unexpected component of type '%s'".formatted(component.getClass().getName()));
+                // Place exclusive relations at the beginning of data
+                for (int i = 0; i < exclusiveComponentIds.getSize(); i++) {
+                    var componentId = exclusiveComponentIds.get(i);
+
+                    if (this.accessor.hasComponent(componentId)) {
+                        this.exclusiveSize++;
+                        this.data.add(componentId);
+                        this.dataIndex.add(-1);
                     }
                 }
 
-                this.size = components.getSize();
+                // Add non-exclusive relations after exclusive relations
+                for (int i = 0; i < componentIds.getSize(); i++) {
+                    var componentId = componentIds.get(i);
+
+                    var relations = this.accessor.<EntityRelationResult<R>>getComponent(componentId);
+                    if (relations != null) {
+                        for (int r = 0, rs = relations.size(); r < rs; r++) {
+                            size++;
+                            this.data.add(componentId);
+                            this.dataIndex.add(r);
+                        }
+                    }
+
+                }
+
+                this.size = size + exclusiveSize;
             }
 
             return size;
@@ -147,17 +209,40 @@ public class WildcardEntityRelationsImpl<R> implements WildcardEntityRelations<R
         }
 
         @Override
-        public Iterator<EntityRelation<? extends R>> iterator() {
-            size();
-            return this.components.iterator();
+        public Iterator<EntityRelation<R>> iterator() {
+            this.id = 0;
+            return this;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return id < size();
+        }
+
+        @Override
+        public EntityRelation<R> next() {
+            return get(id++);
+        }
+
+        @Override
+        public R getRelationship(int target) {
+            return null;
         }
 
         @Override
         public void reset() {
-            this.entityId = -1;
+            this.data.clear();
+            Arrays.fill(this.data.getData(), -1);
+
+            this.dataIndex.clear();
+            Arrays.fill(this.dataIndex.getData(), -1);
+
+            this.accessor = null;
+
+            this.exclusiveSize = -1;
             this.size = -1;
 
-            this.components.clear();
+            this.id = -1;
         }
 
     }

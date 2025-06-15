@@ -55,9 +55,9 @@ import de.schosin.ecs.utils.collections.IntBag;
 
 public class EngineWorld implements World, StorageWorld {
 
-    private record Config(int processLoops) {
+    private record Config(int expectedEntities, int processLoops) {
         public Config(WorldBuilder<?> builder) {
-            this(builder.processLoops);
+            this(builder.expectedEntities, builder.processLoops);
         }
     }
 
@@ -85,13 +85,13 @@ public class EngineWorld implements World, StorageWorld {
         var classes = addSingleton(new Classes(ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet()));
 
         this.eventManager = addSingleton(new EventManager());
-        this.bagManager = addSingleton(new BagManager());
+        this.bagManager = addSingleton(new BagManager(config.expectedEntities));
         this.componentManager = addSingleton(new ComponentManager(storageEngine, eventManager, bagManager, classes));
         this.entityManager = addSingleton(new EntityManager(this, storageEngine, bagManager));
-        this.changeManager = addSingleton(new ChangeManager(storageEngine, eventManager, bagManager, entityManager));
+        this.changeManager = addSingleton(new ChangeManager(storageEngine, eventManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager));
         this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager));
-        this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, transmutationManager, relationMapperManager));
+        this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, entityManager, transmutationManager, relationMapperManager));
 
         // Initialized configured singletons
         for (var singleton : builder.singletons.values()) {

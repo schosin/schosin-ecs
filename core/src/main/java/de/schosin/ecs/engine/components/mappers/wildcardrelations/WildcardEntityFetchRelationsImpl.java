@@ -7,24 +7,24 @@ import java.util.Iterator;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Relation;
-import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
-import de.schosin.ecs.api.components.Result;
+import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardEntityFetchRelations;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.utils.components.EntityRelationDataImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFetchRelations<R, T>, PoolingComponents<Result<EntityRelationData<? extends R, T>>> {
+public final class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFetchRelations<R, T>, PoolingComponents<EntityRelationDataResult<? extends R, T>> {
 
     private final WildcardEntityRelations<R> relationMapper;
     private final Components<?, T> dataMapper;
 
-    private final Bag<ResultImpl<R, T>> lent = new Bag<>(ResultImpl.class, 8);
+    private final Bag<ResultImpl<? extends R, T>> lent = new Bag<>(ResultImpl.class, 8);
 
     public WildcardEntityFetchRelationsImpl(WildcardEntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager) {
         this.relationMapper = componentMapperManager.getComponents(wildcardRelation(type.relationshipBound()));
@@ -32,9 +32,8 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
     }
 
     @Override
-    public void free(Result<EntityRelationData<? extends R, T>> result) {
-        if (result instanceof ResultImpl<R, T> impl) {
-            this.lent.removeIdentity(impl);
+    public void free(EntityRelationDataResult<? extends R, T> result) {
+        if (result instanceof ResultImpl<? extends R, T> impl && this.lent.removeIdentity(impl)) {
             ResultImpl.POOL.free(impl);
         }
     }
@@ -55,11 +54,18 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
     }
 
     @Override
-    public Result<EntityRelationData<? extends R, T>> get(int entityId) {
+    public EntityRelationDataResult<? extends R, T> get(int entityId) {
         var relations = relationMapper.get(entityId);
-        if (relations.isEmpty()) {
-            return Result.empty();
-        }
+
+        var result = ResultImpl.getInstance(relations, dataMapper);
+        lent.add(result);
+
+        return result;
+    }
+
+    @Override
+    public EntityRelationDataResult<? extends R, T> get(DataAccessor accessor) {
+        var relations = relationMapper.get(accessor);
 
         var result = ResultImpl.getInstance(relations, dataMapper);
         lent.add(result);
@@ -73,19 +79,19 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static class ResultImpl<R, T> implements Result<EntityRelationData<? extends R, T>>, Pooled {
+    private static class ResultImpl<R, T> implements EntityRelationDataResult<R, T>, Pooled {
 
         private static final Pool<ResultImpl<?, ?>> POOL = Pool.unbounded(ResultImpl.class, ResultImpl::new);
 
-        private Result<EntityRelation<?>> result;
+        private EntityRelationResult<? extends R> result;
         private Components<?, ?> mapper;
         private boolean initialized;
 
         private final Bag<EntityRelationData<?, ?>> relations = new Bag<>(EntityRelationData.class, 8);
 
-        static <R, T> ResultImpl<R, T> getInstance(Result<EntityRelation<? extends R>> result, Components<?, T> mapper) {
+        static <R, T> ResultImpl<? extends R, T> getInstance(EntityRelationResult<? extends R> result, Components<?, T> mapper) {
             var instance = (ResultImpl<R, T>) POOL.getInstance();
-            instance.result = (Result) result;
+            instance.result = result;
             instance.mapper = mapper;
             instance.initialized = false;
             instance.relations.ensureCapacity(result.size());
@@ -104,14 +110,14 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
         }
 
         @Override
-        public Iterator<EntityRelationData<? extends R, T>> iterator() {
+        public Iterator<EntityRelationData<R, T>> iterator() {
             initialize();
             return (Iterator) this.relations.iterator();
         }
 
         @NonNull
         @Override
-        public EntityRelationData<? extends R, T> get(int i) {
+        public EntityRelationData<R, T> get(int i) {
             initialize();
 
             if (i >= size()) {
@@ -121,6 +127,16 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
             return (EntityRelationData) this.relations.get(i);
         }
 
+        @Override
+        public R getRelationship(int target) {
+            return null;
+        }
+
+        @Override
+        public T getData(int target) {
+            return null;
+        }
+
         private void initialize() {
             if (initialized) {
                 return;
@@ -128,9 +144,8 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
 
             for (int i = 0, s = result.size(); i < s; i++) {
                 var relation = result.get(i);
-                var data = mapper.get(relation.target());
 
-                this.relations.add(Relation.create(relation.relationship(), relation.target(), data));
+                this.relations.add(EntityRelationDataImpl.getInstance(relation, mapper::get));
             }
 
             this.initialized = true;
@@ -138,6 +153,10 @@ public class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFet
 
         @Override
         public void reset() {
+            for (int i = 0, s = relations.getSize(); i < s; i++) {
+                EntityRelationDataImpl.free(relations.get(i));
+            }
+
             this.result = null;
             this.mapper = null;
             this.initialized = false;

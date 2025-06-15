@@ -9,6 +9,7 @@ import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 import de.schosin.ecs.api.components.ComponentSet.Factory;
 import de.schosin.ecs.api.components.ComponentSets;
+import de.schosin.ecs.api.data.DataProcessor;
 import de.schosin.ecs.engine.utils.exceptions.EcsComponentSetException;
 
 public class ComponentSetsHelper {
@@ -44,7 +45,7 @@ public class ComponentSetsHelper {
         private final List<ComponentData<S, ?, ?>> componentTypes;
         private final Factory<S> factory;
 
-        private ComponentSetFactoryImpl(ComponentSetData<S> data) {
+        private ComponentSetFactoryImpl(ComponentSetData<S, ?> data) {
             this.componentTypes = data.components();
             this.factory = data.factory();
         }
@@ -61,16 +62,16 @@ public class ComponentSetsHelper {
     }
 
     @SuppressWarnings("unchecked")
-    private static <S extends ComponentSet<?>> ComponentSetData<S> getData(Class<S> componentSet) {
+    public static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetData<S, P> getData(Class<S> componentSet) {
         if (COMPONENT_SETS_AVAILABLE) {
-            var result = ComponentSets.getData(componentSet);
+            var result = ComponentSets.<S, P>getData(componentSet);
             if (result != null) {
                 return result;
             }
         }
 
         try {
-            return (ComponentSetData<S>) componentSet.getField("DATA").get(null);
+            return (ComponentSetData<S, P>) componentSet.getField("DATA").get(null);
         } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException ex) {
             var message = "ComponentSet '%s' does not declare ComponentSetData<S>: static ComponentSetData<MyComponentSet> DATA = ComponentSet.builder(MyComponentSet::get).build();"
                     .formatted(componentSet.getName());

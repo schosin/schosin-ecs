@@ -129,17 +129,17 @@ class WildcardComponentRelationsImplTest extends AbstractWorldTest {
             var mapper3 = world.getWildcardComponentRelations(Relationship3.class, Object.class);
 
             // Verify
-            assertThat(mapper1.get(entity1)).containsExactlyInAnyOrder(relation1);
-            assertThat(mapper2.get(entity1)).containsExactlyInAnyOrder(relation1);
+            assertThat(mapper1.get(entity1)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1);
+            assertThat(mapper2.get(entity1)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1);
             assertThat(mapper3.get(entity1)).isEmpty();
 
-            assertThat(mapper1.get(entity2)).containsExactlyInAnyOrder(relation2);
-            assertThat(mapper2.get(entity2)).containsExactlyInAnyOrder(relation2);
+            assertThat(mapper1.get(entity2)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation2);
+            assertThat(mapper2.get(entity2)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation2);
             assertThat(mapper3.get(entity2)).isEmpty();
 
-            assertThat(mapper1.get(entity3)).containsExactlyInAnyOrder(relation3);
+            assertThat(mapper1.get(entity3)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation3);
             assertThat(mapper2.get(entity3)).isEmpty();
-            assertThat(mapper3.get(entity3)).containsExactlyInAnyOrder(relation3);
+            assertThat(mapper3.get(entity3)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation3);
         }
 
         @Test
@@ -155,9 +155,9 @@ class WildcardComponentRelationsImplTest extends AbstractWorldTest {
             var mapper3 = world.getWildcardComponentRelations(Relationship3.class, Object.class);
 
             // Verify
-            assertThat(mapper1.get(entityId)).containsExactlyInAnyOrder(relation1, relation2, relation3);
-            assertThat(mapper2.get(entityId)).containsExactlyInAnyOrder(relation1, relation2);
-            assertThat(mapper3.get(entityId)).containsExactlyInAnyOrder(relation3);
+            assertThat(mapper1.get(entityId)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1, relation2, relation3);
+            assertThat(mapper2.get(entityId)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1, relation2);
+            assertThat(mapper3.get(entityId)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation3);
         }
 
         @Test

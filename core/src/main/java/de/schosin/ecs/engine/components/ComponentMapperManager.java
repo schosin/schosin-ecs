@@ -55,6 +55,7 @@ import de.schosin.ecs.engine.components.mappers.fetch.ExclusiveEntityRelationFet
 import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardComponentRelationsImpl;
 import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardEntityFetchRelationsImpl;
 import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardEntityRelationsImpl;
+import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
@@ -73,8 +74,8 @@ public class ComponentMapperManager implements Components.Creator {
         void addMapper(M components);
     }
 
-    private final BagManager bagManager;
     private final ComponentManager componentManager;
+    private final EntityManager entityManager;
     private final TransmutationManager transmutationManager;
     private final RelationMapperManager relationMapperManager;
 
@@ -83,22 +84,21 @@ public class ComponentMapperManager implements Components.Creator {
     private final Bag<Components<?, ?>> components;
     private final Map<Enum<?>, EnumComponentMapper<?>> enumComponents = new IdentityHashMap<>();
 
-    private final Bag<PoolingComponents<?>> reclaimingComponents;
+    private final Bag<PoolingComponents<?>> reclaimingComponents = new Bag<>(PoolingComponents.class, 8);
     private final Map<ComponentType<?, ?>, Components<?, ?>> componentMappers = new ConcurrentHashMap<>();
 
     private final Map<Class<? extends CustomComponentType<?, ?, ?>>, Factory> factories = new HashMap<>();
 
-    public ComponentMapperManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, TransmutationManager transmutationManager,
+    public ComponentMapperManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, EntityManager entityManager, TransmutationManager transmutationManager,
             RelationMapperManager relationMapperManager) {
 
-        this.bagManager = bagManager;
         this.componentManager = componentManager;
+        this.entityManager = entityManager;
         this.transmutationManager = transmutationManager;
         this.relationMapperManager = relationMapperManager;
 
         this.eventHandler = new ComponentEventHandler(eventManager);
 
-        this.reclaimingComponents = bagManager.createComponentBag(PoolingComponents.class);
         this.components = bagManager.createComponentBag(Components.class);
     }
 
@@ -116,7 +116,7 @@ public class ComponentMapperManager implements Components.Creator {
      * @param factory components factory
      * @throws IllegalArgumentException when a factory is already registered for this type
      */
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({ "rawtypes", "cast" }) // false positive warning in eclipse
     public synchronized <T extends CustomComponentType, C extends CustomComponents> void registerCustomComponentType(Class<? extends T> type, FactoryAdapter<T, C> factory) {
         registerCustomComponentType(type, (Factory) factory);
     }
@@ -181,7 +181,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = (ComponentMapper<T>) switch (metadata) {
+            var mapper = switch (metadata) {
                 case Component.PooledComponentData<?> pooled -> new PooledComponentMapperImpl(pooled, transmutationManager);
                 case Component.ComponentData<T> data -> new ComponentMapperImpl<>(data, transmutationManager);
             };
@@ -275,7 +275,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new EntityRelationFetchMapperImpl<>(relation, this);
+            var mapper = new EntityRelationFetchMapperImpl<>(relation, this, entityManager::getAccessor);
             this.componentMappers.put(relation, mapper);
 
             return mapper;
@@ -296,7 +296,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new ExclusiveEntityRelationFetchMapperImpl<>(relation, this);
+            var mapper = new ExclusiveEntityRelationFetchMapperImpl<>(relation, this, entityManager::getAccessor);
             this.componentMappers.put(relation, mapper);
 
             return mapper;
@@ -317,7 +317,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new ComponentSetComponentsImpl<>(type, this);
+            var mapper = new ComponentSetComponentsImpl<>(type, this, entityManager::getAccessor);
 
             this.reclaimingComponents.add(mapper);
             this.componentMappers.put(type, mapper);
@@ -339,7 +339,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new WildcardComponentsImpl<>(wildcard, bagManager);
+            var mapper = new WildcardComponentsImpl<T>(entityManager::getAccessor);
             eventHandler.registerWildcardMapper(wildcard, mapper);
 
             this.reclaimingComponents.add(mapper);
@@ -363,7 +363,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new WildcardComponentRelationsImpl<R, T>(bagManager);
+            var mapper = new WildcardComponentRelationsImpl<R, T>(entityManager::getAccessor); // no singleton possible, see this.componentMappers
             eventHandler.registerWildcardMapper(wildcardRelation, mapper);
 
             this.reclaimingComponents.add(mapper);
@@ -387,7 +387,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new WildcardEntityRelationsImpl<R>(bagManager);
+            var mapper = new WildcardEntityRelationsImpl<R>(entityManager::getAccessor);
             eventHandler.registerWildcardMapper(wildcardRelation, mapper);
 
             this.reclaimingComponents.add(mapper);

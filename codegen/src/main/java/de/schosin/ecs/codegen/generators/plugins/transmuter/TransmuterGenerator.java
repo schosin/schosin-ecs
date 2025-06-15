@@ -428,8 +428,6 @@ public class TransmuterGenerator {
 
     private static class Javadoc {
 
-        private static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components.mappers", "Components");
-
         private static final CodeBlock TRANSMUTER = CodeBlock.builder()
                 .addStatement("""
                         Entity transmuter for changing the component composition of entities
@@ -442,7 +440,7 @@ public class TransmuterGenerator {
                         If a transmuter does not change the component composition of an
                         entity, no composition updates will be triggered.
                         </p>
-                        """, COMPONENTS)
+                        """, Utils.COMPONENTS)
                 .build();
 
         private static final String GET_INSTANCE = """

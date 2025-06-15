@@ -22,6 +22,9 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
  */
 public non-sealed interface ComponentMapper<T> extends RegularComponents<T, T> {
 
+    @Override
+    ClassType<T> componentType();
+
     interface EnumComponentMapper<T extends Enum<T>> extends ComponentMapper<T> {
 
         /**

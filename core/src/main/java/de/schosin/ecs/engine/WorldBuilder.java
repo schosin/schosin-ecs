@@ -23,6 +23,7 @@ import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
 import de.schosin.ecs.engine.utils.exceptions.EcsWorldCreationException;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
+
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.ByteCodeElement;
 import net.bytebuddy.implementation.MethodDelegation;
@@ -31,11 +32,14 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 public class WorldBuilder<T extends World> implements World.Builder<T> {
 
+    private static final int DEFAULT_ENTITY_COUNT = 2 << 10;
+
     private final Class<T> clazz;
 
     Class<? extends StorageEngine> storageEngine;
     Object storageConfig;
 
+    int expectedEntities = DEFAULT_ENTITY_COUNT;
     int processLoops = 3;
     final Map<Class<?>, Object> singletons = new HashMap<>();
     final Map<Class<?>, PluginConfig> pluginConfigs = new HashMap<>();
@@ -64,6 +68,16 @@ public class WorldBuilder<T extends World> implements World.Builder<T> {
         this.storageEngine = storageEngine.asSubclass(StorageEngine.class);
         this.storageConfig = config;
 
+        return this;
+    }
+
+    @Override
+    public Builder<T> expectedEntities(int count) {
+        if (count < 1) {
+            throw new IllegalArgumentException("count must be positive, but was: " + count);
+        }
+
+        this.expectedEntities = count;
         return this;
     }
 

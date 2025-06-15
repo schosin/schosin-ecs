@@ -1,6 +1,7 @@
 package de.schosin.ecs.api.components;
 
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
+import de.schosin.ecs.api.data.DataProcessor;
 
 /**
  * Placeholder instance providing the API for the core module to work with
@@ -15,7 +16,7 @@ import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 @SuppressWarnings("unused")
 public class ComponentSets {
 
-    public static <S extends ComponentSet<?>> ComponentSetData<S> getData(Class<S> componentSet) {
+    public static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetData<S, P> getData(Class<S> componentSet) {
         return null;
     }
 

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.engine.components.mappers.relations.AbstractRelationsTest.Faction.Enemy;
@@ -35,7 +34,7 @@ class ExclusiveComponentRelationMapperImplTest extends AbstractComponentRelation
         @Override
         @SuppressWarnings({ "unchecked", "rawtypes" })
         protected <RR, T> void add(Components<ComponentRelation<RR, T>, ?> mapper, int entityId, RR relationship, T target) {
-            ((ExclusiveComponentRelationMapper) mapper).add(entityId, (Exclusive) relationship, target);
+            ((ExclusiveComponentRelationMapper) mapper).add(entityId, relationship, target);
         }
 
         @Test

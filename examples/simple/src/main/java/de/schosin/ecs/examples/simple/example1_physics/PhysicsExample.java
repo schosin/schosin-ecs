@@ -7,6 +7,7 @@ import de.schosin.ecs.examples.simple.compositions.Acceleration;
 import de.schosin.ecs.examples.simple.compositions.Position;
 import de.schosin.ecs.examples.simple.compositions.Velocity;
 import de.schosin.ecs.plugins.composition.Composition;
+import de.schosin.ecs.plugins.data.types.DataType3.Processor3;
 
 public class PhysicsExample extends AbstractExample {
 

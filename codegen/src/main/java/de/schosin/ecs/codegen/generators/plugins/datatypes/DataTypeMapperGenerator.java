@@ -12,6 +12,7 @@ import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeSpec;
+import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
 
 import de.schosin.ecs.codegen.Utils;
@@ -25,6 +26,7 @@ public class DataTypeMapperGenerator {
         var packageName = ClassName.get(type).packageName();
 
         var helper = TypeSpec.classBuilder("DataTypeMapperHelper")
+                .addModifiers(Modifier.PUBLIC)
                 .addMethod(getInstance(maxParams))
                 .build();
 
@@ -35,10 +37,11 @@ public class DataTypeMapperGenerator {
     }
 
     private static MethodSpec getInstance(int maxParams) {
-        var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, Utils.WILDCARD, Utils.WILDCARD);
+        var dataR = TypeVariableName.get("R", DATA);
+        var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataR, Utils.WILDCARD);
 
         var body = CodeBlock.builder()
-                .beginControlFlow("return switch(dataType)");
+                .beginControlFlow("return (R) switch(dataType)");
 
         for (int i = 2; i <= maxParams; i++) {
             var typeVariables = IntStream.range(1, i + 1)
@@ -67,10 +70,11 @@ public class DataTypeMapperGenerator {
         body.addStatement(""); // switch expression
 
         return MethodSpec.methodBuilder("getInstance")
-                .addModifiers(Modifier.STATIC)
+                .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                .addTypeVariable(dataR)
                 .addParameter(dataType, "dataType")
                 .addParameter(Object[].class, "components").varargs()
-                .returns(DATA)
+                .returns(Utils.R)
                 .addCode(body.build())
                 .build();
     }

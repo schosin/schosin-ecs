@@ -1,6 +1,8 @@
 package de.schosin.ecs.engine.components.mappers;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.function.IntFunction;
 
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -9,35 +11,42 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.WildcardComponents;
-import de.schosin.ecs.api.components.types.Wildcard;
-import de.schosin.ecs.engine.BagManager;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, WildcardMapper<ComponentMapper<? extends T>> {
+public final class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, WildcardMapper<ComponentMapper<? extends T>> {
 
-    private final Wildcard<T> type;
+    private final IntFunction<DataAccessor> accessor;
+
     private final Bag<ComponentMapper<? extends T>> mappers;
+    private final IntBag componentIds;
+    private final Bag<Class<? extends T>> classes;
 
-    private final Pool<WildcardComponentResultImpl<T>> pool = Pool.unbounded(WildcardComponentResultImpl.class, this::createResultInstance);
-    private final Bag<WildcardComponentResultImpl<T>> lent = new Bag<>(WildcardComponentResultImpl.class, 8);
+    private final Pool<WildcardComponentResultImpl> pool = Pool.unbounded(WildcardComponentResultImpl.class, WildcardComponentResultImpl::new);
+    private final Bag<WildcardComponentResultImpl> lent = new Bag<>(WildcardComponentResultImpl.class, 8);
 
-    public WildcardComponentsImpl(Wildcard<T> type, BagManager bagManager) {
-        this.type = type;
-        this.mappers = bagManager.createComponentBag(ComponentMapper.class);
+    public WildcardComponentsImpl(IntFunction<DataAccessor> accessor) {
+        this.accessor = accessor;
+
+        this.mappers = new Bag<>(ComponentMapper.class, 4);
+        this.componentIds = new IntBag(4);
+        this.classes = new Bag<>(Class.class, 4);
     }
 
     @Override
     public void addMapper(ComponentMapper<? extends T> mapper) {
         this.mappers.add(mapper);
+        this.componentIds.add(mapper.componentId());
+        this.classes.add(mapper.componentType().clazz());
     }
 
     @Override
     public void free(ComponentResult<T> result) {
-        if (result instanceof WildcardComponentResultImpl<T> impl) {
-            this.lent.removeIdentity(impl);
+        if (result instanceof WildcardComponentResultImpl impl && this.lent.removeIdentity(impl)) {
             this.pool.free(impl);
         }
     }
@@ -54,19 +63,25 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
 
     @Override
     public boolean has(int entityId) {
-        var data = mappers.getData();
-        for (int i = 0, s = mappers.getSize(); i < s; i++) {
-            if (data[i].has(entityId)) {
-                return true;
+        try (var accessor = this.accessor.apply(entityId)) {
+            for (int i = 0, s = componentIds.getSize(); i < s; i++) {
+                if (accessor.getComponent(componentIds.get(i)) != null) {
+                    return true;
+                }
             }
-        }
 
-        return false;
+            return false;
+        }
     }
 
     @Override
     public ComponentResult<T> get(int entityId) {
-        var result = pool.getInstance().init(entityId);
+        return get(accessor.apply(entityId));
+    }
+
+    @Override
+    public ComponentResult<T> get(DataAccessor accessor) {
+        var result = pool.getInstance().init(accessor);
         lent.add(result);
 
         return result;
@@ -84,27 +99,21 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
         return removed;
     }
 
-    private WildcardComponentResultImpl<T> createResultInstance() {
-        return new WildcardComponentResultImpl<>(type.bound(), mappers);
-    }
+    private final class WildcardComponentResultImpl implements ComponentResult<T>, Iterator<T>, Pooled {
 
-    private static class WildcardComponentResultImpl<T> implements ComponentResult<T>, Pooled {
+        private final IntBag data = new IntBag(4);
 
-        private final Class<T> clazz;
-        private final Bag<ComponentMapper<? extends T>> mappers;
-        private final Bag<T> components;
+        private DataAccessor accessor;
 
-        private int entityId = -1;
         private int size = -1;
+        private int id = -1;
 
-        public WildcardComponentResultImpl(Class<T> clazz, Bag<ComponentMapper<? extends T>> mappers) {
-            this.clazz = clazz;
-            this.mappers = mappers;
-            this.components = new Bag<>(clazz, 4);
+        private WildcardComponentResultImpl() {
+            Arrays.fill(this.data.getData(), -1);
         }
 
-        public WildcardComponentResultImpl<T> init(int entityId) {
-            this.entityId = entityId;
+        public WildcardComponentResultImpl init(DataAccessor accessor) {
+            this.accessor = accessor;
 
             return this;
         }
@@ -116,19 +125,16 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
                 throw new ArrayIndexOutOfBoundsException(i);
             }
 
-            return this.components.get(i);
+            return this.accessor.getComponent(this.data.get(i));
         }
 
         @Nullable
         @Override
+        @SuppressWarnings("unchecked")
         public <R extends T> R get(Class<R> clazz) {
-            var s = size(); // initializes components, must be done before getData
-
-            var data = components.getData();
-            for (int i = 0; i < s; i++) {
-                var component = data[i];
-                if (clazz == component.getClass()) {
-                    return clazz.cast(component);
+            for (int i = 0, s = classes.getSize(); i < s; i++) {
+                if (classes.get(i) == clazz) {
+                    return (R) this.accessor.getComponent(componentIds.get(i));
                 }
             }
 
@@ -137,19 +143,20 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
 
         @Override
         public int size() {
-            if (size == -1) {
-                var data = mappers.getData();
-                for (int i = 0, s = mappers.getSize(); i < s; i++) {
-                    var component = data[i].get(entityId);
-                    if (component != null) {
-                        components.add(clazz.cast(component));
+            if (this.size == -1) {
+                this.size = 0;
+
+                for (int i = 0; i < componentIds.getSize(); i++) {
+                    var componentId = componentIds.get(i);
+
+                    if (this.accessor.hasComponent(componentId)) {
+                        this.size++;
+                        this.data.add(componentId);
                     }
                 }
-
-                this.size = components.getSize();
             }
 
-            return size;
+            return this.size;
         }
 
         @Override
@@ -159,16 +166,29 @@ public class WildcardComponentsImpl<T> implements WildcardComponents<T>, Pooling
 
         @Override
         public Iterator<T> iterator() {
-            size();
-            return this.components.iterator();
+            this.id = 0;
+            return this;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return id < size();
+        }
+
+        @Override
+        public T next() {
+            return get(id++);
         }
 
         @Override
         public void reset() {
-            this.entityId = -1;
-            this.size = -1;
+            this.data.clear();
+            Arrays.fill(this.data.getData(), -1);
 
-            this.components.clear();
+            this.accessor = null;
+
+            this.size = -1;
+            this.id = -1;
         }
 
     }

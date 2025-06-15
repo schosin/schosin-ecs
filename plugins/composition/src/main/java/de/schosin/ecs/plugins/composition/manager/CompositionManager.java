@@ -1,5 +1,8 @@
 package de.schosin.ecs.plugins.composition.manager;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,11 +18,13 @@ import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.data.DataProcessor;
+import de.schosin.ecs.api.data.IterableAccessor;
 import de.schosin.ecs.codegen.EcsCodegen;
-import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.mappers.ComponentConverter;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
@@ -27,6 +32,7 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
+import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionData;
@@ -40,8 +46,11 @@ import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.EntityData;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
@@ -50,7 +59,6 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     private final StorageEngine storageEngine;
 
-    private final BagManager bagManager;
     private final ComponentMapperManager componentMapperManager;
 
     private final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 64);
@@ -66,14 +74,13 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         this.storageEngine = world.getSingleton(StorageEngine.class);
 
-        this.bagManager = world.getSingleton(BagManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
         var eventManager = world.getSingleton(EventManager.class);
         eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.componentMask()));
         eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.componentMask()));
         eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> handleBeforeUpdate(event.entityId(), event.componentMask(), event.newComponentMask()));
-        eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.previousComponentMask(), event.componentMask()));
+        eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.componentMask()));
         eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.componentMask()));
         eventManager.registerEventHandler(ArchetypeAddedEvent.class, this::handleArchetypeAdded);
     }
@@ -121,7 +128,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     private CompositionImpl buildComposition(EngineSpec spec, Function<ComponentsPredicate, IntBag> entities) {
         // Create composition
-        var composition = new CompositionImpl(spec, entities.apply(spec), bagManager.createEntityIntBag());
+        var composition = new CompositionImpl(spec, entities);
 
         // Offer known archetypes to composition
         for (var archetype : archetypes) {
@@ -188,7 +195,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    private void handleUpdated(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
+    private void handleUpdated(int entityId, ComponentMask componentMask) {
         // Add to new composition if not yet contained
         var newCompositions = getCompositions(componentMask);
 
@@ -238,9 +245,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private final class CompositionImpl implements Composition {
 
         private final EngineSpec spec;
-
-        private final IntBag lookup;
         private final IntBag maskCache;
+
+        private final BitVector lookup;
 
         private final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 8);
 
@@ -255,16 +262,25 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         @SuppressWarnings("rawtypes")
         private final Map<ComponentType<?, ?>, AbstractComposition> compositionData = new ConcurrentHashMap<>();
 
-        private CompositionImpl(EngineSpec spec, IntBag entities, IntBag lookup) {
+        private CompositionImpl(EngineSpec spec, Function<ComponentsPredicate, IntBag> supplier) {
             this.spec = spec;
+            this.maskCache = new IntBag(64);
 
-            this.lookup = bagManager.createEntityIntBag();
+            var entities = supplier.apply(this::isInterested);
 
+            // Determine largest entityId to avoid garbage by BitVector growing
+            var largestEntityId = 0;
             for (int i = 0, s = entities.getSize(); i < s; i++) {
-                this.lookup.set(entities.get(i), 1);
+                var entityId = entities.get(i);
+                if (entityId > largestEntityId) {
+                    largestEntityId = entityId;
+                }
             }
 
-            this.maskCache = new IntBag(64);
+            this.lookup = new BitVector(largestEntityId);
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                this.lookup.set(entities.get(i));
+            }
 
             this.count = entities.getSize();
         }
@@ -275,6 +291,10 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             if (spec.isInterested(componentMask)) {
                 archetypes.add(archetype);
                 maskCache.set(componentMask.getId(), 1);
+
+                for (var data : compositionData.values()) {
+                    data.addArchetype(archetype);
+                }
             }
         }
 
@@ -282,6 +302,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         private <R> CompositionData1<R> createCompositionData(ComponentType<?, R> component) {
             if (component instanceof DataType<?, ?, ?, ?>) {
                 throw new IllegalArgumentException("Cannot pass DataType to createComposition(Builder, ComponentType). Use createComposition(Builder, DataType) instead.");
+            }
+            if (component instanceof ComponentSetType<?, ?>) {
+                throw new IllegalArgumentException("Cannot pass ComponentSetType to createComposition(Builder, ComponentType). Use createComposition(Builder, ComponentSetType) instead.");
             }
 
             var result = (CompositionData1<R>) compositionData.get(component);
@@ -295,7 +318,13 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                     return result;
                 }
 
-                var compositionData = new Composition1<>(this, component);
+                var compositionData = switch (component) {
+                    case RegularComponentType<?, R> regular -> new RegularComposition1<>(this, regular);
+                    default -> new Composition1<>(this, component);
+                };
+
+                initializeCompositionData(compositionData);
+
                 this.compositionData.put(component, compositionData);
 
                 return compositionData;
@@ -316,6 +345,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 }
 
                 var compositionData = (AbstractCompositionN<T, P>) CompositionManagerHelper.createCompositionData(this, dataType);
+                initializeCompositionData(compositionData);
 
                 this.compositionData.put(dataType, compositionData);
 
@@ -337,9 +367,19 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 }
 
                 var compositionSet = new ComponentSetComposition<>(this, componentSetType);
+                initializeCompositionData(compositionSet);
+
                 this.compositionData.put(componentSetType, compositionSet);
 
                 return compositionSet;
+            }
+        }
+
+        private void initializeCompositionData(AbstractComposition<?, ?> compositionData) {
+            synchronized (archetypes) {
+                for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+                    compositionData.addArchetype(archetypes.get(i));
+                }
             }
         }
 
@@ -348,11 +388,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         private boolean containsEntity(int entityId) {
-            return this.lookup.get(entityId) == 1;
+            return this.lookup.get(entityId);
         }
 
         private void inserted(int entityId) {
-            this.lookup.set(entityId, 1);
+            this.lookup.set(entityId);
             this.count++;
 
             if (inserted == null) {
@@ -372,7 +412,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         private void removed(int entityId) {
             // Remove entity
-            this.lookup.set(entityId, 0);
+            this.lookup.clear(entityId);
             this.count--;
 
             if (removed == null) {
@@ -499,26 +539,200 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     }
 
-    static class Composition1<R> extends AbstractComposition<R, DataProcessor<R>> implements CompositionData1<R> {
+    static class RegularComposition1<R> extends AbstractComposition<R, DataProcessor<R>> implements CompositionData1<R> {
 
-        protected Composition1(Composition composition, ComponentType<?, R> type) {
-            super(composition, type);
+        private final RegularComponentType<?, R> componentType;
+
+        private final Bag<EntityData> entityData = new Bag<>(EntityData.class, 4);
+
+        protected RegularComposition1(Composition composition, RegularComponentType<?, R> componentType) {
+            super(composition, componentType);
+
+            this.componentType = componentType;
+        }
+
+        @Override
+        protected final void addArchetype(Archetype archetype) {
+            this.entityData.add(archetype.getEntityData(componentType));
+        }
+
+        @Override
+        public final void process(DataProcessor<R> processor) {
+            for (int i = 0, s = entityData.getSize(); i < s; i++) {
+                var data = entityData.get(i);
+
+                for (int e = 0, es = data.getSize(); e < es; e++) {
+                    processor.process(data.getId(e), data.getComponent(e));
+                }
+            }
         }
 
     }
 
-    static class ComponentSetComposition<T extends ComponentSet<P>, P extends DataProcessor<T>> extends AbstractComposition<T, P> implements CompositionSet<P> {
+    static class Composition1<R> extends AbstractAccessorComposition<R, DataProcessor<R>> implements CompositionData1<R> {
 
-        protected ComponentSetComposition(Composition composition, ComponentSetType<T, P> type) {
-            super(composition, type);
+        private final Components<?, R> mapper;
+        private final PoolingComponents<R> pooling;
+
+        @SuppressWarnings("unchecked")
+        protected Composition1(Composition composition, ComponentType<?, R> componentType) {
+            super(composition, componentType);
+
+            this.mapper = this.composition.getComponents(componentType);
+            this.pooling = mapper instanceof PoolingComponents pooling ? pooling : null;
+        }
+
+        @Override
+        public final void process(DataProcessor<R> processor) {
+            for (int i = 0, s = entityData.getSize(); i < s; i++) {
+                var data = entityData.get(i);
+                var accessor = data.getAccessor();
+
+                while (accessor.hasNext()) {
+                    var entityId = accessor.next();
+
+                    var component = mapper.get(accessor);
+
+                    processor.process(entityId, component);
+
+                    if (pooling != null) {
+                        pooling.free(component);
+                    }
+                }
+
+                accessor.free();
+            }
         }
 
     }
 
-    abstract static class AbstractCompositionN<R extends Data, P extends DataProcessor<R>> extends AbstractComposition<R, P> {
+    static class ComponentSetComposition<T extends ComponentSet<P>, P extends DataProcessor<T>> extends AbstractAccessorComposition<T, P> implements CompositionSet<P> {
 
+        private final ComponentSet.IterableProcessor<T, P> processor;
+
+        private final ComponentType<?, ?>[] componentTypes;
+        private final Components<?, ?>[] mappers;
+
+        private final Bag<List<ComponentConverter<Object>>> converters = new Bag<>(List.class, 4);
+
+        protected ComponentSetComposition(Composition composition, ComponentSetType<T, P> componentSetType) {
+            super(composition, componentSetType);
+
+            var data = ComponentSetsHelper.<T, P>getData(componentSetType.componentSet());
+            this.processor = data.processor();
+
+            this.componentTypes = data.components().stream()
+                    .map(ComponentSet.ComponentData::type)
+                    .toArray(ComponentType<?, ?>[]::new);
+
+            this.mappers = IntStream.range(0, componentTypes.length)
+                    .mapToObj(i -> (Components<?, ?>) this.composition.getComponents(componentTypes[i]))
+                    .toArray(Components<?, ?>[]::new);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        protected void handleArchetypeAdded(Archetype archetype) {
+            var converters = new ArrayList<ComponentConverter<Object>>();
+            this.converters.set(this.converters.getSize(), converters);
+
+            for (int i = 0, s = mappers.length; i < s; i++) {
+                var mapper = mappers[i];
+
+                var converter = mapper instanceof ComponentConverter.Factory factory ? factory.getConverter(archetype) : ComponentConverter.wrapped(mapper);
+                converters.add(converter);
+            }
+        }
+
+        @Override
+        public final void process(P processor) {
+            for (int i = 0, s = entityData.getSize(); i < s; i++) {
+                var data = entityData.get(i);
+                var accessor = data.getAccessor();
+                var converters = this.converters.get(i);
+
+                this.processor.process(processor, accessor, converters);
+
+                accessor.free();
+            }
+        }
+
+    }
+
+    abstract static class AbstractCompositionN<R extends Data, P extends DataProcessor<R>> extends AbstractAccessorComposition<R, P> {
+
+        private final ComponentType<?, ?>[] componentTypes;
+
+        protected final Components<?, ?>[] mappers;
+        protected final PoolingComponents<Object>[] pooling;
+
+        private final Bag<Bag<ComponentConverter<Object>>> converters = new Bag<>(Bag.class, 4);
+
+        @SuppressWarnings("unchecked")
         protected AbstractCompositionN(Composition composition, DataType<?, ?, R, P> dataType) {
             super(composition, dataType);
+
+            this.componentTypes = dataType.getComponentTypes();
+
+            this.mappers = IntStream.range(0, componentTypes.length)
+                    .mapToObj(i -> (Components<?, ?>) this.composition.getComponents(componentTypes[i]))
+                    .toArray(Components<?, ?>[]::new);
+
+            this.pooling = Arrays.stream(this.mappers)
+                    .map(mapper -> mapper instanceof PoolingComponents<?> pooling ? pooling : null)
+                    .toArray(PoolingComponents[]::new);
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        protected void handleArchetypeAdded(Archetype archetype) {
+            var converters = new Bag<ComponentConverter<Object>>(ComponentConverter.class, 4);
+            this.converters.add(converters);
+
+            for (int i = 0, s = mappers.length; i < s; i++) {
+                var mapper = mappers[i];
+
+                var converter = mapper instanceof ComponentConverter.Factory factory ? factory.getConverter(archetype) : ComponentConverter.wrapped(mapper);
+                converters.add(converter);
+            }
+        }
+
+        @Override
+        public final void process(P processor) {
+            for (int i = 0, s = entityData.getSize(); i < s; i++) {
+                var data = entityData.get(i);
+                var accessor = data.getAccessor();
+                var converters = this.converters.get(i);
+
+                process(processor, accessor, converters);
+
+                accessor.free();
+            }
+        }
+
+        protected abstract void process(P processor, IterableAccessor accessor, ImmutableBag<ComponentConverter<Object>> converters);
+
+    }
+
+    abstract static class AbstractAccessorComposition<R, P extends DataProcessor<R>> extends AbstractComposition<R, P> {
+
+        protected final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 4);
+        protected final Bag<EntityData> entityData = new Bag<>(EntityData.class, 4);
+
+        protected AbstractAccessorComposition(Composition composition, ComponentType<?, R> type) {
+            super(composition, type);
+        }
+
+        @Override
+        protected final void addArchetype(Archetype archetype) {
+            this.archetypes.add(archetype);
+
+            this.entityData.add(archetype.getEntityData());
+
+            handleArchetypeAdded(archetype);
+        }
+
+        protected void handleArchetypeAdded(Archetype archetype) {
         }
 
     }
@@ -526,7 +740,6 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     abstract static class AbstractComposition<R, P extends DataProcessor<R>> implements CompositionData<P>, Spec {
 
         protected final CompositionImpl composition;
-
         private final Components<?, R> mapper;
 
         protected AbstractComposition(Composition composition, ComponentType<?, R> type) {
@@ -534,59 +747,56 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             this.mapper = this.composition.getComponents(type);
         }
 
+        protected abstract void addArchetype(Archetype archetype);
+
         @Override
-        public boolean isInterested(int entityId) {
+        public final boolean isInterested(int entityId) {
             return composition.isInterested(entityId);
         }
 
         @Override
-        public boolean matches(Spec spec) {
+        public final boolean matches(Spec spec) {
             return composition.matches(spec);
         }
 
         @Override
-        public void inserted(IntConsumer inserted) {
+        public final void inserted(IntConsumer inserted) {
             composition.inserted(inserted);
         }
 
         @Override
-        public void inserted(P processor) {
+        public final void inserted(P processor) {
             composition.inserted(entityId -> process(entityId, processor));
         }
 
         @Override
-        public void removed(IntConsumer removed) {
+        public final void removed(IntConsumer removed) {
             composition.removed(removed);
         }
 
         @Override
-        public void removed(P processor) {
+        public final void removed(P processor) {
             composition.removed(entityId -> process(entityId, processor));
         }
 
         @Override
-        public int getCount() {
+        public final int getCount() {
             return composition.getCount();
         }
 
         @Override
-        public boolean isEmpty() {
+        public final boolean isEmpty() {
             return composition.isEmpty();
         }
 
         @Override
-        public void process(IntConsumer process) {
+        public final void process(IntConsumer process) {
             composition.process(process);
         }
 
         @Override
-        public void process(P processor) {
-            composition.process(entityId -> process(entityId, processor));
-        }
-
-        @Override
         @SuppressWarnings("unchecked")
-        public void process(int entityId, P processor) {
+        public final void process(int entityId, P processor) {
             var data = mapper.get(entityId);
             processor.process(entityId, data);
 
@@ -596,18 +806,18 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @Override
-        public IntStream stream() {
+        public final IntStream stream() {
             return composition.stream();
         }
 
         @Override
-        public IntStream parallelStream() {
+        public final IntStream parallelStream() {
             return composition.parallelStream();
         }
 
     }
 
-    private static class CompositionSpliterator implements Spliterator.OfInt {
+    private static final class CompositionSpliterator implements Spliterator.OfInt {
 
         private final Bag<ImmutableIntBag> bags;
         private final int size;

@@ -44,12 +44,18 @@ public class ComponentSetsGenerator {
     static final ClassName COMPONENT_SET = ClassName.get("de.schosin.ecs.api.components", "ComponentSet");
     static final ClassName COMPONENT_SET_DATA = COMPONENT_SET.nestedClass("ComponentSetData");
     static final ClassName COMPONENT_ACCESSOR = COMPONENT_SET.nestedClass("ComponentAccessor");
+    static final ClassName COMPONENT_ACCESSOR_PROCESSOR = COMPONENT_SET.nestedClass("IterableProcessor");
     static final ClassName COMPONENT_SET_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentSetType");
 
     private static final ClassName POOL = ClassName.get("de.schosin.ecs.utils.collections", "Pool");
 
+    public static final ClassName DATA_CONVERTER = ClassName.get("de.schosin.ecs.api.data", "DataConverter");
+    public static final ClassName DATA_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataAccessor");
     public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataProcessor");
     public static final ClassName DATA_PROCESSOR_TYPE = ClassName.get("de.schosin.ecs.api.data", "DataProcessorType");
+    public static final ClassName ITERABLE_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
+
+    private static final WildcardTypeName WILDCARD = WildcardTypeName.subtypeOf(Object.class);
 
     public TypeSpec generateComponentSets(List<TypeData> implementations) {
         var constructor = MethodSpec.constructorBuilder().addModifiers(Modifier.PRIVATE).build();
@@ -90,7 +96,7 @@ public class ComponentSetsGenerator {
             }
 
             var componentSet = ParameterizedTypeName.get(COMPONENT_SET, WildcardTypeName.subtypeOf(Object.class));
-            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, WildcardTypeName.subtypeOf(componentSet));
+            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, WildcardTypeName.subtypeOf(componentSet), WILDCARD);
             var classT = ParameterizedTypeName.get(ClassName.get(Class.class), WildcardTypeName.subtypeOf(componentSet));
             var type = ParameterizedTypeName.get(ClassName.get(Map.class), classT, componentSetDataType);
 
@@ -103,7 +109,7 @@ public class ComponentSetsGenerator {
             var typeS = TypeVariableName.get("S", ParameterizedTypeName.get(COMPONENT_SET, WildcardTypeName.subtypeOf(Object.class)));
 
             var wildcardClass = ParameterizedTypeName.get(ClassName.get(Class.class), TypeVariableName.get("S"));
-            var componentSetData = ParameterizedTypeName.get(COMPONENT_SET_DATA, TypeVariableName.get("S"));
+            var componentSetData = ParameterizedTypeName.get(COMPONENT_SET_DATA, TypeVariableName.get("S"), WILDCARD);
 
             return MethodSpec.methodBuilder("getData")
                     .addAnnotation(AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build())
@@ -111,7 +117,7 @@ public class ComponentSetsGenerator {
                     .addTypeVariable(typeS)
                     .addParameter(wildcardClass, "componentSet")
                     .returns(componentSetData)
-                    .addStatement("return ($1T<S>) LOOKUP.get(componentSet)", COMPONENT_SET_DATA)
+                    .addStatement("return ($1T) LOOKUP.get(componentSet)", componentSetData)
                     .build();
         }
 
@@ -158,7 +164,7 @@ public class ComponentSetsGenerator {
             var implementationName = result.implementationName;
             var components = result.components;
 
-            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName);
+            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName, interfaceName.nestedClass("Processor"));
             var componentSetData = FieldSpec.builder(componentSetDataType, "DATA", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
                     .initializer("$1T.DATA", implementationName)
                     .build();
@@ -298,9 +304,9 @@ public class ComponentSetsGenerator {
                     .addField(entityId);
 
             var componentSetDataInitializer = CodeBlock.builder()
-                    .add("$1T.builder($2T::factory)", COMPONENT_SET, implementationName);
+                    .add("$1T.builder($2T::factory, $3T.INSTANCE)", COMPONENT_SET, implementationName, implementationName.nestedClass("IterableProcessor"));
 
-            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName);
+            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName, interfaceName.nestedClass("Processor"));
             var componentSetData = FieldSpec.builder(componentSetDataType, "DATA", Modifier.STATIC, Modifier.FINAL);
 
             var factoryBody = CodeBlock.builder()
@@ -389,6 +395,67 @@ public class ComponentSetsGenerator {
                     .addMethod(factory.build())
                     .addMethod(getInstance.build())
                     .addMethod(toString)
+                    .addType(createIterableProcessorType(result))
+                    .build();
+        }
+
+        private static TypeSpec createIterableProcessorType(VisitorResult result) {
+            var superInterface = ParameterizedTypeName.get(COMPONENT_ACCESSOR_PROCESSOR, result.interfaceName, result.interfaceName.nestedClass("Processor"));
+
+            return TypeSpec.enumBuilder("IterableProcessor")
+                    .addModifiers(Modifier.PRIVATE)
+                    .addSuperinterface(superInterface)
+                    .addEnumConstant("INSTANCE")
+                    .addMethod(iterableProcessorImpl(result))
+                    .build();
+        }
+
+        private static MethodSpec iterableProcessorImpl(VisitorResult result) {
+            var components = result.components;
+            var n = components.size();
+
+            var methodBody = CodeBlock.builder();
+
+            for (int i = 1; i <= n; i++) {
+                var type = components.get(i - 1).typeName;
+                var converter = ParameterizedTypeName.get(DATA_CONVERTER, type);
+
+                methodBody.addStatement("var converter%d = ($1T) converters.get(%d)".formatted(i, i - 1), converter);
+            }
+            methodBody.beginControlFlow("while(accessor.hasNext())");
+            methodBody.addStatement("var entityId = accessor.next()");
+
+            methodBody.addStatement("// retrieve components");
+            for (int i = 1; i <= n; i++) {
+                methodBody.addStatement("var component%d = converter%d.getComponent(accessor)".formatted(i, i));
+            }
+
+            methodBody.addStatement("// process");
+            var processStatement = "processor.process(entityId";
+            for (int i = 1; i <= n; i++) {
+                processStatement += ", component%d".formatted(i);
+            }
+            processStatement += ")";
+
+            methodBody.addStatement(processStatement);
+
+            methodBody.addStatement("// free components");
+            for (int i = 1; i <= n; i++) {
+                methodBody.addStatement("converter%d.free(component%d)".formatted(i, i));
+            }
+
+            methodBody.endControlFlow(); // while
+
+            var converters = ParameterizedTypeName.get(ClassName.get(List.class), WildcardTypeName.subtypeOf(ParameterizedTypeName.get(DATA_CONVERTER, WILDCARD)));
+
+            return MethodSpec.methodBuilder("process")
+                    .addAnnotation(Override.class)
+                    .addAnnotation(AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build())
+                    .addModifiers(Modifier.PUBLIC)
+                    .addParameter(result.interfaceName.nestedClass("Processor"), "processor")
+                    .addParameter(ITERABLE_PROCESSOR, "accessor")
+                    .addParameter(converters, "converters")
+                    .addCode(methodBody.build())
                     .build();
         }
 

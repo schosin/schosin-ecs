@@ -21,12 +21,14 @@ public class EngineWorldTest extends AbstractWorldTest {
         @Test
         void testConfiguration() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
             var world = (EngineWorld) World.builder()
+                    .expectedEntities(9001)
                     .processLoops(42)
                     .build();
 
             var config = getField(world, "config");
             assertThat(config)
-                    .hasOnlyFields("processLoops") // add assertions for new fields
+                    .hasOnlyFields("expectedEntities", "processLoops") // add assertions for new fields
+                    .hasFieldOrPropertyWithValue("expectedEntities", 9001)
                     .hasFieldOrPropertyWithValue("processLoops", 42);
         }
 

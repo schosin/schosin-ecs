@@ -10,15 +10,20 @@ import static org.assertj.core.api.Assertions.tuple;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
@@ -29,7 +34,11 @@ import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.mappers.CustomComponents;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.CustomComponentType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
@@ -46,6 +55,7 @@ import de.schosin.ecs.plugins.composition.CompositionData6;
 import de.schosin.ecs.plugins.composition.CompositionData7;
 import de.schosin.ecs.plugins.composition.CompositionData8;
 import de.schosin.ecs.plugins.composition.Spec;
+import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.test.AbstractEcsTest;
 import de.schosin.ecs.utils.collections.BitVector;
@@ -1270,7 +1280,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class Composition1Test extends AbstractCompositionNTest<CompositionData1<C1>> {
+    class Composition1Test extends AbstractCompositionDataTest<CompositionData1<C1>> {
 
         @Override
         CompositionData1<C1> composition(Composition.Builder builder) {
@@ -1307,6 +1317,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testProcessOtherEntity() {
             composition(builder1).process(expected1[0], (entityId, c1) -> {
                 assertThat(c1).isNotNull();
+            });
+
+            composition(builder1).process(expected8[0], (entityId, c1) -> {
+                assertThat(c1).isNull();
             });
 
             composition(builder8).process(expected18[0], (entityId, c1) -> {
@@ -1394,6 +1408,82 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             assertThat(removed.getSize()).isEqualTo(expected1.length);
             assertThat(removed.getData()).containsExactlyInAnyOrder(expected1);
+        }
+
+        @Test
+        void testComponentSet_EntitiesBeforeCompositionCreation() {
+            var type = TestComponentSet.TYPE;
+            var handler = new ComponentSetHandler();
+
+            var entity = world.createEntity();
+            var entity1 = world.createEntity(new C1());
+            var entity2 = world.createEntity(new C2());
+            var entity12 = world.createEntity(new C1(), new C2());
+
+            var composition = world.createComposition(Composition.one(C1.class, C2.class), type);
+            composition.process(handler::handle);
+
+            assertThat(handler.data)
+                    .extracting("entityId", "c1", "c2")
+                    .doesNotContain(tuple(entity, null, null))
+                    .contains(tuple(entity1, new C1(), null))
+                    .contains(tuple(entity2, null, new C2()))
+                    .contains(tuple(entity12, new C1(), new C2()));
+        }
+
+        @Test
+        void testComponentSet_EntitiesAfterCompositionCreation() {
+            var type = TestComponentSet.TYPE;
+            var handler = new ComponentSetHandler();
+
+            var composition = world.createComposition(Composition.one(C1.class, C2.class), type);
+
+            var entity = world.createEntity();
+            var entity1 = world.createEntity(new C1());
+            var entity2 = world.createEntity(new C2());
+            var entity12 = world.createEntity(new C1(), new C2());
+
+            composition.process(handler::handle);
+
+            assertThat(handler.data)
+                    .extracting("entityId", "c1", "c2")
+                    .doesNotContain(tuple(entity, null, null))
+                    .contains(tuple(entity1, new C1(), null))
+                    .contains(tuple(entity2, null, new C2()))
+                    .contains(tuple(entity12, new C1(), new C2()));
+        }
+
+        @Test
+        void testNestedDataType() {
+            var innerDataType = DataType.get(
+                    component(C1.class),
+                    relation(C1.class, C2.class));
+
+            var dataType = DataType.get(component(C2.class), innerDataType);
+            var composition = world.createComposition(Composition.all(P1.class), dataType);
+
+            var component1 = new C1();
+            var component2 = new C2();
+            var relation12 = Relation.create(new C1(), new C2());
+
+            var entityId = world.createEntity(new P1(), component1, component2, relation12);
+
+            var processed = new AtomicBoolean(false);
+            composition.process((id, c2, innerData) -> {
+                assertThat(id).isEqualTo(entityId);
+
+                assertThat(c2).isSameAs(component2);
+
+                assertThat(innerData).isNotNull();
+                assertThat(innerData.component1()).isSameAs(component1);
+                assertThat(innerData.component2()).containsExactly(relation12);
+
+                processed.set(true);
+            });
+
+            assertThat(processed.get()).isTrue();
+
+            assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
         }
 
     }
@@ -2469,10 +2559,92 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
     }
 
-    abstract class AbstractCompositionNTest<C extends CompositionData<?>> {
+    abstract class AbstractCompositionDataTest<C extends CompositionData<?>> {
 
         interface TestConsumer<T> {
             void consume(int index, T result);
+        }
+
+        interface ProcessTestImpl<C extends CompositionData<?>> {
+            AbstractCompositionDataTest<C> getTest();
+
+            default <R> int[] performImpl(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                var test = getTest();
+                var world = test.getWorld();
+
+                var s = components.length;
+                var entities = new int[s];
+
+                for (int i = 0; i < s; i++) {
+                    entities[i] = world.createEntity(components[i]);
+                }
+
+                test.process(composition, type, (entityId, result) -> {
+                    for (int i = 0; i < s; i++) {
+                        if (entityId == entities[i]) {
+                            consumer.consume(i, result);
+                        }
+                    }
+                });
+
+                return entities;
+            }
+        }
+
+        interface InsertedTestImpl<C extends CompositionData<?>> {
+            AbstractCompositionDataTest<C> getTest();
+
+            default <R> int[] performImpl(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                var test = getTest();
+                var world = test.getWorld();
+
+                var s = components.length;
+                var entities = new int[s];
+
+                var count = new AtomicInteger(0);
+
+                test.inserted(composition, type, (entityId, result) -> {
+                    var i = count.getAndIncrement();
+                    if (i < s) {
+                        consumer.consume(i, result);
+                    }
+                });
+
+                for (int i = 0; i < s; i++) {
+                    entities[i] = world.createEntity(components[i]);
+                }
+
+                return entities;
+            }
+        }
+
+        interface RemovedTestImpl<C extends CompositionData<?>> {
+            AbstractCompositionDataTest<C> getTest();
+
+            default <R> int[] performImpl(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                var test = getTest();
+                var world = test.getWorld();
+
+                var s = components.length;
+                var entities = new int[s];
+
+                for (int i = 0; i < s; i++) {
+                    entities[i] = world.createEntity(components[i]);
+                    world.deleteEntity(entities[i]);
+                }
+
+                test.removed(composition, type, (entityId, result) -> {
+                    for (int i = 0; i < s; i++) {
+                        if (entityId == entities[i]) {
+                            consumer.consume(i, result);
+                        }
+                    }
+                });
+
+                world.process();
+
+                return entities;
+            }
         }
 
         final Composition.Builder builder1 = Composition.all(C1.class).none(C8.class);
@@ -2544,6 +2716,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         abstract <R> void removed(CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
 
         abstract <R> void process(CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
+
+        private World getWorld() {
+            return world;
+        }
 
         @Test
         void testCachedInstance() {
@@ -2849,75 +3025,41 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         class WildcardTypeTest {
 
             @Nested
-            class ProcessTest extends AbstractTest {
+            class ProcessTest extends AbstractTest implements ProcessTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
                 @Override
                 <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
-                    var s = components.length;
-                    var entities = new int[s];
-
-                    for (int i = 0; i < s; i++) {
-                        entities[i] = world.createEntity(components[i]);
-                    }
-
-                    process(composition, type, (entityId, result) -> {
-                        for (int i = 0; i < s; i++) {
-                            if (entityId == entities[i]) {
-                                consumer.consume(i, result);
-                            }
-                        }
-                    });
-
-                    return entities;
+                    return performImpl(components, composition, type, consumer);
                 }
             }
 
             @Nested
-            class InsertedTest extends AbstractTest {
+            class InsertedTest extends AbstractTest implements InsertedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
                 @Override
                 <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
-                    var s = components.length;
-                    var entities = new int[s];
-
-                    var count = new AtomicInteger(0);
-
-                    inserted(composition, type, (entityId, result) -> {
-                        var i = count.getAndIncrement();
-                        if (i < s) {
-                            consumer.consume(i, result);
-                        }
-                    });
-
-                    for (int i = 0; i < s; i++) {
-                        entities[i] = world.createEntity(components[i]);
-                    }
-
-                    return entities;
+                    return performImpl(components, composition, type, consumer);
                 }
             }
 
             @Nested
-            class RemovedTest extends AbstractTest {
+            class RemovedTest extends AbstractTest implements RemovedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
                 @Override
                 <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
-                    var s = components.length;
-                    var entities = new int[s];
-
-                    for (int i = 0; i < s; i++) {
-                        entities[i] = world.createEntity(components[i]);
-                        world.deleteEntity(entities[i]);
-                    }
-
-                    removed(composition, type, (entityId, result) -> {
-                        for (int i = 0; i < s; i++) {
-                            if (entityId == entities[i]) {
-                                consumer.consume(i, result);
-                            }
-                        }
-                    });
-
-                    world.process();
-
-                    return entities;
+                    return performImpl(components, composition, type, consumer);
                 }
             }
 
@@ -2928,7 +3070,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @Test
                 void testResultSize() {
                     var type = wildcard(C1234.class);
-                    var composition = composition(Composition.all(C1.class), type);
+                    var composition = composition(Composition.all(), type);
 
                     var components = new Object[][] {
                             { new C1(), new C2(), new C3(), new C4(), new C5() },
@@ -2950,7 +3092,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @Test
                 void testResultIsEmpty() {
                     var type = wildcard(C1234.class);
-                    var composition = composition(Composition.all(C1.class), type);
+                    var composition = composition(Composition.all(), type);
 
                     var components = new Object[][] {
                             { new C1(), new C2(), new C3(), new C4(), new C5() },
@@ -2972,19 +3114,22 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @Test
                 void testResultGetByIndex() {
                     var type = wildcard(C1234.class);
-                    var composition = composition(Composition.all(C1.class), type);
+                    var composition = composition(Composition.all(), type);
 
                     var c1 = new C1();
                     var c2 = new C2();
 
                     var components = new Object[][] {
                             { c1, c2, new C5() },
+                            { new C2() }
                     };
 
                     perform(components, composition, type, (id, result) -> {
                         if (id == 0) {
                             assertThat(result.get(0)).as("get(0)").isIn(c1, c2);
                             assertThat(result.get(1)).as("get(1)").isIn(c1, c2);
+                        } else if (id == 1) {
+                            assertThat(result.get(0)).as("get(0)").isNotNull();
                         }
                     });
                 }
@@ -2992,19 +3137,24 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @Test
                 void testResultEnhancedForLoop() {
                     var type = wildcard(C1234.class);
-                    var composition = composition(Composition.all(C1.class), type);
+                    var composition = composition(Composition.all(), type);
 
                     var c1 = new C1();
                     var c2 = new C2();
 
                     var components = new Object[][] {
                             { c1, c2, new C5() },
+                            { new C2() }
                     };
 
                     perform(components, composition, type, (id, result) -> {
                         if (id == 0) {
                             for (var component : result) {
                                 assertThat(component).as("enhanced for loop").isIn(c1, c2);
+                            }
+                        } else if (id == 1) {
+                            for (var component : result) {
+                                assertThat(component).as("enhanced for loop").isNotNull();
                             }
                         }
                     });
@@ -3013,13 +3163,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @Test
                 void testResultIterator() {
                     var type = wildcard(C1234.class);
-                    var composition = composition(Composition.all(C1.class), type);
+                    var composition = composition(Composition.all(), type);
 
                     var c1 = new C1();
                     var c2 = new C2();
 
                     var components = new Object[][] {
                             { c1, c2, new C5() },
+                            { new C2() }
                     };
 
                     perform(components, composition, type, (id, result) -> {
@@ -3030,6 +3181,14 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                             for (var iter = result.iterator(); iter.hasNext();) {
                                 assertThat(iter.next()).as("iterator loop resets automatically").isIn(c1, c2);
                             }
+                        } else if (id == 1) {
+                            for (var iter = result.iterator(); iter.hasNext();) {
+                                assertThat(iter.next()).as("iterator loop").isNotNull();
+                            }
+                            for (var iter = result.iterator(); iter.hasNext();) {
+                                assertThat(iter.next()).as("iterator loop").isNotNull();
+                            }
+
                         }
                     });
                 }
@@ -3037,7 +3196,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @Test
                 void testResultGetByClass() {
                     var type = wildcard(C1234.class);
-                    var composition = composition(Composition.all(C1.class), type);
+                    var composition = composition(Composition.all(), type);
 
                     var c1 = new C1();
                     var c2 = new C2();
@@ -3059,7 +3218,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @Test
                 void testResultReused() {
                     var type = wildcard(C1234.class);
-                    var composition = composition(Composition.all(C1.class), type);
+                    var composition = composition(Composition.all(), type);
 
                     var components = new Object[][] {
                             { new C1(), new C5() },
@@ -3088,75 +3247,41 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         class RelationTest {
 
             @Nested
-            class ProcessTest extends AbstractTest {
+            class ProcessTest extends AbstractTest implements ProcessTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
                 @Override
                 <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
-                    var s = components.length;
-                    var entities = new int[s];
-
-                    for (int i = 0; i < s; i++) {
-                        entities[i] = world.createEntity(components[i]);
-                    }
-
-                    process(composition, type, (entityId, result) -> {
-                        for (int i = 0; i < s; i++) {
-                            if (entityId == entities[i]) {
-                                consumer.consume(i, result);
-                            }
-                        }
-                    });
-
-                    return entities;
+                    return performImpl(components, composition, type, consumer);
                 }
             }
 
             @Nested
-            class InsertedTest extends AbstractTest {
+            class InsertedTest extends AbstractTest implements InsertedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
                 @Override
                 <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
-                    var s = components.length;
-                    var entities = new int[s];
-
-                    var count = new AtomicInteger(0);
-
-                    inserted(composition, type, (entityId, result) -> {
-                        var i = count.getAndIncrement();
-                        if (i < s) {
-                            consumer.consume(i, result);
-                        }
-                    });
-
-                    for (int i = 0; i < s; i++) {
-                        entities[i] = world.createEntity(components[i]);
-                    }
-
-                    return entities;
+                    return performImpl(components, composition, type, consumer);
                 }
             }
 
             @Nested
-            class RemovedTest extends AbstractTest {
+            class RemovedTest extends AbstractTest implements RemovedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
                 @Override
                 <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
-                    var s = components.length;
-                    var entities = new int[s];
-
-                    for (int i = 0; i < s; i++) {
-                        entities[i] = world.createEntity(components[i]);
-                        world.deleteEntity(entities[i]);
-                    }
-
-                    removed(composition, type, (entityId, result) -> {
-                        for (int i = 0; i < s; i++) {
-                            if (entityId == entities[i]) {
-                                consumer.consume(i, result);
-                            }
-                        }
-                    });
-
-                    world.process();
-
-                    return entities;
+                    return performImpl(components, composition, type, consumer);
                 }
             }
 
@@ -3522,6 +3647,1051 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             }
 
+        }
+
+        @Nested
+        class EntityRelationFetchTypeTest {
+
+            @Nested
+            class ProcessTest extends AbstractTest implements ProcessTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class InsertedTest extends AbstractTest implements InsertedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class RemovedTest extends AbstractTest implements RemovedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            abstract class AbstractTest {
+
+                abstract <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
+
+                @Test
+                void testExclusiveEntityRelationFetchType() {
+                    var fetchType = ComponentType.exclusiveRelation(ExclusiveRelationship.class, MyComponentSet.TYPE);
+                    var composition = composition(Composition.all(P1.class), fetchType);
+
+                    var nestedTarget1 = world.createEntity();
+                    var nestedTarget2 = world.createEntity();
+
+                    var target = world.createEntity(
+                            Relation.create(new ExclusiveRelationship(1), new Target(10)),
+                            Relation.create(new RelationshipComponent(2), new Target(20)),
+                            Relation.create(new RelationshipComponent(3), new Target(30)),
+                            Relation.create(new ExclusiveRelationship(4), nestedTarget1),
+                            Relation.create(new RelationshipComponent(5), nestedTarget1),
+                            Relation.create(new RelationshipComponent(6), nestedTarget2),
+                            new C1(), new C2(), new C3(), new C4(), new C5());
+
+                    var entities = new Object[][] {
+                            { new P1(), Relation.create(new ExclusiveRelationship(42), target) }
+                    };
+
+                    var processed = new AtomicBoolean(false);
+                    perform(entities, composition, fetchType, (id, relation) -> {
+                        assertThat(id).isEqualTo(0);
+
+                        assertThat(relation).isNotNull();
+                        assertThat(relation.target()).isEqualTo(target);
+
+                        var components = relation.data();
+                        assertThat(components).isNotNull();
+                        assertThat(components.c1()).isNotNull();
+                        assertThat(components.componentRelation()).extracting("relationship.value", "target.value").contains(1, 10);
+                        assertThat(components.componentRelations()).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(2, 20), tuple(3, 30));
+                        assertThat(components.entityRelation()).extracting("relationship.value", "target").contains(4, nestedTarget1);
+                        assertThat(components.entityRelations()).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(5, nestedTarget1), tuple(6, nestedTarget2));
+                        assertThat(components.c1234()).hasSize(4);
+
+                        processed.set(true);
+                    });
+
+                    assertThat(processed.get()).isTrue();
+                }
+
+                @Test
+                void testEntityRelationFetchType() {
+                    var fetchType = ComponentType.relation(RelationshipComponent.class, MyComponentSet.TYPE);
+                    var composition = composition(Composition.all(P1.class), fetchType);
+
+                    var nestedTarget1 = world.createEntity();
+                    var nestedTarget2 = world.createEntity();
+                    var nestedTarget3 = world.createEntity();
+
+                    var target1 = world.createEntity(
+                            Relation.create(new ExclusiveRelationship(1), new Target(10)),
+                            Relation.create(new RelationshipComponent(2), new Target(20)),
+                            Relation.create(new RelationshipComponent(3), new Target(30)),
+                            Relation.create(new ExclusiveRelationship(4), nestedTarget1),
+                            Relation.create(new RelationshipComponent(5), nestedTarget1),
+                            Relation.create(new RelationshipComponent(6), nestedTarget2),
+                            new C1(), new C2(), new C3(), new C4(), new C5());
+
+                    var target2 = world.createEntity(
+                            Relation.create(new ExclusiveRelationship(10), new Target(100)),
+                            Relation.create(new RelationshipComponent(20), new Target(200)),
+                            Relation.create(new RelationshipComponent(30), new Target(300)),
+                            Relation.create(new ExclusiveRelationship(40), nestedTarget1),
+                            Relation.create(new RelationshipComponent(50), nestedTarget2),
+                            Relation.create(new RelationshipComponent(60), nestedTarget3),
+                            new C1(), new C2(), new C3(), new C5());
+
+                    var entityId = world.createEntity(new P1(),
+                            Relation.create(new RelationshipComponent(42), target1),
+                            Relation.create(new RelationshipComponent(42), target2));
+
+                    var processed = new AtomicBoolean(false);
+                    process(composition, fetchType, (id, relations) -> {
+                        assertThat(id).isEqualTo(entityId);
+
+                        assertThat(relations).isNotNull();
+                        assertThat(relations).extracting("target").containsExactlyInAnyOrder(target1, target2);
+
+                        var relation1 = relations.get(0);
+                        var relation2 = relations.get(1);
+                        if (relation1.target() != target1) {
+                            var swap = relation1;
+                            relation1 = relation2;
+                            relation2 = swap;
+                        }
+
+                        var components1 = relation1.data();
+                        assertThat(components1).isNotNull();
+                        assertThat(components1.c1()).isNotNull();
+                        assertThat(components1.componentRelation()).extracting("relationship.value", "target.value").contains(1, 10);
+                        assertThat(components1.componentRelations()).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(2, 20), tuple(3, 30));
+                        assertThat(components1.entityRelation()).extracting("relationship.value", "target").contains(4, nestedTarget1);
+                        assertThat(components1.entityRelations()).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(5, nestedTarget1), tuple(6, nestedTarget2));
+                        assertThat(components1.c1234()).hasSize(4);
+
+                        var components2 = relation2.data();
+                        assertThat(components2).isNotNull();
+                        assertThat(components2.c1()).isNotNull();
+                        assertThat(components2.componentRelation()).extracting("relationship.value", "target.value").contains(10, 100);
+                        assertThat(components2.componentRelations()).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(20, 200), tuple(30, 300));
+                        assertThat(components2.entityRelation()).extracting("relationship.value", "target").contains(40, nestedTarget1);
+                        assertThat(components2.entityRelations()).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(50, nestedTarget2), tuple(60, nestedTarget3));
+                        assertThat(components2.c1234()).hasSize(3);
+
+                        processed.set(true);
+                    });
+
+                    assertThat(processed.get()).isTrue();
+                }
+
+                @SuppressWarnings("unused")
+                @ComponentSetConfig("MyComponentSet")
+                private void myComponentSet(int entityId, C1 c1, ComponentRelation<ExclusiveRelationship, Target> componentRelation,
+                        ComponentRelationResult<RelationshipComponent, Target> componentRelations, EntityRelation<ExclusiveRelationship> entityRelation,
+                        EntityRelationResult<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
+                }
+
+            }
+
+        }
+
+        @Nested
+        class WildcardComponentRelationTypeTest {
+
+            @Nested
+            class ProcessTest extends AbstractTest implements ProcessTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class InsertedTest extends AbstractTest implements InsertedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class RemovedTest extends AbstractTest implements RemovedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+
+                @Override
+                protected void verifyRelationsState(ComponentRelation<?, ?>... relations) {
+                    for (var relation : relations) {
+                        assertThat(relation).extracting("relationship", "target").as("not reset by iteration").containsOnlyNulls();
+                    }
+                }
+            }
+
+            abstract class AbstractTest {
+
+                protected abstract <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
+
+                protected void verifyRelationsState(ComponentRelation<?, ?>... relations) {
+                    for (var relation : relations) {
+                        assertThat(relation).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+                    }
+                }
+
+                @Test
+                void testWildcardRelationship() {
+                    var fetchType = ComponentType.wildcardRelation(Object.class, Target.class);
+                    var composition = composition(Composition.all(P1.class), fetchType);
+
+                    var relation11 = Relation.create(new C1(), new Target(1));
+                    var relation112 = Relation.create(new C1(), new Target(2));
+                    var relation12 = Relation.create(new C1(), new Target2(2));
+                    var relation21 = Relation.create(new C2(), new Target(3));
+                    var relation22 = Relation.create(new C2(), new Target2(4));
+                    var exclusive = Relation.create(new ExclusiveRelationship(1), new Target(1));
+
+                    var entities = new Object[][] {
+                            { new P1(), relation11, relation112, relation21, relation12, relation22, exclusive }
+                    };
+
+                    var processed = new AtomicBoolean(false);
+                    perform(entities, composition, fetchType, (id, relations) -> {
+                        assertThat(id).isEqualTo(0);
+
+                        assertThat(relations).isNotNull();
+                        assertThat(relations).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation11, relation112, relation21, exclusive);
+
+                        assertThat(relations.size()).isEqualTo(4);
+                        assertThat(relations.get(0)).isIn(relation11, relation112, relation21, exclusive);
+                        assertThat(relations.get(1)).isIn(relation11, relation112, relation21, exclusive);
+                        assertThat(relations.get(2)).isIn(relation11, relation112, relation21, exclusive);
+                        assertThat(relations.get(3)).isIn(relation11, relation112, relation21, exclusive);
+
+                        processed.set(true);
+                    });
+
+                    assertThat(processed.get()).isTrue();
+
+                    verifyRelationsState(relation11, relation112, relation21, relation12, relation22, exclusive);
+                }
+
+                @Test
+                void testWildcardTarget() {
+                    var fetchType = ComponentType.wildcardRelation(C1.class, Object.class);
+                    var composition = composition(Composition.all(P1.class), fetchType);
+
+                    var relation11 = Relation.create(new C1(), new C1());
+                    var relation112 = Relation.create(new C1(), new Target(2));
+                    var relation12 = Relation.create(new C1(), new C2());
+                    var relation21 = Relation.create(new C2(), new C1());
+                    var relation22 = Relation.create(new C2(), new C2());
+                    var exclusive = Relation.create(new ExclusiveRelationship(1), new Target(1));
+
+                    var entities = new Object[][] {
+                            { new P1(), relation11, relation112, relation21, relation12, relation22, exclusive }
+                    };
+
+                    var processed = new AtomicBoolean(false);
+                    perform(entities, composition, fetchType, (id, relations) -> {
+                        assertThat(id).isEqualTo(0);
+
+                        assertThat(relations).isNotNull();
+                        assertThat(relations).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation11, relation112, relation12);
+
+                        assertThat(relations.size()).isEqualTo(3);
+                        assertThat(relations.get(0)).isIn(relation11, relation112, relation12);
+                        assertThat(relations.get(1)).isIn(relation11, relation112, relation12);
+                        assertThat(relations.get(2)).isIn(relation11, relation112, relation12);
+
+                        processed.set(true);
+                    });
+
+                    assertThat(processed.get()).isTrue();
+
+                    verifyRelationsState(relation11, relation112, relation21, relation12, relation22, exclusive);
+                }
+
+                @Test
+                void testWildcardBoth() {
+                    var fetchType = ComponentType.wildcardRelation(Object.class, Object.class);
+                    var composition = composition(Composition.all(P1.class), fetchType);
+
+                    var relation11 = Relation.create(new C1(), new C1());
+                    var relation112 = Relation.create(new C1(), new Target(2));
+                    var relation12 = Relation.create(new C1(), new C2());
+                    var relation21 = Relation.create(new C2(), new C1());
+                    var relation22 = Relation.create(new C2(), new C2());
+                    var exclusive = Relation.create(new ExclusiveRelationship(1), new Target(1));
+
+                    var entities = new Object[][] {
+                            { new P1(), relation11, relation112, relation21, relation12, relation22, exclusive }
+                    };
+
+                    var processed = new AtomicBoolean(false);
+                    perform(entities, composition, fetchType, (id, relations) -> {
+                        assertThat(id).isEqualTo(0);
+
+                        assertThat(relations).isNotNull();
+                        assertThat(relations).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation11, relation112, relation12, relation21, relation22, exclusive);
+
+                        assertThat(relations.size()).isEqualTo(6);
+                        assertThat(relations.get(0)).isIn(relation11, relation112, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(1)).isIn(relation11, relation112, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(2)).isIn(relation11, relation112, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(3)).isIn(relation11, relation112, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(4)).isIn(relation11, relation112, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(5)).isIn(relation11, relation112, relation12, relation21, relation22, exclusive);
+
+                        processed.set(true);
+                    });
+
+                    assertThat(processed.get()).isTrue();
+
+                    verifyRelationsState(relation11, relation112, relation21, relation12, relation22, exclusive);
+                }
+
+            }
+
+        }
+
+        @Nested
+        class WildcardEntityRelationTypeTest {
+
+            @Nested
+            class ProcessTest extends AbstractTest implements ProcessTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class InsertedTest extends AbstractTest implements InsertedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class RemovedTest extends AbstractTest implements RemovedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+
+                @Override
+                protected void verifyRelationsState(EntityRelation<?>... relations) {
+                    for (var relation : relations) {
+                        assertThat(relation.relationship()).isNull();
+                        assertThat(relation.target()).isEqualTo(-1);
+                    }
+                }
+            }
+
+            abstract class AbstractTest {
+
+                protected abstract <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
+
+                protected void verifyRelationsState(EntityRelation<?>... relations) {
+                    for (var relation : relations) {
+                        assertThat(relation.relationship()).isNotNull();
+                        assertThat(relation.target()).isNotEqualTo(-1);
+                    }
+                }
+
+                @Test
+                void testWildcard() {
+                    var fetchType = ComponentType.wildcardRelation(Object.class);
+                    var composition = composition(Composition.all(P1.class), fetchType);
+
+                    var target1 = world.createEntity();
+                    var target2 = world.createEntity();
+
+                    var relation11 = Relation.create(new C1(), target1);
+                    var relation12 = Relation.create(new C1(), target2);
+                    var relation21 = Relation.create(new C2(), target1);
+                    var relation22 = Relation.create(new C2(), target2);
+                    var exclusive = Relation.create(new ExclusiveRelationship(1), target1);
+
+                    var entities = new Object[][] {
+                            { new P1(), relation11, relation21, relation12, relation22, exclusive }
+                    };
+
+                    var processed = new AtomicBoolean(false);
+                    perform(entities, composition, fetchType, (id, relations) -> {
+                        assertThat(id).isEqualTo(0);
+
+                        assertThat(relations).isNotNull();
+                        assertThat(relations).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation11, relation12, relation21, relation22, exclusive);
+
+                        assertThat(relations.size()).isEqualTo(5);
+                        assertThat(relations.get(0)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(1)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(2)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(3)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(4)).isIn(relation11, relation12, relation21, relation22, exclusive);
+
+                        processed.set(true);
+                    });
+
+                    assertThat(processed.get()).isTrue();
+
+                    verifyRelationsState(relation11, relation21, relation12, relation22, exclusive);
+                }
+
+            }
+
+        }
+
+        @Nested
+        class WildcardEntityRelationFetchTypeTest {
+
+            @Nested
+            class ProcessTest extends AbstractTest implements ProcessTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class InsertedTest extends AbstractTest implements InsertedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class RemovedTest extends AbstractTest implements RemovedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionDataTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+
+                @Override
+                protected void verifyRelationsState(EntityRelation<?>... relations) {
+                    for (var relation : relations) {
+                        assertThat(relation.relationship()).isNull();
+                        assertThat(relation.target()).isEqualTo(-1);
+                    }
+                }
+            }
+
+            abstract class AbstractTest {
+
+                protected abstract <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
+
+                protected void verifyRelationsState(EntityRelation<?>... relations) {
+                    for (var relation : relations) {
+                        assertThat(relation.relationship()).isNotNull();
+                        assertThat(relation.target()).isNotEqualTo(-1);
+                    }
+                }
+
+                @Test
+                void testWildcardFetch() {
+                    var fetchType = ComponentType.wildcardRelation(Object.class, wildcard(C1234.class));
+                    var composition = composition(Composition.all(P1.class), fetchType);
+
+                    var component1 = new C1();
+                    var component2 = new C2();
+                    var component3 = new C3();
+                    var component5 = new C5();
+
+                    var target1 = world.createEntity(component1, component2);
+                    var target2 = world.createEntity(component3, component5);
+
+                    var relation11 = Relation.create(new C1(), target1);
+                    var relation12 = Relation.create(new C1(), target2);
+                    var relation21 = Relation.create(new C2(), target1);
+                    var relation22 = Relation.create(new C2(), target2);
+                    var exclusive = Relation.create(new ExclusiveRelationship(1), target1);
+
+                    var entities = new Object[][] {
+                            { new P1(), relation11, relation21, relation12, relation22, exclusive }
+                    };
+
+                    var processed = new AtomicBoolean(false);
+                    perform(entities, composition, fetchType, (id, relations) -> {
+                        assertThat(id).isEqualTo(0);
+
+                        assertThat(relations).isNotNull();
+                        assertThat(relations).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation11, relation12, relation21, relation22, exclusive);
+
+                        assertThat(relations.size()).isEqualTo(5);
+                        assertThat(relations.get(0)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(1)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(2)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(3)).isIn(relation11, relation12, relation21, relation22, exclusive);
+                        assertThat(relations.get(4)).isIn(relation11, relation12, relation21, relation22, exclusive);
+
+                        for (int i = 0, s = relations.size(); i < s; i++) {
+                            var relation = relations.get(i);
+                            if (relation.target() == target1) {
+                                assertThat(relation.data()).containsExactlyInAnyOrder(component1, component2);
+                            } else {
+                                assertThat(relation.target()).isEqualTo(target2);
+                                assertThat(relation.data()).containsExactly(component3);
+                            }
+                        }
+
+                        processed.set(true);
+                    });
+
+                    assertThat(processed.get()).isTrue();
+
+                    verifyRelationsState(relation11, relation21, relation12, relation22, exclusive);
+                }
+
+            }
+
+        }
+
+    }
+
+    abstract class AbstractCompositionNTest<C extends CompositionData<?>> extends AbstractCompositionDataTest<C> {
+
+        @Nested
+        class ComponentSetTest {
+
+            @Nested
+            class ProcessTest extends AbstractTest implements ProcessTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionNTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+
+                @Test
+                void testComponentSet_EntitiesBeforeCompositionCreation() {
+                    var type = TestComponentSet.TYPE;
+                    var handler = new ComponentSetHandler();
+
+                    var entity = world.createEntity();
+                    var entity1 = world.createEntity(new C1());
+                    var entity2 = world.createEntity(new C2());
+                    var entity12 = world.createEntity(new C1(), new C2());
+
+                    var composition = composition(Composition.one(C1.class, C2.class), type);
+                    process(composition, type, handler::handle);
+
+                    assertThat(handler.data)
+                            .extracting("entityId", "c1", "c2")
+                            .doesNotContain(tuple(entity, null, null))
+                            .contains(tuple(entity1, new C1(), null))
+                            .contains(tuple(entity2, null, new C2()))
+                            .contains(tuple(entity12, new C1(), new C2()));
+                }
+            }
+
+            @Nested
+            class InsertedTest extends AbstractTest implements InsertedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionNTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+            }
+
+            @Nested
+            class RemovedTest extends AbstractTest implements RemovedTestImpl<C> {
+                @Override
+                public AbstractCompositionDataTest<C> getTest() {
+                    return AbstractCompositionNTest.this;
+                }
+
+                @Override
+                protected <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
+                    return performImpl(components, composition, type, consumer);
+                }
+
+                @Test
+                void testComponentSet_EntitiesBeforeCompositionCreation() {
+                    var type = TestComponentSet.TYPE;
+                    var handler = new ComponentSetHandler();
+
+                    var entity = world.createEntity();
+                    var entity1 = world.createEntity(new C1());
+                    var entity2 = world.createEntity(new C2());
+                    var entity12 = world.createEntity(new C1(), new C2());
+
+                    var composition = composition(Composition.one(C1.class, C2.class), type);
+                    removed(composition, type, handler::handle);
+
+                    world.deleteEntity(entity);
+                    world.deleteEntity(entity1);
+                    world.deleteEntity(entity2);
+                    world.deleteEntity(entity12);
+
+                    world.process();
+
+                    assertThat(handler.data)
+                            .extracting("entityId", "c1", "c2")
+                            .doesNotContain(tuple(entity, null, null))
+                            .contains(tuple(entity1, new C1(), null))
+                            .contains(tuple(entity2, null, new C2()))
+                            .contains(tuple(entity12, new C1(), new C2()));
+                }
+
+            }
+
+            abstract class AbstractTest {
+
+                protected abstract <R> int[] perform(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer);
+
+                @Test
+                void testComponentSet_EntitiesAfterCompositionCreation() {
+                    var type = TestComponentSet.TYPE;
+                    var handler = new ComponentSetHandler();
+
+                    var composition = composition(Composition.one(C1.class, C2.class), type);
+
+                    var entities = new Object[][] {
+                            { new C1() },
+                            { new C2() },
+                            { new C1(), new C2() },
+                            {}
+                    };
+
+                    perform(entities, composition, type, handler::handle);
+
+                    assertThat(handler.data)
+                            .extracting("entityId", "c1", "c2")
+                            .containsExactlyInAnyOrder(
+                                    tuple(0, new C1(), null),
+                                    tuple(1, null, new C2()),
+                                    tuple(2, new C1(), new C2()));
+                }
+
+            }
+
+        }
+
+        @Nested
+        class CustomComponentTypeTest {
+
+            private <T> DefaultComponents<T> factoryFallback(DefaultComponentType<T> type) {
+                var components = componentMapperManager.getComponents(type.type());
+                return new DefaultComponentsImpl<>(components, type.defaultInstance());
+            }
+
+            @Test
+            void testDefaultComponentType_FallbackImplementation() {
+                componentMapperManager.registerCustomComponentType(DefaultComponentType.class, this::factoryFallback);
+
+                var defaultType = new DefaultComponentType<>(component(D1.class), () -> new D1(-1));
+                var composition = composition(Composition.all(P1.class), defaultType);
+
+                var entity1 = world.createEntity(new P1(), new D1(1));
+                var entity2 = world.createEntity(new P1());
+
+                var processed = new AtomicInteger();
+
+                process(composition, defaultType, (id, d1) -> {
+                    if (id == entity1) {
+                        assertThat(d1).isEqualTo(new D1(1));
+
+                        processed.incrementAndGet();
+                        return;
+                    }
+
+                    assertThat(id).isEqualTo(entity2);
+                    assertThat(d1).isEqualTo(new D1(-1));
+
+                    processed.incrementAndGet();
+                });
+
+                assertThat(processed.get()).isEqualTo(2);
+            }
+
+            @Test
+            void testDataType2() {
+                var dataType = DataType.get(
+                        component(C1.class),
+                        relation(C1.class, C2.class));
+
+                var composition = composition(Composition.all(P1.class), dataType);
+
+                var component1 = new C1();
+                var relation12 = Relation.create(new C1(), new C2());
+
+                var entityId = world.createEntity(new P1(), component1, relation12);
+
+                var processed = new AtomicBoolean(false);
+                process(composition, dataType, (id, data) -> {
+                    assertThat(id).isEqualTo(entityId);
+
+                    assertThat(data).isNotNull();
+                    assertThat(data.component1()).isSameAs(component1);
+                    assertThat(data.component2()).containsExactly(relation12);
+
+                    processed.set(true);
+                });
+
+                assertThat(processed.get()).isTrue();
+
+                assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+            }
+
+            @Test
+            void testDataType3() {
+                var dataType = DataType.get(
+                        component(C1.class),
+                        relation(C1.class, C2.class),
+                        exclusiveRelation(ExclusiveRelationship.class, C1.class));
+
+                var composition = composition(Composition.all(P1.class), dataType);
+
+                var component1 = new C1();
+                var relation12 = Relation.create(new C1(), new C2());
+                var exclusive1 = Relation.create(new ExclusiveRelationship(1), new C1());
+
+                var entityId = world.createEntity(new P1(), component1, relation12, exclusive1);
+
+                var processed = new AtomicBoolean(false);
+                process(composition, dataType, (id, data) -> {
+                    assertThat(id).isEqualTo(entityId);
+
+                    assertThat(data).isNotNull();
+                    assertThat(data.component1()).isSameAs(component1);
+                    assertThat(data.component2()).containsExactly(relation12);
+                    assertThat(data.component3()).isSameAs(exclusive1);
+
+                    processed.set(true);
+                });
+
+                assertThat(processed.get()).isTrue();
+
+                assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+            }
+
+            @Test
+            void testDataType4() {
+                var dataType = DataType.get(
+                        component(C1.class),
+                        relation(C1.class, C2.class),
+                        exclusiveRelation(ExclusiveRelationship.class, C1.class),
+                        relation(C1.class));
+
+                var composition = composition(Composition.all(P1.class), dataType);
+
+                var target1 = world.createEntity();
+
+                var component1 = new C1();
+                var relation12 = Relation.create(new C1(), new C2());
+                var exclusive1 = Relation.create(new ExclusiveRelationship(1), new C1());
+                var relation1 = Relation.create(new C1(), target1);
+
+                var entityId = world.createEntity(new P1(), component1, relation12, exclusive1, relation1);
+
+                var processed = new AtomicBoolean(false);
+                process(composition, dataType, (id, data) -> {
+                    assertThat(id).isEqualTo(entityId);
+
+                    assertThat(data).isNotNull();
+                    assertThat(data.component1()).isSameAs(component1);
+                    assertThat(data.component2()).containsExactly(relation12);
+                    assertThat(data.component3()).isSameAs(exclusive1);
+                    assertThat(data.component4()).containsExactly(relation1);
+
+                    processed.set(true);
+                });
+
+                assertThat(processed.get()).isTrue();
+
+                assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+            }
+
+            @Test
+            void testDataType5() {
+                var dataType = DataType.get(
+                        component(C1.class),
+                        relation(C1.class, C2.class),
+                        exclusiveRelation(ExclusiveRelationship.class, C1.class),
+                        relation(C1.class),
+                        exclusiveRelation(ExclusiveRelationship.class));
+
+                var composition = composition(Composition.all(P1.class), dataType);
+
+                var target1 = world.createEntity();
+                var target2 = world.createEntity();
+
+                var component1 = new C1();
+                var relation12 = Relation.create(new C1(), new C2());
+                var exclusive1 = Relation.create(new ExclusiveRelationship(1), new C1());
+                var entityRelation1 = Relation.create(new C1(), target1);
+                var entityExclusive1 = Relation.create(new ExclusiveRelationship(1), target2);
+
+                var entityId = world.createEntity(new P1(), component1, relation12, exclusive1, entityRelation1, entityExclusive1);
+
+                var processed = new AtomicBoolean(false);
+                process(composition, dataType, (id, data) -> {
+                    assertThat(id).isEqualTo(entityId);
+
+                    assertThat(data).isNotNull();
+                    assertThat(data.component1()).isSameAs(component1);
+                    assertThat(data.component2()).containsExactly(relation12);
+                    assertThat(data.component3()).isSameAs(exclusive1);
+                    assertThat(data.component4()).containsExactly(entityRelation1);
+                    assertThat(data.component5()).isSameAs(entityExclusive1);
+
+                    processed.set(true);
+                });
+
+                assertThat(processed.get()).isTrue();
+
+                assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+            }
+
+            @Test
+            void testDataType6() {
+                var dataType = DataType.get(
+                        component(C1.class),
+                        relation(C1.class, C2.class),
+                        exclusiveRelation(ExclusiveRelationship.class, C1.class),
+                        relation(C1.class),
+                        exclusiveRelation(ExclusiveRelationship.class),
+                        ComponentType.relation(C4.class, component(C3.class)));
+
+                var composition = composition(Composition.all(P1.class), dataType);
+
+                var comonentTarget3 = new C3();
+
+                var target1 = world.createEntity();
+                var target2 = world.createEntity();
+                var target3 = world.createEntity(comonentTarget3);
+
+                var component1 = new C1();
+                var relation12 = Relation.create(new C1(), new C2());
+                var exclusive1 = Relation.create(new ExclusiveRelationship(1), new C1());
+                var entityRelation1 = Relation.create(new C1(), target1);
+                var entityExclusive1 = Relation.create(new ExclusiveRelationship(2), target2);
+                var fetchRelation1 = Relation.create(new C4(), target3);
+
+                var entityId = world.createEntity(new P1(), component1, relation12, exclusive1, entityRelation1, entityExclusive1, fetchRelation1);
+
+                var processed = new AtomicBoolean(false);
+                process(composition, dataType, (id, data) -> {
+                    assertThat(id).isEqualTo(entityId);
+
+                    assertThat(data).isNotNull();
+                    assertThat(data.component1()).isSameAs(component1);
+                    assertThat(data.component2()).containsExactly(relation12);
+                    assertThat(data.component3()).isSameAs(exclusive1);
+                    assertThat(data.component4()).containsExactly(entityRelation1);
+                    assertThat(data.component5()).isSameAs(entityExclusive1);
+
+                    assertThat(data.component6())
+                            .extracting("relationship", "target", "data")
+                            .containsExactly(tuple(new C4(), target3, comonentTarget3));
+
+                    processed.set(true);
+                });
+
+                assertThat(processed.get()).isTrue();
+
+                assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+            }
+
+            @Test
+            void testDataType7() {
+                var dataType = DataType.get(
+                        component(C1.class),
+                        relation(C1.class, C2.class),
+                        exclusiveRelation(ExclusiveRelationship.class, C1.class),
+                        relation(C1.class),
+                        exclusiveRelation(ExclusiveRelationship.class),
+                        ComponentType.relation(C4.class, component(C3.class)),
+                        ComponentType.relation(C5.class, MyComponentSet.TYPE));
+
+                var composition = composition(Composition.all(P1.class), dataType);
+
+                var comonentTarget3 = new C3();
+                var target4component1 = new C1();
+                var target4component2 = new C2();
+
+                var target1 = world.createEntity();
+                var target2 = world.createEntity();
+                var target3 = world.createEntity(comonentTarget3);
+                var target4 = world.createEntity(target4component1, target4component2);
+
+                var component1 = new C1();
+                var relation12 = Relation.create(new C1(), new C2());
+                var exclusive1 = Relation.create(new ExclusiveRelationship(1), new C1());
+                var entityRelation1 = Relation.create(new C1(), target1);
+                var entityExclusive1 = Relation.create(new ExclusiveRelationship(2), target2);
+                var fetchRelation1 = Relation.create(new C4(), target3);
+                var setRelation = Relation.create(new C5(), target4);
+
+                var entityId = world.createEntity(new P1(), component1, relation12, exclusive1, entityRelation1, entityExclusive1, fetchRelation1, setRelation);
+
+                var processed = new AtomicBoolean(false);
+
+                process(composition, dataType, (id, data) -> {
+                    assertThat(id).isEqualTo(entityId);
+
+                    assertThat(data).isNotNull();
+                    assertThat(data.component1()).isSameAs(component1);
+                    assertThat(data.component2()).containsExactly(relation12);
+                    assertThat(data.component3()).isSameAs(exclusive1);
+                    assertThat(data.component4()).containsExactly(entityRelation1);
+                    assertThat(data.component5()).isSameAs(entityExclusive1);
+
+                    assertThat(data.component6())
+                            .extracting("relationship", "target", "data")
+                            .containsExactly(tuple(new C4(), target3, comonentTarget3));
+
+                    var component7 = data.component7();
+                    assertThat(component7).extracting("relationship", "target").containsExactly(tuple(new C5(), target4));
+
+                    var data7 = component7.get(0).data();
+                    assertThat(data7.c1()).isSameAs(target4component1);
+                    assertThat(data7.c1234())
+                            .hasSize(2)
+                            .anySatisfy(component -> assertThat(component).isSameAs(target4component1))
+                            .anySatisfy(component -> assertThat(component).isSameAs(target4component2));
+
+                    processed.set(true);
+                });
+
+                assertThat(processed.get()).isTrue();
+
+                assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+            }
+
+            @Test
+            void testNestedDataType() {
+                var innerDataType = DataType.get(
+                        component(C1.class),
+                        relation(C1.class, C2.class));
+
+                var dataType = DataType.get(component(C2.class), innerDataType);
+                var composition = composition(Composition.all(P1.class), dataType);
+
+                var component1 = new C1();
+                var component2 = new C2();
+                var relation12 = Relation.create(new C1(), new C2());
+
+                var entityId = world.createEntity(new P1(), component1, component2, relation12);
+
+                var processed = new AtomicBoolean(false);
+                process(composition, dataType, (id, data) -> {
+                    assertThat(id).isEqualTo(entityId);
+
+                    assertThat(data).isNotNull();
+                    assertThat(data.component1()).isSameAs(component2);
+
+                    var innerData = data.component2();
+                    assertThat(innerData).isNotNull();
+                    assertThat(innerData.component1()).isSameAs(component1);
+                    assertThat(innerData.component2()).containsExactly(relation12);
+
+                    processed.set(true);
+                });
+
+                assertThat(processed.get()).isTrue();
+
+                assertThat(relation12).extracting("relationship", "target").as("not reset by iteration").doesNotContainNull();
+            }
+
+        }
+
+    }
+
+    private class ComponentSetHandler {
+
+        record Data(int entityId, C1 c1, C2 c2) {
+        }
+
+        private final List<Data> data = new ArrayList<>();
+
+        private void handle(int entityId, TestComponentSet componentSet) {
+            this.data.add(new Data(entityId, componentSet.c1(), componentSet.c2()));
+        }
+
+        @ComponentSetConfig("TestComponentSet")
+        private void handle(int entityId, C1 c1, C2 c2) {
+            this.data.add(new Data(entityId, c1, c2));
         }
 
     }
@@ -4026,57 +5196,6 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     @Nested
-    class EntityRelationFetchTypeTest {
-
-        @Test
-        void testEntityRelationFetchType() {
-            var fetchType = ComponentType.exclusiveRelation(ExclusiveRelationship.class, MyComponentSet.TYPE);
-            var composition = world.createComposition(Composition.all(P1.class), fetchType);
-
-            var nestedTarget1 = world.createEntity();
-            var nestedTarget2 = world.createEntity();
-
-            var target = world.createEntity(
-                    Relation.create(new ExclusiveRelationship(1), new Target(10)),
-                    Relation.create(new RelationshipComponent(2), new Target(20)),
-                    Relation.create(new RelationshipComponent(3), new Target(30)),
-                    Relation.create(new ExclusiveRelationship(4), nestedTarget1),
-                    Relation.create(new RelationshipComponent(5), nestedTarget1),
-                    Relation.create(new RelationshipComponent(6), nestedTarget2),
-                    new C1(), new C2(), new C3(), new C4());
-
-            var entityId = world.createEntity(new P1(), Relation.create(new ExclusiveRelationship(42), target));
-
-            var processed = new AtomicBoolean(false);
-            composition.process((id, relation) -> {
-                assertThat(id).isEqualTo(entityId);
-
-                assertThat(relation).isNotNull();
-                assertThat(relation.target()).isEqualTo(target);
-
-                var components = relation.data();
-                assertThat(components).isNotNull();
-                assertThat(components.c1()).isNotNull();
-                assertThat(components.componentRelation()).extracting("relationship.value", "target.value").contains(1, 10);
-                assertThat(components.componentRelations()).extracting("relationship.value", "target.value").containsExactlyInAnyOrder(tuple(2, 20), tuple(3, 30));
-                assertThat(components.entityRelation()).extracting("relationship.value", "target").contains(4, nestedTarget1);
-                assertThat(components.entityRelations()).extracting("relationship.value", "target").containsExactlyInAnyOrder(tuple(5, nestedTarget1), tuple(6, nestedTarget2));
-                assertThat(components.c1234()).hasSize(4);
-
-                processed.set(true);
-            });
-
-            assertThat(processed.get()).isTrue();
-        }
-
-        @ComponentSetConfig("MyComponentSet")
-        private void myComponentSet(int entityId, C1 c1, ComponentRelation<ExclusiveRelationship, Target> componentRelation, ComponentRelationResult<RelationshipComponent, Target> componentRelations,
-                EntityRelation<ExclusiveRelationship> entityRelation, EntityRelationResult<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
-        }
-
-    }
-
-    @Nested
     class ComponentSetTest {
 
         @Test
@@ -4132,7 +5251,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     public record C1() implements C12, C1234 {
     }
 
-    record C2() implements C12, C1234 {
+    public record C2() implements C12, C1234 {
     }
 
     private record C3() implements C1234 {
@@ -4162,6 +5281,9 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     public record P3() implements Pooled {
     }
 
+    public record D1(int value) {
+    }
+
     public record RelationshipComponent(int value) {
     }
 
@@ -4172,6 +5294,52 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     }
 
     record Target2(int value) {
+    }
+
+    record DefaultComponentType<T>(RegularComponentType<T, T> type, Supplier<T> defaultInstance) implements CustomComponentType<T, T, DefaultComponents<T>> {
+        @Override
+        public boolean matches(RegularComponentType<?, ?> otherType) {
+            return this.type.equals(otherType);
+        }
+    }
+
+    sealed interface DefaultComponents<T> extends CustomComponents<T, T> {
+    }
+
+    final class DefaultComponentsImpl<T> implements DefaultComponents<T> {
+
+        private final Components<T, T> components;
+        private final Supplier<T> defaultInstance;
+
+        public DefaultComponentsImpl(Components<T, T> components, Supplier<T> defaultInstance) {
+            this.components = components;
+            this.defaultInstance = Objects.requireNonNull(defaultInstance, "defaultInstance cannot be null");
+        }
+
+        @Override
+        public T get(int entityId) {
+            var result = components.get(entityId);
+
+            return result != null ? result : defaultInstance.get();
+        }
+
+        @Override
+        public T get(DataAccessor accessor) {
+            var result = components.get(accessor);
+
+            return result != null ? result : defaultInstance.get();
+        }
+
+        @Override
+        public boolean has(int entityId) {
+            throw new UnsupportedOperationException("irrelevant for test");
+        }
+
+        @Override
+        public boolean remove(int entityId) {
+            throw new UnsupportedOperationException("irrelevant for test");
+        }
+
     }
 
 }

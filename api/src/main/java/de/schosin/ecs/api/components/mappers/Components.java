@@ -14,6 +14,7 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.data.DataAccessor;
 
 /**
  * This interface allows for accessing and removing a single type of component from entities.
@@ -81,6 +82,20 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
     sealed interface RegularComponents<T, R> extends Components<T, R> permits ComponentMapper, ComponentRelations, EntityRelations {
 
         /**
+         * Returns the id of the component managed by this mapper.
+         * 
+         * @return id of component
+         */
+        int componentId();
+
+        /**
+         * Returns the component type managed by this mapper.
+         * 
+         * @return component type
+         */
+        RegularComponentType<T, R> componentType();
+
+        /**
          * Adds the component to the entity. Overwrites any existing component of the same class unless
          * the particular implementation states otherwise. 
          * 
@@ -108,6 +123,14 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
      * @return component instance, may be null
      */
     R get(int entityId);
+
+    /**
+     * Retrieves the component given the {@link DataAccessor}.
+     *  
+     * @param accessor data accessor
+     * @return component instance, may be null
+     */
+    R get(DataAccessor accessor);
 
     /**
      * Marks the component for removal. The component will be removed during the {@link #process()} call.

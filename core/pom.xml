@@ -31,6 +31,12 @@
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>de.schosin.ecs.buildtools</groupId>
+            <artifactId>ecs-build-tools-codegen-apt</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
             
         <dependency>
           <groupId>net.bytebuddy</groupId>

@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.storage.api.StorageEngine;
@@ -141,6 +142,10 @@ public class EntityManager {
         return entityId;
     }
 
+    public DataAccessor getAccessor(int entityId) {
+        return storageEngine.getAccessor(entityId);
+    }
+
     public boolean isActive(int entityId) {
         return this.entities.get(entityId) != null;
     }
@@ -155,6 +160,7 @@ public class EntityManager {
                     continue;
                 }
 
+                // TODO iterate over component masks instead, checking this only once
                 if (predicate.isInterested(entity.componentMask)) {
                     result.add(entity.id);
                 }

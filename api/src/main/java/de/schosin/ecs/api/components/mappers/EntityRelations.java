@@ -24,17 +24,26 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRe
  */
 public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRelation<R>, X> {
 
+    @Override
+    RegularEntityRelationType<R, X> componentType();
+
     default EntityRelation<R> add(int entityId, R relationship, int target) {
         return add(entityId, Relation.create(relationship, target));
     }
 
     non-sealed interface EntityRelationMapper<R> extends EntityRelations<R, EntityRelationResult<R>> {
 
+        @Override
+        EntityRelationType<R> componentType();
+
         R getRelationship(int entityId, int target);
 
     }
 
     non-sealed interface ExclusiveEntityRelationMapper<R extends Exclusive> extends EntityRelations<R, EntityRelation<R>> {
+
+        @Override
+        ExclusiveEntityRelationType<R> componentType();
 
         R getRelationship(int entityId);
 

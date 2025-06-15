@@ -366,10 +366,12 @@ class ComponentSetComponentsImplTest extends AbstractMapperTest {
 
     }
 
+    @SuppressWarnings("unused")
     @ComponentSetConfig("MyComponentSet")
     private static void myComponentSet(int entityId, Position pos, Velocity velocity) {
     }
 
+    @SuppressWarnings("unused")
     @ComponentSetConfig("RelationComponentSet")
     private static void relationComponentSet(int entityId,
             ComponentRelation<Birthplace, Position> birthplace, ComponentRelationResult<Location, Position> locations,

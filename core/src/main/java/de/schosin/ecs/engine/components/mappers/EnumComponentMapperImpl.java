@@ -2,17 +2,29 @@ package de.schosin.ecs.engine.components.mappers;
 
 import org.jspecify.annotations.NonNull;
 
-import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
+import de.schosin.ecs.api.components.types.ClassType;
+import de.schosin.ecs.api.data.DataAccessor;
+import de.schosin.ecs.storage.api.entities.Archetype;
 
-public class EnumComponentMapperImpl<T extends Enum<T>> implements EnumComponentMapper<T> {
+public final class EnumComponentMapperImpl<T extends Enum<T>> implements EnumComponentMapper<T>, ComponentConverter.Factory<T> {
 
-    private final ComponentMapper<T> delegate;
+    private final ComponentMapperImpl<T> delegate;
     private final T defaultComponent;
 
-    public EnumComponentMapperImpl(ComponentMapper<T> delegate, T defaultComponent) {
+    public EnumComponentMapperImpl(ComponentMapperImpl<T> delegate, T defaultComponent) {
         this.delegate = delegate;
         this.defaultComponent = defaultComponent;
+    }
+
+    @Override
+    public int componentId() {
+        return this.delegate.componentId();
+    }
+
+    @Override
+    public ClassType<T> componentType() {
+        return this.delegate.componentType();
     }
 
     @Override
@@ -38,6 +50,16 @@ public class EnumComponentMapperImpl<T extends Enum<T>> implements EnumComponent
     @Override
     public T get(int entityId) {
         return this.delegate.get(entityId);
+    }
+
+    @Override
+    public T get(DataAccessor accessor) {
+        return this.delegate.get(accessor);
+    }
+
+    @Override
+    public ComponentConverter<T> getConverter(Archetype archetype) {
+        return this.delegate.getConverter(archetype);
     }
 
     @Override

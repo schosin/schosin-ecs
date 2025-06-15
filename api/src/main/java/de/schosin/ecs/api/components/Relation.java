@@ -7,7 +7,7 @@ import java.util.Objects;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.Relation.EntityRelationData;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
@@ -103,14 +103,7 @@ public sealed interface Relation<R> {
      * Creates an instance of a entity relation.
      */
     static <R> EntityRelation<R> create(R relationship, int target) {
-        return RelationHelper.create(relationship, target, null);
-    }
-
-    /**
-     * Creates an instance of a entity fetch relation.
-     */
-    static <R, T> EntityRelationData<R, T> create(R relationship, int target, T data) {
-        return RelationHelper.create(relationship, target, data);
+        return RelationHelper.create(relationship, target);
     }
 
     /**
@@ -226,7 +219,7 @@ public sealed interface Relation<R> {
      * @param <R> type of relationship component
      * @param <T> type of fetched data 
      */
-    sealed interface EntityRelationData<R, T> extends EntityRelation<R> {
+    non-sealed interface EntityRelationData<R, T> extends EntityRelation<R> {
 
         /**
          * Returns the data of the target entity.
@@ -257,7 +250,7 @@ class RelationHelper {
     }
 
     @SuppressWarnings("unchecked")
-    static synchronized <R, T> EntityRelationData<R, T> create(R relationship, int target, T data) {
+    static synchronized <R> EntityRelation<R> create(R relationship, int target) {
         var relation = ENTITY_RELATIONS.isEmpty() ? new EntityRelationImpl() : ENTITY_RELATIONS.removeLast();
 
         relation.type = Exclusive.class.isAssignableFrom(relationship.getClass())
@@ -266,9 +259,8 @@ class RelationHelper {
 
         relation.relationship = relationship;
         relation.target = target;
-        relation.data = data;
 
-        return (EntityRelationData<R, T>) relation;
+        return (EntityRelation<R>) relation;
     }
 
     static void free(Relation<?> relation) {
@@ -278,16 +270,19 @@ class RelationHelper {
             impl.target = null;
 
             COMPONENT_RELATIONS.add(impl);
+            return;
         }
 
         if (relation instanceof EntityRelationImpl impl) {
             impl.type = null;
             impl.relationship = null;
             impl.target = -1;
-            impl.data = null;
 
             ENTITY_RELATIONS.add(impl);
+            return;
         }
+
+        // reaching here is an error, should probably be atleast a warning, better yet IllegalArgumentException
     }
 
     @SuppressWarnings("rawtypes")
@@ -336,12 +331,11 @@ class RelationHelper {
     }
 
     @SuppressWarnings("rawtypes")
-    private static final class EntityRelationImpl implements EntityRelationData {
+    private static final class EntityRelationImpl implements EntityRelation {
 
         private RegularEntityRelationType type;
         private Object relationship;
         private int target = -1;
-        private Object data;
 
         @Override
         public RegularEntityRelationType type() {
@@ -359,20 +353,13 @@ class RelationHelper {
         }
 
         @Override
-        public Object data() {
-            return data;
-        }
-
-        @Override
         public int hashCode() {
-            // don't include data, not considered part of the relation
             return Objects.hash(relationship, target, type);
         }
 
         @Override
         public boolean equals(Object obj) {
-            // don't include data, not considered part of the relation
-            return obj instanceof EntityRelationData other
+            return obj instanceof EntityRelation other
                     && this.target == other.target()
                     && Objects.equals(this.type, other.type())
                     && Objects.equals(this.relationship, other.relationship());

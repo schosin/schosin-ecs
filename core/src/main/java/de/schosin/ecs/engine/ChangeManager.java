@@ -30,7 +30,7 @@ public class ChangeManager {
     private BitVector updatedEntities;
     private BitVector updatedEntitiesOverflow;
 
-    public ChangeManager(StorageEngine storageEngine, EventManager eventManager, BagManager bagManager, EntityManager entityManager) {
+    public ChangeManager(StorageEngine storageEngine, EventManager eventManager, EntityManager entityManager) {
         this.storageEngine = storageEngine;
 
         this.eventManager = eventManager;

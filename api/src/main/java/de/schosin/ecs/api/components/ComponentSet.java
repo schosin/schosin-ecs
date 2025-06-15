@@ -14,6 +14,7 @@ import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetDataBuilder;
 import de.schosin.ecs.api.components.ComponentSet.Factory;
+import de.schosin.ecs.api.components.ComponentSet.IterableProcessor;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
@@ -23,7 +24,9 @@ import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.data.DataConverter;
 import de.schosin.ecs.api.data.DataProcessor;
+import de.schosin.ecs.api.data.IterableAccessor;
 
 /**
  * Base interface for component sets. A component set consists of one or more
@@ -86,6 +89,11 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
         S create(int entityId, Object... components);
     }
 
+    @FunctionalInterface
+    interface IterableProcessor<S extends ComponentSet<?>, P extends DataProcessor<S>> {
+        void process(P processor, IterableAccessor accessor, List<? extends DataConverter<?>> converters);
+    }
+
     /**
      * Record holding the {@link ComponentType} and getter for a component of the set.
      * 
@@ -101,8 +109,10 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
      * 
      * @param <S> type of component set
      */
-    sealed interface ComponentSetData<S extends ComponentSet<?>> {
+    sealed interface ComponentSetData<S extends ComponentSet<?>, P extends DataProcessor<S>> {
         Factory<S> factory();
+
+        IterableProcessor<S, P> processor();
 
         List<ComponentData<S, ?, ?>> components();
     }
@@ -117,7 +127,7 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
      * 
      * @param <S> type of component set
      */
-    sealed interface ComponentSetDataBuilder<S extends ComponentSet<?>> {
+    sealed interface ComponentSetDataBuilder<S extends ComponentSet<?>, P extends DataProcessor<S>> {
 
         /**
          * Adds a component by creating an anonymous implementation of {@link ComponentAccessor}. Allows
@@ -127,12 +137,12 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
          * builder.add(new ComponentAccessor<>(MyCompoentSet::getPosition) {})
          * }
          */
-        <R> ComponentSetDataBuilder<S> add(ComponentAccessor<S, R> data);
+        <R> ComponentSetDataBuilder<S, P> add(ComponentAccessor<S, R> data);
 
         /**
          * Creates the {@link ComponentSetData} instance.
          */
-        ComponentSetData<S> build();
+        ComponentSetData<S, P> build();
 
     }
 
@@ -152,8 +162,8 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
     /**
      * Creates a {@link ComponentSetDataBuilder} instance given the factory method.
      */
-    static <S extends ComponentSet<?>> ComponentSetDataBuilder<S> builder(Factory<S> factory) {
-        return new ComponentSetDataBuilderImpl<>(factory);
+    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(Factory<S> factory, IterableProcessor<S, P> processor) {
+        return new ComponentSetDataBuilderImpl<>(factory, processor);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -177,42 +187,52 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 
 }
 
-final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>> implements ComponentSetDataBuilder<S> {
+final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetDataBuilder<S, P> {
 
     private final Factory<S> factory;
+    private final IterableProcessor<S, P> processor;
+
     private final List<ComponentData<S, ?, ?>> components = new ArrayList<>();
 
-    public ComponentSetDataBuilderImpl(Factory<S> factory) {
+    public ComponentSetDataBuilderImpl(Factory<S> factory, IterableProcessor<S, P> processor) {
         this.factory = factory;
+        this.processor = processor;
     }
 
     @Override
-    public <R> ComponentSetDataBuilder<S> add(ComponentAccessor<S, R> data) {
+    public <R> ComponentSetDataBuilder<S, P> add(ComponentAccessor<S, R> data) {
         this.components.add(new ComponentData<>(data.componentType, data.accessor));
 
         return this;
     }
 
     @Override
-    public ComponentSetData<S> build() {
-        return new ComponentSetDataImpl<>(factory, components);
+    public ComponentSetData<S, P> build() {
+        return new ComponentSetDataImpl<>(factory, processor, components);
     }
 
 }
 
-final class ComponentSetDataImpl<S extends ComponentSet<?>> implements ComponentSetData<S> {
+final class ComponentSetDataImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetData<S, P> {
 
     private final Factory<S> factory;
+    private final IterableProcessor<S, P> processor;
     private final List<ComponentData<S, ?, ?>> components;
 
-    ComponentSetDataImpl(Factory<S> factory, List<ComponentData<S, ?, ?>> components) {
+    ComponentSetDataImpl(Factory<S> factory, IterableProcessor<S, P> processor, List<ComponentData<S, ?, ?>> components) {
         this.factory = factory;
+        this.processor = processor;
         this.components = components;
     }
 
     @Override
     public Factory<S> factory() {
         return factory;
+    }
+
+    @Override
+    public IterableProcessor<S, P> processor() {
+        return processor;
     }
 
     @Override
@@ -243,6 +263,14 @@ abstract class AbstractComponent<S extends ComponentSet<?>, R> {
         }
 
         if (component instanceof Class<?> clazz) {
+            if (ComponentSet.class.isAssignableFrom(clazz)) {
+                try {
+                    return (ComponentType<?, R>) clazz.getDeclaredField("TYPE").get(null);
+                } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException ex) {
+                    throw new IllegalStateException("Failed to retrieve ComponentType for component set %s from field TYPE: %s".formatted(clazz.getName(), ex.getMessage()), ex);
+                }
+            }
+
             return (ComponentType<?, R>) ComponentType.component(clazz);
         }
 

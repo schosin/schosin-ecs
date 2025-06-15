@@ -28,6 +28,9 @@ public class CompositionManagerGenerator {
 
     private static final ClassName COMPOSITION_MANAGER_HELPER = ClassName.get("", "CompositionManagerHelper");
 
+    private static final ClassName ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
+    private static final ClassName CONVERTER = ClassName.get("de.schosin.ecs.engine.components.mappers", "ComponentConverter");
+
     public static JavaFile generateFile(TypeElement type, int maxParams) {
         System.out.println("Process CompositionManager with %d parameters: %s".formatted(maxParams, type));
 
@@ -44,10 +47,11 @@ public class CompositionManagerGenerator {
 
         private static TypeSpec create(int maxParams) {
             var compositionsN = IntStream.range(2, maxParams + 1)
-                    .mapToObj(n -> CompositionN.create(n, maxParams))
+                    .mapToObj(n -> CompositionN.create(n))
                     .toList();
 
             return TypeSpec.classBuilder(COMPOSITION_MANAGER_HELPER)
+                    .addAnnotation(Utils.SUPPRESS_UNCHECKED)
                     .addMethod(createCompositionData(maxParams))
                     .addTypes(compositionsN)
                     .build();
@@ -98,7 +102,7 @@ public class CompositionManagerGenerator {
 
     private static class CompositionN {
 
-        private static TypeSpec create(int n, int maxParams) {
+        private static TypeSpec create(int n) {
             var name = "CompositionData" + n + "Impl";
 
             var typeVariables = Utils.generateTypeVariables("R", n);
@@ -128,6 +132,53 @@ public class CompositionManagerGenerator {
                     .superclass(superclass)
                     .addSuperinterface(compositionDataN)
                     .addMethod(constructor)
+                    .addMethod(processAccessor(n, processor))
+                    .build();
+        }
+
+        private static MethodSpec processAccessor(int n, ParameterizedTypeName processor) {
+            var methodBody = CodeBlock.builder();
+
+            for (int i = 1; i <= n; i++) {
+                var typeR = TypeVariableName.get("R" + i);
+                var converter = ParameterizedTypeName.get(CONVERTER, typeR);
+
+                methodBody.addStatement("var converter%d = ($1T) converters.get(%d)".formatted(i, i - 1), converter);
+            }
+
+            methodBody.beginControlFlow("while(accessor.hasNext())");
+            methodBody.addStatement("var entityId = accessor.next()");
+
+            methodBody.addStatement("// retrieve components");
+            for (int i = 1; i <= n; i++) {
+                methodBody.addStatement("var component%d = converter%d.getComponent(accessor)".formatted(i, i));
+            }
+
+            methodBody.addStatement("// process");
+            var processStatement = "processor.process(entityId";
+            for (int i = 1; i <= n; i++) {
+                processStatement += ", component%d".formatted(i);
+            }
+            processStatement += ")";
+
+            methodBody.addStatement(processStatement);
+
+            methodBody.addStatement("// free components");
+            for (int i = 1; i <= n; i++) {
+                methodBody.addStatement("converter%d.free(component%d)".formatted(i, i));
+            }
+
+            methodBody.endControlFlow(); // while
+
+            var converters = Utils.immutableBag(ParameterizedTypeName.get(CONVERTER, Utils.OBJECT));
+
+            return MethodSpec.methodBuilder("process")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                    .addParameter(processor, "processor")
+                    .addParameter(ACCESSOR, "accessor")
+                    .addParameter(converters, "converters")
+                    .addCode(methodBody.build())
                     .build();
         }
 

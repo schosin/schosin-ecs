@@ -3,10 +3,12 @@ package de.schosin.ecs.plugins.data.mappers;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
+import java.util.function.IntFunction;
 
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.CustomComponents;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
@@ -18,6 +20,8 @@ import de.schosin.ecs.utils.collections.Pool;
 @EcsCodegen
 public class DataTypeMapper<T extends Data, R extends Data> implements CustomComponents<T, R>, PoolingComponents<T> {
 
+    private final IntFunction<DataAccessor> accessor;
+
     private final DataType<T, ?, R, ?> dataType;
     private final Components<?, ?>[] mappers;
     private final int size;
@@ -25,7 +29,8 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
     private final Bag<Data> lent;
     private final Pool<Object[]> pool;
 
-    public DataTypeMapper(DataType<T, ?, R, ?> dataType, ComponentMapperManager componentMapperManager) {
+    public DataTypeMapper(DataType<T, ?, R, ?> dataType, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
+        this.accessor = accessor;
         this.dataType = dataType;
 
         this.mappers = Arrays.stream(dataType.getClass().getRecordComponents())
@@ -49,8 +54,9 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
 
     @Override
     public void free(T result) {
-        lent.removeIdentity(result);
-        freeData(result);
+        if (lent.removeIdentity(result)) {
+            freeData(result);
+        }
     }
 
     @Override
@@ -102,29 +108,34 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public R get(int entityId) {
-        return pool.withInstance(components -> {
-            var found = false;
+        return get(accessor.apply(entityId));
+    }
 
-            for (int i = 0; i < size; i++) {
-                var mapper = mappers[i];
+    @Override
+    public R get(DataAccessor accessor) {
+        var components = pool.getInstance();
+        var found = false;
 
-                var component = components[i] = mapper.get(entityId);
-                if (component != null) {
-                    found = true;
-                }
+        for (int i = 0; i < size; i++) {
+            var mapper = mappers[i];
+
+            var component = components[i] = mapper.get(accessor);
+            if (component != null) {
+                found = true;
             }
+        }
 
-            if (!found) {
-                return null;
-            }
+        if (!found) {
+            pool.free(components);
+            return null;
+        }
 
-            var result = (R) DataTypeMapperHelper.getInstance(dataType, components);
-            lent.add(result);
+        var result = DataTypeMapperHelper.getInstance(dataType, components);
+        lent.add(result);
 
-            return result;
-        });
+        pool.free(components);
+        return result;
     }
 
     @Override

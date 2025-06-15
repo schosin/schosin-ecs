@@ -6,7 +6,6 @@ import de.schosin.ecs.utils.collections.IntBag;
 @SuppressWarnings("rawtypes")
 public class BagManager {
 
-    private static final int ENTITY_SIZE = 1024;
     private static final int COMPONENT_SIZE = 64;
 
     private final Bag<Bag> entityBags = new Bag<>(Bag.class, 32);
@@ -15,8 +14,12 @@ public class BagManager {
     private final Bag<Bag> componentBags = new Bag<>(Bag.class, 32);
     private final Bag<IntBag> componentIntBags = new Bag<>(IntBag.class, 32);
 
-    private volatile int entitySize = ENTITY_SIZE;
+    private volatile int entitySize;
     private volatile int componentSize = COMPONENT_SIZE;
+
+    public BagManager(int expectedEntities) {
+        this.entitySize = expectedEntities;
+    }
 
     public int getEntitySize() {
         return entitySize;

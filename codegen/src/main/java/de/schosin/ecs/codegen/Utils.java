@@ -49,6 +49,8 @@ public class Utils {
     public static final ParameterizedTypeName REGULAR_COMPONENT_TYPE_WILDCARD = regularComponentType(WILDCARD);
     public static final ArrayTypeName REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY = ArrayTypeName.of(REGULAR_COMPONENT_TYPE_WILDCARD);
 
+    public static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components.mappers", "Components");
+
     public static final ClassName RELATION = ClassName.get("de.schosin.ecs.api.components", "Relation");
     public static final ClassName COMPONENT_RELATION = RELATION.nestedClass("ComponentRelation");
     public static final ClassName ENTITY_RELATION = RELATION.nestedClass("EntityRelation");
@@ -89,6 +91,10 @@ public class Utils {
         return ParameterizedTypeName.get(REGULAR_COMPONENT_TYPE, type, result);
     }
 
+    public static ParameterizedTypeName components(TypeName type, TypeName result) {
+        return ParameterizedTypeName.get(COMPONENTS, type, result);
+    }
+
     public static ParameterizedTypeName abstractEcsTest() {
         return abstractEcsTest(WORLD);
     }
@@ -100,6 +106,7 @@ public class Utils {
     public static ParameterizedTypeName bag(TypeName type) {
         return ParameterizedTypeName.get(BAG, type);
     }
+
     public static ParameterizedTypeName immutableBag(TypeName type) {
         return ParameterizedTypeName.get(IMMUTABLE_BAG, type);
     }

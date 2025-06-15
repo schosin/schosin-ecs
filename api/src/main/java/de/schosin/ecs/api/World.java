@@ -117,6 +117,19 @@ public interface World extends Components.Creator {
          * @throws ClassCastException if class does not implement StorageEngine
          */
         Builder<T> storageEngine(Class<?> storageEngine, Object config);
+        
+        /**
+         * Configure the maximum count of active entities this world will hold at its peak.
+         * 
+         * <p>
+         * Configuring this value will increase memory usage if the actual number is lower,
+         * but can provide better performance at runtime.
+         * </p>
+         *  
+         * @param count expected maximum number of active entities
+         * @return this instance
+         */
+        Builder<T> expectedEntities(int count);
 
         /**
          * Default loop count used by {@link World#process()} when delegating to {@link World#process(int)}.

@@ -1,6 +1,7 @@
 package de.schosin.ecs.engine.components.mappers;
 
 import java.util.Arrays;
+import java.util.function.IntFunction;
 
 import org.jspecify.annotations.NonNull;
 
@@ -14,6 +15,7 @@ import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentSetType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
@@ -21,7 +23,9 @@ import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFa
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class ComponentSetComponentsImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, PoolingComponents<T> {
+public final class ComponentSetComponentsImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, PoolingComponents<T> {
+
+    private final IntFunction<DataAccessor> accessor;
 
     private final ComponentSetFactory<T> factory;
     private final ComponentData<T, ?, ?>[] componentTypes;
@@ -33,7 +37,8 @@ public class ComponentSetComponentsImpl<T extends ComponentSet<?>> implements Co
     private final Pool<Object[]> pool;
 
     @SuppressWarnings("unchecked")
-    public ComponentSetComponentsImpl(ComponentSetType<T, ?> type, ComponentMapperManager componentMapperManager) {
+    public ComponentSetComponentsImpl(ComponentSetType<T, ?> type, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
+        this.accessor = accessor;
         this.factory = ComponentSetsHelper.getFactory(type.componentSet());
 
         this.componentTypes = this.factory.getComponents().toArray(ComponentData[]::new);
@@ -53,8 +58,9 @@ public class ComponentSetComponentsImpl<T extends ComponentSet<?>> implements Co
 
     @Override
     public void free(T result) {
-        lent.removeIdentity(result);
-        result.free();
+        if (lent.removeIdentity(result)) {
+            result.free();
+        }
     }
 
     @Override
@@ -116,27 +122,34 @@ public class ComponentSetComponentsImpl<T extends ComponentSet<?>> implements Co
 
     @Override
     public T get(int entityId) {
-        return pool.withInstance(components -> {
-            var found = false;
+        return get(accessor.apply(entityId));
+    }
 
-            for (int i = 0; i < size; i++) {
-                var mapper = mappers[i];
+    @Override
+    public T get(DataAccessor accessor) {
+        var components = pool.getInstance();
+        var found = false;
 
-                var component = components[i] = mapper.get(entityId);
-                if (component != null) {
-                    found = true;
-                }
+        for (int i = 0; i < size; i++) {
+            var mapper = mappers[i];
+
+            var component = mapper.get(accessor);
+            if (component != null) {
+                components[i] = component;
+                found = true;
             }
+        }
 
-            if (!found) {
-                return null;
-            }
+        if (!found) {
+            pool.free(components);
+            return null;
+        }
 
-            var result = factory.getInstance(entityId, components);
-            lent.add(result);
+        var result = factory.getInstance(accessor.entityId(), components);
+        lent.add(result);
 
-            return result;
-        });
+        pool.free(components);
+        return result;
     }
 
     @Override

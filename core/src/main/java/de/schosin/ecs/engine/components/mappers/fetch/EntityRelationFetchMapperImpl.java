@@ -3,29 +3,46 @@ package de.schosin.ecs.engine.components.mappers.fetch;
 import static de.schosin.ecs.api.components.types.ComponentType.relation;
 
 import java.util.Iterator;
+import java.util.function.IntFunction;
 
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
+import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
+import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.utils.components.EntityRelationDataImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchMapper<R, T> {
+public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchMapper<R, T>, PoolingComponents<EntityRelationDataResult<R, T>> {
+
+    private final IntFunction<DataAccessor> accessor;
 
     private final EntityRelationMapper<R> relationMapper;
+    private final int componentId;
+
     private final Components<?, T> dataMapper;
 
-    public EntityRelationFetchMapperImpl(EntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager) {
+    public EntityRelationFetchMapperImpl(EntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
+        this.accessor = accessor;
+
         this.relationMapper = componentMapperManager.getComponents(relation(type.relationship()));
+        this.componentId = relationMapper.componentId();
+
         this.dataMapper = componentMapperManager.getComponents(type.fetch());
+    }
+
+    @Override
+    public void free(EntityRelationDataResult<R, T> result) {
+        EntityRelationDataResultImpl.free(result);
     }
 
     @Override
@@ -35,7 +52,12 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
 
     @Override
     public EntityRelationDataResult<R, T> get(int entityId) {
-        var relations = relationMapper.get(entityId);
+        return get(accessor.apply(entityId));
+    }
+
+    @Override
+    public EntityRelationDataResult<R, T> get(DataAccessor accessor) {
+        EntityRelationResult<R> relations = accessor.getComponent(componentId);
         if (relations == null) {
             return null;
         }
@@ -48,10 +70,20 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
         return relationMapper.remove(entityId);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static class EntityRelationDataResultImpl implements EntityRelationDataResult, Pooled {
+    public static <R, T> EntityRelationDataResult<R, T> getEntityRelationDataResult(EntityRelationResult<R> relations, Components<?, T> mapper) {
+        return EntityRelationDataResultImpl.getInstance(relations, mapper);
+    }
 
-        private static final Pool<EntityRelationDataResultImpl> POOL = Pool.unbounded(EntityRelationDataResultImpl.class, EntityRelationDataResultImpl::new);
+    public static <R, T> void freeResult(EntityRelationDataResult<R, T> result) {
+        if (result instanceof EntityRelationDataResultImpl impl) {
+            EntityRelationDataResultImpl.POOL.free(impl);
+        }
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    static class EntityRelationDataResultImpl implements EntityRelationDataResult, Pooled {
+
+        static final Pool<EntityRelationDataResultImpl> POOL = Pool.unbounded(EntityRelationDataResultImpl.class, EntityRelationDataResultImpl::new);
 
         private EntityRelationResult<?> result;
         private Components<?, ?> mapper;
@@ -59,7 +91,7 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
 
         private final Bag<EntityRelationData<?, ?>> relations = new Bag<>(EntityRelationData.class, 8);
 
-        static <R, T> EntityRelationDataResult<R, T> getInstance(EntityRelationResult<R> result, Components<?, T> mapper) {
+        private static <R, T> EntityRelationDataResult<R, T> getInstance(EntityRelationResult<R> result, Components<?, T> mapper) {
             var instance = POOL.getInstance();
             instance.result = result;
             instance.mapper = mapper;
@@ -67,6 +99,12 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
             instance.relations.ensureCapacity(result.size());
 
             return instance;
+        }
+
+        public static void free(EntityRelationDataResult relations) {
+            if (relations instanceof EntityRelationDataResultImpl impl) {
+                POOL.free(impl);
+            }
         }
 
         @NonNull
@@ -120,9 +158,8 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
 
             for (int i = 0, s = result.size(); i < s; i++) {
                 var relation = result.get(i);
-                var data = mapper.get(relation.target());
 
-                this.relations.add(Relation.create(relation.relationship(), relation.target(), data));
+                this.relations.add(EntityRelationDataImpl.getInstance(relation, mapper::get));
             }
 
             this.initialized = true;
@@ -130,6 +167,10 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
 
         @Override
         public void reset() {
+            for (int i = 0, s = relations.getSize(); i < s; i++) {
+                EntityRelationDataImpl.free(relations.get(i));
+            }
+
             this.result = null;
             this.mapper = null;
             this.initialized = false;

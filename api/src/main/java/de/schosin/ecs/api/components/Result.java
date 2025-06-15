@@ -13,7 +13,9 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.Wildcard;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
+import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 
 /**
  * Represents a result containing no, one or more components matching
@@ -76,6 +78,12 @@ public interface Result<T> extends Iterable<T> {
          * checked by {@link #equals(Object)} against existing relations, returning 
          * its relationship if it is equal.
          * 
+         * <p>
+         * In the case of {@link WildcardComponentRelationType} this method
+         * will always return null, as a target component can have multiple 
+         * relationships with the entity.
+         * </p>
+         * 
          * @param target target component
          * @return relationship component, or null if not present
          */
@@ -93,6 +101,12 @@ public interface Result<T> extends Iterable<T> {
 
         /**
          * Retrieves the relationship given the target entity.
+         * 
+         * <p>
+         * In the case of {@link WildcardEntityRelationType} this method
+         * will always return null, as a target entity can have multiple 
+         * relationships with the entity.
+         * </p>
          * 
          * @param target target entity
          * @return relationship component, or null if not present
@@ -113,6 +127,12 @@ public interface Result<T> extends Iterable<T> {
         /**
          * Retrieves the relationship given the target entity.
          * 
+         * <p>
+         * In the case of {@link WildcardEntityRelationType} this method
+         * will always return null, as a target entity can have multiple 
+         * relationships with the entity.
+         * </p>
+         * 
          * @param target target entity
          * @return relationship component, or null if not present
          */
@@ -120,6 +140,12 @@ public interface Result<T> extends Iterable<T> {
 
         /**
          * Retrieves the data given the target entity.
+         * 
+         * <p>
+         * In the case of {@link WildcardEntityRelationType} this method
+         * will always return null, as a target entity can have multiple 
+         * relationships with the entity.
+         * </p>
          * 
          * @param target target entity
          * @return data of fetch component, or null unknown parent or no data for parent
