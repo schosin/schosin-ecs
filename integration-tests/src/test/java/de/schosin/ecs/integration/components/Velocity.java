@@ -20,4 +20,11 @@ public class Velocity implements Pooled {
         this.vy = 0f;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Velocity [vx=").append(this.vx).append(", vy=").append(this.vy).append("]");
+        return builder.toString();
+    }
+
 }

@@ -20,4 +20,11 @@ public class Position implements Pooled {
         this.y = 0f;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Position [x=").append(this.x).append(", y=").append(this.y).append("]");
+        return builder.toString();
+    }
+
 }

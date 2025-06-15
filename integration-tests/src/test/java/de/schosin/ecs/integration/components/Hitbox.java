@@ -20,4 +20,11 @@ public class Hitbox implements Pooled {
         this.y2 = 0f;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Hitbox [x1=").append(this.x1).append(", y1=").append(this.y1).append(", x2=").append(this.x2).append(", y2=").append(this.y2).append("]");
+        return builder.toString();
+    }
+
 }

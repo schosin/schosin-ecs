@@ -20,4 +20,11 @@ public class Size implements Pooled {
         this.height = 0;
     }
 
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("Size [width=").append(this.width).append(", height=").append(this.height).append("]");
+        return builder.toString();
+    }
+
 }

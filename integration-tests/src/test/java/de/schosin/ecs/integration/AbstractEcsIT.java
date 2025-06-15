@@ -4,12 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import java.util.Random;
 
 import de.schosin.ecs.plugins.experimental.system.SystemPlugin;
 import de.schosin.ecs.test.AbstractEcsTest;
 import de.schosin.ecs.worlds.DefaultWorld;
 
 public abstract class AbstractEcsIT extends AbstractEcsTest<DefaultWorld> {
+
+    protected static final Random RNG = new Random(0);
 
     private static final Duration DEFAULT_DURATION = Duration.ofSeconds(10);
     private static final Duration MARGIN = Duration.ofSeconds(1);

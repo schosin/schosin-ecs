@@ -19,7 +19,6 @@
         <module>benchmark</module>
         <module>bom</module>
         <module>examples</module>
-        <module>integration-tests</module>
         <module>aggregate-report</module>
     </modules>
   
@@ -187,6 +186,31 @@
     </build>
     
     <profiles>
+        <profile>
+            <id>it</id>
+            <modules>
+                <module>codegen</module>
+                <module>api</module>
+                <module>utils</module>
+                <module>build-tools</module>
+                <module>storage</module>
+                <module>core</module>
+                <module>test</module>
+                <module>plugins</module>
+                <module>worlds</module>
+                <module>benchmark</module>
+                <module>bom</module>
+                <module>examples</module>
+                <module>integration-tests</module>
+                <module>aggregate-report</module>
+            </modules>
+            <properties>
+                <storage.impl.groupId>de.schosin.ecs.storage</storage.impl.groupId>
+                <storage.impl.artifactId>ecs-storage-archetype-storage</storage.impl.artifactId>
+                <storage.impl.version>${project.version}</storage.impl.version>
+            </properties>
+        </profile>
+
         <profile>
             <id>archetypeStorage</id>
             <activation>
