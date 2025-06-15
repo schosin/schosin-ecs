@@ -8,7 +8,6 @@ import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 import de.schosin.ecs.api.components.ComponentSet.Factory;
-import de.schosin.ecs.api.components.ComponentSets;
 import de.schosin.ecs.api.data.DataProcessor;
 import de.schosin.ecs.engine.utils.exceptions.EcsComponentSetException;
 
@@ -19,8 +18,6 @@ public class ComponentSetsHelper {
 
         S getInstance(int entityId, Object... components);
     }
-
-    private static final boolean COMPONENT_SETS_AVAILABLE = checkComponentSetsAvailable();
 
     private static final Map<Class<? extends ComponentSet<?>>, ComponentSetFactory<?>> COMPONENT_SET_DATA = new ConcurrentHashMap<>();
 
@@ -63,13 +60,6 @@ public class ComponentSetsHelper {
 
     @SuppressWarnings("unchecked")
     public static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetData<S, P> getData(Class<S> componentSet) {
-        if (COMPONENT_SETS_AVAILABLE) {
-            var result = ComponentSets.<S, P>getData(componentSet);
-            if (result != null) {
-                return result;
-            }
-        }
-
         try {
             return (ComponentSetData<S, P>) componentSet.getField("DATA").get(null);
         } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException ex) {
@@ -77,15 +67,6 @@ public class ComponentSetsHelper {
                     .formatted(componentSet.getName());
 
             throw new EcsComponentSetException(componentSet, message, ex);
-        }
-    }
-
-    private static boolean checkComponentSetsAvailable() {
-        try {
-            Class.forName("de.schosin.ecs.api.components.ComponentSets");
-            return true;
-        } catch (ClassNotFoundException ex) {
-            return false;
         }
     }
 

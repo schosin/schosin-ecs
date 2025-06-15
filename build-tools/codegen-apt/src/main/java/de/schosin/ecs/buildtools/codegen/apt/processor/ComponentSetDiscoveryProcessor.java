@@ -1,7 +1,6 @@
 package de.schosin.ecs.buildtools.codegen.apt.processor;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -17,8 +16,6 @@ import javax.tools.Diagnostic;
 import com.google.auto.service.AutoService;
 import com.palantir.javapoet.JavaFile;
 
-import de.schosin.ecs.buildtools.codegen.apt.processor.ComponentSetsGenerator.TypeData;
-
 @AutoService(Processor.class)
 @SupportedAnnotationTypes(ComponentSetDiscoveryProcessor.CONFIG)
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
@@ -27,10 +24,6 @@ public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
     public static final String CONFIG = "de.schosin.ecs.api.components.ComponentSetConfig";
 
     private ComponentSetsGenerator generator;
-
-    private boolean generated;
-
-    private final List<TypeData> implementations = new ArrayList<>();
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
@@ -46,30 +39,6 @@ public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
 
         try {
             var implementations = generator.generate(roundEnv.getElementsAnnotatedWith(componentSetConfig));
-            if (implementations.isEmpty()) {
-                if (generated) {
-                    return true;
-                }
-
-                var componentSets = generator.generateComponentSets(this.implementations);
-                var componentSetsFile = JavaFile.builder(ComponentSetsGenerator.COMPONENT_SET.packageName(), componentSets)
-                        .skipJavaLangImports(true)
-                        .indent("    ")
-                        .build();
-
-                writeFile(componentSetsFile);
-                generated = true;
-
-                processingEnv.getMessager().printNote("Generated ComponentSets for %d types".formatted(this.implementations.size()));
-
-                return true;
-            }
-
-            if (generated) {
-                processingEnv.getMessager().printWarning("Unexpected round, some implementations might not be available via ComponentSets.");
-            }
-
-            this.implementations.addAll(implementations);
 
             var implementationFiles = implementations.stream()
                     .flatMap(data -> data.types().stream()

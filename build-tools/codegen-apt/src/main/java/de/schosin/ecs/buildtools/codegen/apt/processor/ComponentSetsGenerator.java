@@ -3,8 +3,6 @@ package de.schosin.ecs.buildtools.codegen.apt.processor;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -22,7 +20,6 @@ import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
-import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
 
 import de.schosin.ecs.buildtools.codegen.apt.visitor.MethodVisitor;
@@ -56,72 +53,6 @@ public class ComponentSetsGenerator {
     public static final ClassName ITERABLE_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
 
     private static final WildcardTypeName WILDCARD = WildcardTypeName.subtypeOf(Object.class);
-
-    public TypeSpec generateComponentSets(List<TypeData> implementations) {
-        var constructor = MethodSpec.constructorBuilder().addModifiers(Modifier.PRIVATE).build();
-
-        var methods = implementations.stream()
-                .flatMap(impl -> Stream.of(impl.factory, impl.entityFactory))
-                .filter(Objects::nonNull)
-                .toList();
-
-        return TypeSpec.classBuilder("ComponentSets")
-                .addAnnotation(GENERATED)
-                .addModifiers(Modifier.PUBLIC)
-                .addField(ComponentSets.lookupMap(implementations))
-                .addMethods(methods)
-                .addMethod(ComponentSets.getData())
-                .addMethod(constructor)
-                .build();
-    }
-
-    private static class ComponentSets {
-
-        public static FieldSpec lookupMap(List<TypeData> implementations) {
-            var initializer = CodeBlock.builder()
-                    .add("$1T.ofEntries(", Map.class);
-
-            var outerComma = false;
-            for (var implementation : implementations) {
-                var result = implementation.result;
-
-                if (outerComma) {
-                    initializer.add(", ");
-                } else {
-                    outerComma = true;
-                }
-
-                initializer.add(System.lineSeparator());
-                initializer.add("    $1T.entry($2T.class, $2T.DATA)", Map.class, result.interfaceName);
-            }
-
-            var componentSet = ParameterizedTypeName.get(COMPONENT_SET, WildcardTypeName.subtypeOf(Object.class));
-            var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, WildcardTypeName.subtypeOf(componentSet), WILDCARD);
-            var classT = ParameterizedTypeName.get(ClassName.get(Class.class), WildcardTypeName.subtypeOf(componentSet));
-            var type = ParameterizedTypeName.get(ClassName.get(Map.class), classT, componentSetDataType);
-
-            return FieldSpec.builder(type, "LOOKUP", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer(initializer.add(")").build())
-                    .build();
-        }
-
-        private static MethodSpec getData() {
-            var typeS = TypeVariableName.get("S", ParameterizedTypeName.get(COMPONENT_SET, WildcardTypeName.subtypeOf(Object.class)));
-
-            var wildcardClass = ParameterizedTypeName.get(ClassName.get(Class.class), TypeVariableName.get("S"));
-            var componentSetData = ParameterizedTypeName.get(COMPONENT_SET_DATA, TypeVariableName.get("S"), WILDCARD);
-
-            return MethodSpec.methodBuilder("getData")
-                    .addAnnotation(AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build())
-                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-                    .addTypeVariable(typeS)
-                    .addParameter(wildcardClass, "componentSet")
-                    .returns(componentSetData)
-                    .addStatement("return ($1T) LOOKUP.get(componentSet)", componentSetData)
-                    .build();
-        }
-
-    }
 
     public List<TypeData> generate(Set<? extends Element> elements) {
         return elements.stream()
