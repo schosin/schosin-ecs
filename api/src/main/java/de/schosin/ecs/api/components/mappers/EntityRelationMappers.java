@@ -22,7 +22,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRe
  * @param <R> type of relationship component
  * @param <X> maps to {@link ComponentType} {@code R} (read operations)
  */
-public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRelation<R>, X> {
+public sealed interface EntityRelationMappers<R, X> extends RegularComponents<EntityRelation<R>, X> {
 
     @Override
     RegularEntityRelationType<R, X> componentType();
@@ -31,7 +31,7 @@ public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRe
         return add(entityId, Relation.create(relationship, target));
     }
 
-    non-sealed interface EntityRelationMapper<R> extends EntityRelations<R, EntityRelationResult<R>> {
+    non-sealed interface EntityRelationMapper<R> extends EntityRelationMappers<R, EntityRelationResult<R>> {
 
         @Override
         EntityRelationType<R> componentType();
@@ -40,7 +40,7 @@ public sealed interface EntityRelations<R, X> extends RegularComponents<EntityRe
 
     }
 
-    non-sealed interface ExclusiveEntityRelationMapper<R extends Exclusive> extends EntityRelations<R, EntityRelation<R>> {
+    non-sealed interface ExclusiveEntityRelationMapper<R extends Exclusive> extends EntityRelationMappers<R, EntityRelation<R>> {
 
         @Override
         ExclusiveEntityRelationType<R> componentType();

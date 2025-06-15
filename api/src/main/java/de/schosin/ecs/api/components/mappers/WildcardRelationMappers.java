@@ -15,36 +15,36 @@ import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponen
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 
-public sealed interface WildcardRelations<R extends Relation<?>, T extends Result<?>> extends Components<R, T> {
+public sealed interface WildcardRelationMappers<R extends Relation<?>, T extends Result<?>> extends Components<R, T> {
 
-    non-sealed interface WildcardComponentRelations<R, T> extends WildcardRelations<ComponentRelation<? extends R, ? extends T>, ComponentRelationResult<? extends R, ? extends T>> {
+    non-sealed interface WildcardComponentRelationMapper<R, T> extends WildcardRelationMappers<ComponentRelation<? extends R, ? extends T>, ComponentRelationResult<? extends R, ? extends T>> {
     }
 
-    non-sealed interface WildcardEntityRelations<R> extends WildcardRelations<EntityRelation<? extends R>, EntityRelationResult<? extends R>> {
+    non-sealed interface WildcardEntityRelationMapper<R> extends WildcardRelationMappers<EntityRelation<? extends R>, EntityRelationResult<? extends R>> {
     }
 
-    non-sealed interface WildcardEntityFetchRelations<R, T> extends WildcardRelations<EntityRelationData<? extends R, T>, EntityRelationDataResult<? extends R, T>> {
+    non-sealed interface WildcardEntityFetchRelationMapper<R, T> extends WildcardRelationMappers<EntityRelationData<? extends R, T>, EntityRelationDataResult<? extends R, T>> {
     }
 
     interface Creator {
 
-        default <R, T> WildcardComponentRelations<R, T> getWildcardComponentRelations(Class<R> relationshipBound, Class<T> targetBound) {
+        default <R, T> WildcardComponentRelationMapper<R, T> getWildcardComponentRelations(Class<R> relationshipBound, Class<T> targetBound) {
             return getComponents(wildcardRelation(relationshipBound, targetBound));
         }
 
-        <R, T> WildcardComponentRelations<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation);
+        <R, T> WildcardComponentRelationMapper<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation);
 
-        default <R> WildcardEntityRelations<R> getWildcardEntityRelations(Class<R> relationshipBound) {
+        default <R> WildcardEntityRelationMapper<R> getWildcardEntityRelations(Class<R> relationshipBound) {
             return getComponents(wildcardRelation(relationshipBound));
         }
 
-        <R> WildcardEntityRelations<R> getComponents(WildcardEntityRelationType<R> wildcardRelation);
+        <R> WildcardEntityRelationMapper<R> getComponents(WildcardEntityRelationType<R> wildcardRelation);
 
-        default <R, T> WildcardEntityFetchRelations<R, T> getWildcardEntityFetchRelations(Class<R> relationshipBound, ComponentType<?, T> fetch) {
+        default <R, T> WildcardEntityFetchRelationMapper<R, T> getWildcardEntityFetchRelations(Class<R> relationshipBound, ComponentType<?, T> fetch) {
             return getComponents(wildcardRelation(relationshipBound, fetch));
         }
 
-        <R, T> WildcardEntityFetchRelations<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation);
+        <R, T> WildcardEntityFetchRelationMapper<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation);
 
     }
 

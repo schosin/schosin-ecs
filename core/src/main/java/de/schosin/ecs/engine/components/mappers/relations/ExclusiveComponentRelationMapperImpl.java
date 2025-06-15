@@ -2,7 +2,7 @@ package de.schosin.ecs.engine.components.mappers.relations;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelationData;

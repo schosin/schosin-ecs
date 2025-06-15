@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-class WildcardComponentsImplTest extends AbstractMapperTest {
+class WildcardComponentMapperImplTest extends AbstractMapperTest {
 
     @Test
     void testHas() {

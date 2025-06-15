@@ -10,7 +10,7 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardEntityFetchRelations;
+import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityFetchRelationMapper;
 import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -19,14 +19,14 @@ import de.schosin.ecs.engine.utils.components.EntityRelationDataImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardEntityFetchRelationsImpl<R, T> implements WildcardEntityFetchRelations<R, T>, PoolingComponents<EntityRelationDataResult<? extends R, T>> {
+public final class WildcardEntityFetchRelationMapperImpl<R, T> implements WildcardEntityFetchRelationMapper<R, T>, PoolingComponents<EntityRelationDataResult<? extends R, T>> {
 
-    private final WildcardEntityRelations<R> relationMapper;
+    private final WildcardEntityRelationMapper<R> relationMapper;
     private final Components<?, T> dataMapper;
 
     private final Bag<ResultImpl<? extends R, T>> lent = new Bag<>(ResultImpl.class, 8);
 
-    public WildcardEntityFetchRelationsImpl(WildcardEntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager) {
+    public WildcardEntityFetchRelationMapperImpl(WildcardEntityRelationFetchType<R, T> type, ComponentMapperManager componentMapperManager) {
         this.relationMapper = componentMapperManager.getComponents(wildcardRelation(type.relationshipBound()));
         this.dataMapper = componentMapperManager.getComponents(type.fetch());
     }

@@ -2,7 +2,7 @@ package de.schosin.ecs.engine.components.mappers.relations;
 
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
-import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationData;

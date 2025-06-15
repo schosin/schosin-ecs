@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 
 class EntityRelationMapperImplTest extends AbstractEntityRelationsTest {
 

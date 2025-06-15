@@ -15,7 +15,7 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 
-class WildcardEntityRelationsImplTest extends AbstractWorldTest {
+class WildcardEntityRelationMapperImplTest extends AbstractWorldTest {
 
     int target1;
     int target2;
@@ -307,8 +307,8 @@ class WildcardEntityRelationsImplTest extends AbstractWorldTest {
             return this.value == other.value;
         }
 
-        private WildcardEntityRelationsImplTest getEnclosingInstance() {
-            return WildcardEntityRelationsImplTest.this;
+        private WildcardEntityRelationMapperImplTest getEnclosingInstance() {
+            return WildcardEntityRelationMapperImplTest.this;
         }
     }
 

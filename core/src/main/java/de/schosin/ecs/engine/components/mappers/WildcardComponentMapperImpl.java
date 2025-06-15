@@ -10,7 +10,7 @@ import org.jspecify.annotations.Nullable;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
-import de.schosin.ecs.api.components.mappers.WildcardComponents;
+import de.schosin.ecs.api.components.mappers.WildcardComponentMapper;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
@@ -18,7 +18,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardComponentsImpl<T> implements WildcardComponents<T>, PoolingComponents<ComponentResult<T>>, WildcardMapper<ComponentMapper<? extends T>> {
+public final class WildcardComponentMapperImpl<T> implements WildcardComponentMapper<T>, PoolingComponents<ComponentResult<T>>, WildcardMapper<ComponentMapper<? extends T>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -29,7 +29,7 @@ public final class WildcardComponentsImpl<T> implements WildcardComponents<T>, P
     private final Pool<WildcardComponentResultImpl> pool = Pool.unbounded(WildcardComponentResultImpl.class, WildcardComponentResultImpl::new);
     private final Bag<WildcardComponentResultImpl> lent = new Bag<>(WildcardComponentResultImpl.class, 8);
 
-    public WildcardComponentsImpl(IntFunction<DataAccessor> accessor) {
+    public WildcardComponentMapperImpl(IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
 
         this.mappers = new Bag<>(ComponentMapper.class, 4);

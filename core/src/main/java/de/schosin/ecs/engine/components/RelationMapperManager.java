@@ -4,10 +4,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;

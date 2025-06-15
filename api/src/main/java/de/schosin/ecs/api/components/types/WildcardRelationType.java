@@ -7,7 +7,7 @@ import de.schosin.ecs.api.components.Result;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
 import de.schosin.ecs.api.components.Result.EntityRelationDataResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
-import de.schosin.ecs.api.components.mappers.EntityFetchRelations;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
@@ -87,7 +87,7 @@ public sealed interface WildcardRelationType<R, T extends Result<?>> extends Com
 
     /**
      * Describes an entity relation wildcard type similarly to {@link WildcardEntityRelationType}, but also allows to fetch data for
-     * the target entities in the same way as {@link EntityFetchRelations} does.
+     * the target entities in the same way as {@link EntityFetchRelationMappers} does.
      * 
      * @param <R> type of relationship bound
      * @param <T> type of fetched data for target entities

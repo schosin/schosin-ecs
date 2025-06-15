@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.engine.components.mappers.relations.AbstractRelationsTest.Faction.Enemy;
 import de.schosin.ecs.engine.components.mappers.relations.AbstractRelationsTest.Faction.Player;

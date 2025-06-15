@@ -13,19 +13,19 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
-import de.schosin.ecs.api.components.mappers.CustomComponents;
-import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.EntityFetchRelations.ExclusiveEntityRelationFetchMapper;
-import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardComponentRelations;
-import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardEntityFetchRelations;
-import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardEntityRelations;
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.ExclusiveEntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityFetchRelationMapper;
+import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -185,22 +185,22 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
-    public <R, T> WildcardComponentRelations<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation) {
+    public <R, T> WildcardComponentRelationMapper<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation) {
         return componentMapperManager.getComponents(wildcardRelation);
     }
 
     @Override
-    public <R> WildcardEntityRelations<R> getComponents(WildcardEntityRelationType<R> wildcardRelation) {
+    public <R> WildcardEntityRelationMapper<R> getComponents(WildcardEntityRelationType<R> wildcardRelation) {
         return componentMapperManager.getComponents(wildcardRelation);
     }
 
     @Override
-    public <R, T> WildcardEntityFetchRelations<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
+    public <R, T> WildcardEntityFetchRelationMapper<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
         return componentMapperManager.getComponents(wildcardRelation);
     }
 
     @Override
-    public <T, R, X extends CustomComponentType<T, R, C>, C extends CustomComponents<T, R>> C getComponents(X type) {
+    public <T, R, X extends CustomComponentType<T, R, C>, C extends CustomComponentMapper<T, R>> C getComponents(X type) {
         return componentMapperManager.getComponents(type);
     }
 

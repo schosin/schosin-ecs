@@ -7,8 +7,8 @@ import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
-import de.schosin.ecs.api.components.mappers.CustomComponents.Factory;
-import de.schosin.ecs.api.components.mappers.EntityFetchRelations.EntityRelationFetchMapper;
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper.Factory;
+import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
@@ -23,14 +23,14 @@ import de.schosin.ecs.api.data.DataAccessor;
  * 
  * <ul>
  *  <li>{@link ComponentMapper} allows working with regular POJO components and enums</li>
- *  <li>{@link ComponentRelations} allows working with {@link ComponentRelation ComponentRelations}</li> 
- *  <li>{@link EntityRelations} allows working with {@link EntityRelation EntityRelations}</li>
+ *  <li>{@link ComponentRelationMappers} allows working with {@link ComponentRelation ComponentRelations}</li> 
+ *  <li>{@link EntityRelationMappers} allows working with {@link EntityRelation EntityRelations}</li>
  *  <li>
- *      {@link EntityFetchRelations} allows working with {@link EntityRelation EntityRelations} 
+ *      {@link EntityFetchRelationMappers} allows working with {@link EntityRelation EntityRelations} 
  *      and fetching components of the target entity
  *  </li>
  *  <li>{@link ComponentSetMapper} allows working with a set of components</li>
- *  <li>{@link WildcardComponents} allows working with a group of components extending a lower bound type</li> 
+ *  <li>{@link WildcardComponentMapper} allows working with a group of components extending a lower bound type</li> 
  * </ul>
  * 
  * <p>
@@ -77,9 +77,9 @@ import de.schosin.ecs.api.data.DataAccessor;
  * 
  * @param <T> component type
  */
-public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, WildcardComponents, EntityFetchRelations, WildcardRelations, CustomComponents {
+public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, WildcardComponentMapper, EntityFetchRelationMappers, WildcardRelationMappers, CustomComponentMapper {
 
-    sealed interface RegularComponents<T, R> extends Components<T, R> permits ComponentMapper, ComponentRelations, EntityRelations {
+    sealed interface RegularComponents<T, R> extends Components<T, R> permits ComponentMapper, ComponentRelationMappers, EntityRelationMappers {
 
         /**
          * Returns the id of the component managed by this mapper.
@@ -144,7 +144,7 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
      */
     boolean remove(int entityId);
 
-    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelations.Creator, EntityRelations.Creator, EntityFetchRelations.Creator, WildcardRelations.Creator {
+    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelationMappers.Creator, EntityRelationMappers.Creator, EntityFetchRelationMappers.Creator, WildcardRelationMappers.Creator {
 
         /**
          * Retrieves the {@link Components} instance for the given {@link ComponentType}.
@@ -180,7 +180,7 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
          * @throws IllegalArgumentException if no {@link Factory} has been registered for the type
          */
         @NonNull
-        <T, R, X extends CustomComponentType<T, R, C>, C extends CustomComponents<T, R>> C getComponents(X type);
+        <T, R, X extends CustomComponentType<T, R, C>, C extends CustomComponentMapper<T, R>> C getComponents(X type);
 
     }
 

@@ -16,12 +16,12 @@ import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRela
  * @param <T> type of fetched data for target entity
  * @param <X> maps to {@link ComponentType} {@code R} (read operations)
  */
-public sealed interface EntityFetchRelations<R, T, F> extends Components<EntityRelationData<R, T>, F> {
+public sealed interface EntityFetchRelationMappers<R, T, F> extends Components<EntityRelationData<R, T>, F> {
 
-    non-sealed interface EntityRelationFetchMapper<R, T> extends EntityFetchRelations<R, T, EntityRelationDataResult<R, T>> {
+    non-sealed interface EntityRelationFetchMapper<R, T> extends EntityFetchRelationMappers<R, T, EntityRelationDataResult<R, T>> {
     }
 
-    non-sealed interface ExclusiveEntityRelationFetchMapper<R extends Exclusive, T> extends EntityFetchRelations<R, T, EntityRelationData<R, T>> {
+    non-sealed interface ExclusiveEntityRelationFetchMapper<R extends Exclusive, T> extends EntityFetchRelationMappers<R, T, EntityRelationData<R, T>> {
     }
 
     interface Creator {

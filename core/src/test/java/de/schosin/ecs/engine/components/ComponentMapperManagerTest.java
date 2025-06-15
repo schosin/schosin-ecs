@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import de.schosin.ecs.api.components.mappers.CustomComponents;
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.AbstractWorldTest;
@@ -79,7 +79,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 record DefaultComponentType<T>(RegularComponentType<T, T> type, Supplier<T> defaultInstance) implements CustomComponentType<T, T, DefaultComponents<T>> {
 }
 
-class DefaultComponents<T> implements CustomComponents<T, T> {
+class DefaultComponents<T> implements CustomComponentMapper<T, T> {
 
     private final RegularComponents<T, T> components;
     private final int componentId;

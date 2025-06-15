@@ -10,10 +10,10 @@ import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -23,7 +23,7 @@ import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFa
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class ComponentSetComponentsImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, PoolingComponents<T> {
+public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, PoolingComponents<T> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -37,7 +37,7 @@ public final class ComponentSetComponentsImpl<T extends ComponentSet<?>> impleme
     private final Pool<Object[]> pool;
 
     @SuppressWarnings("unchecked")
-    public ComponentSetComponentsImpl(ComponentSetType<T, ?> type, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
+    public ComponentSetMapperImpl(ComponentSetType<T, ?> type, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
         this.factory = ComponentSetsHelper.getFactory(type.componentSet());
 

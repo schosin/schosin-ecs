@@ -13,7 +13,7 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 
-class WildcardEntityFetchRelationsImplTest extends AbstractWorldTest {
+class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
     @Nested
     class HasTest {

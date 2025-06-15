@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 
 class ExclusiveEntityRelationMapperImplTest extends AbstractEntityRelationsTest {
 

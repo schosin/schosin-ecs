@@ -35,7 +35,7 @@ import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.CustomComponents;
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
@@ -5303,7 +5303,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
     }
 
-    sealed interface DefaultComponents<T> extends CustomComponents<T, T> {
+    sealed interface DefaultComponents<T> extends CustomComponentMapper<T, T> {
     }
 
     final class DefaultComponentsImpl<T> implements DefaultComponents<T> {

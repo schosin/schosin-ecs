@@ -18,7 +18,7 @@ import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Location;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Position;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Velocity;
 
-class ComponentSetComponentsImplTest extends AbstractMapperTest {
+class ComponentSetMapperImplTest extends AbstractMapperTest {
 
     ComponentSetMapper<MyComponentSet> mapper;
 

@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.function.IntFunction;
 
 import de.schosin.ecs.api.components.mappers.Components;
-import de.schosin.ecs.api.components.mappers.CustomComponents;
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.codegen.EcsCodegen;
@@ -18,7 +18,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen
-public class DataTypeMapper<T extends Data, R extends Data> implements CustomComponents<T, R>, PoolingComponents<T> {
+public class DataTypeMapper<T extends Data, R extends Data> implements CustomComponentMapper<T, R>, PoolingComponents<T> {
 
     private final IntFunction<DataAccessor> accessor;
 

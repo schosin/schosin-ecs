@@ -9,10 +9,10 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Result.ComponentRelationResult;
-import de.schosin.ecs.api.components.mappers.ComponentRelations;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.ComponentRelations.ExclusiveComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardComponentRelations;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
+import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardComponentRelationMapper;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
@@ -20,7 +20,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardComponentRelationsImpl<R, T> implements WildcardComponentRelations<R, T>, PoolingComponents<ComponentRelationResult<R, T>>, WildcardMapper<ComponentRelations<R, T, ?>> {
+public final class WildcardComponentRelationMapperImpl<R, T> implements WildcardComponentRelationMapper<R, T>, PoolingComponents<ComponentRelationResult<R, T>>, WildcardMapper<ComponentRelationMappers<R, T, ?>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -34,7 +34,7 @@ public final class WildcardComponentRelationsImpl<R, T> implements WildcardCompo
     private final Pool<ComponentRelationResultImpl> pool = Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new);
     private final Bag<ComponentRelationResultImpl> lent = new Bag<>(ComponentRelationResultImpl.class, 8);
 
-    public WildcardComponentRelationsImpl(IntFunction<DataAccessor> accessor) {
+    public WildcardComponentRelationMapperImpl(IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
 
         this.mappers = new Bag<>(ComponentRelationMapper.class, 4);
@@ -46,7 +46,7 @@ public final class WildcardComponentRelationsImpl<R, T> implements WildcardCompo
 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void addMapper(ComponentRelations<R, T, ?> components) {
+    public void addMapper(ComponentRelationMappers<R, T, ?> components) {
         switch (components) {
             case ComponentRelationMapper mapper -> {
                 this.mappers.add(mapper);

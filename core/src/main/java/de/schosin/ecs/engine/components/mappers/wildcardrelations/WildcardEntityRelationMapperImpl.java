@@ -9,10 +9,10 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Result.EntityRelationResult;
-import de.schosin.ecs.api.components.mappers.EntityRelations;
-import de.schosin.ecs.api.components.mappers.EntityRelations.EntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.EntityRelations.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelations.WildcardEntityRelations;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityRelationMapper;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
@@ -20,7 +20,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardEntityRelationsImpl<R> implements WildcardEntityRelations<R>, PoolingComponents<EntityRelationResult<R>>, WildcardMapper<EntityRelations<R, ?>> {
+public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntityRelationMapper<R>, PoolingComponents<EntityRelationResult<R>>, WildcardMapper<EntityRelationMappers<R, ?>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -34,7 +34,7 @@ public final class WildcardEntityRelationsImpl<R> implements WildcardEntityRelat
     private final Pool<EntityRelationResultImpl> pool = Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new);
     private final Bag<EntityRelationResultImpl> lent = new Bag<>(EntityRelationResultImpl.class, 8);
 
-    public WildcardEntityRelationsImpl(IntFunction<DataAccessor> accessor) {
+    public WildcardEntityRelationMapperImpl(IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
 
         this.mappers = new Bag<>(EntityRelationMapper.class, 4);
@@ -46,7 +46,7 @@ public final class WildcardEntityRelationsImpl<R> implements WildcardEntityRelat
 
     @Override
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void addMapper(EntityRelations<R, ?> components) {
+    public void addMapper(EntityRelationMappers<R, ?> components) {
         switch (components) {
             case EntityRelationMapper mapper -> {
                 this.mappers.add(mapper);
