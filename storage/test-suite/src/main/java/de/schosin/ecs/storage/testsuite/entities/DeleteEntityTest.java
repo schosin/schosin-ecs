@@ -22,12 +22,18 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
 
     @Test
     void testDelete() {
-        var componentMask = storageEngine.create(42, new Object[] {
+        var archetype = engine.getArchetype(
+                component(C1.class), component(P1.class),
+                relation(C1.class, C2.class), exclusiveRelation(E1.class, C2.class),
+                relation(C1.class), exclusiveRelation(E1.class));
+
+        archetype.createEntity(42, new Object[] {
                 new C1(), new P1(),
                 Relation.create(new C1(), new C2()), Relation.create(E1.INSTANCE, new C2()),
                 Relation.create(new C1(), 2), Relation.create(E1.INSTANCE, 2)
         });
 
+        var componentMask = archetype.getComponentMask();
         assertThat(storageEngine.getComponentMaskForEntity(42)).as("getComponentMaskForEntity returns mask before delete").isSameAs(componentMask);
 
         for (var component : componentMask.getComponents()) {
@@ -118,7 +124,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
     @Test
     void testDelete_DiscardsPendingChanges() {
         // Create empty entity, add C1, delete
-        storageEngine.create(42, new Object[0]);
+        var archetype = engine.getArchetype();
+        archetype.createEntity(42, new Object[0]);
 
         storageEngine.add(42, new Object[] { new C1() });
         assertThat(storageEngine.getPendingComponentMask(42)).as("getPendingComponentMask must return value after add").isNotNull();
@@ -130,24 +137,25 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
                 .as("getPendingComponentMask throws for deleted entities").hasMessageContainingAll("entity 42", "not present in storage");
 
         // Create other entity with same id
-        storageEngine.create(42, new Object[0]);
+        archetype.createEntity(42, new Object[0]);
 
         assertThat(storageEngine.getPendingComponentMask(42)).as("getPendingComponentMask must be cleared after delete with changes").isNull();
     }
 
     @Test
     void testDeleteMultipleEntities_AccessComponentsBeforehand() {
-        var componentId = storageEngine.getComponent(component(C1.class)).id();
+        var component = storageEngine.getComponent(component(C1.class));
 
         var component1 = new C1();
         var component2 = new C1();
 
-        storageEngine.create(1, new Object[] { component1 });
-        storageEngine.create(2, new Object[] { component2 });
+        var archetype = engine.getArchetype(component.type());
+        archetype.createEntity(1, new Object[] { component1 });
+        archetype.createEntity(2, new Object[] { component2 });
 
         // Access after creation
-        assertThat(storageEngine.getAccessor(1).<C1>getComponent(componentId)).as("accessor returns instance before delete").isSameAs(component1);
-        assertThat(storageEngine.getAccessor(2).<C1>getComponent(componentId)).as("accessor returns instance before delete").isSameAs(component2);
+        assertThat(storageEngine.getAccessor(1).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component1);
+        assertThat(storageEngine.getAccessor(2).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component2);
 
         // Delete first
         storageEngine.delete(1);
@@ -156,7 +164,7 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
                 .as("accessor not available after delete").isInstanceOf(StorageEngineException.class)
                 .as("accessor not available after delete").hasMessageContainingAll("entity 1", "not present in storage");
 
-        assertThat(storageEngine.getAccessor(2).<C1>getComponent(componentId)).as("accessor returns instance before delete").isSameAs(component2);
+        assertThat(storageEngine.getAccessor(2).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component2);
 
         // Delete second
         storageEngine.delete(2);
@@ -172,22 +180,23 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
 
     @Test
     void testDeleteMultipleEntities_AccessComponentsBeforehand_ReverseDeleteOrder() {
-        var componentId = storageEngine.getComponent(component(C1.class)).id();
+        var component = storageEngine.getComponent(component(C1.class));
 
         var component1 = new C1();
         var component2 = new C1();
 
-        storageEngine.create(1, new Object[] { component1 });
-        storageEngine.create(2, new Object[] { component2 });
+        var archetype = engine.getArchetype(component.type());
+        archetype.createEntity(1, new Object[] { component1 });
+        archetype.createEntity(2, new Object[] { component2 });
 
         // Access after creation
-        assertThat(storageEngine.getAccessor(1).<C1>getComponent(componentId)).as("accessor returns instance before delete").isSameAs(component1);
-        assertThat(storageEngine.getAccessor(2).<C1>getComponent(componentId)).as("accessor returns instance before delete").isSameAs(component2);
+        assertThat(storageEngine.getAccessor(1).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component1);
+        assertThat(storageEngine.getAccessor(2).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component2);
 
         // Delete first
         storageEngine.delete(2);
 
-        assertThat(storageEngine.getAccessor(1).<C1>getComponent(componentId)).as("accessor returns instance before delete").isSameAs(component1);
+        assertThat(storageEngine.getAccessor(1).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component1);
 
         assertThatThrownBy(() -> storageEngine.getAccessor(2))
                 .as("accessor not available after delete").isInstanceOf(StorageEngineException.class)

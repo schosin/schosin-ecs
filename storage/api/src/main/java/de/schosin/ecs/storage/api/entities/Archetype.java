@@ -19,9 +19,16 @@ public interface Archetype {
      * Returns the index of the component in this archetype, or -1 if not contained
      */
     int getComponentIndex(int componentId);
-    
+
+    /**
+     * Returns the index of the component in this archetype, or -1 if not contained
+     */
+    int getComponentIndex(RegularComponentType<?, ?> componentType);
+
     EntityData getEntityData();
 
     EntityData getEntityData(RegularComponentType<?, ?>... componentTypes);
+
+    void createEntity(int entityId, Object[] components);
 
 }

@@ -3,6 +3,7 @@ package de.schosin.ecs.storage.defaultimpl.archetype;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
+import de.schosin.ecs.storage.defaultimpl.EntityStorageImpl;
 import de.schosin.ecs.storage.defaultimpl.entities.ComponentMaskImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -11,13 +12,15 @@ public class ArchetypeManager {
 
     private final StorageWorld world;
     private final ComponentStorage componentStorage;
+    private final EntityStorageImpl entityStorage;
 
     private final Bag<ArchetypeImpl> archetypes = new Bag<>(ArchetypeImpl.class, 64);
     private final IntBag archetypesByEntityId;
 
-    public ArchetypeManager(StorageWorld world, ComponentStorage componentStorage) {
+    public ArchetypeManager(StorageWorld world, ComponentStorage componentStorage, EntityStorageImpl entityStorage) {
         this.world = world;
         this.componentStorage = componentStorage;
+        this.entityStorage = entityStorage;
 
         this.archetypesByEntityId = world.createEntityIntBag();
     }
@@ -69,7 +72,7 @@ public class ArchetypeManager {
                 return result;
             }
 
-            var archetype = new ArchetypeImpl(componentStorage, componentMask);
+            var archetype = new ArchetypeImpl(componentStorage, entityStorage, componentMask);
             this.archetypes.set(componentMask.getId(), archetype);
 
             this.world.dispatchEvent(new ArchetypeAddedEvent(componentMask, archetype));

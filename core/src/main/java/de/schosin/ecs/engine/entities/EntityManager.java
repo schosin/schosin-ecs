@@ -1,15 +1,25 @@
 package de.schosin.ecs.engine.entities;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relation.ComponentRelation;
+import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relations;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -22,6 +32,8 @@ public class EntityManager {
     public interface ComponentsPredicate {
         boolean isInterested(ComponentMask componentMask);
     }
+
+    private static final RegularComponentType<?, ?>[] EMPTY_COMPONENT_TYPES = new RegularComponentType<?, ?>[0];
 
     private final World world;
     private final StorageEngine storageEngine;
@@ -54,9 +66,25 @@ public class EntityManager {
     }
 
     public int createEntity(Object... components) {
+        // Determine component types and merge relations
+        var componentTypes = determineComponentTypes(components);
+        var merged = mergeRelations(components, componentTypes);
+        if (merged != components) {
+            components = merged;
+            componentTypes = determineComponentTypes(components);
+        }
+
+        // Get archetype, sort components in-place
+        var archetype = storageEngine.getArchetype(componentTypes);
+        if (components.length > 1) {
+            sortComponentsInPlace(components, componentTypes, archetype);
+        }
+
         // Create entity
         var entity = createEntityInstance();
-        entity.componentMask = storageEngine.create(entity.id, components);
+        entity.componentMask = archetype.getComponentMask();
+
+        archetype.createEntity(entity.id, components);
 
         // Add entity
         this.entities.set(entity.id, entity);
@@ -65,6 +93,110 @@ public class EntityManager {
         inserted(entity.id, entity.componentMask);
 
         return entity.id;
+    }
+
+    private RegularComponentType<?, ?>[] determineComponentTypes(Object[] components) {
+        if (components.length == 0) {
+            return EMPTY_COMPONENT_TYPES;
+        }
+
+        var componentTypes = new RegularComponentType<?, ?>[components.length];
+        for (int i = 0, s = components.length; i < s; i++) {
+            componentTypes[i] = ComponentType.detectComponentType(components[i]);
+        }
+
+        return componentTypes;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object[] mergeRelations(Object[] components, RegularComponentType<?, ?>[] componentTypes) {
+        if (components.length < 2) {
+            return components;
+        }
+
+        // See if any non-exclusive relations are present
+        var indices = intBagPool.getInstance();
+        for (int i = 0, s = componentTypes.length; i < s; i++) {
+            if (componentTypes[i] instanceof RelationComponentType<?, ?, ?>) {
+                indices.add(i);
+            }
+        }
+
+        if (indices.isEmpty()) {
+            intBagPool.free(indices);
+            return components;
+        }
+
+        // Create lookup map based on type to either a single relation, or a list of relations
+        var lookup = new HashMap<RegularComponentType<?, ?>, Object>();
+        for (int i = 0, s = indices.getSize(); i < s; i++) {
+            var index = indices.get(i);
+            var relation = components[index];
+
+            lookup.merge(componentTypes[index], relation, (existing, item) -> {
+                return switch (existing) {
+                    case Relation<?> r -> {
+                        yield new ArrayList<Object>(List.of(r, item));
+                    }
+                    default -> {
+                        var list = (List<Object>) existing;
+
+                        list.add(item);
+                        yield list;
+                    }
+                };
+            });
+        }
+
+        // Return early if only unique relations found
+        var newSize = components.length - indices.getSize() + lookup.size();
+        if (newSize == components.length) {
+            intBagPool.free(indices);
+            return components;
+        }
+
+        // Build new components array
+        var result = new Object[newSize];
+
+        var index = 0;
+        for (int i = 0, s = components.length; i < s; i++) {
+            if (indices.contains(i)) {
+                continue;
+            }
+
+            result[index++] = components[i];
+        }
+
+        for (var value : lookup.values()) {
+            var component = value instanceof List<?> list
+                    ? list.get(0) instanceof ComponentRelation<?, ?>
+                            ? Relations.create(list.toArray(ComponentRelation[]::new))
+                            : Relations.create(list.toArray(EntityRelation[]::new))
+                    : value;
+
+            result[index++] = component;
+        }
+
+        intBagPool.free(indices);
+        return result;
+    }
+
+    private static void sortComponentsInPlace(Object[] components, RegularComponentType<?, ?>[] componentTypes, Archetype archetype) {
+        for (int i = 0, s = components.length; i < s; i++) {
+            var index = archetype.getComponentIndex(componentTypes[i]);
+            if (index != i) {
+                swap(components, i, index);
+                swap(componentTypes, i, index);
+
+                i--;
+            }
+        }
+    }
+
+    private static void swap(Object[] array, int oldIndex, int newIndex) {
+        var item = array[newIndex];
+        array[newIndex] = array[oldIndex];
+        array[oldIndex] = item;
     }
 
     public int create(ComponentMask componentMask, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object... components) {

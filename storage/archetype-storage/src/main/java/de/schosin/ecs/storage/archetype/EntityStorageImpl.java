@@ -190,18 +190,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
-    public ComponentMask create(int entityId, Object[] components) {
-        var componentTypes = componentTypesPool.getInstance();
-        detectComponentTypes(componentTypes, components);
-
-        var componentMask = resolveComponentMask(componentTypes);
-        var result = createEntity(entityId, componentMask, componentTypes, components);
-
-        componentTypesPool.free(componentTypes);
-        return result;
-    }
-
-    @Override
     public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
         var componentTypes = componentTypesPool.getInstance();
         detectComponentTypes(componentTypes, components);

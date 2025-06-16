@@ -33,6 +33,7 @@ import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
+import de.schosin.ecs.storage.defaultimpl.archetype.ArchetypeImpl;
 import de.schosin.ecs.storage.defaultimpl.archetype.ArchetypeManager;
 import de.schosin.ecs.storage.defaultimpl.components.DefaultComponent;
 import de.schosin.ecs.storage.defaultimpl.entities.ComponentMaskImpl;
@@ -62,7 +63,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     public EntityStorageImpl(StorageWorld world, Bag<PendingChanges> pendingChanges, ComponentStorageImpl componentStorage) {
         this.componentStorage = componentStorage;
-        this.archetypeManager = new ArchetypeManager(world, componentStorage);
+        this.archetypeManager = new ArchetypeManager(world, componentStorage, this);
 
         this.componentMaskByEntity = world.createEntityBag(ComponentMaskImpl.class);
         this.pendingChanges = pendingChanges;
@@ -195,16 +196,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
-    public ComponentMask create(int entityId, Object[] components) {
-        return componentTypesPool.withInstance(componentTypes -> {
-            detectComponentTypes(componentTypes, components);
-
-            var componentMask = resolveComponentMask(componentTypes);
-            return createEntity(entityId, componentMask, componentTypes, components);
-        });
-    }
-
-    @Override
     public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
         return componentTypesPool.withInstance(componentTypes -> {
             detectComponentTypes(componentTypes, components);
@@ -220,6 +211,20 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
         // Create entity
         return createEntity(entityId, mask, componentTypes, components);
+    }
+
+    public void add(ArchetypeImpl archetype, int entityId) {
+        var componentMask = archetype.getComponentMask();
+
+        // Set component mask for new entity on existing changes
+        var changes = pendingChanges.get(entityId);
+        if (changes != null) {
+            changes.setComponentMask(componentMask);
+        }
+
+        // Track component mask
+        this.componentMaskByEntity.set(entityId, componentMask);
+        this.archetypeManager.set(entityId, componentMask);
     }
 
     private ComponentMask createEntity(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {

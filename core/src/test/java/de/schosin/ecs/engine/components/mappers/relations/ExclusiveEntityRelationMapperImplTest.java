@@ -1,6 +1,7 @@
 package de.schosin.ecs.engine.components.mappers.relations;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,32 +36,15 @@ class ExclusiveEntityRelationMapperImplTest extends AbstractEntityRelationsTest 
         }
 
         @Test
-        void testGet() {
-            var entityId = world.createEntity(relation(relationship1, target1), relation(relationship1, target2));
-
-            var relation = mapper1.get(entityId);
-            assertThat(relation)
-                    .extracting("relationship", "target")
-                    .contains(relationship1, target2);
-        }
-
-        @Test
-        void testGet_WhenMultiple_KeepsLast() {
-            var entity1 = world.createEntity(relation(relationship1, target1), relation(relationship1, target2));
-            var entity2 = world.createEntity(relation(relationship1, target2), relation(relationship1, target1));
-
-            assertThat(mapper1.get(entity1))
-                    .extracting("relationship", "target")
-                    .contains(relationship1, target2);
-
-            assertThat(mapper1.get(entity2))
-                    .extracting("relationship", "target")
-                    .contains(relationship1, target1);
+        void testCreateEntity_SameRelationship_Throws() {
+            assertThatThrownBy(() -> world.createEntity(relation(relationship1, target1), relation(relationship1, target2)))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("EntityRelations", relationship1.getClass().getSimpleName());
         }
 
         @Test
         void testGetRelationshipTarget() {
-            var entityId = world.createEntity(relation(Loves.LOVES, target1), relation(Loves.ADORES, target2));
+            var entityId = world.createEntity(relation(Loves.ADORES, target2));
 
             assertThat(mapper1.getRelationship(entityId)).isSameAs(Loves.ADORES);
             assertThat(mapper1.getTarget(entityId)).isSameAs(target2);

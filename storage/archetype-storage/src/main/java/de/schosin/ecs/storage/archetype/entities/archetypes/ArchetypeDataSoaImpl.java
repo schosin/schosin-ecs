@@ -141,6 +141,17 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
+    public int getComponentIndex(RegularComponentType<?, ?> componentType) {
+        for (int i = 0; i < size; i++) {
+            if (componentTypes.get(i).equals(componentType)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    @Override
     public EntityData getEntityData() {
         return entityData;
     }
@@ -213,6 +224,36 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     @Override
     public DataAccessor getAccessor(int entityId) {
         return entityData.getAccessor(entityId);
+    }
+
+    @Override
+    public void createEntity(int entityId, Object[] components) {
+        // Validate entity not already in storage
+        var existing = entityIndex.getArchetypeDataForEntity(entityId);
+        if (existing != null) {
+            throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
+        }
+
+        // Validate matching length
+        if (size != components.length) {
+            throw new StorageEngineException("Expected %d components, but got %d".formatted(size, components.length));
+        }
+
+        // Add components
+        int index;
+        synchronized (this.entities) {
+            index = alive++;
+
+            for (int i = 0; i < size; i++) {
+                adders[i].add(entityId, index, components[i]);
+            }
+
+            // Track entity
+            this.entities.add(entityId);
+        }
+
+        // Add to EntityIndex
+        entityIndex.add(this, entityId, index);
     }
 
     @Override

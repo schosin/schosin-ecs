@@ -7,14 +7,18 @@ import java.util.List;
 import java.util.Map;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.api.data.IterableAccessor;
 import de.schosin.ecs.storage.api.ComponentStorage;
+import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.Archetype;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.entities.EntityData;
+import de.schosin.ecs.storage.defaultimpl.EntityStorageImpl;
+import de.schosin.ecs.storage.defaultimpl.components.DefaultComponent;
+import de.schosin.ecs.storage.defaultimpl.entities.ComponentMaskImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -23,8 +27,10 @@ import de.schosin.ecs.utils.collections.Pool;
 public class ArchetypeImpl implements Archetype {
 
     private final ComponentStorage componentStorage;
-    private final ComponentMask componentMask;
+    private final EntityStorageImpl entityStorage;
+    private final ComponentMaskImpl componentMask;
     private final IntBag componentLookup;
+    private final int size;
 
     private final IntBag entities;
     private final ImmutableIntBag immutableEntities;
@@ -35,9 +41,11 @@ public class ArchetypeImpl implements Archetype {
     private final Map<List<RegularComponentType<?, ?>>, EntityDataImpl> entityDataMap = new HashMap<>();
     private final Pool<List<RegularComponentType<?, ?>>> typesPool = Pool.unbounded(List.class, ArrayList::new, List::clear);
 
-    public ArchetypeImpl(ComponentStorage componentStorage, ComponentMask componentMask) {
+    public ArchetypeImpl(ComponentStorage componentStorage, EntityStorageImpl entityStorage, ComponentMaskImpl componentMask) {
         this.componentStorage = componentStorage;
+        this.entityStorage = entityStorage;
         this.componentMask = componentMask;
+        this.size = componentMask.getComponentTypes().getSize();
 
         this.entities = new IntBag(64);
         this.immutableEntities = ImmutableIntBag.create(entities);
@@ -97,7 +105,7 @@ public class ArchetypeImpl implements Archetype {
     }
 
     @Override
-    public ComponentMask getComponentMask() {
+    public ComponentMaskImpl getComponentMask() {
         return componentMask;
     }
 
@@ -126,6 +134,18 @@ public class ArchetypeImpl implements Archetype {
         for (int i = 0, s = components.getSize(); i < s; i++) {
             if (components.get(i).id() == componentId) {
                 return componentId;
+            }
+        }
+
+        return -1;
+    }
+
+    @Override
+    public int getComponentIndex(RegularComponentType<?, ?> componentType) {
+        var componentTypes = componentMask.getComponentTypes();
+        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
+            if (componentTypes.get(i).equals(componentType)) {
+                return i;
             }
         }
 
@@ -163,6 +183,45 @@ public class ArchetypeImpl implements Archetype {
             typesPool.free(key);
             return result;
         }
+    }
+
+    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void createEntity(int entityId, Object[] components) {
+        var existing = entityStorage.getComponentMaskForEntity(entityId);
+        if (existing != null) {
+            throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
+        }
+
+        // Validate matching length
+        if (size != components.length) {
+            throw new StorageEngineException("Expected %d components, but got %d".formatted(size, components.length));
+        }
+
+        // Add components
+        for (int i = 0, s = components.length; i < s; i++) {
+            var componentData = (Component & DefaultComponent) componentMask.getComponents().get(i);
+            var component = components[i];
+
+            var componentType = componentData.type();
+            if (!componentType.isInstance(component)) {
+                throw new StorageEngineException("Expected component type '%s' at index %d, but was '%s'".formatted(componentType, i, component));
+            }
+
+            if (!(component instanceof Relations<?> relations)) {
+                componentData.addComponent(entityId, component);
+                continue;
+            }
+
+            for (int r = 0, rs = relations.size(); r < rs; r++) {
+                componentData.addComponent(entityId, relations.get(r));
+            }
+
+            Relations.free(relations);
+        }
+
+        // Add to EntityStorage
+        entityStorage.add(this, entityId);
     }
 
     @Override

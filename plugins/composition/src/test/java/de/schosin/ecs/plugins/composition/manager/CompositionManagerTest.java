@@ -3336,7 +3336,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                             var components = new Object[][] {
                                     { new C1(), relation(relationship, new Target(1)) },
-                                    { new C1(), relation(relationship, new Target(2)), relation(relationship, new Target(3)) },
+                                    { new C1(), relation(relationship, new Target(2)) },
                                     { relation(new RelationshipComponent(11), new Target(1)) },
                                     { new C5() }
                             };
@@ -3349,7 +3349,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                                 } else if (id == 1) {
                                     assertThat(result)
                                             .extracting("relationship.value", "target.value")
-                                            .contains(10, 3);
+                                            .contains(10, 2);
                                 } else {
                                     fail("Unexpected entity %d with result '%s'", id, result);
                                 }
@@ -3434,7 +3434,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                             var components = new Object[][] {
                                     { new C1(), relation(relationship1, new Target(1)) },
-                                    { new C1(), relation(relationship1, new Target(2)), relation(relationship2, new Target(3)) },
+                                    { new C1(), relation(relationship2, new Target(2)) },
                                     { new C5() }
                             };
 
@@ -3446,7 +3446,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                                 } else if (id == 1) {
                                     assertThat(result)
                                             .extracting("relationship.value", "target.value")
-                                            .contains(11, 3);
+                                            .contains(11, 2);
                                 } else if (id == 2) {
                                     assertThat(result).isNull();
                                 }
@@ -3508,11 +3508,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                             var target1 = world.createEntity();
                             var target2 = world.createEntity();
-                            var target3 = world.createEntity();
 
                             var components = new Object[][] {
                                     { new C1(), relation(relationship, target1) },
-                                    { new C1(), relation(relationship, target2), relation(relationship, target3) },
+                                    { new C1(), relation(relationship, target2) },
                                     { relation(new RelationshipComponent(11), target1) },
                                     { new C5() }
                             };
@@ -3525,7 +3524,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                                 } else if (id == 1) {
                                     assertThat(result)
                                             .extracting("relationship.value", "target")
-                                            .contains(10, target3);
+                                            .contains(10, target2);
                                 } else {
                                     fail("Unexpected entity %d with result '%s'", id, result);
                                 }
@@ -3618,11 +3617,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                             var target1 = world.createEntity();
                             var target2 = world.createEntity();
-                            var target3 = world.createEntity();
 
                             var components = new Object[][] {
                                     { new C1(), relation(relationship1, target1) },
-                                    { new C1(), relation(relationship1, target2), relation(relationship2, target3) },
+                                    { new C1(), relation(relationship2, target2) },
                                     { new C5() }
                             };
 
@@ -3634,7 +3632,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                                 } else if (id == 1) {
                                     assertThat(result)
                                             .extracting("relationship.value", "target")
-                                            .contains(11, target3);
+                                            .contains(11, target2);
                                 } else if (id == 2) {
                                     assertThat(result).isNull();
                                 }

@@ -159,11 +159,6 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
-    public ComponentMask create(int entityId, Object[] components) {
-        return this.entityStorage.create(entityId, components);
-    }
-
-    @Override
     public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
         return this.entityStorage.create(entityId, componentMask, components);
     }

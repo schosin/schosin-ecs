@@ -142,6 +142,43 @@ public final class ArchetypeDataImpl implements ArchetypeData {
     }
 
     @Override
+    public void createEntity(int entityId, Object[] components) {
+        // Validate entity not already in storage
+        var existing = entityIndex.getArchetypeDataForEntity(entityId);
+        if (existing != null) {
+            throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
+        }
+
+        // Validate matching length
+        if (size != components.length) {
+            throw new StorageEngineException("Expected %d components, but got %d".formatted(size, components.length));
+        }
+
+        // Add components
+        int index;
+        synchronized (this.entities) {
+            index = entities.getSize();
+
+            // Get data array
+            var data = this.data.getSafe(index);
+            if (data == null) {
+                data = new Object[size];
+                this.data.set(index, data);
+            }
+
+            for (int i = 0; i < size; i++) {
+                adders[i].add(entityId, data, components[i]);
+            }
+
+            // Track entity
+            this.entities.add(entityId);
+        }
+
+        // Add to EntityIndex
+        entityIndex.add(this, entityId, index);
+    }
+
+    @Override
     public int addEntity(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
         // Track entity index
         var index = entities.getSize();
@@ -378,6 +415,17 @@ public final class ArchetypeDataImpl implements ArchetypeData {
     @Override
     public int getComponentIndex(int componentId) {
         return componentTypeIds.get(componentId);
+    }
+
+    @Override
+    public int getComponentIndex(RegularComponentType<?, ?> componentType) {
+        for (int i = 0; i < size; i++) {
+            if (componentTypes.get(i).equals(componentType)) {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     @Override

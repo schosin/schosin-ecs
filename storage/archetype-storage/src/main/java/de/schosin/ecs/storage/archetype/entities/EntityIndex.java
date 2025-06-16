@@ -148,6 +148,17 @@ public class EntityIndex {
         pointer.archetype.removeComponents(entityId, pointer.index, removeTypes);
     }
 
+    public void add(ArchetypeData archetype, int entityId, int index) {
+        var pointer = lookup.getSafe(entityId);
+        if (pointer == null) {
+            pointer = new ArchetypePointer();
+            lookup.set(entityId, pointer);
+        }
+
+        pointer.archetype = archetype;
+        pointer.index = index;
+    }
+
     public void createEntity(int entityId, ComponentMaskImpl componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
         // Lookup pointer
         var pointer = lookup.getSafe(entityId);
