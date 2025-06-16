@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntSupplier;
+import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relations;
@@ -25,6 +27,8 @@ import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class ArchetypeImpl implements Archetype {
+
+    private static final int CREATION_BATCH_SIZE = 100;
 
     private final ComponentStorage componentStorage;
     private final EntityStorageImpl entityStorage;
@@ -222,6 +226,35 @@ public class ArchetypeImpl implements Archetype {
 
         // Add to EntityStorage
         entityStorage.add(this, entityId);
+    }
+
+    @Override
+    public void createEntities(int count, IntSupplier entityIdSupplier, ObjIntConsumer<Object[]> componentsConsumer) {
+        var batchSize = CREATION_BATCH_SIZE < count ? CREATION_BATCH_SIZE : count;
+
+        var entityIds = new int[batchSize];
+        var components = new Object[batchSize][size];
+
+        var idx = 0;
+        while (count > 0) {
+            var batch = batchSize < count ? batchSize : count;
+            count -= batch;
+
+            // Fill batch
+            for (int i = 0; i < batch; i++) {
+                entityIds[i] = entityIdSupplier.getAsInt();
+                componentsConsumer.accept(components[i], idx++);
+            }
+
+            // Process batch
+            createEntities(entityIds, components, batch);
+        }
+    }
+
+    private void createEntities(int[] entityIds, Object[][] components, int count) {
+        for (int i = 0, s = count; i < s; i++) {
+            createEntity(entityIds[i], components[i]);
+        }
     }
 
     @Override

@@ -17,7 +17,6 @@ import com.palantir.javapoet.TypeSpec;
 import com.palantir.javapoet.TypeVariableName;
 
 import de.schosin.ecs.codegen.Utils;
-import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator;
 
 public class ArchetypeManagerGenerator {
 
@@ -78,7 +77,7 @@ public class ArchetypeManagerGenerator {
             var parameterizedArchetypeOf = ParameterizedTypeName.get(archetypeOf, typeVariablesArray);
 
             var parameters = IntStream.range(1, n + 1)
-                    .mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(Utils.WILDCARD, typeVariables.get(idx - 1)), "component" + idx).build())
                     .collect(Collectors.toList());
 
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
@@ -104,20 +103,17 @@ public class ArchetypeManagerGenerator {
             var name = ClassName.get("", className + "Impl");
             var suffix = varargs ? "N" : Integer.toString(n);
 
-            var typeVariables = Utils.generateTypeVariables("T", n);
+            var typeVariables = Utils.generateTypeVariables("R", n);
             var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
 
             var archetypeOf = ClassName.get("", "Archetype" + n);
             var parameterizedArchetypeOf = ParameterizedTypeName.get(archetypeOf, typeVariablesArray);
 
-            var superclassProvider = n == 1
-                    ? ParameterizedTypeName.get(BaseDataTypeGenerator.DATA_PROVIDER, typeVariables.get(0))
-                    : BaseDataTypeGenerator.dataProviderN(n, typeVariables);
-
-            var superclass = ParameterizedTypeName.get(ABSTRACT_ARCHETYPE, superclassProvider);
+            var superclassConsumer = ParameterizedTypeName.get(ClassName.get("", "Archetype" + n).nestedClass("ArchetypeConsumer" + n), typeVariablesArray);
+            var superclass = ParameterizedTypeName.get(ABSTRACT_ARCHETYPE, superclassConsumer);
 
             var parameters = IntStream.range(1, n + 1)
-                    .mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(typeVariables.get(idx - 1)), "component" + idx).build())
+                    .mapToObj(idx -> ParameterSpec.builder(Utils.regularComponentType(Utils.WILDCARD, typeVariables.get(idx - 1)), "component" + idx).build())
                     .collect(Collectors.toList());
 
             var parameterNames = parameters.stream().map(ParameterSpec::name).collect(Collectors.joining(", "));
@@ -149,7 +145,7 @@ public class ArchetypeManagerGenerator {
                     .build();
 
             return TypeSpec.classBuilder(name)
-                    .addModifiers(Modifier.STATIC)
+                    .addModifiers(Modifier.STATIC, Modifier.FINAL)
                     .superclass(superclass)
                     .addSuperinterface(parameterizedArchetypeOf)
                     .addTypeVariables(typeVariables)
@@ -160,7 +156,7 @@ public class ArchetypeManagerGenerator {
         }
 
         private static MethodSpec with(String suffix, int n) {
-            var typeVariables = Utils.generateTypeVariables("T", n);
+            var typeVariables = Utils.generateTypeVariables("R", n);
             var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
 
             var returnType = ClassName.get("", "Archetype" + n);

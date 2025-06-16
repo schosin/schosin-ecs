@@ -116,7 +116,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var relation1 = Relation.create(new C1(11), new C2(21));
             var relation2 = Relation.create(new C1(12), new C2(22));
 
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             // Call
             var entityId = world.createEntity(relations);
@@ -133,7 +133,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var relation1 = Relation.create(new C1(11), world.createEntity());
             var relation2 = Relation.create(new C1(12), world.createEntity());
 
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             // Call
             var entityId = world.createEntity(relations);

@@ -190,62 +190,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
-        var componentTypes = componentTypesPool.getInstance();
-        detectComponentTypes(componentTypes, components);
-
-        var result = create(entityId, (ComponentMaskImpl) componentMask, componentTypes, components);
-
-        componentTypesPool.free(componentTypes);
-        return result;
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        // Validate component mask and types
-        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);
-
-        // Create entity
-        return createEntity(entityId, mask, componentTypes, components);
-    }
-
-    private ComponentMask createEntity(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        var componentMask = (ComponentMaskImpl) mask;
-
-        var existing = entityIndex.getArchetypeDataForEntity(entityId);
-        if (existing != null) {
-            throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
-        }
-
-        var bag = componentPool.getInstance();
-        for (int i = 0, s = components.length; i < s; i++) {
-            bag.add(components[i]);
-        }
-
-        entityIndex.createEntity(entityId, componentMask, componentTypes, bag);
-
-        componentPool.free(bag);
-        return componentMask;
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
-        var componentMask = (ComponentMaskImpl) mask;
-
-        // Validate component mask and types 
-        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);
-
-        var existing = entityIndex.getArchetypeDataForEntity(entityId);
-        if (existing != null) {
-            throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
-        }
-
-        entityIndex.createEntity(entityId, componentMask, componentTypes, components);
-
-        return componentMask;
-    }
-
-    @Override
     public ComponentMask add(int entityId, Object[] components) {
         var componentTypes = componentTypesPool.getInstance();
         detectComponentTypes(componentTypes, components);

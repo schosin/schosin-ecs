@@ -124,21 +124,6 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
-        return this.entityStorage.create(entityId, componentMask, components);
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        return this.entityStorage.create(entityId, componentMask, componentTypes, components);
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
-        return this.entityStorage.create(entityId, componentMask, componentTypes, components);
-    }
-
-    @Override
     public ComponentMask add(int entityId, Object[] components) {
         return this.entityStorage.add(entityId, components);
     }

@@ -117,7 +117,7 @@ public class ChangeManager {
         updatedEntities.clear(entityId);
 
         // Process updated entity
-        processUpdatedEntity(entityId);
+        processUpdatedEntity(entityId, deletedEntities);
     }
 
     /**
@@ -149,7 +149,7 @@ public class ChangeManager {
         // Process changes
         deleted.iterate(this::processDeletedEntity);
 
-        updated.iterate(this::processUpdatedEntity);
+        updated.iterate(entityId -> processUpdatedEntity(entityId, deleted));
         updated.clear();
 
         deleted.clear();
@@ -175,7 +175,11 @@ public class ChangeManager {
         entityManager.deleteEntity(entityId);
     }
 
-    private void processUpdatedEntity(int entityId) {
+    private void processUpdatedEntity(int entityId, BitVector deleted) {
+        if (deleted.get(entityId)) {
+            return;
+        }
+
         var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
         if (pendingComponentMask == null) {
             return;
@@ -200,7 +204,7 @@ public class ChangeManager {
 
     public boolean updateEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<ComponentType<?, ?>> removeTypes) {
         // Skip deleted entities
-        if (this.deletedEntities.get(entityId)) {
+        if (this.deletedEntities.get(entityId) || this.deletedEntitiesOverflow.get(entityId)) {
             return false;
         }
 

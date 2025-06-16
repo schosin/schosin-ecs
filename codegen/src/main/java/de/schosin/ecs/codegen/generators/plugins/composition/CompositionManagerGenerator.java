@@ -16,7 +16,6 @@ import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
 
 import de.schosin.ecs.codegen.Utils;
-import de.schosin.ecs.codegen.generators.plugins.archetype.BaseArchetypeGenerator;
 import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator;
 
 public class CompositionManagerGenerator {
@@ -30,6 +29,8 @@ public class CompositionManagerGenerator {
 
     private static final ClassName ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
     private static final ClassName CONVERTER = ClassName.get("de.schosin.ecs.engine.components.mappers", "ComponentConverter");
+    
+    public static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
 
     public static JavaFile generateFile(TypeElement type, int maxParams) {
         System.out.println("Process CompositionManager with %d parameters: %s".formatted(maxParams, type));
@@ -65,7 +66,7 @@ public class CompositionManagerGenerator {
             var compositionData = ParameterizedTypeName.get(CompositionPluginGenerator.COMPOSITION_DATA, TypeVariableName.get("P"));
             var compositionDataD = TypeVariableName.get("D", compositionData);
 
-            var dataType = ParameterizedTypeName.get(BaseArchetypeGenerator.DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataT, processorT);
+            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataT, processorT);
 
             var body = CodeBlock.builder();
             body.beginControlFlow("return (D) switch(dataType)");

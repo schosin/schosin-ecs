@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntSupplier;
+import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
@@ -18,11 +20,9 @@ import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.storage.api.StorageEngine;
-import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
@@ -170,8 +170,8 @@ public class EntityManager {
         for (var value : lookup.values()) {
             var component = value instanceof List<?> list
                     ? list.get(0) instanceof ComponentRelation<?, ?>
-                            ? Relations.create(list.toArray(ComponentRelation[]::new))
-                            : Relations.create(list.toArray(EntityRelation[]::new))
+                            ? Relations.of(list.toArray(ComponentRelation[]::new))
+                            : Relations.of(list.toArray(EntityRelation[]::new))
                     : value;
 
             result[index++] = component;
@@ -199,10 +199,14 @@ public class EntityManager {
         array[oldIndex] = item;
     }
 
-    public int create(ComponentMask componentMask, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Object... components) {
+    public int createEntity(Archetype archetype, Object[] components) {
+        var componentMask = archetype.getComponentMask();
+
         // Create entity
         var entity = createEntityInstance();
-        entity.componentMask = storageEngine.create(entity.id, componentMask, componentTypes, components);
+        entity.componentMask = componentMask;
+
+        archetype.createEntity(entity.id, components);
 
         // Add entity
         this.entities.set(entity.id, entity);
@@ -213,33 +217,25 @@ public class EntityManager {
         return entity.id;
     }
 
-    /**
-     * Creates the number of entities described by the length of the inner arrays of data.
-     * 
-     * @param componentMask component mask for the entities
-     * @param data component data for the entities (outer bag for entities, inner bag for components) 
-     * @param lookup lookup for {@link Component} matching the index of the outer array of data (component index)
-     * @return array of entity ids
-     */
-    public ImmutableIntBag createEntities(ComponentMask componentMask, Bag<Bag<Object>> data, ImmutableBag<RegularComponentType<?, ?>> componentTypes) {
-        var count = data.getSize();
+    public ImmutableIntBag createEntities(Archetype archetype, int count, ObjIntConsumer<Object[]> componentsConsumer) {
+        var componentMask = archetype.getComponentMask();
 
-        // Create result bag
+        // Build supplier of entityIds
         var entityIds = intBagPool.getInstance();
         this.lentIntBags.add(entityIds);
 
-        // Create entities
-        for (int i = 0; i < count; i++) {
-            var components = data.get(i);
-
-            // Create entity
+        IntSupplier entityIdSupplier = () -> {
             var entity = createEntityInstance();
-            entity.componentMask = storageEngine.create(entity.id, componentMask, componentTypes, components);
+            entity.componentMask = componentMask;
 
-            // Add entity
-            this.entities.set(entity.id, entity);
+            entities.set(entity.id, entity);
             entityIds.add(entity.id);
-        }
+
+            return entity.id;
+        };
+
+        // Create entities
+        archetype.createEntities(count, entityIdSupplier, componentsConsumer);
 
         // Notify listeners
         inserted(entityIds, componentMask);

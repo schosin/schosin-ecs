@@ -237,6 +237,9 @@ class RelationHelper {
 
     @SuppressWarnings("unchecked")
     static synchronized <R, T> ComponentRelation<R, T> create(R relationship, T target) {
+        validate("relationship", relationship);
+        validate("target", target);
+
         var relation = COMPONENT_RELATIONS.isEmpty() ? new ComponentRelationImpl() : COMPONENT_RELATIONS.removeLast();
 
         relation.type = Exclusive.class.isAssignableFrom(relationship.getClass())
@@ -251,6 +254,8 @@ class RelationHelper {
 
     @SuppressWarnings("unchecked")
     static synchronized <R> EntityRelation<R> create(R relationship, int target) {
+        validate("relationship", relationship);
+
         var relation = ENTITY_RELATIONS.isEmpty() ? new EntityRelationImpl() : ENTITY_RELATIONS.removeLast();
 
         relation.type = Exclusive.class.isAssignableFrom(relationship.getClass())
@@ -261,6 +266,15 @@ class RelationHelper {
         relation.target = target;
 
         return (EntityRelation<R>) relation;
+    }
+
+    private static void validate(String name, Object component) {
+        if (component instanceof Relation<?>) {
+            throw new IllegalArgumentException("Cannot use Relation as %s: %s".formatted(name, component));
+        }
+        if (component instanceof Relations<?>) {
+            throw new IllegalArgumentException("Cannot use Relations as %s: %s".formatted(name, component));
+        }
     }
 
     static void free(Relation<?> relation) {

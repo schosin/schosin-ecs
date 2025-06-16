@@ -32,30 +32,6 @@ public interface EntityStorage {
     void getComponentMasks(Predicate<ComponentMask> predicate, Bag<ComponentMask> fill);
 
     /**
-     * Create an entity with the passed components. The types of the components must match the component mask.
-     * 
-     * @param entityId id of entity
-     * @param componentMask component mask
-     * @param components components to add to the entity
-     * @return same as passed component mask
-     */
-    ComponentMask create(int entityId, ComponentMask componentMask, Object[] components);
-
-    /**
-     * Create an entity with the passed components. The component types must match the components by index,
-     * and the component types must match the component mask exactly apart from the ordering.
-     * 
-     * @param entityId id of entity
-     * @param componentMask component mask
-     * @param componentTypes component types of components
-     * @param components components to add to the entity
-     * @return same as passed component mask
-     */
-    ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components);
-
-    ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components);
-
-    /**
      * Modify an existing entity by adding the components, overwriting existing values in case of collisions.
      * 
      * <p>

@@ -2,3154 +2,1064 @@ package de.schosin.ecs.plugins.archetype;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.tuple;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.function.IntFunction;
+import java.util.function.ObjIntConsumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
+import de.schosin.ecs.api.components.Relations;
+import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.engine.utils.ArrayUtils;
-import de.schosin.ecs.plugins.data.types.Data;
+import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
+import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
+import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.test.AbstractEcsTest;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
     @Nested
-    class Archetype1Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype1Test extends AbstractArchetypeTest<Archetype1<Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1> Archetype1<T1> createArchetype(RegularComponentType<T1, ?> component1) {
-                return world.createArchetype(component1);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1> Archetype1<T1> createArchetype(RegularComponentType<T1, ?> component1) {
-                return world.createArchetype(component1).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype1<Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype1) world.createArchetype(componentType);
         }
 
-        abstract class AbstractTest {
+        @Override
+        protected Object[] createComponents(Archetype1<Object> archetype, int index, Object component) {
+            return new Object[] { component };
+        }
 
-            protected final <T1> Archetype1<T1> createArchetype(Class<T1> component1) {
-                return createArchetype(component(component1));
-            }
+        @Override
+        protected int createEntity(Archetype1<Object> archetype, Object component) {
+            return archetype.create(component);
+        }
 
-            protected abstract <T1> Archetype1<T1> createArchetype(RegularComponentType<T1, ?> component1);
+        @Override
+        protected ImmutableIntBag createEntities(Archetype1<Object> archetype, ComponentProvider provider) {
+            return archetype.createBatch(provider.list.size(), (i, factory) -> {
+                var components = provider.list.get(i);
+                factory.create(components[0]);
+            });
+        }
 
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
+        @Override
+        protected int dontCallFactory(Archetype1<Object> archetype) {
+            return archetype.create((i, factory) -> {
+            });
+        }
 
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class);
-
-                var entityId = archetype.create(new C1());
-                verifyComponents(entityId, C1.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class);
-
-                assertThatThrownBy(() -> archetype.create((C1) null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class);
-
-                var entityIds = archetype.createBatch(10, () -> new C1());
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class);
-                    }
-
-                    archetype.createBatch(count, () -> new C1());
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, () -> null))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContaining("cannot be null");
-            }
-
-            @Test
-            void testIndexedBatch() {
-                var archetype = createArchetype(C1.class);
-
-                var entityIds = archetype.createIndexedBatch(10, i -> new C1());
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class);
-                }
-            }
-
-            @Test
-            void testIndexedBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class);
-                    }
-
-                    archetype.createIndexedBatch(count, i -> new C1());
-                });
-            }
-
-            @Test
-            void testIndexedBatch_NullInstances() {
-                var archetype = createArchetype(C1.class);
-
-                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> null))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContaining("cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type);
-
-                    verify(verify -> {
-                        verify.expectInserted(type);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1);
-                        verifyComponents(entityId, type);
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testEntityRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type);
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(type);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1);
-                        verifyComponents(entityId, type);
-                    });
-                }
-
-            }
-
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype1<Object> archetype) {
+            return archetype.createBatch(count, (i, factory) -> {
+            });
         }
 
     }
 
     @Nested
-    class Archetype2Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype2Test extends AbstractArchetypeNTest<Archetype2<Object, Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1, T2> Archetype2<T1, T2> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2) {
-                return world.createArchetype(component1, component2);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType, component(D1.class) };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1, T2> Archetype2<T1, T2> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2) {
-                return world.createArchetype(component1, component2).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype2<Object, Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype2) world.createArchetype(componentType, component(D1.class));
         }
 
-        abstract class AbstractTest {
-
-            protected final <T1, T2> Archetype2<T1, T2> createArchetype(Class<T1> component1, Class<T2> component2) {
-                return createArchetype(component(component1), component(component2));
-            }
-
-            protected abstract <T1, T2> Archetype2<T1, T2> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2);
-
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                var entityId = archetype.create(new C1(), new C2());
-                verifyComponents(entityId, C1.class, C2.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                assertThatThrownBy(() -> archetype.create(null, new C2())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class);
-                    }
-
-                    archetype.createBatch(count, factory -> factory.create(new C1(), new C2()));
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(null, new C2())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-            }
-
-            @Test
-            void testBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testIndexed() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                var entityIds = archetype.createIndexed(10, i -> factory -> factory.create(new C1(), new C2()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class);
-                }
-            }
-
-            @Test
-            void testIndexedChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class);
-                    }
-
-                    archetype.createIndexed(count, i -> factory -> factory.create(new C1(), new C2()));
-                });
-            }
-
-            @Test
-            void testIndexed_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                assertThatThrownBy(() -> archetype.createIndexed(10, i -> factory -> factory.create(null, new C2())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createIndexed(10, i -> factory -> factory.create(new C1(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-            }
-
-            @Test
-            void testIndexedInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                assertThatThrownBy(() -> archetype.createIndexed(10, i -> factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testIndexedBatch() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                var entityIds = archetype.createIndexedBatch(10, i -> Data.get(new C1(), new C2()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class);
-                }
-            }
-
-            @Test
-            void testIndexedBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class);
-                    }
-
-                    archetype.createIndexedBatch(count, i -> Data.get(new C1(), new C2()));
-                });
-            }
-
-            @Test
-            void testIndexedBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> Data.get(null, new C2())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> Data.get(new C1(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-            }
-
-            @Test
-            void testIndexedBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class);
-
-                assertThatThrownBy(() -> archetype.createIndexedBatch(10, i -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class, C2.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type(C2.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1, new C2());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C2.class, Target.class);
-
-                    var archetype = createArchetype(type1, type2);
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2 };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C2(), new Target(2));
-
-                        var entityId = archetype.create(relation1, relation2);
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentTargets() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C1.class, Target2.class);
-
-                    var archetype = createArchetype(type1, type2);
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2 };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C1(), new Target2(2));
-
-                        var entityId = archetype.create(relation1, relation2);
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type);
-
-                    var expected = new RegularComponentType<?, ?>[] { type };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(1);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2);
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target2));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type);
-
-                    var expected = new RegularComponentType<?, ?>[] { type };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(2);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2);
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type(C2.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1, new C2());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class);
-                    var type2 = relation(C2.class);
-
-                    var archetype = createArchetype(type1, type2);
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2 };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target1);
-                        var relation2 = Relation.create(new C2(), target2);
-
-                        var entityId = archetype.create(relation1, relation2);
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type);
-
-                    var expected = new RegularComponentType<?, ?>[] { type };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target);
-                        var relation2 = Relation.create(relationship, target);
-
-                        var entityId = archetype.create(relation1, relation2);
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type);
-
-                    var expected = new RegularComponentType<?, ?>[] { type };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2);
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
+        @Override
+        protected Archetype2<Object, Object> getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2) {
+            return (Archetype2) world.createArchetype(componentType1, componentType2);
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype2<Object, Object> archetype, int index, Object component) {
+            return new Object[] { component, new D1(index) };
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype2<Object, Object> archetype, int index, Object component1, Object component2) {
+            return new Object[] { component1, component2 };
+        }
+
+        @Override
+        protected int createEntity(Archetype2<Object, Object> archetype, Object component) {
+            return archetype.create(component, new D1(0));
+        }
+
+        @Override
+        protected int createEntity(Archetype2<Object, Object> archetype, Object component1, Object component2) {
+            return archetype.create(component1, component2);
+        }
+
+        @Override
+        protected ImmutableIntBag createEntities(Archetype2<Object, Object> archetype, ComponentProvider provider) {
+            var expectedIndex = new AtomicInteger(0);
+
+            var result = archetype.createBatch(provider.list.size(), (i, factory) -> {
+                assertThat(i).isEqualTo(expectedIndex.getAndIncrement());
+
+                var components = provider.list.get(i);
+                factory.create(components[0], components[1]);
+            });
+
+            assertThat(expectedIndex.get()).isEqualTo(provider.list.size());
+
+            return result;
+        }
+
+        @Override
+        protected int dontCallFactory(Archetype2<Object, Object> archetype) {
+            return archetype.create(factory -> {
+            });
+        }
+
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype2<Object, Object> archetype) {
+            return archetype.createBatch(count, factory -> {
+            });
         }
 
     }
 
     @Nested
-    class Archetype3Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype3Test extends AbstractArchetypeNTest<Archetype3<Object, Object, Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1, T2, T3> Archetype3<T1, T2, T3> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2, RegularComponentType<T3, ?> component3) {
-                return world.createArchetype(component1, component2, component3);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType, component(D1.class), component(D2.class) };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1, T2, T3> Archetype3<T1, T2, T3> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2, RegularComponentType<T3, ?> component3) {
-                return world.createArchetype(component1, component2, component3).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype3<Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype3) world.createArchetype(componentType, component(D1.class), component(D2.class));
         }
 
-        abstract class AbstractTest {
-
-            protected final <T1, T2, T3> Archetype3<T1, T2, T3> createArchetype(Class<T1> component1, Class<T2> component2, Class<T3> component3) {
-                return createArchetype(component(component1), component(component2), component(component3));
-            }
-
-            protected abstract <T1, T2, T3> Archetype3<T1, T2, T3> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3);
-
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class);
-
-                var entityId = archetype.create(new C1(), new C2(), new C3());
-                verifyComponents(entityId, C1.class, C2.class, C3.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class);
-
-                assertThatThrownBy(() -> archetype.create(null, new C2(), new C3())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), null, new C3())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class);
-
-                var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class, C3.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class, C3.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class, C3.class);
-                    }
-
-                    archetype.createBatch(count, factory -> factory.create(new C1(), new C2(), new C3()));
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(null, new C2(), new C3())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), null, new C3())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 3", "cannot be null");
-            }
-
-            @Test
-            void testBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1, new C2(), new C3());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C2.class, Target.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C2(), new Target(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentTargets() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C1.class, Target2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C1(), new Target2(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(1);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target2));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(2);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1, new C2(), new C3());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class);
-                    var type2 = relation(C2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target1);
-                        var relation2 = Relation.create(new C2(), target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target);
-                        var relation2 = Relation.create(relationship, target);
-
-                        var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
+        @Override
+        protected Archetype3<Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2) {
+            return (Archetype3) world.createArchetype(componentType1, componentType2, component(D1.class));
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype3<Object, Object, Object> archetype, int index, Object component) {
+            return new Object[] { component, new D1(index), new D2(index) };
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype3<Object, Object, Object> archetype, int index, Object component1, Object component2) {
+            return new Object[] { component1, component2, new D1(index) };
+        }
+
+        @Override
+        protected int createEntity(Archetype3<Object, Object, Object> archetype, Object component) {
+            return archetype.create(component, new D1(0), new D2(0));
+        }
+
+        @Override
+        protected int createEntity(Archetype3<Object, Object, Object> archetype, Object component1, Object component2) {
+            return archetype.create(component1, component2, new D1(0));
+        }
+
+        @Override
+        protected ImmutableIntBag createEntities(Archetype3<Object, Object, Object> archetype, ComponentProvider provider) {
+            var expectedIndex = new AtomicInteger(0);
+
+            var result = archetype.createBatch(provider.list.size(), (i, factory) -> {
+                assertThat(i).isEqualTo(expectedIndex.getAndIncrement());
+
+                var components = provider.list.get(i);
+                factory.create(components[0], components[1], components[2]);
+            });
+
+            assertThat(expectedIndex.get()).isEqualTo(provider.list.size());
+
+            return result;
+        }
+
+        @Override
+        protected int dontCallFactory(Archetype3<Object, Object, Object> archetype) {
+            return archetype.create(factory -> {
+            });
+        }
+
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype3<Object, Object, Object> archetype) {
+            return archetype.createBatch(count, factory -> {
+            });
         }
 
     }
 
     @Nested
-    class Archetype4Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype4Test extends AbstractArchetypeNTest<Archetype4<Object, Object, Object, Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1, T2, T3, T4> Archetype4<T1, T2, T3, T4> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4) {
-
-                return world.createArchetype(component1, component2, component3, component4);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType, component(D1.class), component(D2.class), component(D3.class) };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1, T2, T3, T4> Archetype4<T1, T2, T3, T4> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4) {
-
-                return world.createArchetype(component1, component2, component3, component4).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype4<Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype4) world.createArchetype(componentType, component(D1.class), component(D2.class), component(D3.class));
         }
 
-        abstract class AbstractTest {
-
-            protected final <T1, T2, T3, T4> Archetype4<T1, T2, T3, T4> createArchetype(Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4) {
-                return createArchetype(component(component1), component(component2), component(component3), component(component4));
-            }
-
-            protected abstract <T1, T2, T3, T4> Archetype4<T1, T2, T3, T4> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4);
-
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
-
-                var entityId = archetype.create(new C1(), new C2(), new C3(), new C4());
-                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
-
-                assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
-
-                var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class, C3.class, C4.class);
-                    }
-
-                    archetype.createBatch(count, factory -> factory.create(new C1(), new C2(), new C3(), new C4()));
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(null, new C2(), new C3(), new C4())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), null, new C3(), new C4())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), null, new C4())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 3", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 4", "cannot be null");
-            }
-
-            @Test
-            void testBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C2.class, Target.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C2(), new Target(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentTargets() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C1.class, Target2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C1(), new Target2(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(1);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target2));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(2);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class);
-                    var type2 = relation(C2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target1);
-                        var relation2 = Relation.create(new C2(), target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target);
-                        var relation2 = Relation.create(relationship, target);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
+        @Override
+        protected Archetype4<Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2) {
+            return (Archetype4) world.createArchetype(componentType1, componentType2, component(D1.class), component(D2.class));
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype4<Object, Object, Object, Object> archetype, int index, Object component) {
+            return new Object[] { component, new D1(index), new D2(index), new D3(index) };
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype4<Object, Object, Object, Object> archetype, int index, Object component1, Object component2) {
+            return new Object[] { component1, component2, new D1(index), new D2(index) };
+        }
+
+        @Override
+        protected int createEntity(Archetype4<Object, Object, Object, Object> archetype, Object component) {
+            return archetype.create(component, new D1(0), new D2(0), new D3(0));
+        }
+
+        @Override
+        protected int createEntity(Archetype4<Object, Object, Object, Object> archetype, Object component1, Object component2) {
+            return archetype.create(component1, component2, new D1(0), new D2(0));
+        }
+
+        @Override
+        protected ImmutableIntBag createEntities(Archetype4<Object, Object, Object, Object> archetype, ComponentProvider provider) {
+            var expectedIndex = new AtomicInteger(0);
+
+            var result = archetype.createBatch(provider.list.size(), (i, factory) -> {
+                assertThat(i).isEqualTo(expectedIndex.getAndIncrement());
+
+                var components = provider.list.get(i);
+                factory.create(components[0], components[1], components[2], components[3]);
+            });
+
+            assertThat(expectedIndex.get()).isEqualTo(provider.list.size());
+
+            return result;
+        }
+
+        @Override
+        protected int dontCallFactory(Archetype4<Object, Object, Object, Object> archetype) {
+            return archetype.create(factory -> {
+            });
+        }
+
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype4<Object, Object, Object, Object> archetype) {
+            return archetype.createBatch(count, factory -> {
+            });
         }
 
     }
 
     @Nested
-    class Archetype5Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype5Test extends AbstractArchetypeNTest<Archetype5<Object, Object, Object, Object, Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1, T2, T3, T4, T5> Archetype5<T1, T2, T3, T4, T5> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class) };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1, T2, T3, T4, T5> Archetype5<T1, T2, T3, T4, T5> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype5<Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype5) world.createArchetype(componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class));
         }
 
-        abstract class AbstractTest {
-
-            protected final <T1, T2, T3, T4, T5> Archetype5<T1, T2, T3, T4, T5> createArchetype(Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4,
-                    Class<T5> component5) {
-
-                return createArchetype(component(component1), component(component2), component(component3), component(component4), component(component5));
-            }
-
-            protected abstract <T1, T2, T3, T4, T5> Archetype5<T1, T2, T3, T4, T5> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5);
-
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
-
-                var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5());
-                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
-
-                assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
-
-                var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class, C3.class, C4.class, C5.class);
-                    }
-
-                    archetype.createBatch(count, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5()));
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(null, new C2(), new C3(), new C4(), new C5())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), null, new C3(), new C4(), new C5())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), null, new C4(), new C5())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 3", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), null, new C5())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 4", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 5", "cannot be null");
-            }
-
-            @Test
-            void testBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C2.class, Target.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C2(), new Target(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentTargets() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C1.class, Target2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C1(), new Target2(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(1);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target2));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(2);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class);
-                    var type2 = relation(C2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target1);
-                        var relation2 = Relation.create(new C2(), target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target);
-                        var relation2 = Relation.create(relationship, target);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
+        @Override
+        protected Archetype5<Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2) {
+            return (Archetype5) world.createArchetype(componentType1, componentType2, component(D1.class), component(D2.class), component(D3.class));
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype5<Object, Object, Object, Object, Object> archetype, int index, Object component) {
+            return new Object[] { component, new D1(index), new D2(index), new D3(index), new D4(index) };
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype5<Object, Object, Object, Object, Object> archetype, int index, Object component1, Object component2) {
+            return new Object[] { component1, component2, new D1(index), new D2(index), new D3(index) };
+        }
+
+        @Override
+        protected int createEntity(Archetype5<Object, Object, Object, Object, Object> archetype, Object component) {
+            return archetype.create(component, new D1(0), new D2(0), new D3(0), new D4(0));
+        }
+
+        @Override
+        protected int createEntity(Archetype5<Object, Object, Object, Object, Object> archetype, Object component1, Object component2) {
+            return archetype.create(component1, component2, new D1(0), new D2(0), new D3(0));
+        }
+
+        @Override
+        protected ImmutableIntBag createEntities(Archetype5<Object, Object, Object, Object, Object> archetype, ComponentProvider provider) {
+            var expectedIndex = new AtomicInteger(0);
+
+            var result = archetype.createBatch(provider.list.size(), (i, factory) -> {
+                assertThat(i).isEqualTo(expectedIndex.getAndIncrement());
+
+                var components = provider.list.get(i);
+                factory.create(components[0], components[1], components[2], components[3], components[4]);
+            });
+
+            assertThat(expectedIndex.get()).isEqualTo(provider.list.size());
+
+            return result;
+        }
+
+        @Override
+        protected int dontCallFactory(Archetype5<Object, Object, Object, Object, Object> archetype) {
+            return archetype.create(factory -> {
+            });
+        }
+
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype5<Object, Object, Object, Object, Object> archetype) {
+            return archetype.createBatch(count, factory -> {
+            });
         }
 
     }
 
     @Nested
-    class Archetype6Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype6Test extends AbstractArchetypeNTest<Archetype6<Object, Object, Object, Object, Object, Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1, T2, T3, T4, T5, T6> Archetype6<T1, T2, T3, T4, T5, T6> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5, component6);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class) };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1, T2, T3, T4, T5, T6> Archetype6<T1, T2, T3, T4, T5, T6> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5, component6).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype6<Object, Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype6) world.createArchetype(componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class));
         }
 
-        abstract class AbstractTest {
-
-            protected final <T1, T2, T3, T4, T5, T6> Archetype6<T1, T2, T3, T4, T5, T6> createArchetype(Class<T1> component1, Class<T2> component2, Class<T3> component3, Class<T4> component4,
-                    Class<T5> component5, Class<T6> component6) {
-
-                return createArchetype(component(component1), component(component2), component(component3), component(component4), component(component5), component(component6));
-            }
-
-            protected abstract <T1, T2, T3, T4, T5, T6> Archetype6<T1, T2, T3, T4, T5, T6> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6);
-
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-
-                var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6());
-                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-
-                assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5(), new C6())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5(), new C6())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5(), new C6())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5(), new C6())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null, new C6())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-
-                var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-                    }
-
-                    archetype.createBatch(count, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6()));
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(null, new C2(), new C3(), new C4(), new C5(), new C6())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), null, new C3(), new C4(), new C5(), new C6())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), null, new C4(), new C5(), new C6())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 3", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), null, new C5(), new C6())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 4", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), null, new C6())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 5", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 6", "cannot be null");
-            }
-
-            @Test
-            void testBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C2.class, Target.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C2(), new Target(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentTargets() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C1.class, Target2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C1(), new Target2(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(1);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target2));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(2);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class);
-                    var type2 = relation(C2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target1);
-                        var relation2 = Relation.create(new C2(), target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target);
-                        var relation2 = Relation.create(relationship, target);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
+        @Override
+        protected Archetype6<Object, Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2) {
+            return (Archetype6) world.createArchetype(componentType1, componentType2, component(D1.class), component(D2.class), component(D3.class), component(D4.class));
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype6<Object, Object, Object, Object, Object, Object> archetype, int index, Object component) {
+            return new Object[] { component, new D1(index), new D2(index), new D3(index), new D4(index), new D5(index) };
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype6<Object, Object, Object, Object, Object, Object> archetype, int index, Object component1, Object component2) {
+            return new Object[] { component1, component2, new D1(index), new D2(index), new D3(index), new D4(index) };
+        }
+
+        @Override
+        protected int createEntity(Archetype6<Object, Object, Object, Object, Object, Object> archetype, Object component) {
+            return archetype.create(component, new D1(0), new D2(0), new D3(0), new D4(0), new D5(0));
+        }
+
+        @Override
+        protected int createEntity(Archetype6<Object, Object, Object, Object, Object, Object> archetype, Object component1, Object component2) {
+            return archetype.create(component1, component2, new D1(0), new D2(0), new D3(0), new D4(0));
+        }
+
+        @Override
+        protected ImmutableIntBag createEntities(Archetype6<Object, Object, Object, Object, Object, Object> archetype, ComponentProvider provider) {
+            var expectedIndex = new AtomicInteger(0);
+
+            var result = archetype.createBatch(provider.list.size(), (i, factory) -> {
+                assertThat(i).isEqualTo(expectedIndex.getAndIncrement());
+
+                var components = provider.list.get(i);
+                factory.create(components[0], components[1], components[2], components[3], components[4], components[5]);
+            });
+
+            assertThat(expectedIndex.get()).isEqualTo(provider.list.size());
+
+            return result;
+        }
+
+        @Override
+        protected int dontCallFactory(Archetype6<Object, Object, Object, Object, Object, Object> archetype) {
+            return archetype.create(factory -> {
+            });
+        }
+
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype6<Object, Object, Object, Object, Object, Object> archetype) {
+            return archetype.createBatch(count, factory -> {
+            });
         }
 
     }
 
     @Nested
-    class Archetype7Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype7Test extends AbstractArchetypeNTest<Archetype7<Object, Object, Object, Object, Object, Object, Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1, T2, T3, T4, T5, T6, T7> Archetype7<T1, T2, T3, T4, T5, T6, T7> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4,
-                    RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6, RegularComponentType<T7, ?> component7) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5, component6, component7);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class), component(D6.class) };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1, T2, T3, T4, T5, T6, T7> Archetype7<T1, T2, T3, T4, T5, T6, T7> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4,
-                    RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6, RegularComponentType<T7, ?> component7) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5, component6, component7).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype7<Object, Object, Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype7) world.createArchetype(componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class), component(D6.class));
         }
 
-        abstract class AbstractTest {
-
-            protected final <T1, T2, T3, T4, T5, T6, T7> Archetype7<T1, T2, T3, T4, T5, T6, T7> createArchetype(Class<T1> component1, Class<T2> component2, Class<T3> component3,
-                    Class<T4> component4, Class<T5> component5, Class<T6> component6, Class<T7> component7) {
-
-                return createArchetype(component(component1), component(component2), component(component3), component(component4), component(component5), component(component6), component(component7));
-            }
-
-            protected abstract <T1, T2, T3, T4, T5, T6, T7> Archetype7<T1, T2, T3, T4, T5, T6, T7> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6,
-                    RegularComponentType<T7, ?> component7);
-
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-
-                var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
-                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-
-                assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-
-                var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-                    }
-
-                    archetype.createBatch(count, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7()));
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 3", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 4", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 5", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 6", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 7", "cannot be null");
-            }
-
-            @Test
-            void testBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C2.class, Target.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C2(), new Target(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentTargets() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C1.class, Target2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C1(), new Target2(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(1);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target2));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(2);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class);
-                    var type2 = relation(C2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target1);
-                        var relation2 = Relation.create(new C2(), target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target);
-                        var relation2 = Relation.create(relationship, target);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
+        @Override
+        protected Archetype7<Object, Object, Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2) {
+            return (Archetype7) world.createArchetype(componentType1, componentType2, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class));
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype7<Object, Object, Object, Object, Object, Object, Object> archetype, int index, Object component) {
+            return new Object[] { component, new D1(index), new D2(index), new D3(index), new D4(index), new D5(index), new D6(index) };
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype7<Object, Object, Object, Object, Object, Object, Object> archetype, int index, Object component1, Object component2) {
+            return new Object[] { component1, component2, new D1(index), new D2(index), new D3(index), new D4(index), new D5(index) };
+        }
+
+        @Override
+        protected int createEntity(Archetype7<Object, Object, Object, Object, Object, Object, Object> archetype, Object component) {
+            return archetype.create(component, new D1(0), new D2(0), new D3(0), new D4(0), new D5(0), new D6(0));
+        }
+
+        @Override
+        protected int createEntity(Archetype7<Object, Object, Object, Object, Object, Object, Object> archetype, Object component1, Object component2) {
+            return archetype.create(component1, component2, new D1(0), new D2(0), new D3(0), new D4(0), new D5(0));
+        }
+
+        @Override
+        protected ImmutableIntBag createEntities(Archetype7<Object, Object, Object, Object, Object, Object, Object> archetype, ComponentProvider provider) {
+            var expectedIndex = new AtomicInteger(0);
+
+            var result = archetype.createBatch(provider.list.size(), (i, factory) -> {
+                assertThat(i).isEqualTo(expectedIndex.getAndIncrement());
+
+                var components = provider.list.get(i);
+                factory.create(components[0], components[1], components[2], components[3], components[4], components[5], components[6]);
+            });
+
+            assertThat(expectedIndex.get()).isEqualTo(provider.list.size());
+
+            return result;
+        }
+
+        @Override
+        protected int dontCallFactory(Archetype7<Object, Object, Object, Object, Object, Object, Object> archetype) {
+            return archetype.create(factory -> {
+            });
+        }
+
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype7<Object, Object, Object, Object, Object, Object, Object> archetype) {
+            return archetype.createBatch(count, factory -> {
+            });
         }
 
     }
 
     @Nested
-    class Archetype8Test {
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    class Archetype8Test extends AbstractArchetypeNTest<Archetype8<Object, Object, Object, Object, Object, Object, Object, Object>> {
 
-        @Nested
-        class SimpleArchetypeTest extends AbstractTest {
-            @Override
-            protected <T1, T2, T3, T4, T5, T6, T7, T8> Archetype8<T1, T2, T3, T4, T5, T6, T7, T8> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6,
-                    RegularComponentType<T7, ?> component7, RegularComponentType<T8, ?> component8) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5, component6, component7, component8);
-            }
+        @Override
+        protected RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType) {
+            return new RegularComponentType<?, ?>[] { componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class), component(D6.class),
+                    component(D7.class) };
         }
 
-        @Nested
-        class WithComponentsTest extends AbstractTest {
-
-            @Override
-            protected <T1, T2, T3, T4, T5, T6, T7, T8> Archetype8<T1, T2, T3, T4, T5, T6, T7, T8> createArchetype(RegularComponentType<T1, ?> component1, RegularComponentType<T2, ?> component2,
-                    RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5, RegularComponentType<T6, ?> component6,
-                    RegularComponentType<T7, ?> component7, RegularComponentType<T8, ?> component8) {
-
-                return world.createArchetype(component1, component2, component3, component4, component5, component6, component7, component8).with(E1.INSTANCE, E2.INSTANCE);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                var expected = ArrayUtils.concat(Class.class, components, E1.class, E2.class);
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Override
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                var expected = ArrayUtils.concat(RegularComponentType.class, components, component(E1.class), component(E2.class));
-
-                ArchetypeManagerTest.this.verifyHasComponents(entityId, expected);
-                ArchetypeManagerTest.this.verifyComponentMaskHasComponents(entityId, expected);
-            }
-
-            @Test
-            void testPooledComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class).with(new D1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("D1", "cannot implement Pooled");
-            }
-
-            @Test
-            void testDuplicateComponents_Throws() {
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class).with(new C1()))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("C1", "already defined");
-
-                assertThatThrownBy(() -> world.createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class).with(E1.INSTANCE, E2.INSTANCE, E1.INSTANCE))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("E1", "already defined");
-            }
-
+        @Override
+        protected Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType) {
+            return (Archetype8) world.createArchetype(componentType, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class), component(D6.class),
+                    component(D7.class));
         }
 
-        abstract class AbstractTest {
-
-            protected final <T1, T2, T3, T4, T5, T6, T7, T8> Archetype8<T1, T2, T3, T4, T5, T6, T7, T8> createArchetype(Class<T1> component1, Class<T2> component2, Class<T3> component3,
-                    Class<T4> component4, Class<T5> component5, Class<T6> component6, Class<T7> component7, Class<T8> component8) {
-
-                return createArchetype(component(component1), component(component2), component(component3), component(component4), component(component5), component(component6), component(component7),
-                        component(component8));
-            }
-
-            protected abstract <T1, T2, T3, T4, T5, T6, T7, T8> Archetype8<T1, T2, T3, T4, T5, T6, T7, T8> createArchetype(RegularComponentType<T1, ?> component1,
-                    RegularComponentType<T2, ?> component2, RegularComponentType<T3, ?> component3, RegularComponentType<T4, ?> component4, RegularComponentType<T5, ?> component5,
-                    RegularComponentType<T6, ?> component6, RegularComponentType<T7, ?> component7, RegularComponentType<T8, ?> component8);
-
-            protected void verifyComponents(int entityId, Class<?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            protected void verifyComponents(int entityId, RegularComponentType<?, ?>... components) {
-                verifyHasComponents(entityId, components);
-                verifyComponentMaskHasComponents(entityId, components);
-            }
-
-            @Test
-            void testArchetype() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-
-                var entityId = archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-            }
-
-            @Test
-            void testNullInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-
-                assertThatThrownBy(() -> archetype.create(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7(), new C8())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7(), new C8())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7(), new C8())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7(), new C8())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7(), new C8())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null, new C8())).isNotNull();
-                assertThatThrownBy(() -> archetype.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), null)).isNotNull();
-            }
-
-            @Test
-            void testBatch() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-
-                var entityIds = archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8()));
-                assertThat(entityIds.getSize()).isEqualTo(10);
-
-                for (var iter = entityIds.iterator(); iter.hasNext();) {
-                    var entityId = iter.nextInt();
-                    verifyComponents(entityId, C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-                }
-            }
-
-            @Test
-            void testBatchChangeHandler() {
-                var count = 10;
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-
-                verify(verify -> {
-                    for (int i = 0; i < count; i++) {
-                        verify.expectInserted(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-                    }
-
-                    archetype.createBatch(count, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8()));
-                });
-            }
-
-            @Test
-            void testBatch_NullInstances() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(null, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 1", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), null, new C3(), new C4(), new C5(), new C6(), new C7(), new C8())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 2", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), null, new C4(), new C5(), new C6(), new C7(), new C8())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 3", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), null, new C5(), new C6(), new C7(), new C8())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 4", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), null, new C6(), new C7(), new C8())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 5", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), null, new C7(), new C8())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 6", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), null, new C8())))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 7", "cannot be null");
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> factory.create(new C1(), new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), null)))
-                        .isInstanceOf(IllegalArgumentException.class)
-                        .hasMessageContainingAll("Component 8", "cannot be null");
-            }
-
-            @Test
-            void testBatchInitializeNotCalled() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-
-                assertThatThrownBy(() -> archetype.createBatch(10, factory -> null))
-                        .isInstanceOf(NullPointerException.class)
-                        .hasMessageContaining("return value cannot be null");
-            }
-
-            @Test
-            void testGetInstance() {
-                var archetype = createArchetype(C1.class, C2.class, C3.class, C4.class, C5.class, C6.class, C7.class, C8.class);
-                assertThat(archetype.getInstance(D1.class)).isNotNull();
-                assertThat(archetype.getInstance(D2.class)).isNotNull();
-            }
-
-            @Nested
-            class ComponentRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C2.class, Target.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C2(), new Target(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentTargets() {
-                    var type1 = relation(C1.class, Target.class);
-                    var type2 = relation(C1.class, Target2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), new Target(1));
-                        var relation2 = Relation.create(new C1(), new Target2(2));
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(1);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target2));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class, Target.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-                        var target1 = new Target(1);
-                        var target2 = new Target(2);
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getComponentRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
-            @Nested
-            class EntityRelationTest {
-
-                @Test
-                void testComponentRelation() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C2.class), type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target);
-
-                        var entityId = archetype.create(relation1, new C2(), new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_DifferentRelationships() {
-                    var type1 = relation(C1.class);
-                    var type2 = relation(C2.class);
-
-                    var archetype = createArchetype(type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type1, type2, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relation1 = Relation.create(new C1(), target1);
-                        var relation2 = Relation.create(new C2(), target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    var target = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target);
-                        var relation2 = Relation.create(relationship, target);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target));
-                    });
-                }
-
-                @Test
-                void testMultipleComponentRelations_SameType_TargetsNotEqual() {
-                    var type = relation(C1.class);
-                    var archetype = createArchetype(type, type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class));
-
-                    var expected = new RegularComponentType<?, ?>[] { type, type(C3.class), type(C4.class), type(C5.class), type(C6.class), type(C7.class), type(C8.class) };
-
-                    var target1 = world.createEntity();
-                    var target2 = world.createEntity();
-
-                    verify(verify -> {
-                        verify.expectInserted(expected);
-                        verify.expectNoMoreInserted();
-
-                        var relationship = new C1();
-
-                        var relation1 = Relation.create(relationship, target1);
-                        var relation2 = Relation.create(relationship, target2);
-
-                        var entityId = archetype.create(relation1, relation2, new C3(), new C4(), new C5(), new C6(), new C7(), new C8());
-                        verifyComponents(entityId, expected);
-
-                        var relations = relationMapperManager.getEntityRelationMapper(type).get(entityId);
-                        assertThat(relations)
-                                .extracting("relationship", "target")
-                                .containsExactlyInAnyOrder(
-                                        tuple(relationship, target1),
-                                        tuple(relationship, target2));
-                    });
-                }
-
-            }
-
+        @Override
+        protected Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2) {
+            return (Archetype8) world.createArchetype(componentType1, componentType2, component(D1.class), component(D2.class), component(D3.class), component(D4.class), component(D5.class),
+                    component(D6.class));
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> archetype, int index, Object component) {
+            return new Object[] { component, new D1(index), new D2(index), new D3(index), new D4(index), new D5(index), new D6(index), new D7(index) };
+        }
+
+        @Override
+        protected Object[] createComponents(Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> archetype, int index, Object component1, Object component2) {
+            return new Object[] { component1, component2, new D1(index), new D2(index), new D3(index), new D4(index), new D5(index), new D6(index) };
+        }
+
+        @Override
+        protected int createEntity(Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> archetype, Object component) {
+            return archetype.create(component, new D1(0), new D2(0), new D3(0), new D4(0), new D5(0), new D6(0), new D7(0));
+        }
+
+        @Override
+        protected int createEntity(Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> archetype, Object component1, Object component2) {
+            return archetype.create(component1, component2, new D1(0), new D2(0), new D3(0), new D4(0), new D5(0), new D6(0));
+        }
+
+        @Override
+        protected ImmutableIntBag createEntities(Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> archetype, ComponentProvider provider) {
+            var expectedIndex = new AtomicInteger(0);
+
+            var result = archetype.createBatch(provider.list.size(), (i, factory) -> {
+                assertThat(i).isEqualTo(expectedIndex.getAndIncrement());
+
+                var components = provider.list.get(i);
+                factory.create(components[0], components[1], components[2], components[3], components[4], components[5], components[6], components[7]);
+            });
+
+            assertThat(expectedIndex.get()).isEqualTo(provider.list.size());
+
+            return result;
+        }
+
+        @Override
+        protected int dontCallFactory(Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> archetype) {
+            return archetype.create(factory -> {
+            });
+        }
+
+        @Override
+        protected ImmutableIntBag dontCallFactory(int count, Archetype8<Object, Object, Object, Object, Object, Object, Object, Object> archetype) {
+            return archetype.createBatch(count, factory -> {
+            });
         }
 
     }
 
-    public record C1() {
+    abstract class AbstractArchetypeNTest<A extends BaseArchetype<?>> extends AbstractArchetypeTest<A> {
+
+        protected abstract A getArchetype(RegularComponentType<?, ?> componentType1, RegularComponentType<?, ?> componentType2);
+
+        protected abstract Object[] createComponents(A archetype, int index, Object component1, Object component2);
+
+        protected abstract int createEntity(A archetype, Object component1, Object component2);
+
+        @ParameterizedTest
+        @MethodSource("componentsSupplier")
+        void testCreateArchetype_DuplicateTypes(IntFunction<Object> componentFunction) {
+            var component = componentFunction.apply(0);
+            var componentType = ComponentType.detectComponentType(component);
+
+            assertThatThrownBy(() -> getArchetype(componentType, componentType))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(componentType.toString(), "duplicates");
+        }
+
     }
 
-    public record C2() {
+    abstract class AbstractArchetypeTest<A extends BaseArchetype<?>> {
+
+        protected abstract RegularComponentType<?, ?>[] getComponentTypes(RegularComponentType<Object, ?> componentType);
+
+        protected abstract A getArchetype(RegularComponentType<?, ?> componentType);
+
+        protected abstract Object[] createComponents(A archetype, int index, Object component);
+
+        protected abstract int createEntity(A archetype, Object component);
+
+        protected abstract ImmutableIntBag createEntities(A archetype, ComponentProvider provider);
+
+        protected abstract ImmutableIntBag dontCallFactory(int count, A archetype);
+
+        protected abstract int dontCallFactory(A archetype);
+
+        @ParameterizedTest
+        @MethodSource("componentsSupplier")
+        void testCreate(IntFunction<Object> componentFunction) {
+            var component = componentFunction.apply(0);
+            var componentType = ComponentType.detectComponentType(component);
+
+            var archetype = getArchetype(componentType);
+
+            // Call
+            var entityId = createEntity(archetype, component);
+
+            // Verify
+            verifyHasComponents(entityId, componentType);
+            verifyComponentMaskHasComponents(entityId, componentType);
+        }
+
+        @ParameterizedTest
+        @MethodSource("componentsSupplier")
+        @SuppressWarnings("unchecked")
+        void testCreate_WithFixedEnums(IntFunction<Object> componentFunction) {
+            var component = componentFunction.apply(0);
+            var componentType = ComponentType.detectComponentType(component);
+
+            var archetype = (A) getArchetype(componentType).with(E1.INSTANCE, E2.INSTANCE);
+
+            // Call
+            var entityId = createEntity(archetype, component);
+
+            // Verify
+            verifyHasComponents(entityId, componentType, component(E1.class), component(E2.class));
+            verifyComponentMaskHasComponents(entityId, componentType, component(E1.class), component(E2.class));
+        }
+
+        @ParameterizedTest
+        @MethodSource("componentsSupplier")
+        void testCreate_InsertedCallbacks(IntFunction<Object> componentFunction) {
+            var component = componentFunction.apply(0);
+            var componentType = ComponentType.detectComponentType(component);
+            var componentTypes = getComponentTypes(componentType);
+
+            var archetype = getArchetype(componentType);
+
+            var called = new AtomicBoolean(false);
+            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
+                assertThat(event.componentMask().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                called.set(true);
+            });
+
+            // Verify
+            verify(verify -> {
+                verify.expectInserted(componentTypes);
+
+                verify.expectNoMoreInserted();
+                verify.expectNoMoreUpdated();
+                verify.expectNoMoreRemoved();
+
+                // Call
+                createEntity(archetype, component);
+            });
+
+            assertThat(called.get()).isTrue();
+        }
+
+        @Test
+        void testCreate_FactoryNotCalled() {
+            var archetype = getArchetype(component(C1.class));
+
+            assertThatThrownBy(() -> dontCallFactory(archetype))
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContainingAll(C1.class.getSimpleName(), "index 0", "was 'null'");
+        }
+
+        @Test
+        void testCreate_NullInstance() {
+            var archetype = getArchetype(component(C1.class));
+
+            // Call
+            assertThatThrownBy(() -> createEntity(archetype, null))
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContainingAll(C1.class.getSimpleName(), "index 0", "was 'null'");
+        }
+
+        @Test
+        void testCreate_TypeMismatch() {
+            var archetype = getArchetype(component(C1.class));
+
+            // Call
+            assertThatThrownBy(() -> createEntity(archetype, new C2()))
+                    .isInstanceOf(StorageEngineException.class)
+                    .message()
+                    .containsSubsequence(
+                            "Expected", C1.class.getSimpleName(), "index 0",
+                            " was ", C2.class.getSimpleName());
+        }
+
+        @Test
+        void testCreate_WithPooledInstance() {
+            var archetype = getArchetype(component(C1.class));
+
+            assertThatThrownBy(() -> archetype.with(new D1()))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(D1.class.getSimpleName(), "cannot implement Pooled");
+        }
+
+        @Test
+        void testCreate_WithComponentRelationInstance() {
+            var archetype = getArchetype(component(C1.class));
+            var relation = Relation.create(new C1(), new C2());
+
+            assertThatThrownBy(() -> archetype.with(relation))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(relation.toString(), "cannot implement Relation.");
+        }
+
+        @Test
+        void testCreate_WithEntityRelationInstance() {
+            var archetype = getArchetype(component(C1.class));
+            var relation = Relation.create(new C1(), 42);
+
+            assertThatThrownBy(() -> archetype.with(relation))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(relation.toString(), "cannot implement Relation.");
+        }
+
+        @Test
+        void testCreate_WithComponentRelationsInstance() {
+            var archetype = getArchetype(component(C1.class));
+            var relations = Relations.create(new C1(), 42);
+
+            assertThatThrownBy(() -> archetype.with(relations))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(relations.toString(), "cannot implement Relations.");
+        }
+
+        @Test
+        void testCreate_WithEntityRelationsInstance() {
+            var archetype = getArchetype(component(C1.class));
+            var relations = Relations.create(new C1(), 42);
+
+            assertThatThrownBy(() -> archetype.with(relations))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll(relations.toString(), "cannot implement Relations.");
+        }
+
+        @ParameterizedTest
+        @MethodSource("countComponentsSupplier")
+        void testCreateBatch(int count, IntFunction<Object> componentFunction) {
+            var componentType = ComponentType.detectComponentType(componentFunction.apply(0));
+            var archetype = getArchetype(componentType);
+
+            var componentArrays = IntStream.range(1, count + 1)
+                    .mapToObj(i -> createComponents(archetype, i, componentFunction.apply(i)))
+                    .toArray(Object[][]::new);
+
+            var provider = new ComponentProvider(componentArrays);
+
+            // Call
+            var entityIds = createEntities(archetype, provider);
+
+            // Verify
+            assertThat(entityIds.getSize()).isEqualTo(count);
+
+            for (int i = 0; i < count; i++) {
+                var entityId = entityIds.get(i);
+
+                verifyHasComponents(entityId, componentType);
+                verifyComponentMaskHasComponents(entityId, componentType);
+            }
+        }
+
+        @ParameterizedTest
+        @MethodSource("countComponentsSupplier")
+        @SuppressWarnings("unchecked")
+        void testCreateBatch_WithFixedEnums(int count, IntFunction<Object> componentFunction) {
+            var componentType = ComponentType.detectComponentType(componentFunction.apply(0));
+            var archetype = (A) getArchetype(componentType).with(E1.INSTANCE, E2.INSTANCE);
+
+            var componentArrays = IntStream.range(1, count + 1)
+                    .mapToObj(i -> createComponents(archetype, i, componentFunction.apply(i)))
+                    .toArray(Object[][]::new);
+
+            var provider = new ComponentProvider(componentArrays);
+
+            // Call
+            var entityIds = createEntities(archetype, provider);
+
+            // Verify
+            assertThat(entityIds.getSize()).isEqualTo(count);
+
+            for (int i = 0; i < count; i++) {
+                var entityId = entityIds.get(i);
+
+                verifyHasComponents(entityId, componentType, component(E1.class), component(E2.class));
+                verifyComponentMaskHasComponents(entityId, componentType, component(E1.class), component(E2.class));
+            }
+        }
+
+        @ParameterizedTest
+        @MethodSource("countComponentsSupplier")
+        void testCreateBatch_InsertedCallbacks(int count, IntFunction<Object> componentFunction) {
+            var componentType = ComponentType.detectComponentType(componentFunction.apply(0));
+            var archetype = getArchetype(componentType);
+            var componentTypes = getComponentTypes(componentType);
+
+            var componentArrays = IntStream.range(1, count + 1)
+                    .mapToObj(i -> createComponents(archetype, i, componentFunction.apply(i)))
+                    .toArray(Object[][]::new);
+
+            var provider = new ComponentProvider(componentArrays);
+
+            var called = new AtomicBoolean(false);
+            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> {
+                assertThat(event.componentMask().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                assertThat(event.entityIds().getSize()).isEqualTo(count);
+
+                called.set(true);
+            });
+
+            // Verify
+            verify(verify -> {
+                for (int i = 0; i < count; i++) {
+                    verify.expectInserted(componentTypes);
+                }
+
+                verify.expectNoMoreInserted();
+                verify.expectNoMoreUpdated();
+                verify.expectNoMoreRemoved();
+
+                // Call
+                createEntities(archetype, provider);
+            });
+
+            assertThat(called.get()).isTrue();
+        }
+
+        @ParameterizedTest
+        @MethodSource("countComponentsSupplier")
+        @SuppressWarnings("unchecked")
+        void testCreateBatch_InsertedCallbacks_WithFixedEnums(int count, IntFunction<Object> componentFunction) {
+            var componentType = ComponentType.detectComponentType(componentFunction.apply(0));
+            var archetype = (A) getArchetype(componentType).with(E1.INSTANCE, E2.INSTANCE);
+
+            var baseComponentTypes = getComponentTypes(componentType);
+            var componentTypes = Arrays.copyOf(baseComponentTypes, baseComponentTypes.length + 2);
+            componentTypes[baseComponentTypes.length] = component(E1.class);
+            componentTypes[baseComponentTypes.length + 1] = component(E2.class);
+
+            var componentArrays = IntStream.range(1, count + 1)
+                    .mapToObj(i -> createComponents(archetype, i, componentFunction.apply(i)))
+                    .toArray(Object[][]::new);
+
+            var provider = new ComponentProvider(componentArrays);
+
+            var called = new AtomicBoolean(false);
+            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> {
+                assertThat(event.componentMask().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                assertThat(event.entityIds().getSize()).isEqualTo(count);
+
+                called.set(true);
+            });
+
+            // Verify
+            verify(verify -> {
+                for (int i = 0; i < count; i++) {
+                    verify.expectInserted(componentTypes);
+                }
+
+                verify.expectNoMoreInserted();
+                verify.expectNoMoreUpdated();
+                verify.expectNoMoreRemoved();
+
+                // Call
+                createEntities(archetype, provider);
+            });
+
+            assertThat(called.get()).isTrue();
+        }
+
+        @Test
+        void testCreateBatch_FactoryNotCalled() {
+            var archetype = getArchetype(component(C1.class));
+
+            assertThatThrownBy(() -> dontCallFactory(2, archetype))
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContainingAll(C1.class.getSimpleName(), "index 0", "was 'null'");
+        }
+
+        @Test
+        void testBatchCreate_NullInstance() {
+            var archetype = getArchetype(component(C1.class));
+
+            var provider = new ComponentProvider(createComponents(archetype, 1, null));
+
+            // Call
+            assertThatThrownBy(() -> createEntities(archetype, provider))
+                    .isInstanceOf(StorageEngineException.class)
+                    .hasMessageContainingAll(C1.class.getSimpleName(), "index 0", "was 'null'");
+        }
+
+        @Test
+        void testCreateBatch_TypeMismatch() {
+            var archetype = getArchetype(component(C1.class));
+
+            var provider = new ComponentProvider(createComponents(archetype, 1, new C2()));
+
+            // Call
+            assertThatThrownBy(() -> createEntities(archetype, provider))
+                    .isInstanceOf(StorageEngineException.class)
+                    .message()
+                    .containsSubsequence(
+                            "Expected", C1.class.getSimpleName(), "index 0",
+                            " was ", C2.class.getSimpleName());
+        }
+
+        @Test
+        void testGetInstance() {
+            var archetype = getArchetype(component(C1.class));
+
+            assertThat(archetype.getInstance(D1.class)).isNotNull();
+            assertThat(archetype.getInstance(D2.class)).isNotNull();
+            assertThat(archetype.getInstance(D3.class)).isNotNull();
+        }
+
+        static Stream<Arguments> countComponentsSupplier() {
+            return IntStream.of(10, 15, 42, 512)
+                    .mapToObj(i -> components()
+                            .map(args -> Arguments.argumentSet("%d: %s".formatted(i, args.apply(0)), i, args)))
+                    .flatMap(Function.identity());
+        }
+
+        static Stream<Named<?>> componentsSupplier() {
+            return components()
+                    .map(supplier -> Named.of(supplier.apply(0).toString(), supplier));
+        }
+
+        static Stream<IntFunction<Object>> components() {
+            return Stream.of(
+                    i -> new C1(i),
+
+                    i -> Relation.create(new C1(i), new C1(i)),
+                    i -> Relations.create(new C1(i), new C1(i)),
+                    i -> Relations.of(Relation.create(new C1(i), new C1(i)), Relation.create(new C1(i * 10), new C1(i * 10))),
+                    i -> Relation.create(E1.INSTANCE, new C1(i)),
+
+                    i -> Relation.create(new C1(i), i),
+                    i -> Relations.create(new C1(i), i),
+                    i -> Relations.of(Relation.create(new C1(i), i), Relation.create(new C1(i * 10), i * 10)),
+                    i -> Relation.create(E1.INSTANCE, i));
+        }
+
     }
 
-    public record C3() {
+    private class ComponentProvider implements ObjIntConsumer<Object[]> {
+
+        private final List<Object[]> list;
+
+        private ComponentProvider(Object[]... components) {
+            this.list = Arrays.asList(components);
+        }
+
+        @Override
+        public void accept(Object[] components, int idx) {
+            var data = list.get(idx);
+
+            for (int i = 0, s = components.length; i < s; i++) {
+                components[i] = data[i];
+            }
+        }
     }
 
-    public record C4() {
+    public record C1(int value) {
+        public C1() {
+            this(0);
+        }
     }
 
-    public record C5() {
+    public record C2(int value) {
+        public C2() {
+            this(0);
+        }
     }
 
-    public record C6() {
+    public record C3(int value) {
+        public C3() {
+            this(0);
+        }
     }
 
-    public record C7() {
+    public record C4(int value) {
+        public C4() {
+            this(0);
+        }
     }
 
-    public record C8() {
+    public record C5(int value) {
+        public C5() {
+            this(0);
+        }
     }
 
-    public record D1() implements Pooled {
+    public record C6(int value) {
+        public C6() {
+            this(0);
+        }
     }
 
-    public record D2() implements Pooled {
+    public record C7(int value) {
+        public C7() {
+            this(0);
+        }
     }
 
-    public record D3() implements Pooled {
+    public record C8(int value) {
+        public C8() {
+            this(0);
+        }
+    }
+
+    public record D1(int value) implements Pooled {
+        public D1() {
+            this(0);
+        }
+    }
+
+    public record D2(int value) implements Pooled {
+        public D2() {
+            this(0);
+        }
+    }
+
+    public record D3(int value) implements Pooled {
+        public D3() {
+            this(0);
+        }
+    }
+
+    public record D4(int value) implements Pooled {
+        public D4() {
+            this(0);
+        }
+    }
+
+    public record D5(int value) implements Pooled {
+        public D5() {
+            this(0);
+        }
+    }
+
+    public record D6(int value) implements Pooled {
+        public D6() {
+            this(0);
+        }
+    }
+
+    public record D7(int value) implements Pooled {
+        public D7() {
+            this(0);
+        }
     }
 
     public enum E1 {

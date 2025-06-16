@@ -26,7 +26,6 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationDa
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
-import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig.Variant;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
@@ -61,21 +60,7 @@ public class ArchetypeStorageEngine implements StorageEngine {
             throw new StorageEngineException("ArchetypeStorage requires config object of type ArchetypeStorageConfig, but received: " + config);
         }
 
-        // System variable
-        var classIdCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
-        var relationCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT);
-        var variantProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_VARIANT);
-
-        if (classIdCountProp != null || relationCountProp != null || variantProp != null) {
-            var classIdCount = classIdCountProp != null ? Integer.parseInt(classIdCountProp) : ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT;
-            var relationCount = relationCountProp != null ? Integer.parseInt(relationCountProp) : ArchetypeStorageConfig.DEFAULT_RELATION_COUNT;
-            var variant = variantProp != null ? Variant.valueOf(variantProp) : ArchetypeStorageConfig.DEFAULT_VARIANT;
-
-            return new ArchetypeStorageConfig(classIdCount, relationCount, variant);
-        }
-
-        // Default config
-        return ArchetypeStorageConfig.DEFAULT;
+        return ArchetypeStorageConfig.getConfig();
     }
 
     @Override
@@ -156,21 +141,6 @@ public class ArchetypeStorageEngine implements StorageEngine {
     @Override
     public void getComponentMasks(Predicate<ComponentMask> predicate, Bag<ComponentMask> fill) {
         this.entityStorage.getComponentMasks(predicate, fill);
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
-        return this.entityStorage.create(entityId, componentMask, components);
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        return this.entityStorage.create(entityId, componentMask, componentTypes, components);
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
-        return this.entityStorage.create(entityId, componentMask, componentTypes, components);
     }
 
     @Override

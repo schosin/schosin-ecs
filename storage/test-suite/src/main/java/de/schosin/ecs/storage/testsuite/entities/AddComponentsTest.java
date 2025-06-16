@@ -200,7 +200,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var relation1 = Relation.create(new C1(11), new C2(12));
             var relation2 = Relation.create(new C1(12), new C2(22));
 
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             var entityId = world.createEntity();
 
@@ -211,7 +211,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             assertThat(storageEngine.getComponent(relation(C1.class, C2.class)).getComponent(1)).as("Must store relations").containsExactlyInAnyOrder(relation1, relation2);
 
             assertThat(relations).as("must return relations back to the pool").isEmpty();
-            assertThat(Relations.create(Relation.create(new C1(13), new C2(13)))).as("must return relations back to the pool").isSameAs(relations);
+            assertThat(Relations.of(Relation.create(new C1(13), new C2(13)))).as("must return relations back to the pool").isSameAs(relations);
         }
 
         @Test
@@ -220,7 +220,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var relation2 = Relation.create(new C1(12), new C2(12));
             var relation3 = Relation.create(new C1(13), new C2(33));
 
-            var relations = Relations.create(relation2, relation3);
+            var relations = Relations.of(relation2, relation3);
 
             var entityId = world.createEntity(relation1);
 
@@ -235,7 +235,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             assertThat(Relation.create(new C1(4), new C2(4))).as("must return replaced relation back to pool").isSameAs(relation1);
 
             assertThat(relations).as("must return relations back to the pool").isEmpty();
-            assertThat(Relations.create(Relation.create(new C1(13), new C2(13)))).as("must return relations back to the pool").isSameAs(relations);
+            assertThat(Relations.of(Relation.create(new C1(13), new C2(13)))).as("must return relations back to the pool").isSameAs(relations);
         }
 
         @Test
@@ -243,7 +243,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var relation1 = Relation.create(new C1(1), 2);
             var relation2 = Relation.create(new C1(2), 3);
 
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             var entityId = world.createEntity();
 
@@ -254,7 +254,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             assertThat(storageEngine.getComponent(relation(C1.class)).getComponent(1)).as("Must store relations").containsExactlyInAnyOrder(relation1, relation2);
 
             assertThat(relations).as("must return relations back to the pool").isEmpty();
-            assertThat(Relations.create(Relation.create(new C1(13), 3))).as("must return relations back to the pool").isSameAs(relations);
+            assertThat(Relations.of(Relation.create(new C1(13), 3))).as("must return relations back to the pool").isSameAs(relations);
         }
 
         @Test
@@ -263,7 +263,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var relation2 = Relation.create(new C1(2), 2);
             var relation3 = Relation.create(new C1(13), 3);
 
-            var relations = Relations.create(relation2, relation3);
+            var relations = Relations.of(relation2, relation3);
 
             var entityId = world.createEntity(relation1);
 
@@ -278,7 +278,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             assertThat(Relation.create(new C1(4), 4)).as("must return replaced relation back to pool").isSameAs(relation1);
 
             assertThat(relations).as("must return relations back to the pool").isEmpty();
-            assertThat(Relations.create(Relation.create(new C1(14), 4))).as("must return relations back to the pool").isSameAs(relations);
+            assertThat(Relations.of(Relation.create(new C1(14), 4))).as("must return relations back to the pool").isSameAs(relations);
         }
 
     }

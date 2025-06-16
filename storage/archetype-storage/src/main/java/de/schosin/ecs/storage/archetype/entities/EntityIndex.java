@@ -159,20 +159,6 @@ public class EntityIndex {
         pointer.index = index;
     }
 
-    public void createEntity(int entityId, ComponentMaskImpl componentMask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
-        // Lookup pointer
-        var pointer = lookup.getSafe(entityId);
-        if (pointer == null) {
-            pointer = new ArchetypePointer();
-            lookup.set(entityId, pointer);
-        }
-
-        // Determine archetype
-        pointer.archetype = determineArchetype(componentMask);
-
-        // Add entity to archetype
-        pointer.index = pointer.archetype.addEntity(entityId, componentTypes, components);
-    }
 
     private ArchetypeData determineArchetype(ComponentMaskImpl componentMask) {
         var existing = componentMask.getId() < this.archetypes.getSize() ? this.archetypes.get(componentMask.getId()) : null;
@@ -197,8 +183,8 @@ public class EntityIndex {
 
     private ArchetypeData createArchetype(ComponentMaskImpl componentMask) {
         return switch (config.variant()) {
-            case ArrayOfStructs -> new ArchetypeDataImpl(componentIndex, relationIndex, this, componentMask, world);
-            case StructOfArrays -> new ArchetypeDataSoaImpl(componentIndex, relationIndex, this, componentMask, world);
+            case ArrayOfStructs -> new ArchetypeDataImpl(componentIndex, relationIndex, this, componentMask, config, world);
+            case StructOfArrays -> new ArchetypeDataSoaImpl(componentIndex, relationIndex, this, componentMask, config, world);
         };
     }
 

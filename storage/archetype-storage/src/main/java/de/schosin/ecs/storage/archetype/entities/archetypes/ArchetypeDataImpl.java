@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntSupplier;
+import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
@@ -24,6 +26,7 @@ import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.entities.EntityData;
+import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.ComponentMaskImpl;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
@@ -37,6 +40,8 @@ import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 public final class ArchetypeDataImpl implements ArchetypeData {
+
+    private final int creationBatchSize;
 
     private final ComponentIndex componentIndex;
     private final EntityRelationIndex relationIndex;
@@ -62,7 +67,10 @@ public final class ArchetypeDataImpl implements ArchetypeData {
     private final Map<List<RegularComponentType<?, ?>>, EntityDataImpl> entityDataMap = new HashMap<>();
     private final Pool<List<RegularComponentType<?, ?>>> typesPool = Pool.unbounded(List.class, ArrayList::new, List::clear);
 
-    public ArchetypeDataImpl(ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, ComponentMaskImpl componentMask, StorageWorld storageWorld) {
+    public ArchetypeDataImpl(ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, ComponentMaskImpl componentMask, ArchetypeStorageConfig config,
+            StorageWorld world) {
+        this.creationBatchSize = config.creationBatchSize();
+
         this.componentIndex = componentIndex;
         this.relationIndex = relationIndex;
         this.entityIndex = entityIndex;
@@ -96,7 +104,7 @@ public final class ArchetypeDataImpl implements ArchetypeData {
             };
         }
 
-        this.data = storageWorld.createEntityBag(Object[].class);
+        this.data = world.createEntityBag(Object[].class);
         this.entities = new IntBag(64);
         this.immutableEntities = ImmutableIntBag.create(entities);
 
@@ -179,34 +187,65 @@ public final class ArchetypeDataImpl implements ArchetypeData {
     }
 
     @Override
-    public int addEntity(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
-        // Track entity index
-        var index = entities.getSize();
-        this.entities.add(entityId);
+    public void createEntities(int count, IntSupplier entityIdSupplier, ObjIntConsumer<Object[]> componentsConsumer) {
+        var batchSize = creationBatchSize < count ? creationBatchSize : count;
 
-        // Get data array
-        var data = this.data.getSafe(index);
-        if (data == null) {
-            data = new Object[size];
-            this.data.set(index, data);
-        }
+        var entityIds = new int[batchSize];
+        var components = new Object[batchSize][size];
 
-        // Fill data array
-        for (int i = 0, s = components.getSize(); i < s; i++) {
-            // Add component to data
-            var componentType = componentTypes.get(i);
-            var componentId = componentIndex.getId(componentType);
+        var idx = 0;
+        while (count > 0) {
+            var batch = batchSize < count ? batchSize : count;
+            count -= batch;
 
-            var componentIndex = this.componentTypeIds.get(componentId);
-            if (componentIndex == -1) {
-                entityIndex.freeComponent(components.get(i));
-                continue; // removed comonent
+            // Fill batch
+            for (int i = 0; i < batch; i++) {
+                entityIds[i] = entityIdSupplier.getAsInt();
+                componentsConsumer.accept(components[i], idx++);
             }
 
-            adders[componentIndex].add(entityId, data, components.get(i));
+            // Process batch
+            createEntities(entityIds, components, batch);
         }
+    }
 
-        return index;
+    private void createEntities(int[] entityIds, Object[][] components, int count) {
+        synchronized (entities) {
+            for (int i = 0, s = count; i < s; i++) {
+                var index = entities.getSize();
+
+                var entityId = entityIds[i];
+
+                // Validate entity not already in storage
+                var existing = entityIndex.getArchetypeDataForEntity(entityId);
+                if (existing != null) {
+                    throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
+                }
+
+                var entityComponents = components[i];
+
+                // Get data array
+                var data = this.data.getSafe(index);
+                if (data == null) {
+                    data = new Object[size];
+                    this.data.set(index, data);
+                }
+
+                // Add components
+                for (int c = 0; c < size; c++) {
+                    adders[c].add(entityId, data, entityComponents[c]);
+                }
+
+                // Track entity
+                this.entities.add(entityId);
+
+                // Add to EntityIndex
+                entityIndex.add(this, entityId, index);
+
+                // Clear first component to cause error if user does not fill array
+                entityComponents[0] = null;
+            }
+        }
     }
 
     @Override

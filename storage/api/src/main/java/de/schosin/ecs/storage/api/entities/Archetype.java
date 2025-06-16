@@ -1,5 +1,8 @@
 package de.schosin.ecs.storage.api.entities;
 
+import java.util.function.IntSupplier;
+import java.util.function.ObjIntConsumer;
+
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
@@ -30,5 +33,7 @@ public interface Archetype {
     EntityData getEntityData(RegularComponentType<?, ?>... componentTypes);
 
     void createEntity(int entityId, Object[] components);
+
+    void createEntities(int count, IntSupplier entityIdSupplier, ObjIntConsumer<Object[]> componentsConsumer);
 
 }

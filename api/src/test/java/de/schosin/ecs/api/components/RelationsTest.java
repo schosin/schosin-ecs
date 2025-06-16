@@ -20,7 +20,7 @@ class RelationsTest {
             var relation2 = Relation.create(new C1(12), new C2(22));
 
             // Call
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             // Verify
             assertThat(relations).containsExactly(relation1, relation2);
@@ -34,14 +34,14 @@ class RelationsTest {
             var relation1 = Relation.create(E1.A, new C2(21));
             var relation2 = Relation.create(E1.B, new C2(22));
 
-            assertThatThrownBy(() -> Relations.create(relation1, relation2))
+            assertThatThrownBy(() -> Relations.of(relation1, relation2))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContainingAll(E1.class.getSimpleName(), "exclusive relationship");
         }
 
         @Test
         void testCreateEmpty() {
-            assertThatThrownBy(() -> Relations.<ComponentRelation<C1, C2>>create())
+            assertThatThrownBy(() -> Relations.<ComponentRelation<C1, C2>>of())
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("must not be empty");
         }
@@ -51,7 +51,7 @@ class RelationsTest {
             var relation1 = Relation.create(new C1(11), new C2(21));
             var relation2 = Relation.create(new C1(12), new C2(22));
 
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             // Call
             Relations.free(relations);
@@ -60,7 +60,7 @@ class RelationsTest {
             assertThat(relations).isEmpty();
             assertThat(relations.size()).isEqualTo(0);
 
-            assertThat(Relations.create(Relation.create(new C1(13), new C2(23)))).isSameAs(relations);
+            assertThat(Relations.of(Relation.create(new C1(13), new C2(23)))).isSameAs(relations);
 
             assertThat(relation1).as("relation not reset").extracting("relationship.value", "target.value").contains(11, 21);
             assertThat(relation2).as("relation not reset").extracting("relationship.value", "target.value").contains(12, 22);
@@ -77,7 +77,7 @@ class RelationsTest {
             var relation2 = Relation.create(new C1(12), 9001);
 
             // Call
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             // Verify
             assertThat(relations).containsExactly(relation1, relation2);
@@ -91,14 +91,14 @@ class RelationsTest {
             var relation1 = Relation.create(E1.A, 42);
             var relation2 = Relation.create(E1.B, 9001);
 
-            assertThatThrownBy(() -> Relations.create(relation1, relation2))
+            assertThatThrownBy(() -> Relations.of(relation1, relation2))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContainingAll(E1.class.getSimpleName(), "exclusive relationship");
         }
 
         @Test
         void testCreateEmpty() {
-            assertThatThrownBy(() -> Relations.<EntityRelation<C1>>create())
+            assertThatThrownBy(() -> Relations.<EntityRelation<C1>>of())
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("must not be empty");
         }
@@ -108,7 +108,7 @@ class RelationsTest {
             var relation1 = Relation.create(new C1(11), 42);
             var relation2 = Relation.create(new C1(12), 9001);
 
-            var relations = Relations.create(relation1, relation2);
+            var relations = Relations.of(relation1, relation2);
 
             // Call
             Relations.free(relations);
@@ -117,7 +117,7 @@ class RelationsTest {
             assertThat(relations).isEmpty();
             assertThat(relations.size()).isEqualTo(0);
 
-            assertThat(Relations.create(Relation.create(new C1(13), 1337))).isSameAs(relations);
+            assertThat(Relations.of(Relation.create(new C1(13), 1337))).isSameAs(relations);
 
             assertThat(relation1).as("relation not reset").extracting("relationship.value", "target").contains(11, 42);
             assertThat(relation2).as("relation not reset").extracting("relationship.value", "target").contains(12, 9001);

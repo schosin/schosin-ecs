@@ -15,16 +15,6 @@ public sealed interface ArchetypeData extends Archetype permits ArchetypeDataImp
 
     DataAccessor getAccessor(int entityId);
 
-    /**
-     * Add an entity, returning its index.
-     * 
-     * @param id of entity
-     * @param componentTypes component types matching components
-     * @param components components to add
-     * @return index of entity
-     */
-    int addEntity(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components);
-
     int addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,
             ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes2, ImmutableBag<Object> components2);
 

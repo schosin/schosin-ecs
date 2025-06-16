@@ -15,7 +15,6 @@ import com.palantir.javapoet.TypeSpec;
 import com.palantir.javapoet.TypeVariableName;
 
 import de.schosin.ecs.codegen.Utils;
-import de.schosin.ecs.codegen.generators.plugins.archetype.BaseArchetypeGenerator;
 import de.schosin.ecs.codegen.generators.plugins.datatypes.BaseDataTypeGenerator;
 
 public class CompositionPluginGenerator {
@@ -71,7 +70,7 @@ public class CompositionPluginGenerator {
         var compositionData = ParameterizedTypeName.get(COMPOSITION_DATA, TypeVariableName.get("P"));
         var compositionDataD = TypeVariableName.get("D", compositionData);
 
-        var dataType = ParameterizedTypeName.get(BaseArchetypeGenerator.DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataT, processorT);
+        var dataType = ParameterizedTypeName.get(CompositionManagerGenerator.DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataT, processorT);
 
         return MethodSpec.methodBuilder("createComposition")
                 .addJavadoc(Javadoc.CREATE_COMPOSITION)
@@ -121,7 +120,7 @@ public class CompositionPluginGenerator {
 
         var body = CodeBlock.builder();
         body.add("return createComposition(builder, ");
-        body.add("$1T.get(", BaseArchetypeGenerator.DATA_TYPE);
+        body.add("$1T.get(", CompositionManagerGenerator.DATA_TYPE);
 
         for (int i = 1; i <= n; i++) {
             if (i > 1) {
@@ -153,7 +152,7 @@ public class CompositionPluginGenerator {
 
         var body = CodeBlock.builder();
         body.add("return createComposition(builder, ");
-        body.add("$1T.get(", BaseArchetypeGenerator.DATA_TYPE);
+        body.add("$1T.get(", CompositionManagerGenerator.DATA_TYPE);
 
         for (int i = 1; i <= n; i++) {
             if (i > 1) {

@@ -21,13 +21,14 @@ class ArchetypeStorageEngineTest {
         void clearSystemProperty() {
             System.clearProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
             System.clearProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT);
+            System.clearProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE);
             System.clearProperty(ArchetypeStorageConfig.PROPERTY_VARIANT);
         }
 
         @ParameterizedTest
         @EnumSource(Variant.class)
         void testConfigObject(Variant variant) {
-            var config = new ArchetypeStorageConfig(1, 1, variant);
+            var config = new ArchetypeStorageConfig(1, 1, 1, variant);
 
             assertThatCode(() -> World.builder().storageEngine(ArchetypeStorageEngine.class, config).build()).doesNotThrowAnyException();
         }
@@ -46,6 +47,7 @@ class ArchetypeStorageEngineTest {
             var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
             assertThat(config.classIdCount()).isEqualTo(42);
             assertThat(config.relationCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_RELATION_COUNT);
+            assertThat(config.creationBatchSize()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE);
             assertThat(config.variant()).isEqualTo(ArchetypeStorageConfig.DEFAULT_VARIANT);
         }
 
@@ -58,6 +60,20 @@ class ArchetypeStorageEngineTest {
             var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
             assertThat(config.classIdCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT);
             assertThat(config.relationCount()).isEqualTo(9001);
+            assertThat(config.creationBatchSize()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE);
+            assertThat(config.variant()).isEqualTo(ArchetypeStorageConfig.DEFAULT_VARIANT);
+        }
+
+        @Test
+        void testCreationBatchSize() {
+            System.setProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE, "1337");
+
+            assertThatCode(() -> World.builder().storageEngine(ArchetypeStorageEngine.class, null).build()).doesNotThrowAnyException();
+
+            var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
+            assertThat(config.classIdCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT);
+            assertThat(config.relationCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_RELATION_COUNT);
+            assertThat(config.creationBatchSize()).isEqualTo(1337);
             assertThat(config.variant()).isEqualTo(ArchetypeStorageConfig.DEFAULT_VARIANT);
         }
 
@@ -71,6 +87,7 @@ class ArchetypeStorageEngineTest {
             var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
             assertThat(config.classIdCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT);
             assertThat(config.relationCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_RELATION_COUNT);
+            assertThat(config.creationBatchSize()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE);
             assertThat(config.variant()).isEqualTo(variant);
         }
 
@@ -79,6 +96,7 @@ class ArchetypeStorageEngineTest {
         void testAllSystemProperties(Variant variant) {
             System.setProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT, "42");
             System.setProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT, "9001");
+            System.setProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE, "1337");
             System.setProperty(ArchetypeStorageConfig.PROPERTY_VARIANT, variant.name());
 
             assertThatCode(() -> World.builder().storageEngine(ArchetypeStorageEngine.class, null).build()).doesNotThrowAnyException();
@@ -86,6 +104,7 @@ class ArchetypeStorageEngineTest {
             var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
             assertThat(config.classIdCount()).isEqualTo(42);
             assertThat(config.relationCount()).isEqualTo(9001);
+            assertThat(config.creationBatchSize()).isEqualTo(1337);
             assertThat(config.variant()).isEqualTo(variant);
         }
 

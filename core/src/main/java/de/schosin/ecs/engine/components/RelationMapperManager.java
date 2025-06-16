@@ -1,5 +1,7 @@
 package de.schosin.ecs.engine.components;
 
+import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -24,10 +26,10 @@ import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent.RemovedRelationTypeHandler;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
-import de.schosin.ecs.utils.collections.IntBag;
 
 public class RelationMapperManager implements RemovedRelationTypeHandler {
 
@@ -44,7 +46,6 @@ public class RelationMapperManager implements RemovedRelationTypeHandler {
     private final Bag<AbstractEntityRelationMapper<?, ?, ?>> entityRelationMappers;
 
     private ImmutableBag<Component<?, ?>> components;
-    private final IntBag affectedEntities = new IntBag(32);
 
     public RelationMapperManager(StorageEngine engine, EventManager eventManager, BagManager bagManager, ComponentManager componentManager, TransmutationManager transmutationManager) {
         this.engine = engine;
@@ -57,25 +58,16 @@ public class RelationMapperManager implements RemovedRelationTypeHandler {
     }
 
     private void handleEntityRemovedEvent(EntityRemovedEvent event) {
-        affectedEntities.clear();
-
         if (components == null) {
-            this.components = engine.getComponents();
+            this.components = engine.getComponents(wildcardRelation(Object.class));
         }
 
         // Remove relations with entity as target
         for (int i = components.getSize() - 1; i >= 0; i--) {
-            var componentId = components.get(i).id();
-            var mapper = entityRelationMappers.get(componentId);
-            if (mapper == null) {
-                continue;
+            var component = components.get(i);
+            if (component instanceof EntityRelationComponent<?, ?> relationComponent) {
+                relationComponent.removeTarget(event.entityId(), this);
             }
-
-            mapper.removeTarget(event.entityId(), this);
-        }
-
-        if (!affectedEntities.isEmpty()) {
-            throw new IllegalStateException("Error while removing relations with deleted target %d: %d affected entities remaining.".formatted(event.entityId(), affectedEntities.getSize()));
         }
     }
 

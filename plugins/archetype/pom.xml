@@ -17,11 +17,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>de.schosin.ecs.plugins</groupId>
-            <artifactId>ecs-plugins-data-types</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>de.schosin.ecs</groupId>
             <artifactId>ecs-codegen</artifactId>
             <version>${project.version}</version>

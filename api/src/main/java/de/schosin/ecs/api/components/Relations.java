@@ -7,6 +7,7 @@ import java.util.Objects;
 
 import org.jspecify.annotations.NonNull;
 
+import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
@@ -23,10 +24,48 @@ import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRe
 public interface Relations<T extends Relation<?>> extends Result<T> {
 
     /**
-     * Creates an instance of a component relations intended for entity creation.
+     * Creates an instance for a single component relation.
+     * 
+     * <p>
+     * This factory method is intended to be used for creating or modifying entities.
+     * An instance can only be used once. For every entity a new instance has to
+     * be created.
+     * </p>
+     */
+    static <R, T> ComponentRelations<R, T> create(R relationship, T target) {
+        return of(Relation.create(relationship, target));
+    }
+
+    /**
+     * Creates an instance for a single entity relation.
+     * 
+     * <p>
+     * This factory method is intended to be used for creating or modifying entities.
+     * An instance can only be used once. For every entity a new instance has to
+     * be created.
+     * </p>
+     */
+    static <R> EntityRelations<R> create(R relationship, int target) {
+        return of(Relation.create(relationship, target));
+    }
+
+    /**
+     * Creates an instance for the component relations.
+     * 
+     * <p>
+     * This factory method is intended to be used for creating or modifying entities.
+     * An instance can only be used once. For every entity a new instance has to
+     * be created.
+     * </p>
+     * 
+     * <p>
+     * Make sure to not assign the same {@link ComponentRelation relation instances} to multiple entities.
+     * THe same rules apply as with {@link Pooled components}: When a relation 
+     * is removed form an entity or the entity is deleted, the relation will be invalidated.
+     * </p>
      */
     @SafeVarargs
-    static <R, T> ComponentRelations<R, T> create(ComponentRelation<R, T>... relations) {
+    static <R, T> ComponentRelations<R, T> of(ComponentRelation<R, T>... relations) {
         if (relations == null || relations.length == 0) {
             throw new IllegalArgumentException("Relations must not be null or empty");
         }
@@ -35,10 +74,22 @@ public interface Relations<T extends Relation<?>> extends Result<T> {
     }
 
     /**
-     * Creates an instance of a entity relations intended for entity creation.
+     * Creates an instance for the entity relations.
+     * 
+     * <p>
+     * This factory method is intended to be used for creating or modifying entities.
+     * An instance can only be used once. For every entity a new instance has to
+     * be created.
+     * </p>
+     * 
+     * <p>
+     * Make sure to not assign the same {@link EntntityRelation relation instances} to multiple entities.
+     * THe same rules apply as with {@link Pooled components}: When a relation 
+     * is removed form an entity or the entity is deleted, the relation will be invalidated.
+     * </p>
      */
     @SafeVarargs
-    static <R> EntityRelations<R> create(EntityRelation<R>... relations) {
+    static <R> EntityRelations<R> of(EntityRelation<R>... relations) {
         if (relations == null || relations.length == 0) {
             throw new IllegalArgumentException("Relations must not be empty");
         }

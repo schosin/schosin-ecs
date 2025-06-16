@@ -90,10 +90,10 @@ class ComponentTypeTest {
             return Stream.of(
                     Arguments.argumentSet("ClassType", new C1(), component(C1.class)),
                     Arguments.argumentSet("ComponentRelationType", Relation.create(new C1(), new C2(1)), relation(C1.class, C2.class)),
-                    Arguments.argumentSet("ComponentRelations", Relations.create(Relation.create(new C1(), new C2(1)), Relation.create(new C1(), new C2(2))), relation(C1.class, C2.class)),
+                    Arguments.argumentSet("ComponentRelations", Relations.of(Relation.create(new C1(), new C2(1)), Relation.create(new C1(), new C2(2))), relation(C1.class, C2.class)),
                     Arguments.argumentSet("ExclusiveComponentRelationType", Relation.create(ExclusiveComponent.A, new C2(1)), exclusiveRelation(ExclusiveComponent.class, C2.class)),
                     Arguments.argumentSet("EntityRelationType", Relation.create(new C1(), 42), relation(C1.class)),
-                    Arguments.argumentSet("EntityRelations", Relations.create(Relation.create(new C1(), 42), Relation.create(new C1(), 9001)), relation(C1.class)),
+                    Arguments.argumentSet("EntityRelations", Relations.of(Relation.create(new C1(), 42), Relation.create(new C1(), 9001)), relation(C1.class)),
                     Arguments.argumentSet("ExclusiveEntityRelationType", Relation.create(ExclusiveComponent.A, 42), exclusiveRelation(ExclusiveComponent.class)));
         }
 

@@ -1,69 +1,53 @@
 package de.schosin.ecs.plugins.archetype;
 
-import java.util.function.IntFunction;
-
 import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.data.DataProvider;
 import de.schosin.ecs.codegen.EcsCodegen;
+import de.schosin.ecs.plugins.archetype.BaseArchetype.ArchetypeConsumer;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 @NullMarked
 @EcsCodegen
-public interface BaseArchetype<P extends DataProvider<?>> {
+public interface BaseArchetype<C extends ArchetypeConsumer> {
+
+    @FunctionalInterface
+    interface ArchetypeConsumer {
+        void accept(Object[] components, int index, int[] mapping);
+    }
 
     /**
-     * Creates an entity. All components must be non-null.
+     * Creates a single entity. All components passed to the factory must be non-null.
      * 
      * <p>
-     * Example:
+     * Example (Lambda):
      * {@snippet:
      * var entityId = archetype.create(factory -> factory.create(component1, component2));
      * }
      * </p>
      * 
-     * @param provider method accepting a factory, returning the result of invoking the {@code create} method.
+     * @param consumer callback, must invoke {@code factory.create(...)}
      * @return id of entity
      */
-    int create(P provider);
+    int create(C consumer);
 
     /**
-     * Creates a batch of entities. All components must be non-null.
+     * Creates a batch of entities. All components passed to the factory must be non-null.
      * 
      * <p>
      * Example (Lambda):
      * {@snippet:
-     * var entityIds = archetype.createBatch(10, factory -> factory.create(component1, component2));
+     * var entityIds = archetype.createBatch(10, (index, factory) -> factory.create(component1, component2));
      * }
      * </p>
      * 
-     * @param count number of entities
-     * @param provider method accepting a factory, returning the result of invoking the {@code create} method
-     * @return ids of the created entities, instance will be reused after the next {@link World#process()}.
+     * @param count number of entities to create, {@code consumer} will be invoked that many times
+     * @param consumer callback, must invoke {@code factory.create(...)}, {@code index} will range from 0 to {@code count - 1} 
+     * @return id of entity
+     * @return bag of entity ids, instance usable until the next {@link World#process()}
      */
-    default ImmutableIntBag createBatch(int count, P provider) {
-        return createIndexed(count, idx -> provider);
-    }
-
-    /**
-     * Creates a batch of entities. All components must be non-null.
-     * 
-     * <p>
-     * Example (Lambda):
-     * {@snippet:
-     * var entityIds = archetype.createBatch(10, idx -> factory -> factory.create(
-     *         createComponent1(idx), 
-     *         createComponent2(idx)));
-     * }
-     * </p>
-     * 
-     * @param count
-     * @param provider method accepting a zero-based index, returning a method accepting a factory, returning the result of invoking the {@code create} method.
-     * @return ids of the created entities, instance will be reused after the next {@link World#process()}.
-     */
-    ImmutableIntBag createIndexed(int count, IntFunction<P> provider);
+    ImmutableIntBag createBatch(int count, C consumer);
 
     /**
      * Create a new archetype that extends this archetype by adding the passed components to
@@ -82,7 +66,7 @@ public interface BaseArchetype<P extends DataProvider<?>> {
      * @param components components to add to every entity
      * @return new archetype
      */
-    BaseArchetype<P> with(Object... components);
+    BaseArchetype<C> with(Object... components);
 
     /**
      * Returns a pooled instance of the component.

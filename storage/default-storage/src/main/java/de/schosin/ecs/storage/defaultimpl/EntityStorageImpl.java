@@ -195,24 +195,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         }
     }
 
-    @Override
-    public ComponentMask create(int entityId, ComponentMask componentMask, Object[] components) {
-        return componentTypesPool.withInstance(componentTypes -> {
-            detectComponentTypes(componentTypes, components);
-
-            return create(entityId, (ComponentMaskImpl) componentMask, componentTypes, components);
-        });
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        // Validate component mask and types
-        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);
-
-        // Create entity
-        return createEntity(entityId, mask, componentTypes, components);
-    }
-
     public void add(ArchetypeImpl archetype, int entityId) {
         var componentMask = archetype.getComponentMask();
 
@@ -225,58 +207,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         // Track component mask
         this.componentMaskByEntity.set(entityId, componentMask);
         this.archetypeManager.set(entityId, componentMask);
-    }
-
-    private ComponentMask createEntity(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        var componentMask = (ComponentMaskImpl) mask;
-
-        var existing = componentMaskByEntity.get(entityId);
-        if (existing != null) {
-            throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
-        }
-
-        // Set component mask for new entity on existing changes
-        var changes = pendingChanges.get(entityId);
-        if (changes != null) {
-            changes.setComponentMask(componentMask);
-        }
-
-        // Add components
-        componentMask.addComponents(entityId, componentTypes, components);
-
-        // Track component mask
-        this.componentMaskByEntity.set(entityId, componentMask);
-        this.archetypeManager.set(entityId, componentMask);
-
-        return componentMask;
-    }
-
-    @Override
-    public ComponentMask create(int entityId, ComponentMask mask, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, ImmutableBag<Object> components) {
-        var componentMask = (ComponentMaskImpl) mask;
-
-        // Validate component mask and types 
-        validateComponentTypes("Cannot create entity with component mask %d".formatted(mask.getId()), mask, componentTypes, components);
-
-        var existing = componentMaskByEntity.get(entityId);
-        if (existing != null) {
-            throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
-        }
-
-        // Set component mask for new entity on existing changes
-        var changes = pendingChanges.get(entityId);
-        if (changes != null) {
-            changes.setComponentMask(componentMask);
-        }
-
-        // Add components
-        componentMask.addComponents(entityId, componentTypes, components);
-
-        // Track component mask
-        this.componentMaskByEntity.set(entityId, componentMask);
-        this.archetypeManager.set(entityId, componentMask);
-
-        return componentMask;
     }
 
     @Override

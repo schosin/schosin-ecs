@@ -27,10 +27,10 @@ public class EntityRelationIndex {
         this.targets.set(targetId);
 
         // Retrieve related bag
-        var related = lookup.get(targetId);
+        var related = lookup.getSafe(targetId);
         if (related == null) {
             synchronized (lookup) {
-                related = lookup.get(targetId);
+                related = lookup.getSafe(targetId);
                 if (related == null) {
                     related = new IntBag(8);
                     lookup.set(targetId, related);

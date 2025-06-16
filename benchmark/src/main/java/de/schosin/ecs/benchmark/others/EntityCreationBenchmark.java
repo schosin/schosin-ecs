@@ -36,6 +36,19 @@ public class EntityCreationBenchmark {
 
     public static class SchosinEcs extends BaseBenchmark implements SchosinComponents {
 
+        public static void main(String[] args) throws InterruptedException {
+            var benchmark = new SchosinEcs();
+            benchmark.size = 1000000;
+            benchmark.init();
+
+            var bh = new Blackhole("Today's password is swordfish. I understand instantiating Blackholes directly is dangerous.");
+
+            while (true) {
+                benchmark.initInvocation();
+                benchmark.createEntityWith03(bh);
+            }
+        }
+
         @Param({ "1000000" })
         private int size;
 
@@ -93,53 +106,33 @@ public class EntityCreationBenchmark {
 
         @Benchmark
         public void createEntityWith01(Blackhole bh) {
-            for (int i = 0; i < size; i++) {
-                bh.consume(entities[i] = archetype1.create(new Schosin1()));
-            }
-        }
-
-        @Benchmark
-        public void createEntityWith01_Batched(Blackhole bh) {
             bh.consume(entitiesBag = archetype1.createBatch(size, () -> new Schosin1()));
         }
 
         @Benchmark
-        public void createEntityWith01_BatchedPooled(Blackhole bh) {
+        public void createEntityWith01_Pooled(Blackhole bh) {
             bh.consume(entitiesBag = pooled1.createBatch(size, () -> pooled1.getInstance(Pooled1.class)));
         }
 
         @Benchmark
         public void createEntityWith03(Blackhole bh) {
-            for (int i = 0; i < size; i++) {
-                bh.consume(entities[i] = archetype3.create(new Schosin1(), new Schosin2(), new Schosin3()));
-            }
+            bh.consume(entitiesBag = archetype3.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3())));
         }
 
         @Benchmark
-        public void createEntityWith03_Batched(Blackhole bh) {
-            bh.consume(entitiesBag = archetype3.createBatch(size, init -> init.create(new Schosin1(), new Schosin2(), new Schosin3())));
-        }
-
-        @Benchmark
-        public void createEntityWith03_BatchedPooled(Blackhole bh) {
-            bh.consume(entitiesBag = pooled3.createBatch(size, init -> init.create(pooled3.getInstance(Pooled1.class), pooled3.getInstance(Pooled2.class), pooled3.getInstance(Pooled3.class))));
+        public void createEntityWith03_Pooled(Blackhole bh) {
+            bh.consume(entitiesBag = pooled3.createBatch(size,
+                    (i, factory) -> factory.create(pooled3.getInstance(Pooled1.class), pooled3.getInstance(Pooled2.class), pooled3.getInstance(Pooled3.class))));
         }
 
         @Benchmark
         public void createEntityWith06(Blackhole bh) {
-            for (int i = 0; i < size; i++) {
-                bh.consume(entities[i] = archetype6.create(new Schosin1(), new Schosin2(), new Schosin3(), new Schosin4(), new Schosin5(), new Schosin6()));
-            }
+            bh.consume(entitiesBag = archetype6.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3(), new Schosin4(), new Schosin5(), new Schosin6())));
         }
 
         @Benchmark
-        public void createEntityWith06_Batched(Blackhole bh) {
-            bh.consume(entitiesBag = archetype6.createBatch(size, init -> init.create(new Schosin1(), new Schosin2(), new Schosin3(), new Schosin4(), new Schosin5(), new Schosin6())));
-        }
-
-        @Benchmark
-        public void createEntityWith06_BatchedPooled(Blackhole bh) {
-            bh.consume(entitiesBag = pooled6.createBatch(size, init -> init.create(
+        public void createEntityWith06_Pooled(Blackhole bh) {
+            bh.consume(entitiesBag = pooled6.createBatch(size, (i, factory) -> factory.create(
                     pooled6.getInstance(Pooled1.class), pooled6.getInstance(Pooled2.class), pooled6.getInstance(Pooled3.class),
                     pooled6.getInstance(Pooled4.class), pooled6.getInstance(Pooled5.class), pooled6.getInstance(Pooled6.class))));
         }

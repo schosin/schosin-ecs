@@ -66,6 +66,62 @@ class RelationTest {
         }
 
         @Test
+        void testRelationRelationship() {
+            var inner1 = Relation.create(Component1.A, Component2.A);
+            var inner2 = Relation.create(Component1.A, 42);
+
+            assertThatThrownBy(() -> Relation.create(inner1, Component2.A))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relation as relationship", inner1.toString());
+
+            assertThatThrownBy(() -> Relation.create(inner2, Component2.A))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relation as relationship", inner2.toString());
+        }
+
+        @Test
+        void testRelationsRelationship() {
+            var inner1 = Relations.create(Component1.A, Component2.A);
+            var inner2 = Relations.create(Component1.A, 42);
+
+            assertThatThrownBy(() -> Relation.create(inner1, Component2.A))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relations as relationship", inner1.toString());
+
+            assertThatThrownBy(() -> Relation.create(inner2, Component2.A))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relations as relationship", inner2.toString());
+        }
+
+        @Test
+        void testRelationTarget() {
+            var inner1 = Relation.create(Component1.A, Component2.A);
+            var inner2 = Relation.create(Component1.A, 42);
+
+            assertThatThrownBy(() -> Relation.create(Component2.A, inner1))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relation as target", inner1.toString());
+
+            assertThatThrownBy(() -> Relation.create(Component2.A, inner2))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relation as target", inner2.toString());
+        }
+
+        @Test
+        void testRelationsTarget() {
+            var inner1 = Relations.create(Component1.A, Component2.A);
+            var inner2 = Relations.create(Component1.A, 42);
+
+            assertThatThrownBy(() -> Relation.create(Component2.A, inner1))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relations as target", inner1.toString());
+
+            assertThatThrownBy(() -> Relation.create(Component2.A, inner2))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relations as target", inner2.toString());
+        }
+
+        @Test
         void testFree() {
             var relation = Relation.create(Component1.A, Component2.A);
 
@@ -128,6 +184,34 @@ class RelationTest {
 
             assertThat(relation.relationship()).isSameAs(ExclusiveRelationshipComponent.A);
             assertThat(relation.target()).isEqualTo(42);
+        }
+
+        @Test
+        void testRelationRelationship() {
+            var inner1 = Relation.create(Component1.A, Component2.A);
+            var inner2 = Relation.create(Component1.A, 42);
+
+            assertThatThrownBy(() -> Relation.create(inner1, 42))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relation as relationship", inner1.toString());
+
+            assertThatThrownBy(() -> Relation.create(inner2, 42))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relation as relationship", inner2.toString());
+        }
+
+        @Test
+        void testRelationsRelationship() {
+            var inner1 = Relations.create(Component1.A, Component2.A);
+            var inner2 = Relations.create(Component1.A, 42);
+
+            assertThatThrownBy(() -> Relation.create(inner1, 42))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relations as relationship", inner1.toString());
+
+            assertThatThrownBy(() -> Relation.create(inner2, 42))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContainingAll("Cannot use Relations as relationship", inner2.toString());
         }
 
         @Test
