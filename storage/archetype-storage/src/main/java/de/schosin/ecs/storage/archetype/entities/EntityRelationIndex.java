@@ -1,7 +1,6 @@
 package de.schosin.ecs.storage.archetype.entities;
 
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
@@ -21,20 +20,7 @@ public class EntityRelationIndex {
         this.lookup = world.createEntityBag(IntBag.class);
     }
 
-    public void add(int entityId, RegularEntityRelationType<?, ?> relationType, Object component) {
-        switch (relationType) {
-            case EntityRelationType<?> type -> add(entityId, (EntityRelations<?>) component);
-            case ExclusiveEntityRelationType<?> type -> add(entityId, (EntityRelation<?>) component);
-        }
-    }
-
-    private void add(int entityId, EntityRelations<?> relations) {
-        for (int i = 0, s = relations.size(); i < s; i++) {
-            add(entityId, relations.get(i));
-        }
-    }
-
-    private void add(int entityId, EntityRelation<?> relation) {
+    public void add(int entityId, EntityRelation<?> relation) {
         var targetId = relation.target();
 
         // Add to bit vector for fast lookup

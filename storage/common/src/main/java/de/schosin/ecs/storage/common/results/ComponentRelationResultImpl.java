@@ -13,7 +13,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @SuppressWarnings("rawtypes")
-public class ComponentRelationResultImpl implements ComponentRelations, Pooled {
+public final class ComponentRelationResultImpl implements ComponentRelations, StorageRelationResult<ComponentRelation<?, ?>>, Pooled {
 
     private static final Pool<ComponentRelationResultImpl> POOL = Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new);
 
@@ -30,6 +30,7 @@ public class ComponentRelationResultImpl implements ComponentRelations, Pooled {
         POOL.free(this);
     }
 
+    @Override
     public synchronized void add(ComponentRelation<?, ?> relation) {
         var data = relations.getData();
         for (int i = 0, s = relations.getSize(); i < s; i++) {
@@ -45,6 +46,7 @@ public class ComponentRelationResultImpl implements ComponentRelations, Pooled {
         this.relations.add(relation);
     }
 
+    @Override
     public ComponentRelation<?, ?> removeLast() {
         return this.relations.removeLast();
     }

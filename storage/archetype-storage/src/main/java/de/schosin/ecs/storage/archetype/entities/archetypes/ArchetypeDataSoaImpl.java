@@ -5,21 +5,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.schosin.ecs.api.Pooled;
+import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relations;
-import de.schosin.ecs.api.components.Relations.ComponentRelations;
-import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.types.RelationComponentType.RegularComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.api.data.IterableAccessor;
+import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.entities.EntityData;
@@ -30,6 +30,7 @@ import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
 import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
+import de.schosin.ecs.storage.common.results.StorageRelationResult;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
@@ -39,7 +40,7 @@ import de.schosin.ecs.utils.collections.Pool;
 /**
  * Auto-growing "Struct of arrays" implementation of {@link ArchetypeData}.
  */
-public class ArchetypeDataSoaImpl implements ArchetypeData {
+public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     private final ComponentIndex componentIndex;
     private final EntityRelationIndex relationIndex;
@@ -50,6 +51,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
     private final Bag<RegularComponentType<?, ?>> componentTypes;
     private final IntBag componentTypeIds;
 
+    private final ComponentAdder<?>[] adders;
     private final Bag<RegularEntityRelationType<?, ?>> entityRelationTypes;
 
     // data.get(index)[componentId] // index tracked by EntityIndex
@@ -73,12 +75,14 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
 
         this.componentMask = componentMask;
         this.componentTypes = new Bag<>(componentMask.getComponentTypes());
+        this.size = componentTypes.getSize();
 
-        this.entityRelationTypes = new Bag<>(RegularEntityRelationType.class, componentMask.getComponentTypes().getSize());
+        this.adders = new ComponentAdder<?>[size];
+        this.entityRelationTypes = new Bag<>(RegularEntityRelationType.class, size);
 
         this.componentTypeIds = componentIndex.createIntBag();
 
-        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
+        for (int i = 0; i < size; i++) {
             var componentType = componentTypes.get(i);
 
             var componentId = componentIndex.getId(componentType);
@@ -87,10 +91,17 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             if (componentType instanceof RegularEntityRelationType<?, ?> relationType) {
                 this.entityRelationTypes.set(i, relationType);
             }
+
+            this.adders[i] = switch (componentType) {
+                case ClassType<?> type -> new ClassTypeAdder(type, i);
+                case ComponentRelationType<?, ?> type -> new RelationsAdder(type, i);
+                case ExclusiveComponentRelationType<?, ?> type -> new RelationAdder(type, i);
+                case EntityRelationType<?> type -> new RelationsAdder(type, i);
+                case ExclusiveEntityRelationType<?> type -> new RelationAdder(type, i);
+            };
         }
 
         this.entities = new IntBag(64);
-        this.size = componentTypes.getSize();
 
         this.pendingChanges = new Bag<>(PendingChanges.class, 1024);
         this.entityData = getEntityData(Arrays.copyOf(componentTypes.getData(), componentTypes.getSize()));
@@ -218,7 +229,6 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         // Fill data array
         for (int i = 0, s = components.getSize(); i < s; i++) {
             // Add component to data
-            var componentType = componentTypes.get(i);
             var componentId = componentIds.get(i);
 
             var componentIndex = this.componentTypeIds.get(componentId);
@@ -227,13 +237,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 continue; // removed comonent
             }
 
-            var component = addComponent(index, componentIndex, componentType, components.get(i));
-
-            // Track entity relations
-            var relationType = this.entityRelationTypes.get(componentIndex);
-            if (relationType != null) {
-                relationIndex.add(entityId, relationType, component);
-            }
+            adders[componentIndex].add(entityId, index, components.get(i));
         }
 
         intBagPool.free(componentIds);
@@ -262,7 +266,6 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
         // Fill data array (components 1)
         for (int i = 0, s = components.getSize(); i < s; i++) {
             // Add component to data
-            var componentType = componentTypes.get(i);
             var componentId = componentIds.get(i);
 
             var componentIndex = this.componentTypeIds.get(componentId);
@@ -271,19 +274,12 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 continue; // removed comonent
             }
 
-            var component = addComponent(index, componentIndex, componentType, components.get(i));
-
-            // Track entity relations
-            var relationType = this.entityRelationTypes.get(componentIndex);
-            if (relationType != null) {
-                relationIndex.add(entityId, relationType, component);
-            }
+            adders[componentIndex].add(entityId, index, components.get(i));
         }
 
         // Fill data array (components 2)
         for (int i = 0, s = components2.getSize(); i < s; i++) {
             // Add component to data
-            var componentType = componentTypes2.get(i);
             var componentId = componentIds2.get(i);
 
             var componentIndex = this.componentTypeIds.get(componentId);
@@ -292,13 +288,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 continue; // removed comonent
             }
 
-            var component = addComponent(index, componentIndex, componentType, components2.get(i));
-
-            // Track entity relations
-            var relationType = this.entityRelationTypes.get(componentIndex);
-            if (relationType != null) {
-                relationIndex.add(entityId, relationType, component);
-            }
+            adders[componentIndex].add(entityId, index, components2.get(i));
         }
 
         intBagPool.free(componentIds);
@@ -326,13 +316,7 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                 var componentId = componentIndex.getId(componentType);
                 var componentIndex = this.componentTypeIds.get(componentId);
 
-                var result = addComponent(index, componentIndex, componentType, component);
-
-                // Track entity relations
-                var relationType = this.entityRelationTypes.get(componentIndex);
-                if (relationType != null) {
-                    relationIndex.add(entityId, relationType, result);
-                }
+                adders[componentIndex].add(entityId, index, component);
             }
         }
     }
@@ -349,139 +333,6 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
             var componentType = componentTypes.get(i);
             changes.remove(componentType);
         }
-    }
-
-    private Object addComponent(int index, int componentIndex, RegularComponentType<?, ?> componentType, Object component) {
-        return switch (component) {
-            case ComponentRelationResultImpl relations -> moveRelations(index, componentIndex, relations);
-            case ComponentRelations<?, ?> relations -> addRelations(index, componentIndex, relations);
-            case ComponentRelation<?, ?> relation -> addRelation(index, componentIndex, (RegularComponentRelationType<?, ?, ?>) componentType, relation);
-            case EntityRelationResultImpl relations -> moveRelations(index, componentIndex, relations);
-            case EntityRelations<?> relations -> addRelations(index, componentIndex, relations);
-            case EntityRelation<?> relation -> addRelation(index, componentIndex, (RegularEntityRelationType<?, ?>) componentType, relation);
-            default -> {
-                data[componentIndex].set(index, component);
-                yield component;
-            }
-        };
-    }
-
-    private Object moveRelations(int index, int componentIndex, ComponentRelationResultImpl relations) {
-        var componentData = data[componentIndex];
-
-        var result = (ComponentRelationResultImpl) componentData.get(index);
-        if (result == null) {
-            result = ComponentRelationResultImpl.getInstance();
-            componentData.set(index, result);
-        }
-
-        // Copy data over as relations will be freed
-        while (!relations.isEmpty()) {
-            result.add(relations.removeLast());
-        }
-
-        return result;
-    }
-
-    private Object addRelations(int index, int componentIndex, ComponentRelations<?, ?> relations) {
-        var componentData = data[componentIndex];
-
-        var result = (ComponentRelationResultImpl) componentData.get(index);
-        if (result == null) {
-            result = ComponentRelationResultImpl.getInstance();
-            componentData.set(index, result);
-        }
-
-        // Copy data over as relations will be freed
-        for (int i = 0, s = relations.size(); i < s; i++) {
-            result.add(relations.get(i));
-        }
-
-        // Free relations
-        Relations.free(relations);
-
-        return result;
-    }
-
-    private Object addRelation(int index, int componentIndex, RegularComponentRelationType<?, ?, ?> relationType, ComponentRelation<?, ?> relation) {
-        var componentData = data[componentIndex];
-
-        return switch (relationType) {
-            case ComponentRelationType<?, ?> type -> {
-                var relations = (ComponentRelationResultImpl) componentData.get(index);
-                if (relations == null) {
-                    relations = ComponentRelationResultImpl.getInstance();
-                    componentData.set(index, relations);
-                }
-
-                relations.add(relation);
-
-                yield relations;
-            }
-            case ExclusiveComponentRelationType<?, ?> type -> {
-                componentData.set(index, relation);
-                yield relation;
-            }
-        };
-    }
-
-    private Object moveRelations(int index, int componentIndex, EntityRelationResultImpl relations) {
-        var componentData = data[componentIndex];
-
-        var result = (EntityRelationResultImpl) componentData.get(index);
-        if (result == null) {
-            result = EntityRelationResultImpl.getInstance();
-            componentData.set(index, result);
-        }
-
-        // Copy data over as relations will be freed
-        while (!relations.isEmpty()) {
-            result.add(relations.removeLast());
-        }
-
-        return result;
-    }
-
-    private Object addRelations(int index, int componentIndex, EntityRelations<?> relations) {
-        var componentData = data[componentIndex];
-
-        var result = (EntityRelationResultImpl) componentData.get(index);
-        if (result == null) {
-            result = EntityRelationResultImpl.getInstance();
-            componentData.set(index, result);
-        }
-
-        // Copy data over as relations will be freed
-        for (int i = 0, s = relations.size(); i < s; i++) {
-            result.add(relations.get(i));
-        }
-
-        // Free relations
-        Relations.free(relations);
-
-        return result;
-    }
-
-    private Object addRelation(int index, int componentIndex, RegularEntityRelationType<?, ?> relationType, EntityRelation<?> relation) {
-        var componentData = data[componentIndex];
-
-        return switch (relationType) {
-            case EntityRelationType<?> type -> {
-                var relations = (EntityRelationResultImpl) componentData.get(index);
-                if (relations == null) {
-                    relations = EntityRelationResultImpl.getInstance();
-                    componentData.set(index, relations);
-                }
-
-                relations.add(relation);
-
-                yield relations;
-            }
-            case ExclusiveEntityRelationType<?> type -> {
-                componentData.set(index, relation);
-                yield relation;
-            }
-        };
     }
 
     @Override
@@ -746,6 +597,117 @@ public class ArchetypeDataSoaImpl implements ArchetypeData {
                         .append(")").toString();
             }
 
+        }
+
+    }
+
+    private sealed abstract class ComponentAdder<T extends RegularComponentType<?, ?>> {
+
+        protected final T componentType;
+        protected final int componentIndex;
+
+        protected ComponentAdder(T componentType, int componentIndex) {
+            this.componentType = componentType;
+            this.componentIndex = componentIndex;
+        }
+
+        public final void add(int entityId, int index, Object component) {
+            if (!componentType.isInstance(component)) {
+                throw new StorageEngineException("Expected component type '%s' at index %d, but was '%s'".formatted(componentType, componentIndex, component));
+            }
+
+            store(entityId, index, component);
+        }
+
+        protected abstract void store(int entityId, int index, Object component);
+    }
+
+    private final class ClassTypeAdder extends ComponentAdder<RegularComponentType<?, ?>> {
+
+        protected ClassTypeAdder(RegularComponentType<?, ?> componentType, int componentIndex) {
+            super(componentType, componentIndex);
+        }
+
+        @Override
+        protected void store(int entityId, int index, Object component) {
+            data[componentIndex].set(index, component);
+        }
+
+    }
+
+    private final class RelationAdder extends ComponentAdder<RelationComponentType<?, ?, ?>> {
+
+        private final boolean entityType;
+
+        protected RelationAdder(RelationComponentType<?, ?, ?> componentType, int componentIndex) {
+            super(componentType, componentIndex);
+
+            this.entityType = componentType instanceof ExclusiveEntityRelationType<?>;
+        }
+
+        @Override
+        protected void store(int entityId, int index, Object component) {
+            data[componentIndex].set(index, component);
+
+            if (entityType) {
+                relationIndex.add(entityId, (EntityRelation<?>) component);
+            }
+        }
+
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private final class RelationsAdder extends ComponentAdder<RelationComponentType<?, ?, ?>> {
+
+        private final boolean entityType;
+
+        protected RelationsAdder(RelationComponentType<?, ?, ?> componentType, int componentIndex) {
+            super(componentType, componentIndex);
+
+            this.entityType = componentType instanceof EntityRelationType<?>;
+        }
+
+        @Override
+        protected void store(int entityId, int index, Object component) {
+            // Prepare storage data
+            var relations = (StorageRelationResult) data[componentIndex].getSafe(index);
+            if (relations == null) {
+                relations = StorageRelationResult.getInstance(componentType);
+                data[componentIndex].set(index, relations);
+            }
+
+            switch (component) {
+                case StorageRelationResult<?> other -> store(entityId, relations, other);
+                case Relations<?> other -> store(entityId, relations, other);
+                case Relation<?> relation -> store(entityId, relations, relation);
+                case null -> throw new IllegalArgumentException("Cannot add null component to relations");
+                default -> throw new IllegalArgumentException("Cannot add component of type '%s' to relations: %s".formatted(component.getClass().getName(), component));
+            }
+        }
+
+        private void store(int entityId, StorageRelationResult relations, StorageRelationResult<?> other) {
+            // Move relations over
+            while (!other.isEmpty()) {
+                store(entityId, relations, other.removeLast());
+            }
+        }
+
+        private void store(int entityId, StorageRelationResult relations, Relations<?> other) {
+            // Add relations
+            for (int i = 0, s = other.size(); i < s; i++) {
+                store(entityId, relations, other.get(i));
+            }
+
+            // Free relations
+            Relations.free(other);
+        }
+
+        private void store(int entityId, StorageRelationResult relations, Relation<?> relation) {
+            relations.add(relation);
+
+            if (entityType) {
+                relationIndex.add(entityId, (EntityRelation<?>) relation);
+            }
         }
 
     }

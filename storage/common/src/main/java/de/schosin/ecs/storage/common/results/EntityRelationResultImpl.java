@@ -12,7 +12,7 @@ import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
 @SuppressWarnings("rawtypes")
-public class EntityRelationResultImpl implements EntityRelations, Pooled {
+public final class EntityRelationResultImpl implements EntityRelations, StorageRelationResult<EntityRelation<?>>, Pooled {
 
     private static final Pool<EntityRelationResultImpl> POOL = Pool.unbounded(EntityRelationResultImpl.class, EntityRelationResultImpl::new);
 
@@ -30,6 +30,7 @@ public class EntityRelationResultImpl implements EntityRelations, Pooled {
         POOL.free(this);
     }
 
+    @Override
     public synchronized void add(EntityRelation<?> relation) {
         targetLookup.set(relation.target(), relation);
 
@@ -57,6 +58,7 @@ public class EntityRelationResultImpl implements EntityRelations, Pooled {
         this.relations.remove(relation);
     }
 
+    @Override
     public EntityRelation<?> removeLast() {
         return this.relations.removeLast();
     }
