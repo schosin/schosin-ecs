@@ -17,14 +17,18 @@ of the java ecosystem like [Flecs](https://github.com/SanderMertens/flecs).
 - Extendable API using an interface based plugins
 - Multiple types of components, including POJOs, relations and component sets
 - Powerful query API for matching entities and fetching components
-- Performance optimizations to reduce heap allocations and GC pressure
+- Performance optimizations with improved memory locality, pooling and a configurable storage abstraction
 
 ### Getting started
 
 The framework is still work-in-progress and as such no artifacts are published yet. To start with the framework,
 clone this repository and build the library before using it.
 
-See the [examples module](examples/) on how the framework can be used.
+It is highly recommended to start with the [examples](examples/simple) to get an understanding for how the
+library works. There is no documentation yet, so these examples are all there is for now.
+
+> [!NOTE]
+> It is planned to add nightly builds to Github packages in the short term. See #23.
 
 #### Build the library
 

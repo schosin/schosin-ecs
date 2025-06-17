@@ -2,10 +2,10 @@
 
 This module contains a bunch of examples using the library.
 
-### simple
+### [simple](/examples/simple)
 
 Contains examples of working with entities and simple components, showcasing some of the features of the library.
 
-### libgdx
+### [libgdx](/examples/libgdx)
 
 Contains examples with a GUI using [LibGDX](https://github.com/libgdx/libgdx).

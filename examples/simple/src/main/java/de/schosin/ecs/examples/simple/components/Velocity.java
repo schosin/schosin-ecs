@@ -1,4 +1,4 @@
-package de.schosin.ecs.examples.simple.compositions;
+package de.schosin.ecs.examples.simple.components;
 
 public class Velocity {
 

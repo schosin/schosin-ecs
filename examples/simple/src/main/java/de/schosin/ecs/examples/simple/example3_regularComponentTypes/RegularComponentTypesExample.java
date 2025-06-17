@@ -3,28 +3,50 @@ package de.schosin.ecs.examples.simple.example3_regularComponentTypes;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.mappers.Components.RegularComponents;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.examples.simple.AbstractExample;
-import de.schosin.ecs.examples.simple.compositions.Position;
+import de.schosin.ecs.examples.simple.components.Birth;
+import de.schosin.ecs.examples.simple.components.Birthplace;
+import de.schosin.ecs.examples.simple.components.FavoriteMedia;
+import de.schosin.ecs.examples.simple.components.FavoritePlushy;
+import de.schosin.ecs.examples.simple.components.Location;
+import de.schosin.ecs.examples.simple.components.Parent;
+import de.schosin.ecs.examples.simple.components.Position;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData2;
+import de.schosin.ecs.worlds.DefaultWorld;
 
 /**
+ * Up until now we have only dealth with {@link Class Class&lt;?&gt;} when working with components.
+ * This example will explain the concept of {@link ComponentType} and in particular
+ * {@link RegularComponentType}.
+ * 
+ * <p>
+ * When we used {@link DefaultWorld#createComposition(Composition.Builder, Class) world.createComposition(Composition.all(), Position.class)}
+ * in the previous example (see composition "all") it is actually forwarded to
+ * {@link DefaultWorld#createComposition(Composition.Builder, ComponentType)}.
+ * 
+ * <p>
+ * A {@link ComponentType} describes the "shapes" of a component. This example will explain all {@link RegularComponentType RegularComponentTypes}
+ * in detail. <b>Spoiler:</b> {@link Class Class&lt;Position&gt;} gets converted to {@link ClassType ClassType&lt;Position&gt;} 
+ * 
+ * <p>
  * <b>Notes:</b> 
  * 
  * <p>
@@ -111,6 +133,9 @@ public class RegularComponentTypesExample extends AbstractExample {
             // When used as a component type, the type argument is assigned to both T (write) and R (read)
             ComponentType<Position, Position> componentType = classType;
 
+            // As it is a regular component type, it can also be assigned to that. The type parameters don't differ from ComponentType.
+            RegularComponentType<Position, Position> regualarComponentType = classType;
+
             /*
              * When creating a new entity, the library will analyze its components and detect the correct
              * component type. For the simple POJO Position, ClassType<Position> will be detected and used.
@@ -144,6 +169,24 @@ public class RegularComponentTypesExample extends AbstractExample {
             {
                 Position position = mapper.get(entityId);
                 System.out.println("Position - (%2d, %2d)".formatted(position.x, position.y));
+            }
+
+            /*
+             * There's also RegularComponents which match regular component types.
+             * 
+             * These also allow adding components to entities, which is not supported on Components.
+             */
+            RegularComponents<Position, Position> regularComponents = mapper;
+            {
+                int otherEntityId = world.createEntity();
+
+                // Entity does not have the component, so it will be null
+                System.out.println("Before add: %s".formatted(regularComponents.get(otherEntityId)));
+
+                regularComponents.add(otherEntityId, new Position(10, 20));
+
+                // The component will be available immediately, the "delay" from previous examples (almost) only affects callback methods of composition
+                System.out.println("After add: %s".formatted(regularComponents.get(otherEntityId)));
             }
 
             /*
@@ -773,7 +816,7 @@ public class RegularComponentTypesExample extends AbstractExample {
             int entity1 = world.createEntity(Relation.create(Parent.Mother, mother1), Relation.create(Parent.Father, father1));
             int entity2 = world.createEntity(Relation.create(Parent.Mother, mother2));
 
-            var entity3 = world.createEntity(Relation.create(new FavoriteMedia("It's over 9000!"), oldbody));
+            var entity3 = world.createEntity(Relation.create(new FavoriteMedia("It's over 9000!"), dragonballId));
 
             var entity4 = world.createEntity(
                     Relation.create(Parent.Mother, mother1), Relation.create(Parent.Father, father2),
@@ -809,36 +852,4 @@ public class RegularComponentTypesExample extends AbstractExample {
 
     }
 
-}
-
-enum Location {
-    Start, End
-}
-
-enum Birthplace implements Exclusive {
-    Birthplace
-}
-
-class Birth implements Exclusive {
-    int year;
-
-    public Birth(int year) {
-        this.year = year;
-    }
-}
-
-enum Parent {
-    Father, Mother
-}
-
-enum FavoritePlushy implements Exclusive {
-    FavoritePlushy
-}
-
-class FavoriteMedia implements Exclusive {
-    String quote;
-
-    public FavoriteMedia(String quote) {
-        this.quote = quote;
-    }
 }
