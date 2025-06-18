@@ -15,6 +15,17 @@
             <groupId>de.schosin.ecs</groupId>
             <artifactId>ecs-worlds</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+            	<exclusion>
+            		<groupId>de.schosin.ecs.storage</groupId>
+            		<artifactId>*</artifactId>
+            	</exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>de.schosin.ecs.storage</groupId>
+            <artifactId>ecs-storage-archetype-storage</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
     
