@@ -66,7 +66,7 @@ public class ComponentSetExample extends AbstractExample {
      * In fact, its signature is almost identical to 
      * {@link PhysicsExample#physicsSystem(int, Position, Velocity, Acceleration) physicsSystem from the previous one}.
      * 
-     * It's only missing the {@link Acceleration} parater! Try it, just add an {@link Acceleration} parameter.
+     * It's only missing the {@link Acceleration} parameter! Try it, just add an {@link Acceleration} parameter.
      * It might seem like not much is happening, but we will get to that later. 
      * 
      * You can leave the acceleration parameter if you want, or remove it. Up to you.

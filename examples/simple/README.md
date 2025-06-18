@@ -6,6 +6,12 @@ These are in a sequential order and later examples build on top of the previous 
 They all contain a single class with a main method that can be executed. 
 They are intended to be read from top to bottom unless otherwise stated.
 
+> [!NOTE]
+> The early examples use the word "system" without actually implementing systems
+> as used in libraries like artemis-odb.
+> 
+> Example 8 will expand further on what a system could actually look like using this librariy.
+
 ### Annotation processing
 
 > [!IMPORTANT]
