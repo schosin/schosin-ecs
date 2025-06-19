@@ -45,6 +45,9 @@ import de.schosin.ecs.worlds.DefaultWorld;
 public class SystemsExample {
     static final Random RNG = new Random();
 
+    /**
+     * Every example has its own main method, so you can also just run a single one.
+     */
     public static void main(String[] args) {
         SimpleSystems.main(args);
         CompositionSystems.main(args);
@@ -60,7 +63,7 @@ public class SystemsExample {
  * The goal is to show that implementing systems yourself must not be difficult.
  * 
  * We will work our way up to more and more sophisticated systems. If you want to,
- * you can jump straight to the last examples.
+ * you can jump straight to the {@link SystemHierarchy last examples}.
  */
 @SuppressWarnings("unused")
 class SimpleSystems {
@@ -122,6 +125,8 @@ class SimpleSystems {
     }
 
     /**
+     * Simple, sequential invocation strategy.
+     * 
      * record is used for its brevity.
      */
     record RunnableSystemInvocation(DefaultWorld world, Runnable[] systems) {
@@ -138,7 +143,7 @@ class SimpleSystems {
 
 /**
  * In this example we will explore how systems can work with the {@link DefaultWorld},
- * accessing information about entities or create and use {@link Composition compositions}.
+ * accessing components or creating and using {@link Composition compositions}.
  * 
  * We will still stick to {@link Runnable} as the base type of a system and use the same
  * invocation strategy. We're just interested in making systems more interesting in this example.
@@ -221,7 +226,7 @@ class CompositionSystems {
      * This is a bit more sophisticated. Here we use the world to retrieve a composition that
      * will be used in {@link #run()}.
      * 
-     * Using a component set here allows us to the record brief and makes for nice, clean code. 
+     * Using a component set here allows us to the keep it brief and makes for nice, clean code. 
      * 
      * Once again, "composition" would be a final field in a regular class.
      */
@@ -255,10 +260,11 @@ class CompositionSystems {
     }
 
     /**
-     * Same as {@link System2}, but this time we also implement {@link CompositionSystemsSet.Processor}.
+     * Same as {@link System2}, but this time we also implement the generated {@link CompositionSystemsSet.Processor}.
      * 
      * That allows us to pass "this" to {@link ComponentSet#process(DataProcessor)}, removing the need
-     * for the JVM t
+     * for the JVM to create and invoke a lambda. You can see the difference when running this example in the
+     * printed stack traces.
      */
     record System3(CompositionSet<CompositionSystemsSet.Processor> composition) implements Runnable, CompositionSystemsSet.Processor {
 
@@ -289,6 +295,9 @@ class CompositionSystems {
         }
     }
 
+    /*
+     * Nothing changed here.
+     */
     record RunnableSystemInvocation(DefaultWorld world, Runnable[] systems) {
         void process() {
             for (var system : systems) {
@@ -302,8 +311,14 @@ class CompositionSystems {
 }
 
 /**
- * In this example we will introduce a simple system hierarchy.
- * We're not quite at artemis-odb levels of systems, but we're getting there.
+ * In this example we will introduce a system hierarchy, starting with a simple BaseSystem 
+ * and building our way up to a framework specific ComponentSetSystem.
+ *  
+ * We're not quite at artemis-odb levels of systems, but it'll be start.
+ * 
+ * Implementing base systems like IntervalSystem will require dealing with a
+ * delta time. The invocation strategy could just accept it as a parameter and pass
+ * it along. But that is out of scope for this example.
  */
 class SystemHierarchy {
 
@@ -330,7 +345,7 @@ class SystemHierarchy {
         /*
          * Same as in SimpleSystems.
          */
-        var invocationStrategy = new RunnableSystemInvocation(world, systems);
+        var invocationStrategy = new BaseSystemInvocation(world, systems);
 
         System.out.println("- Frame 1");
         invocationStrategy.process();
@@ -342,7 +357,7 @@ class SystemHierarchy {
     /**
      * The first system will extends {@link BaseSystem} directly. It has to pass a world to it and can access it by its field.
      * 
-     * It has to implement the abstract method {@link #process()}, which will be called every "frame" by {@link RunnableSystemInvocation}.
+     * It has to implement the abstract method {@link #process()}, which will be called every "frame" by {@link BaseSystemInvocation}.
      */
     static class System1 extends BaseSystem {
 
@@ -393,7 +408,7 @@ class SystemHierarchy {
     /**
      * This is probably the closest to how a system can be implemented in artemis-odb.
      * 
-     * There is no injection of component mappers or the world, everything works by constructor,
+     * There is no injection (1) of component mappers or the world, everything works by constructor,
      * but the way a single entity is processed is very similar to how I used artemis-odb:
      * 
      *      - Get the components of the entity using the component mappers
@@ -402,6 +417,11 @@ class SystemHierarchy {
      * In addition to processing entities in {@link #accept(int)}, we also override {@link #begin()}
      * and {@link #end()} just to print some stuff. These will be around the actual entity processing.
      * Try adding a sysout to accept.
+     * 
+     * (1) On the topic of injection:
+     * if someone is actually interested in the injection part, that would be just an implementation
+     * detail of the system invocation strategy. It's a lot more involved, but in the end its mostly
+     * just reflection.
      */
     static class System2 extends IteratingSystem {
 
@@ -467,11 +487,12 @@ class SystemHierarchy {
     }
 
     /**
-     * This was does the same work as {@link System2} (in reverse), but implemented based on
+     * This does the same work as {@link System2} (in reverse), but implemented based on
      * {@link CompositionSystem}. There is no equivalent in artemis-odb, so let's start at the top.
      * 
      * The first thing is the type parameter of the super class. It needs to be a "DataProcessor<?>".
-     * Here we are using a {@link ComponentSet} that is defined by {@link #process()}. 
+     * Here we are using a generated {@link ComponentSet} that is defined by {@link #process()}. 
+     * It comes with a nested type "Processor" that extends DataProcessor.
      * 
      * In addition to passing the generated {@link SystemHierarchySet.Processor} as a type parameter, 
      * we also implement the interface. This just happens to be exactly the method used to define
@@ -481,7 +502,7 @@ class SystemHierarchy {
      * using a component set. It's just a tiny bit more involved as the component set won't exist before process is defined.
      * 
      * But it's just an order one has to get used to. A small price to pay for the convenience of
-     * just adding "{@link Acceleration} acceleration" as a parameter and it magically just works.
+     * just adding "{@link Acceleration} acceleration" as a parameter and it just works.
      */
     static class System3 extends CompositionSystem<SystemHierarchySet.Processor> implements SystemHierarchySet.Processor {
 
@@ -501,14 +522,14 @@ class SystemHierarchy {
     /**
      * A little bit more involved than {@link IteratingSystem}, but the approach is the same.
      * 
-     * Instead of accepting a {@link Composition.Builder}, we accept a {@link DataProcessor}
-     * for the type parameter P. P is basically the {@link IntConsumer} in this version.
+     * The type parameter P will replace the {@link IntConsumer} in {@link IteratingSystem}.
      * 
      * The implementing system will then have to pass a {@link CompositionData CompositionData&lt;P&gt}.
      * This is a composition that accepts a P in its {@link CompositionData#process(DataProcessor)}.
      * 
      * By casting "this" to P and assigning it to the field "processor", we force the implementing
-     * system to not just pass a valid P, but also implement it.
+     * system to not just pass a valid P, but also implement it. An alternative would be to require
+     * an additional parameter "P processor".
      * 
      * This little detail makes implementing systems that work on a single composition quite a lot
      * nicer than using {@link IteratingSystem} and {@link Components component mappers}. 
@@ -549,10 +570,10 @@ class SystemHierarchy {
     }
 
     /**
-     * This one goes one setp further than {@link System3} and {@link CompositionSystem} and uses a {@link ComponentSetSystem}.
+     * This one goes one step further than {@link System3} and {@link CompositionSystem} and uses a {@link ComponentSetSystem}.
      * 
      * The type signature has to be longer to satisfy the type system, but the super call is just passing world and SystemHierarchySet.TYPE.
-     * Other than that everythign else stays the same.
+     * Other than that everything else stays the same.
      */
     static class System4 extends ComponentSetSystem<SystemHierarchySet, SystemHierarchySet.Processor> implements SystemHierarchySet.Processor {
 
@@ -561,7 +582,6 @@ class SystemHierarchy {
         }
 
         @Override
-        @ComponentSetConfig("SystemHierarchySet")
         public void process(int entityId, Position pos, Velocity velocity) {
             pos.x -= velocity.vx;
             pos.y -= velocity.vy;
@@ -597,7 +617,7 @@ class SystemHierarchy {
              * ComponentSetsHelper is actually a type in core module and not intended to be used in user code.
              * 
              * These base classes would optimally be provided by a Plugin along with a method like 
-             * "MySystemWorld#addSystem" and "MySystemWorld#processSystems()".
+             * "MySystemPlugin#addSystem" and "MySystemPlugin#processSystems()" or "MySystemPlugin#processSystems(float delta)".
              * 
              * The experimental plugin "SystemsPlugin" is basically that, just not yet with any special base types.
              */
@@ -620,7 +640,7 @@ class SystemHierarchy {
      * 
      * Iteration stays the same, this time we just call begin, process and end on every system.
      */
-    record RunnableSystemInvocation(DefaultWorld world, BaseSystem[] systems) {
+    record BaseSystemInvocation(DefaultWorld world, BaseSystem[] systems) {
         void process() {
             for (var system : systems) {
                 system.begin();
