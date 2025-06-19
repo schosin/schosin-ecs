@@ -3,13 +3,17 @@ package de.schosin.ecs.buildtools.codegen.apt.processor;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 
 import com.palantir.javapoet.AnnotationSpec;
@@ -62,8 +66,30 @@ public class ComponentSetsGenerator {
 
     private Stream<TypeData> generate(Element element) {
         return switch (element.getKind()) {
-            case METHOD -> ComponentSetTypes.create(element.accept(new MethodVisitor((ExecutableElement) element), null));
-            default -> throw new CancelException("Unsupported kind %s: %s".formatted(element.getKind(), element));
+            case METHOD:
+                yield ComponentSetTypes.create(element.accept(new MethodVisitor((ExecutableElement) element), null));
+            case ANNOTATION_TYPE:
+            case BINDING_VARIABLE:
+            case CLASS:
+            case CONSTRUCTOR:
+            case ENUM:
+            case ENUM_CONSTANT:
+            case EXCEPTION_PARAMETER:
+            case FIELD:
+            case INSTANCE_INIT:
+            case INTERFACE:
+            case LOCAL_VARIABLE:
+            case MODULE:
+            case OTHER:
+            case PACKAGE:
+            case PARAMETER:
+            case RECORD:
+            case RECORD_COMPONENT:
+            case RESOURCE_VARIABLE:
+            case STATIC_INIT:
+            case TYPE_PARAMETER:
+            default:
+                throw new CancelException("Unsupported kind %s: %s".formatted(element.getKind(), element));
         };
     }
 
@@ -235,7 +261,7 @@ public class ComponentSetsGenerator {
                     .addField(entityId);
 
             var componentSetDataInitializer = CodeBlock.builder()
-                    .add("$1T.builder($2T::factory, $3T.INSTANCE)", COMPONENT_SET, implementationName, implementationName.nestedClass("IterableProcessor"));
+                    .add("$1T.builder($2T::factory, $3T::new)", COMPONENT_SET, implementationName, implementationName.nestedClass("IterableProcessor"));
 
             var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName, interfaceName.nestedClass("Processor"));
             var componentSetData = FieldSpec.builder(componentSetDataType, "DATA", Modifier.STATIC, Modifier.FINAL);
@@ -333,21 +359,64 @@ public class ComponentSetsGenerator {
         private static TypeSpec createIterableProcessorType(VisitorResult result) {
             var superInterface = ParameterizedTypeName.get(COMPONENT_ACCESSOR_PROCESSOR, result.interfaceName, result.interfaceName.nestedClass("Processor"));
 
-            return TypeSpec.enumBuilder("IterableProcessor")
-                    .addModifiers(Modifier.PRIVATE)
+            var components = result.components;
+            var fields = IntStream.range(1, components.size() + 1)
+                    .mapToObj(i -> createIndexField(i, components.get(i - 1)))
+                    .toList();
+
+            var regular = new boolean[fields.size()];
+            for (int i = 0, s = fields.size(); i < s; i++) {
+                regular[i] = fields.get(i) != null;
+            }
+
+            var methods = Stream.of(iterableProcessorConstructor(regular), iterableProcessorImpl(result, regular))
+                    .filter(Objects::nonNull)
+                    .toList();
+
+            var filteredFields = fields.stream().filter(Objects::nonNull).toList();
+
+            return TypeSpec.classBuilder("IterableProcessor")
+                    .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
                     .addSuperinterface(superInterface)
-                    .addEnumConstant("INSTANCE")
-                    .addMethod(iterableProcessorImpl(result))
+                    .addFields(filteredFields)
+                    .addMethods(methods)
                     .build();
         }
 
-        private static MethodSpec iterableProcessorImpl(VisitorResult result) {
+        private static FieldSpec createIndexField(int i, ComponentData component) {
+            if (!(component.type.asElement() instanceof TypeElement element) || element.getKind() == ElementKind.INTERFACE) {
+                return null;
+            }
+
+            return FieldSpec.builder(TypeName.INT, "index" + i, Modifier.PRIVATE, Modifier.FINAL).build();
+        }
+
+        private static MethodSpec iterableProcessorConstructor(boolean[] regular) {
+            var body = CodeBlock.builder();
+            for (int i = 1; i <= regular.length; i++) {
+                if (regular[i - 1]) {
+                    body.addStatement("this.index%d = mapping[%d]".formatted(i, i - 1));
+                }
+            }
+
+            return MethodSpec.constructorBuilder()
+                    .addModifiers(Modifier.PRIVATE)
+                    .addParameter(int[].class, "mapping")
+                    .addCode(body.build())
+                    .build();
+        }
+
+        private static MethodSpec iterableProcessorImpl(VisitorResult result, boolean[] regular) {
             var components = result.components;
             var n = components.size();
 
             var methodBody = CodeBlock.builder();
 
             for (int i = 1; i <= n; i++) {
+                if (regular[i - 1]) {
+                    continue;
+                }
+
                 var type = components.get(i - 1).typeName;
                 var converter = ParameterizedTypeName.get(DATA_CONVERTER, type);
 
@@ -356,22 +425,37 @@ public class ComponentSetsGenerator {
             methodBody.beginControlFlow("while(accessor.hasNext())");
             methodBody.addStatement("var entityId = accessor.next()");
 
-            methodBody.addStatement("// retrieve components");
             for (int i = 1; i <= n; i++) {
+                if (regular[i - 1]) {
+                    continue;
+                }
+
                 methodBody.addStatement("var component%d = converter%d.getComponent(accessor)".formatted(i, i));
             }
 
-            methodBody.addStatement("// process");
-            var processStatement = "processor.process(entityId";
+            var processStatement = CodeBlock.builder().add("processor.process(entityId").indent();
             for (int i = 1; i <= n; i++) {
-                processStatement += ", component%d".formatted(i);
+                if (regular[i - 1]) {
+                    var todo = true; // TODO should get pending -> additional field for componentId
+
+                    processStatement
+                            .add("," + System.lineSeparator())
+                            .add("index%d > -1 ? accessor.getComponentByIndex(index%d) : null".formatted(i, i, i));
+                } else {
+                    processStatement
+                            .add("," + System.lineSeparator())
+                            .add("component%d".formatted(i));
+                }
             }
-            processStatement += ")";
+            processStatement.add(")");
 
-            methodBody.addStatement(processStatement);
+            methodBody.addStatement(processStatement.build());
 
-            methodBody.addStatement("// free components");
             for (int i = 1; i <= n; i++) {
+                if (regular[i - 1]) {
+                    continue;
+                }
+
                 methodBody.addStatement("converter%d.free(component%d)".formatted(i, i));
             }
 

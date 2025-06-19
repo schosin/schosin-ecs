@@ -15,6 +15,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -608,18 +609,18 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     static class ComponentSetComposition<T extends ComponentSet<P>, P extends DataProcessor<T>> extends AbstractAccessorComposition<T, P> implements CompositionSet<P> {
 
-        private final ComponentSet.IterableProcessor<T, P> processor;
+        private final ComponentSetData<T, P> data;
 
         private final ComponentType<?, ?>[] componentTypes;
         private final Components<?, ?>[] mappers;
 
+        private final Bag<ComponentSet.IterableProcessor<T, P>> processors = new Bag<>(ComponentSet.IterableProcessor.class, 4);
         private final Bag<List<ComponentConverter<Object>>> converters = new Bag<>(List.class, 4);
 
         protected ComponentSetComposition(Composition composition, ComponentSetType<T, P> componentSetType) {
             super(composition, componentSetType);
 
-            var data = ComponentSetsHelper.<T, P>getData(componentSetType.componentSet());
-            this.processor = data.processor();
+            this.data = ComponentSetsHelper.<T, P>getData(componentSetType.componentSet());
 
             this.componentTypes = data.components().stream()
                     .map(ComponentSet.ComponentData::type)
@@ -633,8 +634,23 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         @Override
         @SuppressWarnings("unchecked")
         protected void handleArchetypeAdded(Archetype archetype) {
+            // Add mapping for archetype
+            var mapping = new int[componentTypes.length];
+
+            for (int i = 0, s = componentTypes.length; i < s; i++) {
+                var componentType = componentTypes[i];
+                if (componentType instanceof RegularComponentType<?, ?> regular) {
+                    mapping[i] = archetype.getComponentIndex(regular);
+                } else {
+                    mapping[i] = -1;
+                }
+            }
+
+            this.processors.add(data.processor(mapping));
+
+            // Add converters for archetype
             var converters = new ArrayList<ComponentConverter<Object>>();
-            this.converters.set(this.converters.getSize(), converters);
+            this.converters.add(converters);
 
             for (int i = 0, s = mappers.length; i < s; i++) {
                 var mapper = mappers[i];
@@ -649,9 +665,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             for (int i = 0, s = entityData.getSize(); i < s; i++) {
                 var data = entityData.get(i);
                 var accessor = data.getAccessor();
+
+                var iterableProcessor = this.processors.get(i);
                 var converters = this.converters.get(i);
 
-                this.processor.process(processor, accessor, converters);
+                iterableProcessor.process(processor, accessor, converters);
 
                 accessor.free();
             }

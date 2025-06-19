@@ -112,7 +112,10 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
     sealed interface ComponentSetData<S extends ComponentSet<?>, P extends DataProcessor<S>> {
         Factory<S> factory();
 
+        @Deprecated(forRemoval = true)
         IterableProcessor<S, P> processor();
+
+        IterableProcessor<S, P> processor(int[] mapping);
 
         List<ComponentData<S, ?, ?>> components();
     }
@@ -162,8 +165,8 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
     /**
      * Creates a {@link ComponentSetDataBuilder} instance given the factory method.
      */
-    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(Factory<S> factory, IterableProcessor<S, P> processor) {
-        return new ComponentSetDataBuilderImpl<>(factory, processor);
+    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(Factory<S> factory, Function<int[], IterableProcessor<S, P>> processorFactory) {
+        return new ComponentSetDataBuilderImpl<S, P>(factory, processorFactory);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -190,13 +193,13 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetDataBuilder<S, P> {
 
     private final Factory<S> factory;
-    private final IterableProcessor<S, P> processor;
+    private final Function<int[], IterableProcessor<S, P>> processorFactory;
 
     private final List<ComponentData<S, ?, ?>> components = new ArrayList<>();
 
-    public ComponentSetDataBuilderImpl(Factory<S> factory, IterableProcessor<S, P> processor) {
+    public ComponentSetDataBuilderImpl(Factory<S> factory, Function<int[], IterableProcessor<S, P>> processorFactory) {
         this.factory = factory;
-        this.processor = processor;
+        this.processorFactory = processorFactory;
     }
 
     @Override
@@ -208,7 +211,7 @@ final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends Dat
 
     @Override
     public ComponentSetData<S, P> build() {
-        return new ComponentSetDataImpl<>(factory, processor, components);
+        return new ComponentSetDataImpl<>(factory,  processorFactory, components);
     }
 
 }
@@ -216,12 +219,12 @@ final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends Dat
 final class ComponentSetDataImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetData<S, P> {
 
     private final Factory<S> factory;
-    private final IterableProcessor<S, P> processor;
+    private final Function<int[], IterableProcessor<S, P>> processorFactory;
     private final List<ComponentData<S, ?, ?>> components;
 
-    ComponentSetDataImpl(Factory<S> factory, IterableProcessor<S, P> processor, List<ComponentData<S, ?, ?>> components) {
+    ComponentSetDataImpl(Factory<S> factory, Function<int[], IterableProcessor<S, P>> processorFactory, List<ComponentData<S, ?, ?>> components) {
         this.factory = factory;
-        this.processor = processor;
+        this.processorFactory = processorFactory;
         this.components = components;
     }
 
@@ -232,7 +235,12 @@ final class ComponentSetDataImpl<S extends ComponentSet<?>, P extends DataProces
 
     @Override
     public IterableProcessor<S, P> processor() {
-        return processor;
+        throw new UnsupportedOperationException("processor() deprecated");
+    }
+
+    @Override
+    public IterableProcessor<S, P> processor(int[] mapping) {
+        return processorFactory.apply(mapping);
     }
 
     @Override
