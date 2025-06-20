@@ -1,4 +1,6 @@
 package de.schosin.ecs.buildtools.codegen.it.components;
 
-public class Velocity {
+import de.schosin.ecs.api.Pooled;
+
+public class Velocity implements Pooled {
 }

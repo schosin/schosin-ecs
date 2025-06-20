@@ -14,7 +14,7 @@ public interface BaseArchetype<C extends ArchetypeConsumer> {
 
     @FunctionalInterface
     interface ArchetypeConsumer {
-        void accept(Object[] components, int index, int[] mapping);
+        void accept(BaseArchetype<?> archetype, Object[] components, int index, int[] mapping);
     }
 
     /**

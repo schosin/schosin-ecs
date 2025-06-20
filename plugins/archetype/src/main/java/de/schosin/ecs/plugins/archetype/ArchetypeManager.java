@@ -8,15 +8,19 @@ import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.ArrayUtils;
+import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
+import de.schosin.ecs.plugins.archetype.ArchetypeSet.ArchetypeSetType;
 import de.schosin.ecs.plugins.archetype.BaseArchetype.ArchetypeConsumer;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
@@ -48,6 +52,41 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         var mapper = mappers.computeIfAbsent(component, key -> componentMapperManager.getPooledComponents(component));
 
         return component.cast(mapper.getInstance());
+    }
+
+    @Override
+    public <T extends ComponentSet<?>, C extends ArchetypeConsumer> ArchetypeSet<C> createArchetype(ArchetypeSetType<T, C> type) {
+        return new ArchetypeSetImpl<C>(type.componentType());
+    }
+
+    private final class ArchetypeSetImpl<C extends ArchetypeConsumer> extends AbstractBaseArchetypeImpl<C> implements ArchetypeSet<C> {
+
+        public ArchetypeSetImpl(ComponentSetType<?, ?> componentSetType) {
+            super(ArchetypeManager.this, regularComponentTypes(ArchetypeManager.this, componentSetType));
+        }
+
+        private static RegularComponentType<?, ?>[] regularComponentTypes(ArchetypeManager manager, ComponentSetType<?, ?> componentSetType) {
+            ComponentSetsHelper.getData(componentSetType.componentSet());
+
+            // TODO Auto-generated method stub
+            return null;
+        }
+
+        @Override
+        public int create(C consumer) {
+            throw new UnsupportedOperationException("create(%s) not implemented yet".formatted(consumer));
+        }
+
+        @Override
+        public BaseArchetype<C> with(Object... components) {
+            return null;
+        }
+
+        @Override
+        public <T extends Pooled> T getInstance(Class<T> clazz) {
+            return null;
+        }
+
     }
 
     static abstract class AbstractBaseArchetypeImpl<C extends ArchetypeConsumer> implements BaseArchetype<C> {
@@ -138,7 +177,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         @Override
         public int create(C consumer) {
             var components = pool.getInstance();
-            consumer.accept(components, 0, mapping);
+            consumer.accept(this, components, 0, mapping);
 
             if (fixed != null) {
                 var start = size - fixed.length;
@@ -160,11 +199,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
         private ObjIntConsumer<Object[]> createConsumer(C consumer) {
             if (fixed == null) {
-                return (components, i) -> consumer.accept(components, i, mapping);
+                return (components, i) -> consumer.accept(this, components, i, mapping);
             }
 
             return (components, i) -> {
-                consumer.accept(components, i, mapping);
+                consumer.accept(this, components, i, mapping);
 
                 var start = size - fixed.length;
                 for (int f = 0; f < fixed.length; f++) {

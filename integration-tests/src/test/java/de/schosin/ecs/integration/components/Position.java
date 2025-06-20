@@ -14,6 +14,14 @@ public class Position implements Pooled {
         return this;
     }
 
+    public void setX(float x) {
+        this.x = x;
+    }
+
+    public void setY(float y) {
+        this.y = y;
+    }
+
     @Override
     public void reset() {
         this.x = 0f;

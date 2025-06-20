@@ -204,9 +204,11 @@ public class BaseArchetypeGenerator {
                     .addStatement("accept(index, component1 -> components[mapping[0]] = component1)")
                     .build();
 
+            var archetype = ParameterizedTypeName.get(ARCHETYPE, Utils.WILDCARD);
             var archetypeConsumerAccept = MethodSpec.methodBuilder("accept")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
+                    .addParameter(archetype, "archetype")
                     .addParameter(Object[].class, "components")
                     .addParameter(TypeName.INT, "index")
                     .addParameter(int[].class, "mapping")
@@ -346,9 +348,11 @@ public class BaseArchetypeGenerator {
 
             body.unindent().add("});");
 
+            var archetype = ParameterizedTypeName.get(ARCHETYPE, Utils.WILDCARD);
             var archetypeConsumerAccept = MethodSpec.methodBuilder("accept")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
+                    .addParameter(archetype, "archetype")
                     .addParameter(Object[].class, "components")
                     .addParameter(TypeName.INT, "index")
                     .addParameter(int[].class, "mapping")

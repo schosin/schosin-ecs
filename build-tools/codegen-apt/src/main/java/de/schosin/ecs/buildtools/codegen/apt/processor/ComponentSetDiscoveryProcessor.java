@@ -21,6 +21,9 @@ import com.palantir.javapoet.JavaFile;
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
 
+    public record Plugins(boolean archetypePlugin) {
+    }
+
     public static final String CONFIG = "de.schosin.ecs.api.components.ComponentSetConfig";
 
     private ComponentSetsGenerator generator;
@@ -35,10 +38,13 @@ public class ComponentSetDiscoveryProcessor extends AbstractProcessor {
             this.generator = new ComponentSetsGenerator();
         }
 
+        var archetypePlugin = processingEnv.getElementUtils().getTypeElement("de.schosin.ecs.plugins.archetype.ArchetypePlugin") != null;
+        var plugins = new Plugins(archetypePlugin);
+
         var componentSetConfig = processingEnv.getElementUtils().getTypeElement(CONFIG);
 
         try {
-            var implementations = generator.generate(roundEnv.getElementsAnnotatedWith(componentSetConfig));
+            var implementations = generator.generate(roundEnv.getElementsAnnotatedWith(componentSetConfig), plugins);
 
             var implementationFiles = implementations.stream()
                     .flatMap(data -> data.types().stream()

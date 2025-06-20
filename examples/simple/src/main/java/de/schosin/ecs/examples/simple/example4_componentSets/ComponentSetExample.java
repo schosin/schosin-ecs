@@ -71,7 +71,6 @@ public class ComponentSetExample extends AbstractExample {
      * 
      * You can leave the acceleration parameter if you want, or remove it. Up to you.
      */
-    @ComponentSetConfig("PhysicsComponentSet")
     private static void physicsSystem(int entityId, Position position, Velocity velocity) {
         // skip this for now, it will be used at a later time
 
@@ -261,6 +260,7 @@ public class ComponentSetExample extends AbstractExample {
      * 
      * Make sure to move it, not copy it.
      */
+    @ComponentSetConfig("PhysicsComponentSet")
     private static void physicsSystem(int entityId, Name name, Position position, Velocity velocity, Acceleration acceleration,
             ComponentRelations<Location, Position> locations,
             ComponentRelation<Birth, Position> birthplace,
