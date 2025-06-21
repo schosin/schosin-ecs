@@ -130,7 +130,7 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
      * @param accessor data accessor
      * @return component instance, may be null
      */
-    R get(DataAccessor accessor);
+    R access(DataAccessor accessor);
 
     /**
      * Marks the component for removal. The component will be removed during the {@link #process()} call.

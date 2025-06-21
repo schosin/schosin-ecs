@@ -45,11 +45,11 @@ public class ExclusiveEntityRelationFetchMapperImpl<R extends Exclusive, T> impl
 
     @Override
     public EntityRelationData<R, T> get(int entityId) {
-        return get(accessor.apply(entityId));
+        return access(accessor.apply(entityId));
     }
 
     @Override
-    public EntityRelationData<R, T> get(DataAccessor accessor) {
+    public EntityRelationData<R, T> access(DataAccessor accessor) {
         EntityRelation<R> relation = accessor.getComponent(componentId);
         if (relation == null) {
             return null;

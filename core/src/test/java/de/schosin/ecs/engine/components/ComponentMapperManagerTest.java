@@ -61,7 +61,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 
             // Verify
             var accessor = entityManager.getAccessor(entityId);
-            assertThat(mapper.get(accessor)).isSameAs(instance);
+            assertThat(mapper.access(accessor)).isSameAs(instance);
         }
 
         private <T> DefaultComponents<T> factory(DefaultComponentType<T> type) {
@@ -106,7 +106,7 @@ class DefaultComponents<T> implements CustomComponentMapper<T, T> {
     }
 
     @Override
-    public T get(DataAccessor accessor) {
+    public T access(DataAccessor accessor) {
         var result = accessor.<T>getComponent(componentId);
 
         return result != null ? result : defaultInstance.get();

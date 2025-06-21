@@ -591,7 +591,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 while (accessor.hasNext()) {
                     var entityId = accessor.next();
 
-                    var component = mapper.get(accessor);
+                    var component = mapper.access(accessor);
 
                     processor.process(entityId, component);
 

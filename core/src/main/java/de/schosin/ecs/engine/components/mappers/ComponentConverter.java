@@ -112,7 +112,7 @@ public interface ComponentConverter<R> extends DataConverter<R> {
         @Override
         @SuppressWarnings("unchecked")
         public R getComponent(DataAccessor accessor) {
-            return (R) mapper.get(accessor);
+            return (R) mapper.access(accessor);
         }
 
         @Override

@@ -38,7 +38,7 @@ abstract class AbstractComponentRelationMapper<R, T, RR, C extends Component<Com
         return data.getComponent(entityId);
     }
 
-    public final RR get(DataAccessor accessor) {
+    public final RR access(DataAccessor accessor) {
         return accessor.getComponent(componentId);
     }
 

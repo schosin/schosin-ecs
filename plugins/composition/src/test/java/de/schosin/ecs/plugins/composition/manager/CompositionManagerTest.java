@@ -5322,8 +5322,8 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Override
-        public T get(DataAccessor accessor) {
-            var result = components.get(accessor);
+        public T access(DataAccessor accessor) {
+            var result = components.access(accessor);
 
             return result != null ? result : defaultInstance.get();
         }

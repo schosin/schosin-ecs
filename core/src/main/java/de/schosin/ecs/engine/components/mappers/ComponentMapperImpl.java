@@ -53,7 +53,7 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T>, ComponentConv
     }
 
     @Override
-    public final T get(DataAccessor accessor) {
+    public final T access(DataAccessor accessor) {
         return accessor.<T>getComponent(componentId);
     }
 

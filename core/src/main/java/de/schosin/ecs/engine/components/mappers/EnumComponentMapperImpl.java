@@ -53,8 +53,8 @@ public final class EnumComponentMapperImpl<T extends Enum<T>> implements EnumCom
     }
 
     @Override
-    public T get(DataAccessor accessor) {
-        return this.delegate.get(accessor);
+    public T access(DataAccessor accessor) {
+        return this.delegate.access(accessor);
     }
 
     @Override

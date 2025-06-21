@@ -76,11 +76,11 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
 
     @Override
     public ComponentResult<T> get(int entityId) {
-        return get(accessor.apply(entityId));
+        return access(accessor.apply(entityId));
     }
 
     @Override
-    public ComponentResult<T> get(DataAccessor accessor) {
+    public ComponentResult<T> access(DataAccessor accessor) {
         var result = pool.getInstance().init(accessor);
         lent.add(result);
 

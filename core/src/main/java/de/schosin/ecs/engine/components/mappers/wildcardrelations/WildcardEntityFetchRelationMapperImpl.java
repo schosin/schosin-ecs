@@ -64,8 +64,8 @@ public final class WildcardEntityFetchRelationMapperImpl<R, T> implements Wildca
     }
 
     @Override
-    public EntityRelationsData<? extends R, T> get(DataAccessor accessor) {
-        var relations = relationMapper.get(accessor);
+    public EntityRelationsData<? extends R, T> access(DataAccessor accessor) {
+        var relations = relationMapper.access(accessor);
 
         var result = ResultImpl.getInstance(relations, dataMapper);
         lent.add(result);

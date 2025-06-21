@@ -97,11 +97,11 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
 
     @Override
     public ComponentRelations<R, T> get(int entityId) {
-        return get(accessor.apply(entityId));
+        return access(accessor.apply(entityId));
     }
 
     @Override
-    public ComponentRelations<R, T> get(DataAccessor accessor) {
+    public ComponentRelations<R, T> access(DataAccessor accessor) {
         var result = pool.getInstance().init(accessor);
         lent.add(result);
 

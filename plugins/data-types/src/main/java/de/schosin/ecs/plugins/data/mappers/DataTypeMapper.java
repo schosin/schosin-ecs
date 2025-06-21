@@ -109,18 +109,18 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
 
     @Override
     public R get(int entityId) {
-        return get(accessor.apply(entityId));
+        return access(accessor.apply(entityId));
     }
 
     @Override
-    public R get(DataAccessor accessor) {
+    public R access(DataAccessor accessor) {
         var components = pool.getInstance();
         var found = false;
 
         for (int i = 0; i < size; i++) {
             var mapper = mappers[i];
 
-            var component = components[i] = mapper.get(accessor);
+            var component = components[i] = mapper.access(accessor);
             if (component != null) {
                 found = true;
             }

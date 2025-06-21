@@ -122,18 +122,18 @@ public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements 
 
     @Override
     public T get(int entityId) {
-        return get(accessor.apply(entityId));
+        return access(accessor.apply(entityId));
     }
 
     @Override
-    public T get(DataAccessor accessor) {
+    public T access(DataAccessor accessor) {
         var components = pool.getInstance();
         var found = false;
 
         for (int i = 0; i < size; i++) {
             var mapper = mappers[i];
 
-            var component = mapper.get(accessor);
+            var component = mapper.access(accessor);
             if (component != null) {
                 components[i] = component;
                 found = true;

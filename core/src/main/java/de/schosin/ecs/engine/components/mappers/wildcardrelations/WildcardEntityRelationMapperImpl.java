@@ -97,11 +97,11 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
 
     @Override
     public EntityRelations<? extends R> get(int entityId) {
-        return get(accessor.apply(entityId));
+        return access(accessor.apply(entityId));
     }
 
     @Override
-    public EntityRelations<? extends R> get(DataAccessor accessor) {
+    public EntityRelations<? extends R> access(DataAccessor accessor) {
         var result = pool.getInstance().init(accessor);
         lent.add(result);
 

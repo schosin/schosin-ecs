@@ -52,11 +52,11 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
 
     @Override
     public EntityRelationsData<R, T> get(int entityId) {
-        return get(accessor.apply(entityId));
+        return access(accessor.apply(entityId));
     }
 
     @Override
-    public EntityRelationsData<R, T> get(DataAccessor accessor) {
+    public EntityRelationsData<R, T> access(DataAccessor accessor) {
         EntityRelations<R> relations = accessor.getComponent(componentId);
         if (relations == null) {
             return null;

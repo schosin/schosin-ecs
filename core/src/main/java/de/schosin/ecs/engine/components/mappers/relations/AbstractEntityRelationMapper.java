@@ -39,7 +39,7 @@ public abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelati
         return data.getComponent(entityId);
     }
 
-    public final RR get(DataAccessor accessor) {
+    public final RR access(DataAccessor accessor) {
         return accessor.getComponent(componentId);
     }
 
