@@ -18,6 +18,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>de.schosin.ecs</groupId>
+            <artifactId>ecs-utils</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>de.schosin.ecs.plugins</groupId>
             <artifactId>ecs-plugins-data-types</artifactId>
             <version>${project.version}</version>

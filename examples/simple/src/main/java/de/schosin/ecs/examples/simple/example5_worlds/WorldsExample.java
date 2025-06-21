@@ -4,7 +4,6 @@ import java.util.function.IntConsumer;
 
 import de.schosin.ecs.api.Plugin;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.engine.WorldBuilder;
 import de.schosin.ecs.examples.simple.AbstractExample;
 import de.schosin.ecs.examples.simple.components.Acceleration;
 import de.schosin.ecs.examples.simple.components.Position;
@@ -246,7 +245,7 @@ public class WorldsExample {
      * When we create an instance, we pass the interface to {@link World#builder(Class)} and then 
      * we build a world. What is happening in {@link World.Builder#build()} is roughly the following:
      * 
-     *      - The implementation {@link WorldBuilder} in the core module will analyze the interface
+     *      - The implementation WorldBuilder in the core module will analyze the interface
      *      - It will detect interfaces that are annotated with {@link Plugin @Plugin} and retrieves their implementation classes
      *      - It will construct a regular {@link World}
      *      - For every plugin, it will instantiate its implementation, passing in dependencies declared as parameters to its sole public constructor
