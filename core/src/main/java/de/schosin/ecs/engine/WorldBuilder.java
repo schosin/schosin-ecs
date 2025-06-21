@@ -17,6 +17,7 @@ import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.Plugin;
 import de.schosin.ecs.api.Plugin.PluginConfig;
+import de.schosin.ecs.api.Plugin.ProxyPlugin;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.World.Builder;
 import de.schosin.ecs.engine.utils.exceptions.EcsPluginException;
@@ -170,7 +171,7 @@ class DynamicWorldBuilder {
 
             try {
                 var proxy = (T) dynamicWorld.getDeclaredConstructor().newInstance();
-                injectProxies(world, proxy);
+                injectProxies(world, proxy, null);
 
                 return proxy;
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException ex) {
@@ -212,7 +213,7 @@ class DynamicWorldBuilder {
         // Instantiate class
         try {
             var proxy = (T) dynamicWorld.getDeclaredConstructor().newInstance();
-            injectProxies(world, proxy);
+            injectProxies(world, proxy, instantiatedPlugins);
 
             return proxy;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException ex) {
@@ -362,8 +363,16 @@ class DynamicWorldBuilder {
         }
     }
 
-    private static <T extends World> void injectProxies(EngineWorld world, T proxy) {
+    private static <T extends World> void injectProxies(EngineWorld world, T proxy, SequencedSet<PluginInstance> plugins) {
         injectProxy(world, proxy, "singletonManager", "world");
+
+        if (plugins != null) {
+            for (var plugin : plugins) {
+                if (plugin.instance instanceof ProxyPlugin proxyPlugin) {
+                    proxyPlugin.setProxyWorld(proxy);
+                }
+            }
+        }
     }
 
     private static <T extends World> void injectProxy(Object target, T proxy, String path, String... paths) {

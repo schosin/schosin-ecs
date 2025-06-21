@@ -56,4 +56,16 @@ public @interface Plugin {
     interface PluginConfig {
     }
 
+    /**
+     * Marker interface for plugins to implement. Will be called with the created
+     * proxy instance of the world.
+     * 
+     * <p>
+     * Will not be called when not used with a custom world.
+     * </p>
+     */
+    interface ProxyPlugin {
+        void setProxyWorld(World world);
+    }
+
 }

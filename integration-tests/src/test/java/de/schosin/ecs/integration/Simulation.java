@@ -74,7 +74,7 @@ public class Simulation {
 
         while (this.running) {
             try {
-                systems.processSystems(sleep / 1000f);
+                systems.processSystems();
                 world.process();
 
                 Thread.sleep(sleep);

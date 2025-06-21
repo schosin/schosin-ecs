@@ -45,7 +45,8 @@ public class CompositionIterationIT extends AbstractEcsIT {
 
     @Test
     void testIteration() {
-        var systems = SystemPlugin.standalone(world,
+        var systems = SystemPlugin.standalone(world);
+        systems.addSystems(
                 new ClassIterationSystem(world),
                 new ComponentRelationsIterationSystem(world),
                 new EntityRelationsIterationSystem(world),
@@ -89,7 +90,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -123,7 +124,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -166,7 +167,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -209,7 +210,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -246,7 +247,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -294,7 +295,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -341,7 +342,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -398,7 +399,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
 
             if (composition.getCount() == 0) {

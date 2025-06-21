@@ -30,7 +30,8 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
 
     @Test
     void integrationTest() {
-        var systems = SystemPlugin.standalone(world,
+        var systems = SystemPlugin.standalone(world);
+        systems.addSystems(
                 new CreationSystem(world),
                 new HitboxSystem(world),
                 new MovementSystem(world),
@@ -51,7 +52,7 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             var missing = 100 - composition.getCount();
             if (missing <= 0) {
                 return;
@@ -86,7 +87,7 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             this.composition.process(this::processEntity);
         }
 
@@ -112,7 +113,7 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             composition.process(this::processEntity);
         }
 
@@ -138,7 +139,7 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
         }
 
         @Override
-        public void process(float delta) {
+        public void process() {
             var count = this.composition.getCount();
 
             var delete = RNG.nextInt(count);

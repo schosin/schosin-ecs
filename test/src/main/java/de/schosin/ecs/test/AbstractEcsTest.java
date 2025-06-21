@@ -2,6 +2,9 @@ package de.schosin.ecs.test;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.junit.jupiter.api.BeforeEach;
 
@@ -56,13 +59,73 @@ public abstract class AbstractEcsTest<WORLD extends World> extends AbstractEngin
     @SuppressWarnings("unchecked")
     protected WORLD createWorld() {
         Type type = this.getClass();
+        var typeVarAssigns = new HashMap<TypeVariable<?>, Type>();
 
-        do {
-            if (type instanceof ParameterizedType parameterized && AbstractEcsTest.class.equals(parameterized.getRawType())) {
-                var worldClazz = (Class<?>) parameterized.getActualTypeArguments()[0];
-                if (World.class.isAssignableFrom(worldClazz)) {
-                    return World.builder((Class<WORLD>) worldClazz).build();
+        while (type != null) {
+            if (type instanceof ParameterizedType parameterized) {
+                var rawType = (Class<?>) parameterized.getRawType();
+
+                var typeParams = rawType.getTypeParameters();
+                var actualArgs = parameterized.getActualTypeArguments();
+                for (int i = 0, s = typeParams.length; i < s; i++) {
+                    typeVarAssigns.put(typeParams[i], actualArgs[i]);
                 }
+
+                if (AbstractEcsTest.class.equals(rawType)) {
+                    var worldType = actualArgs[0];
+                    while (worldType instanceof TypeVariable<?> variable) {
+                        worldType = typeVarAssigns.get(variable);
+                    }
+
+                    if (worldType instanceof Class<?> worldClass && World.class.isAssignableFrom(worldClass)) {
+                        return World.builder((Class<WORLD>) worldClass).build();
+                    }
+
+                    break;
+                }
+
+                type = rawType.getGenericSuperclass();
+            } else if (type instanceof Class<?> clazz) {
+                type = clazz.getGenericSuperclass();
+            } else {
+                break;
+            }
+        }
+
+        throw new IllegalStateException("Could not detect type of world for %s. Override createWorld().".formatted(this.getClass()));
+    }
+
+    @SuppressWarnings("unchecked")
+    protected WORLD createWorldOld() {
+        Type type = this.getClass();
+
+        var types = new ArrayList<Type>();
+        System.out.println("-- Start");
+        do {
+            types.add(0, type);
+
+            if (type instanceof ParameterizedType parameterized && AbstractEcsTest.class.equals(parameterized.getRawType())) {
+                var typeArgument = parameterized.getActualTypeArguments()[0];
+                if (typeArgument instanceof Class<?> clazz && World.class.isAssignableFrom(clazz)) {
+                    return World.builder((Class<WORLD>) clazz).build();
+                }
+
+                if (typeArgument instanceof TypeVariable<?> variable) {
+                    for (int i = 0, s = variable.getBounds().length; i < s; i++) {
+                        var bound = variable.getBounds()[i];
+                        if (bound instanceof Class<?> clazz && World.class.isAssignableFrom(clazz)) {
+                            do {
+                                var parent = types.remove(0);
+                                System.out.println("Parent: " + parent);
+
+                            } while (!types.isEmpty());
+
+                            return World.builder((Class<WORLD>) clazz).build();
+                        }
+                    }
+                }
+
+                break;
             }
 
             type = switch (type) {
