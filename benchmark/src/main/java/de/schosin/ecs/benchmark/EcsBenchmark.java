@@ -3,6 +3,7 @@ package de.schosin.ecs.benchmark;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
+import de.schosin.ecs.api.World;
 import de.schosin.ecs.benchmark.utils.collections.BitVectorBenchmark;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
@@ -12,11 +13,10 @@ import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.plugins.archetype.ArchetypeManager;
 import de.schosin.ecs.plugins.composition.manager.CompositionManager;
-import de.schosin.ecs.worlds.DefaultWorld;
 
 public abstract class EcsBenchmark extends BaseBenchmark {
 
-    protected DefaultWorld world;
+    protected BenchmarkWorld world;
 
     protected BagManager bagManager;
     protected ComponentManager componentManager;
@@ -28,7 +28,7 @@ public abstract class EcsBenchmark extends BaseBenchmark {
     protected ComponentMapperManager componentMapperManager;
 
     protected void setupWorld(int expectedEntities) {
-        this.world = DefaultWorld.builder().expectedEntities(expectedEntities).build();
+        this.world = World.builder(BenchmarkWorld.class).expectedEntities(expectedEntities).build();
 
         try {
             this.bagManager = world.getSingleton(BagManager.class);

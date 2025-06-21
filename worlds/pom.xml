@@ -30,17 +30,7 @@
         
         <dependency>
             <groupId>de.schosin.ecs.plugins</groupId>
-            <artifactId>ecs-plugins-state</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>de.schosin.ecs.plugins</groupId>
             <artifactId>ecs-plugins-archetype</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>de.schosin.ecs.plugins</groupId>
-            <artifactId>ecs-plugins-transmuter</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

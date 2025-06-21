@@ -4,8 +4,6 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.plugins.archetype.ArchetypePlugin;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.CompositionPlugin;
-import de.schosin.ecs.plugins.state.StatePlugin;
-import de.schosin.ecs.plugins.transmuter.TransmuterPlugin;
 
 /**
  * A custom {@link World} that includes multiple plugins to extend the functionality.
@@ -19,7 +17,7 @@ import de.schosin.ecs.plugins.transmuter.TransmuterPlugin;
  * <li><b>CompositionPlugin:</b> Provides ways to query for entities matching a {@link Composition.Builder composition} and extracting components</li>
  * </ol>
  */
-public interface DefaultWorld extends World, StatePlugin, ArchetypePlugin, TransmuterPlugin, CompositionPlugin {
+public interface DefaultWorld extends World, ArchetypePlugin, CompositionPlugin {
 
     /**
      * Creates an instance of {@link DefaultWorld}.
