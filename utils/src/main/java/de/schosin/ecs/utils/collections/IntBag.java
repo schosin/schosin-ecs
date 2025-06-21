@@ -52,6 +52,14 @@ public final class IntBag implements ImmutableIntBag {
         return data[index];
     }
 
+    public void addAll(ImmutableIntBag other) {
+        ensureCapacity(getCapacity() + other.getSize());
+        
+        for (int i = 0, s = other.getSize(); i < s; i++) {
+            add(other.get(i));
+        }
+    }
+
     public void add(int item) {
         if (data.length == size) {
             setCapacity(data.length * 2);

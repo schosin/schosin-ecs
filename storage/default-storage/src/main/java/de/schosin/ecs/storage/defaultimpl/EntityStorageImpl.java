@@ -577,6 +577,9 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         while (!relations.isEmpty()) {
             mapper.addComponent(entityId, relations.removeLast());
         }
+    }@Override
+    public ImmutableBag<Archetype> getArchetypes() {
+        return archetypeManager.getArchetypes();
     }
 
     @Override

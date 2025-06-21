@@ -2,10 +2,12 @@ package de.schosin.ecs.storage.defaultimpl.archetype;
 
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.StorageWorld;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.storage.defaultimpl.EntityStorageImpl;
 import de.schosin.ecs.storage.defaultimpl.entities.ComponentMaskImpl;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
 public class ArchetypeManager {
@@ -15,6 +17,7 @@ public class ArchetypeManager {
     private final EntityStorageImpl entityStorage;
 
     private final Bag<ArchetypeImpl> archetypes = new Bag<>(ArchetypeImpl.class, 64);
+    private final ImmutableBag<Archetype> immutableArchetypes = ImmutableBag.create(archetypes);
     private final IntBag archetypesByEntityId;
 
     public ArchetypeManager(StorageWorld world, ComponentStorage componentStorage, EntityStorageImpl entityStorage) {
@@ -45,6 +48,10 @@ public class ArchetypeManager {
 
         archetype.remove(entityId);
         archetypesByEntityId.set(entityId, 0);
+    }
+
+    public ImmutableBag<Archetype> getArchetypes() {
+        return immutableArchetypes;
     }
 
     public ArchetypeImpl getArchetypeForEntity(int entityId) {

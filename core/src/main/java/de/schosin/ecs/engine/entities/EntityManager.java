@@ -281,19 +281,15 @@ public class EntityManager {
     public IntBag getEntities(ComponentsPredicate predicate) {
         var result = new IntBag(1024);
 
-        synchronized (this.entities) {
-            for (int i = 0, s = this.entities.getSize(); i < s; i++) {
-                var entity = this.entities.get(i);
-                if (entity == null) {
-                    continue;
-                }
-
-                // TODO iterate over component masks instead, checking this only once
-                if (predicate.isInterested(entity.componentMask)) {
-                    result.add(entity.id);
-                }
+        var archetypes = storageEngine.getArchetypes();
+        for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+            var archetype = archetypes.get(i);
+            if (!predicate.isInterested(archetype.getComponentMask())) {
+                continue;
             }
 
+            var entities = archetype.getEntities();
+            result.addAll(entities);
         }
 
         return result;

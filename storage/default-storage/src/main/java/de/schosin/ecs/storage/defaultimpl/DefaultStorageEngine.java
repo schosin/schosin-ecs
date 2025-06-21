@@ -164,6 +164,11 @@ public class DefaultStorageEngine implements StorageEngine {
     }
 
     @Override
+    public ImmutableBag<Archetype> getArchetypes() {
+        return this.entityStorage.getArchetypes();
+    }
+
+    @Override
     public Archetype getArchetypeForEntity(int entityId) {
         return entityStorage.getArchetypeForEntity(entityId);
     }

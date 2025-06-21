@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
@@ -11,6 +12,45 @@ import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
 import de.schosin.ecs.storage.testsuite.entities.ArchetypeTest.C2;
 
 public class ArchetypeStorageTest extends AbstractStorageEngineTest {
+
+    @Nested
+    class GetArcchetypesTest {
+
+        @Test
+        void testNoArchetypes() {
+            var archetypes = engine.getArchetypes();
+            assertThat(archetypes).as("getArchetypes must not return null").isNotNull();
+            assertThat(archetypes.getSize()).as("getArchetypes must return empty bag if no archetypes created").isZero();
+        }
+
+        @Test
+        void testArchetypes() {
+            var emtpyArchetype = engine.getArchetype();
+            var archetype1 = engine.getArchetype(component(C1.class));
+
+            var archetypes = engine.getArchetypes();
+            assertThat(archetypes).as("getArchetypes must not return null").isNotNull();
+            assertThat(archetypes.getSize()).as("getArchetypes must return all archetypes").isEqualTo(2);
+            assertThat(archetypes.get(0)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1);
+            assertThat(archetypes.get(1)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1);
+        }
+
+        @Test
+        void testArchetypesAddedAfterwards() {
+            var emtpyArchetype = engine.getArchetype();
+            var archetype1 = engine.getArchetype(component(C1.class));
+
+            var archetypes = engine.getArchetypes();
+            var archetype2 = engine.getArchetype(component(C2.class));
+
+            assertThat(archetypes).as("getArchetypes must not return null").isNotNull();
+            assertThat(archetypes.getSize()).as("getArchetypes must return all archetypes").isEqualTo(3);
+            assertThat(archetypes.get(0)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1, archetype2);
+            assertThat(archetypes.get(1)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1, archetype2);
+            assertThat(archetypes.get(1)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1, archetype2);
+        }
+
+    }
 
     @Test
     void testArchetypeInstanceReused() {

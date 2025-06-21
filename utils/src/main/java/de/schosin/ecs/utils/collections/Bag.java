@@ -105,9 +105,11 @@ public final class Bag<T> implements ImmutableBag<T> {
         return data[index];
     }
 
-    public void addAll(ImmutableBag<? extends T> components) {
-        for (int i = 0, s = components.getSize(); i < s; i++) {
-            add(components.get(i));
+    public void addAll(ImmutableBag<? extends T> other) {
+        ensureCapacity(getCapacity() + other.getSize());
+
+        for (int i = 0, s = other.getSize(); i < s; i++) {
+            add(other.get(i));
         }
     }
 

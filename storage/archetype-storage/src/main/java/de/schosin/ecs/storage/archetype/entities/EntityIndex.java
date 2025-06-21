@@ -6,6 +6,7 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
@@ -34,7 +35,8 @@ public class EntityIndex {
     private final EntityRelationIndex relationIndex;
 
     private final Bag<ArchetypePointer> lookup;
-    private final Bag<ArchetypeData> archetypes;
+    private final Bag<ArchetypeData> archetypes = new Bag<>(ArchetypeData.class, 8);
+    private final ImmutableBag<Archetype> immutableArchetypes = ImmutableBag.create(archetypes);
 
     private final Pool<Bag<Object>> componentsPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class), Bag::clear);
 
@@ -46,11 +48,14 @@ public class EntityIndex {
         this.relationIndex = relationIndex;
 
         this.lookup = world.createEntityBag(ArchetypePointer.class);
-        this.archetypes = new Bag<>(ArchetypeData.class, 8);
     }
 
     public ArchetypeData getArchetypeDataById(int archetypeId) {
         return archetypes.get(archetypeId);
+    }
+
+    public ImmutableBag<Archetype> getArchetypes() {
+        return immutableArchetypes;
     }
 
     public ArchetypeData getArchetypeDataForEntity(int entityId) {
@@ -158,7 +163,6 @@ public class EntityIndex {
         pointer.archetype = archetype;
         pointer.index = index;
     }
-
 
     private ArchetypeData determineArchetype(ComponentMaskImpl componentMask) {
         var existing = componentMask.getId() < this.archetypes.getSize() ? this.archetypes.get(componentMask.getId()) : null;

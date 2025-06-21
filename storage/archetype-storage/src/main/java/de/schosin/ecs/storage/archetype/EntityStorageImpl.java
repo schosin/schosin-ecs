@@ -494,6 +494,11 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
+    public ImmutableBag<Archetype> getArchetypes() {
+        return entityIndex.getArchetypes();
+    }
+    
+    @Override
     public Archetype getArchetypeForEntity(int entityId) {
         return entityIndex.getArchetypeDataForEntity(entityId);
     }
