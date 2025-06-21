@@ -15,6 +15,7 @@
             <groupId>de.schosin.ecs</groupId>
             <artifactId>ecs-core</artifactId>
             <version>${project.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>de.schosin.ecs.plugins</groupId>
