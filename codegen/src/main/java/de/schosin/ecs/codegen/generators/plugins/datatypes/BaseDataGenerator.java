@@ -14,6 +14,7 @@ import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.ParameterSpec;
 import com.palantir.javapoet.ParameterizedTypeName;
+import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
@@ -178,10 +179,6 @@ public class BaseDataGenerator {
                     .initializer("$1T.unbounded($2T.class, $2T::new)", Utils.POOL, className)
                     .build();
 
-            var components = FieldSpec.builder(Utils.bag(ClassName.get(Object.class)), "components", Modifier.PRIVATE, Modifier.FINAL)
-                    .initializer("new $1T<>($2T.class, %d)".formatted(n), Utils.BAG, Object.class)
-                    .build();
-
             var fields = IntStream.range(1, n + 1)
                     .mapToObj(i -> componentField(i))
                     .toList();
@@ -196,13 +193,12 @@ public class BaseDataGenerator {
                     .addSuperinterface(interfaceName)
                     .addSuperinterface(Utils.POOLED)
                     .addField(pool)
-                    .addField(components)
                     .addFields(fields)
                     .addMethod(dataGetInstance(n, typeVariables))
                     .addMethod(dataFree(n, typeVariables))
                     .addMethod(free())
                     .addMethods(accessors)
-                    .addMethod(getComponents(n))
+                    .addMethod(getComponent(n))
                     .addMethod(dataReset(n))
                     .build();
         }
@@ -271,28 +267,27 @@ public class BaseDataGenerator {
                     .build();
         }
 
-        private static MethodSpec getComponents(int n) {
+        private static MethodSpec getComponent(int n) {
             var body = CodeBlock.builder();
-            body.addStatement("this.components.clear()");
-
-            for (int i = 1; i <= n; i++) {
-                body.addStatement("this.components.set(%d, component%d)".formatted(i - 1, i));
+            body.beginControlFlow("return switch(i)");
+            for (int i = 0; i < n; i++) {
+                body.addStatement("case %d -> component%d".formatted(i, i + 1));
             }
+            body.addStatement("default -> throw new $1T(\"Invalid index %%d\".formatted(i))", IllegalArgumentException.class);
+            body.endControlFlow();
+            body.addStatement(""); // switch expression
 
-            body.addStatement("return this.components");
-
-            return MethodSpec.methodBuilder("getComponents")
+            return MethodSpec.methodBuilder("getComponent")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
-                    .returns(Utils.immutableBag(ClassName.get(Object.class)))
+                    .addParameter(TypeName.INT, "i")
+                    .returns(Object.class)
                     .addCode(body.build())
                     .build();
         }
 
         private static MethodSpec dataReset(int n) {
             var body = CodeBlock.builder();
-            body.addStatement("this.components.clear()");
-
             for (int i = 1; i <= n; i++) {
                 body.addStatement("this.component%d = null".formatted(i));
             }

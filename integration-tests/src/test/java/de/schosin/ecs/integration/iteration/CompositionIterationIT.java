@@ -1,5 +1,6 @@
 package de.schosin.ecs.integration.iteration;
 
+import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
 import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
 
 import java.time.Duration;
@@ -12,6 +13,7 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
+import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.integration.AbstractEcsIT;
 import de.schosin.ecs.integration.components.Favorite;
@@ -25,7 +27,7 @@ import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData2;
 import de.schosin.ecs.plugins.composition.CompositionSet;
-import de.schosin.ecs.plugins.data.types.Data2;
+import de.schosin.ecs.plugins.data.types.Data3;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.plugins.data.types.DataType3.Processor3;
 import de.schosin.ecs.plugins.experimental.system.SystemPlugin;
@@ -323,11 +325,11 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData<Processor3<Data2<Position, Velocity>, Size, Hitbox>> composition;
+        private final CompositionData<Processor3<Data3<Position, Velocity, ComponentResult<Object>>, Size, Hitbox>> composition;
 
         public DataTypeIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class),
-                    DataType.get(component(Position.class), component(Velocity.class)), component(Size.class), component(Hitbox.class));
+                    DataType.get(component(Position.class), component(Velocity.class), WILDCARD), component(Size.class), component(Hitbox.class));
 
             for (int i = 0; i < 10; i++) {
                 world.createEntity(Marker.INSTANCE,
@@ -343,7 +345,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             this.composition.process(this::processEntity);
         }
 
-        private void processEntity(int entityId, Data2<Position, Velocity> data, Size size, Hitbox hitbox) {
+        private void processEntity(int entityId, Data3<Position, Velocity, ComponentResult<Object>> data, Size size, Hitbox hitbox) {
             var pos = data.component1();
             var velocity = data.component2();
 
@@ -354,6 +356,16 @@ public class CompositionIterationIT extends AbstractEcsIT {
             hitbox.y1 = pos.y - size.height / 2;
             hitbox.x2 = pos.x + size.width / 2;
             hitbox.y2 = pos.y + size.height / 2;
+
+            var merged = 0;
+            var components = data.component3();
+            for (int i = 0, s = components.size(); i < s; i++) {
+                merged += components.get(i).hashCode();
+            }
+
+            if (merged % 10 == 0) {
+                pos.x = -pos.x;
+            }
 
             ran = true;
         }

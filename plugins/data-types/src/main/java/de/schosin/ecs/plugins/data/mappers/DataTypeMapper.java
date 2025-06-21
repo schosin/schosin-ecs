@@ -71,11 +71,10 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
 
     @SuppressWarnings("unchecked")
     private void freeData(Data result) {
-        var components = result.getComponents();
         for (int i = 0; i < size; i++) {
             var mapper = mappers[i];
             if (mapper instanceof PoolingComponents pooling) {
-                pooling.free(components.get(i));
+                pooling.free(result.getComponent(i));
             }
         }
 

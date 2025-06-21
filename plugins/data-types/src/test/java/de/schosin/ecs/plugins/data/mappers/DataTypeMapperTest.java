@@ -1,6 +1,7 @@
 package de.schosin.ecs.plugins.data.mappers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -89,11 +90,10 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
             var result = mapper.get(entityId);
             assertThat(result).isNotNull();
 
-            var components = result.getComponents();
-            assertThat(components).isNotNull();
-            assertThat(components.getSize()).isEqualTo(2);
-            assertThat(components.get(0)).isSameAs(component1);
-            assertThat(components.get(1)).isSameAs(component2);
+            assertThat(result.getComponent(0)).isSameAs(component1);
+            assertThat(result.getComponent(1)).isSameAs(component2);
+
+            assertThatThrownBy(() -> result.getComponent(2)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test
@@ -236,12 +236,11 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
             var result = mapper.get(entityId);
             assertThat(result).isNotNull();
 
-            var components = result.getComponents();
-            assertThat(components).isNotNull();
-            assertThat(components.getSize()).isEqualTo(3);
-            assertThat(components.get(0)).isSameAs(component1);
-            assertThat(components.get(1)).isSameAs(component2);
-            assertThat(components.get(2)).isSameAs(component3);
+            assertThat(result.getComponent(0)).isSameAs(component1);
+            assertThat(result.getComponent(1)).isSameAs(component2);
+            assertThat(result.getComponent(2)).isSameAs(component3);
+
+            assertThatThrownBy(() -> result.getComponent(3)).isInstanceOf(IllegalArgumentException.class);
         }
 
     }
