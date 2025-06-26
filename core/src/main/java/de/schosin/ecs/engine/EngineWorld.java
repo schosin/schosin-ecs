@@ -120,6 +120,11 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     @Override
+    public <T> T addSingleton(@NonNull Class<? super T> clazz, @NonNull T singleton) {
+        return singletonManager.addSingleton(clazz, singleton);
+    }
+
+    @Override
     public <T> @NonNull T getSingleton(@NonNull Class<T> clazz) throws NoSuchElementException {
         return singletonManager.getSingleton(clazz);
     }

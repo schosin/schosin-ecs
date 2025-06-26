@@ -140,13 +140,41 @@ class SingletonManagerTest extends AbstractWorldTest {
         assertThat(outer.inner.world).isSameAs(world);
     }
 
+    @Test
+    void testAddSingletonInterface() {
+        var instance = new PublicSharedNoDefault(1);
+
+        var world = World.builder().build();
+        world.addSingleton(MarkerInterface.class, instance);
+
+        assertThat(world.getSingleton(MarkerInterface.class)).isSameAs(instance);
+        assertThatThrownBy(() -> world.getSingleton(PublicSharedNoDefault.class)).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void testAddMultipleSingletonsInterface() {
+        var instance = new PublicSharedNoDefault(1);
+
+        var world = World.builder().build();
+        world.addSingleton(MarkerInterface.class, instance);
+        world.addSingleton(instance);
+
+        assertThat(world.getSingleton(MarkerInterface.class)).isSameAs(instance);
+        assertThat(world.getSingleton(PublicSharedNoDefault.class)).isSameAs(instance);
+
+        assertThatThrownBy(() -> world.addSingleton(MarkerInterface.class, new PublicShared())).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    public interface MarkerInterface {
+    }
+
     public record PublicWorld(World world) {
     }
 
-    public static class PublicShared {
+    public static class PublicShared implements MarkerInterface {
     }
 
-    public static class PublicSharedNoDefault {
+    public static class PublicSharedNoDefault implements MarkerInterface {
         @SuppressWarnings("unused")
         public PublicSharedNoDefault(int foo) {
         }

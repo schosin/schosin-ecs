@@ -117,7 +117,7 @@ public interface World extends Components.Creator {
          * @throws ClassCastException if class does not implement StorageEngine
          */
         Builder<T> storageEngine(Class<?> storageEngine, Object config);
-        
+
         /**
          * Configure the maximum count of active entities this world will hold at its peak.
          * 
@@ -213,6 +213,16 @@ public interface World extends Components.Creator {
      * @return singleton instance
      */
     <T> T addSingleton(@NonNull T singleton);
+
+    /**
+     * Adds a singleton to this world. The singleton will be available only via {@code clazz}.
+     * 
+     * @param <T> type of singleton
+     * @param clazz class, superclass or superinterface of singleton
+     * @param singleton singleton to add
+     * @return singleton instance
+     */
+    <T> T addSingleton(@NonNull Class<? super T> clazz, @NonNull T singleton);
 
     /**
      * Returns a singleton instance of the given class. Can be used to share state
