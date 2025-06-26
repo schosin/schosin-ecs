@@ -1,5 +1,8 @@
 package de.schosin.ecs.api.components.types;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
@@ -16,6 +19,13 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
  * @param <T> type of component
  */
 public record ClassType<T>(Class<T> clazz) implements RegularComponentType<T, T> {
+
+    private static final Map<Class<?>, ClassType<?>> LOOKUP = new ConcurrentHashMap<>();
+
+    @SuppressWarnings("unchecked")
+    public static <T> ClassType<T> getInstance(Class<T> clazz) {
+        return (ClassType<T>) LOOKUP.computeIfAbsent(clazz, ClassType::new);
+    }
 
     public ClassType {
         ClassTypeHelper.validateClassType(clazz);

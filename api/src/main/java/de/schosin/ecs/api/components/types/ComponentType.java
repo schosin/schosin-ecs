@@ -96,23 +96,23 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
     }
 
     static <T> ClassType<T> component(Class<T> clazz) {
-        return new ClassType<>(clazz);
+        return ClassType.getInstance(clazz);
     }
 
     static <R, T> ComponentRelationType<R, T> relation(Class<R> relationship, Class<T> target) {
-        return new ComponentRelationType<>(relationship, target);
+        return ComponentRelationType.getInstance(relationship, target);
     }
 
     static <R extends Relation.Exclusive, T> ExclusiveComponentRelationType<R, T> exclusiveRelation(Class<R> relationship, Class<T> target) {
-        return new ExclusiveComponentRelationType<>(relationship, target);
+        return ExclusiveComponentRelationType.getInstance(relationship, target);
     }
 
     static <R> EntityRelationType<R> relation(Class<R> relationship) {
-        return new EntityRelationType<>(relationship);
+        return EntityRelationType.getInstance(relationship);
     }
 
     static <R extends Relation.Exclusive> ExclusiveEntityRelationType<R> exclusiveRelation(Class<R> relationship) {
-        return new ExclusiveEntityRelationType<>(relationship);
+        return ExclusiveEntityRelationType.getInstance(relationship);
     }
 
     static <R, T> EntityRelationFetchType<R, T> relation(Class<R> relationship, ComponentType<?, T> fetch) {

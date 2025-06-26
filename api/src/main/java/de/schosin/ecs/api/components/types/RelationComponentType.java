@@ -1,8 +1,12 @@
 package de.schosin.ecs.api.components.types;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
@@ -45,6 +49,15 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
      * @param <T> type of target component
      */
     record ComponentRelationType<R, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelations<R, T>> {
+
+        private static final Map<Class<?>, Map<Class<?>, ComponentRelationType<?, ?>>> LOOKUP = new ConcurrentHashMap<>();
+
+        @SuppressWarnings("unchecked")
+        public static <R, T> ComponentRelationType<R, T> getInstance(Class<R> relationship, Class<T> target) {
+            return (ComponentRelationType<R, T>) LOOKUP.computeIfAbsent(relationship, r -> new ConcurrentHashMap<>())
+                    .computeIfAbsent(target, t -> new ComponentRelationType<>(relationship, target));
+        }
+
         public ComponentRelationType {
             RelationComponentTypeHelper.validateNonExclusiveComponentRelationship(relationship);
             RelationComponentTypeHelper.validateComponentTarget(target);
@@ -68,6 +81,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         public final String toString() {
             return "ComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
         }
+
     }
 
     /**
@@ -77,6 +91,15 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
      * @param <T> type of target component
      */
     record ExclusiveComponentRelationType<R extends Relation.Exclusive, T>(Class<R> relationship, Class<T> target) implements RegularComponentRelationType<R, T, ComponentRelation<R, T>> {
+
+        private static final Map<Class<?>, Map<Class<?>, ExclusiveComponentRelationType<?, ?>>> LOOKUP = new ConcurrentHashMap<>();
+
+        @SuppressWarnings("unchecked")
+        public static <R extends Exclusive, T> ExclusiveComponentRelationType<R, T> getInstance(Class<R> relationship, Class<T> target) {
+            return (ExclusiveComponentRelationType<R, T>) LOOKUP.computeIfAbsent(relationship, r -> new ConcurrentHashMap<>())
+                    .computeIfAbsent(target, t -> new ExclusiveComponentRelationType<>(relationship, target));
+        }
+
         public ExclusiveComponentRelationType {
             RelationComponentTypeHelper.validateComponentRelationship(relationship);
             RelationComponentTypeHelper.validateComponentTarget(target);
@@ -96,6 +119,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         public final String toString() {
             return "ExclusiveComponentRelationType(%s / %s)".formatted(relationship.getSimpleName(), target.getSimpleName());
         }
+
     }
 
     /**
@@ -109,6 +133,14 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
      * @param <R> type of relationship component, must not extend {@link Relation.Exclusive}
      */
     record EntityRelationType<R>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelations<R>> {
+
+        private static final Map<Class<?>, EntityRelationType<?>> LOOKUP = new ConcurrentHashMap<>();
+
+        @SuppressWarnings("unchecked")
+        public static <R> EntityRelationType<R> getInstance(Class<R> relationship) {
+            return (EntityRelationType<R>) LOOKUP.computeIfAbsent(relationship, r -> new EntityRelationType<>(relationship));
+        }
+
         public EntityRelationType {
             RelationComponentTypeHelper.validateNonExclusiveEntityRelationship(relationship);
         }
@@ -131,6 +163,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         public final String toString() {
             return "EntityRelationType(%s)".formatted(relationship.getSimpleName());
         }
+
     }
 
     /**
@@ -139,6 +172,14 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
      * @param <R> type of relationship component
      */
     record ExclusiveEntityRelationType<R extends Relation.Exclusive>(Class<R> relationship) implements RegularEntityRelationType<R, EntityRelation<R>> {
+
+        private static final Map<Class<?>, ExclusiveEntityRelationType<?>> LOOKUP = new ConcurrentHashMap<>();
+
+        @SuppressWarnings("unchecked")
+        public static <R extends Exclusive> ExclusiveEntityRelationType<R> getInstance(Class<R> relationship) {
+            return (ExclusiveEntityRelationType<R>) LOOKUP.computeIfAbsent(relationship, r -> new ExclusiveEntityRelationType<>(relationship));
+        }
+
         public ExclusiveEntityRelationType {
             RelationComponentTypeHelper.validateEntityRelationship(relationship);
         }
@@ -157,6 +198,7 @@ public sealed interface RelationComponentType<R, T extends Relation<R>, X> exten
         public final String toString() {
             return "ExclusiveEntityRelationType(%s)".formatted(relationship.getSimpleName());
         }
+
     }
 
 }
