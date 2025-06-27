@@ -82,11 +82,6 @@
             </dependency>
             <dependency>
                 <groupId>de.schosin.ecs.storage</groupId>
-                <artifactId>ecs-storage-default-storage</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>de.schosin.ecs.storage</groupId>
                 <artifactId>ecs-storage-archetype-storage</artifactId>
                 <version>${project.version}</version>
             </dependency>

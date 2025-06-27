@@ -14,8 +14,6 @@
         <module>api</module>
         <module>common</module>
         <module>test-suite</module>
-        <module>default-storage</module>
-        <module>default-storage-test</module>
         <module>archetype-storage</module>
         <module>archetype-storage-test</module>
     </modules>

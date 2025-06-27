@@ -234,14 +234,6 @@
                 <storage.impl.version>${project.version}</storage.impl.version>
             </properties>
         </profile>
-        <profile>
-            <id>defaultStorage</id>
-            <properties>
-                <storage.impl.groupId>de.schosin.ecs.storage</storage.impl.groupId>
-                <storage.impl.artifactId>ecs-storage-default-storage</storage.impl.artifactId>
-                <storage.impl.version>${project.version}</storage.impl.version>
-            </properties>
-        </profile>
     </profiles>
 
 </project>
