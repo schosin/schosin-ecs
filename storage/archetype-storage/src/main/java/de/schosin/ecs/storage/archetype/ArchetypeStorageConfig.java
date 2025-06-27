@@ -38,7 +38,7 @@ import de.schosin.ecs.storage.api.StorageEngineException;
  * </p>
  */
 public record ArchetypeStorageConfig(int classIdCount, int relationCount, int creationBatchSize, Variant variant) {
-    
+
     public static ArchetypeStorageConfig getConfig() {
         // System variable
         var classIdCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
@@ -75,7 +75,7 @@ public record ArchetypeStorageConfig(int classIdCount, int relationCount, int cr
     }
 
     public enum Variant {
-        ArrayOfStructs, StructOfArrays
+        StructOfArrays
     }
 
     public static final String PROPERTY_CLASS_ID_COUNT = "storage.archetype.classIdCount";
@@ -89,7 +89,6 @@ public record ArchetypeStorageConfig(int classIdCount, int relationCount, int cr
     public static final Variant DEFAULT_VARIANT = Variant.StructOfArrays;
 
     public static final ArchetypeStorageConfig STRUCT_OF_ARRAYS = new ArchetypeStorageConfig(DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT, DEFAULT_CREATION_BATCH_SIZE, Variant.StructOfArrays);
-    public static final ArchetypeStorageConfig ARRAY_OF_STRUCTS = new ArchetypeStorageConfig(DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT, DEFAULT_CREATION_BATCH_SIZE, Variant.ArrayOfStructs);
 
     public static final ArchetypeStorageConfig DEFAULT = new ArchetypeStorageConfig(DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT, DEFAULT_CREATION_BATCH_SIZE, DEFAULT_VARIANT);
 

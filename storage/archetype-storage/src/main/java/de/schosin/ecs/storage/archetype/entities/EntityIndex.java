@@ -12,7 +12,6 @@ import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeData;
-import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeDataImpl;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeDataSoaImpl;
 import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
@@ -187,7 +186,6 @@ public class EntityIndex {
 
     private ArchetypeData createArchetype(ComponentMaskImpl componentMask) {
         return switch (config.variant()) {
-            case ArrayOfStructs -> new ArchetypeDataImpl(componentIndex, relationIndex, this, componentMask, config, world);
             case StructOfArrays -> new ArchetypeDataSoaImpl(componentIndex, relationIndex, this, componentMask, config, world);
         };
     }

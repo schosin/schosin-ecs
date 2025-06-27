@@ -7,7 +7,7 @@ import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
-public sealed interface ArchetypeData extends Archetype permits ArchetypeDataImpl, ArchetypeDataSoaImpl {
+public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoaImpl {
 
     boolean contains(int index, RegularComponentType<?, ?> type);
 
