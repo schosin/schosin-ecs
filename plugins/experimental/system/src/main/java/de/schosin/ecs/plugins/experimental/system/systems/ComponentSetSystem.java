@@ -49,23 +49,27 @@ public abstract class ComponentSetSystem<T extends ComponentSet<P>, P extends Da
     private final P processor;
     protected final CompositionSet<P> composition;
 
-    @SuppressWarnings("unchecked")
     public ComponentSetSystem(CompositionPlugin world, ComponentSetType<T, P> componentType) {
+        this(world, componentType, buildComposition(world, componentType));
+    }
+
+    @SuppressWarnings("unchecked")
+    public ComponentSetSystem(CompositionPlugin world, ComponentSetType<T, P> componentType, Composition.Builder builder) {
         try {
             this.processor = (P) this;
         } catch (ClassCastException ex) {
             throw new IllegalStateException("When extending CompositionSystem, the implementing system must implement the DataProcessor");
         }
 
-        this.composition = buildComposition(world, componentType);
+        this.composition = world.createComposition(builder, componentType);
     }
 
-    private CompositionSet<P> buildComposition(CompositionPlugin world, ComponentSetType<T, P> componentType) {
+    private static <T extends ComponentSet<P>, P extends DataProcessor<T>> Composition.Builder buildComposition(CompositionPlugin world, ComponentSetType<T, P> componentType) {
         var componentTypes = ComponentSetsHelper.getData(componentType.componentSet()).components().stream()
                 .<ComponentType<?, ?>>map(ComponentSet.ComponentData::type)
                 .toArray(ComponentType<?, ?>[]::new);
 
-        return world.createComposition(Composition.all(componentTypes), componentType);
+        return Composition.all(componentTypes);
     }
 
     @Override
