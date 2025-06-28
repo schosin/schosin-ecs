@@ -14,11 +14,7 @@ class WildcardComponentMapperImplTest extends AbstractMapperTest {
     void testHas() {
         var components = world.getComponents(WILDCARD);
 
-        var component1 = new Component1();
-        var component2 = new Component2("foo");
-        var pooled = new PooledComponent();
-
-        var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
+        var entityId = world.createEntity(new OtherComponent());
 
         // Call
         assertThat(components.has(entityId)).isTrue();
@@ -35,6 +31,21 @@ class WildcardComponentMapperImplTest extends AbstractMapperTest {
         var components = world.getComponents(WILDCARD);
 
         // Call
+        assertThat(components.has(entityId)).isTrue();
+    }
+
+    @Test
+    void testHas_AddComponentToEntityAfterwards() {
+        var components = world.getComponents(WILDCARD);
+
+        var entityId = world.createEntity();
+        assertThat(components.has(entityId)).isFalse();
+
+        // Call
+        world.getComponents(OtherComponent.class).add(entityId, new OtherComponent());
+        assertThat(components.has(entityId)).isTrue(); // pending component 
+
+        world.process();
         assertThat(components.has(entityId)).isTrue();
     }
 
@@ -384,6 +395,9 @@ class WildcardComponentMapperImplTest extends AbstractMapperTest {
             assertThat((Object) result2).isNotSameAs(result1);
         }
 
+    }
+
+    record OtherComponent() {
     }
 
 }

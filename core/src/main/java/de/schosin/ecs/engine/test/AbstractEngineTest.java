@@ -24,6 +24,8 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
+import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
@@ -87,6 +89,14 @@ public abstract class AbstractEngineTest {
 
     protected static <R extends Exclusive> ExclusiveEntityRelationType<R> exclusiveRelation(Class<R> relationship) {
         return ComponentType.exclusiveRelation(relationship);
+    }
+
+    protected static <R, T> EntityRelationFetchType<R, T> relation(Class<R> relationship, ComponentType<?, T> fetch) {
+        return ComponentType.relation(relationship, fetch);
+    }
+
+    protected static <R extends Exclusive, T> ExclusiveEntityRelationFetchType<R, T> exclusiveRelation(Class<R> relationship, ComponentType<?, T> fetch) {
+        return ComponentType.exclusiveRelation(relationship, fetch);
     }
 
     protected <R, T> ComponentRelation<R, T> relation(R relationship, T target) {
