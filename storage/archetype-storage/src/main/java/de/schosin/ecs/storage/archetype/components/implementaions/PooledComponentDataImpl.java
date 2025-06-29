@@ -29,7 +29,7 @@ public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> typ
     }
 
     @Override
-    public T getInstance() {
+    public synchronized T getInstance() {
         return pool.getInstance();
     }
 

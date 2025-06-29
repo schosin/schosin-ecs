@@ -57,40 +57,50 @@ public class EventManager {
 
         var handlers = this.handlers.get(clazz);
         if (handlers == null) {
-            var existingHandlers = this.handlers.entrySet().stream()
-                    .filter(entry -> entry.getKey().isAssignableFrom(clazz))
-                    .map(Map.Entry::getValue)
-                    .flatMap(existing -> Arrays.stream(existing.getData(), 0, existing.getSize()))
-                    .distinct()
-                    .toList();
+            synchronized (this.handlers) {
+                handlers = this.handlers.get(clazz);
+                if (handlers == null) {
 
-            if (existingHandlers.isEmpty()) {
-                this.noHandlers.add(clazz);
-                return null;
+                    var existingHandlers = this.handlers.entrySet().stream()
+                            .filter(entry -> entry.getKey().isAssignableFrom(clazz))
+                            .map(Map.Entry::getValue)
+                            .flatMap(existing -> Arrays.stream(existing.getData(), 0, existing.getSize()))
+                            .distinct()
+                            .toList();
+
+                    if (existingHandlers.isEmpty()) {
+                        this.noHandlers.add(clazz);
+                        return null;
+                    }
+
+                    handlers = new Bag<>(EventHandler.class, 8);
+                    for (var handler : existingHandlers) {
+                        handlers.add(handler);
+                    }
+
+                    this.handlers.put(clazz, handlers);
+                }
             }
-
-            handlers = new Bag<>(EventHandler.class, 8);
-            for (var handler : existingHandlers) {
-                handlers.add(handler);
-            }
-
-            this.handlers.put(clazz, handlers);
         }
 
-        if (this.processed.add(clazz)) {
-            var currentHandlers = handlers;
+        synchronized (this.processed) {
+            if (!this.processed.add(clazz)) {
+                return handlers;
+            }
+        }
 
-            var matchingHandlers = this.handlers.entrySet().stream()
-                    .filter(entry -> entry.getKey().isAssignableFrom(clazz))
-                    .map(Map.Entry::getValue)
-                    .flatMap(existing -> Arrays.stream(existing.getData(), 0, existing.getSize()))
-                    .filter(handler -> !currentHandlers.contains(handler))
-                    .toList();
+        var currentHandlers = handlers;
 
-            if (!matchingHandlers.isEmpty()) {
-                for (var handler : matchingHandlers) {
-                    handlers.add(handler);
-                }
+        var matchingHandlers = this.handlers.entrySet().stream()
+                .filter(entry -> entry.getKey().isAssignableFrom(clazz))
+                .map(Map.Entry::getValue)
+                .flatMap(existing -> Arrays.stream(existing.getData(), 0, existing.getSize()))
+                .filter(handler -> !currentHandlers.contains(handler))
+                .toList();
+
+        if (!matchingHandlers.isEmpty()) {
+            for (var handler : matchingHandlers) {
+                handlers.add(handler);
             }
         }
 

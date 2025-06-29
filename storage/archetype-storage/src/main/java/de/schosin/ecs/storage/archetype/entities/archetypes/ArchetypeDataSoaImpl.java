@@ -272,7 +272,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         // Add components
         int index;
         synchronized (this.entities) {
-            index = alive++;
+            index = alive;
 
             for (int i = 0; i < size; i++) {
                 adders[i].add(entityId, index, components[i]);
@@ -280,10 +280,13 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Track entity
             this.entities.add(entityId);
-        }
 
-        // Add to EntityIndex
-        entityIndex.add(this, entityId, index);
+            // Add to EntityIndex
+            entityIndex.add(this, entityId, index);
+
+            // Increment alive count
+            alive++;
+        }
     }
 
     @Override
@@ -312,7 +315,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     private void createEntities(int[] entityIds, Object[][] components, int count) {
         synchronized (entities) {
             for (int i = 0, s = count; i < s; i++) {
-                var index = alive++;
+                var index = alive;
 
                 var entityId = entityIds[i];
 
@@ -329,14 +332,17 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                     adders[c].add(entityId, index, entityComponents[c]);
                 }
 
-                // Track entity
-                this.entities.add(entityId);
-
                 // Add to EntityIndex
                 entityIndex.add(this, entityId, index);
 
                 // Clear first component to cause error if user does not fill array
                 entityComponents[0] = null;
+
+                // Track entity
+                this.entities.add(entityId);
+
+                // Increment alive count
+                alive++;
             }
         }
     }
@@ -346,52 +352,55 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes2, ImmutableBag<Object> components2) {
 
         // Track entity index
-        var index = alive++;
-        this.entities.add(entityId);
+        synchronized (entities) {
+            var index = alive;
 
-        var componentIds = intBagPool.getInstance();
-        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
-            componentIds.set(i, componentIndex.getId(componentTypes.get(i)));
-        }
-
-        var componentIds2 = intBagPool.getInstance();
-        for (int i = 0, s = componentTypes2.getSize(); i < s; i++) {
-            componentIds2.set(i, componentIndex.getId(componentTypes2.get(i)));
-        }
-
-        // Fill data array (components 1)
-        for (int i = 0, s = components.getSize(); i < s; i++) {
-            // Add component to data
-            var componentId = componentIds.get(i);
-
-            var componentIndex = this.componentTypeIds.get(componentId);
-            if (componentIndex == -1) {
-                entityIndex.freeComponent(components.get(i));
-                continue; // removed comonent
+            var componentIds = intBagPool.getInstance();
+            for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
+                componentIds.set(i, componentIndex.getId(componentTypes.get(i)));
             }
 
-            adders[componentIndex].add(entityId, index, components.get(i));
-        }
-
-        // Fill data array (components 2)
-        for (int i = 0, s = components2.getSize(); i < s; i++) {
-            // Add component to data
-            var componentId = componentIds2.get(i);
-
-            var componentIndex = this.componentTypeIds.get(componentId);
-            if (componentIndex == -1) {
-                entityIndex.freeComponent(components2.get(i));
-                continue; // removed comonent
+            var componentIds2 = intBagPool.getInstance();
+            for (int i = 0, s = componentTypes2.getSize(); i < s; i++) {
+                componentIds2.set(i, componentIndex.getId(componentTypes2.get(i)));
             }
 
-            adders[componentIndex].add(entityId, index, components2.get(i));
+            // Fill data array (components 1)
+            for (int i = 0, s = components.getSize(); i < s; i++) {
+                // Add component to data
+                var componentId = componentIds.get(i);
+
+                var componentIndex = this.componentTypeIds.get(componentId);
+                if (componentIndex == -1) {
+                    entityIndex.freeComponent(components.get(i));
+                    continue; // removed comonent
+                }
+
+                adders[componentIndex].add(entityId, index, components.get(i));
+            }
+
+            // Fill data array (components 2)
+            for (int i = 0, s = components2.getSize(); i < s; i++) {
+                // Add component to data
+                var componentId = componentIds2.get(i);
+
+                var componentIndex = this.componentTypeIds.get(componentId);
+                if (componentIndex == -1) {
+                    entityIndex.freeComponent(components2.get(i));
+                    continue; // removed comonent
+                }
+
+                adders[componentIndex].add(entityId, index, components2.get(i));
+            }
+
+            intBagPool.free(componentIds);
+            intBagPool.free(componentIds2);
+
+            this.entities.add(entityId);
+            alive++;
+
+            return index;
         }
-
-        intBagPool.free(componentIds);
-        intBagPool.free(componentIds2);
-
-        return index;
-
     }
 
     @Override
@@ -437,7 +446,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             return -1;
         }
 
-        synchronized (this.data) {
+        synchronized (this.entities) {
             if (entities.get(index) != entityId) {
                 return -1;
             }
@@ -601,7 +610,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         @Override
         public int getSize() {
-            return entities.getSize();
+            return alive;
         }
 
         @Override

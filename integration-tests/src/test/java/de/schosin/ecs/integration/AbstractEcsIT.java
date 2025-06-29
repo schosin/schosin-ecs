@@ -1,6 +1,6 @@
 package de.schosin.ecs.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
@@ -39,7 +39,15 @@ public abstract class AbstractEcsIT extends AbstractEcsTest<SimulationWorld> {
         simulation.run();
 
         await().atMost(duration.plus(MARGIN)).until(simulation::isStopped);
-        assertThat(simulation.getException()).as("Simulation throws no exception").isNull();
+
+        var exception = simulation.getException();
+        if (exception != null) {
+            if (exception instanceof AssertionError error) {
+                throw error;
+            }
+
+            fail("Simulation throws no exceptions", exception);
+        }
 
         return simulation;
     }
