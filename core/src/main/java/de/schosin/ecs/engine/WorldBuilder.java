@@ -8,6 +8,7 @@ import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.SequencedSet;
 import java.util.stream.Collectors;
@@ -27,6 +28,8 @@ import de.schosin.ecs.storage.api.StorageWorld;
 
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.ByteCodeElement;
+import net.bytebuddy.implementation.FieldAccessor;
+import net.bytebuddy.implementation.MethodCall;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.matcher.ElementMatcher.Junction;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -179,12 +182,16 @@ class DynamicWorldBuilder {
             }
         }
 
-        return createDynamicPluginWorld(world, clazz, plugins, config);
-
+        try {
+            return createDynamicPluginWorld(world, clazz, plugins, config);
+        } catch (NoSuchMethodException | SecurityException ex) {
+            throw new EcsWorldCreationException("Failed to create dynamic World '%s': %s".formatted(clazz.getName(), ex.getMessage()), ex);
+        }
     }
 
     @SuppressWarnings("unchecked")
-    private static <T extends World> T createDynamicPluginWorld(EngineWorld world, Class<T> clazz, SequencedSet<PluginData> plugins, WorldBuilder<?> config) {
+    private static <T extends World> T createDynamicPluginWorld(EngineWorld world, Class<T> clazz, SequencedSet<PluginData> plugins, WorldBuilder<?> config)
+            throws NoSuchMethodException, SecurityException {
         // Create builder
         var builder = new ByteBuddy()
                 .subclass(Object.class)
@@ -192,8 +199,20 @@ class DynamicWorldBuilder {
                 .implement(clazz)
                 .implement(StorageWorld.class);
 
+        // Add fields for debugging
+        var fields = builder.defineField("world", EngineWorld.class, Modifier.PRIVATE | Modifier.FINAL);
+        fields = fields.defineField("plugins", List.class, Modifier.PRIVATE | Modifier.FINAL);
+
+        // Add constructor
+        var constructor = fields
+                .defineConstructor(Modifier.PUBLIC)
+                .withParameters(EngineWorld.class, List.class)
+                .intercept(MethodCall.invoke(Object.class.getConstructor())
+                        .andThen(FieldAccessor.ofField("world").setsArgumentAt(0))
+                        .andThen(FieldAccessor.ofField("plugins").setsArgumentAt(1)));
+
         // Add world
-        var definition = builder.method(isMethodOf(World.class)).intercept(MethodDelegation.to(world));
+        var definition = constructor.method(isMethodOf(World.class)).intercept(MethodDelegation.to(world));
         definition = definition.method(isMethodOf(StorageWorld.class)).intercept(MethodDelegation.to(world));
 
         // Instantiate plugins
@@ -212,7 +231,9 @@ class DynamicWorldBuilder {
 
         // Instantiate class
         try {
-            var proxy = (T) dynamicWorld.getDeclaredConstructor().newInstance();
+            var pluginInstances = instantiatedPlugins.stream().map(PluginInstance::instance).toList();
+
+            var proxy = (T) dynamicWorld.getDeclaredConstructor(EngineWorld.class, List.class).newInstance(world, pluginInstances);
             injectProxies(world, proxy, instantiatedPlugins);
 
             return proxy;
