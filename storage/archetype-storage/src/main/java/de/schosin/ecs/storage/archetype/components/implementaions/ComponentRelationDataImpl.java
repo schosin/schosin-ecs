@@ -29,7 +29,7 @@ public record ComponentRelationDataImpl<R, T>(int id, ComponentRelationType<R, T
 
     @Override
     public ComponentRelations<R, T> getComponent(int entityId) {
-        return index.getComponent(entityId, type);
+        return index.getComponent(entityId, type, id);
     }
 
     @Override

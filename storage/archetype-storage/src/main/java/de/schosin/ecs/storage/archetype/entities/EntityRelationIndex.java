@@ -64,15 +64,16 @@ public class EntityRelationIndex {
                 }
 
                 var componentMask = archetypeData.getComponentMask();
-                var componentTypes = componentMask.getComponentTypes();
-                for (int c = 0, cs = componentTypes.getSize(); c < cs; c++) {
-                    if (!(componentTypes.get(c) instanceof RegularEntityRelationType<?, ?> relationType)) {
+                var componentMappers = componentMask.getComponents();
+                for (int c = 0, cs = componentMappers.getSize(); c < cs; c++) {
+                    var componentMapper = componentMappers.get(c);
+                    if (!(componentMapper.type() instanceof RegularEntityRelationType<?, ?> relationType)) {
                         continue;
                     }
 
                     switch (relationType) {
                         case EntityRelationType<?> type -> {
-                            var relations = (EntityRelationResultImpl) entityIndex.getComponent(relatedId, type);
+                            var relations = (EntityRelationResultImpl) entityIndex.getComponent(relatedId, type, componentMapper.id());
                             if (relations != null) {
                                 relations.removeTarget(targetId);
 

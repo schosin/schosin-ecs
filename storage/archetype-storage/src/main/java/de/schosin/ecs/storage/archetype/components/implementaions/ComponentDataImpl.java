@@ -23,7 +23,7 @@ public record ComponentDataImpl<T>(int id, ClassType<T> type, EntityIndex index)
 
     @Override
     public T getComponent(int entityId) {
-        return index.getComponent(entityId, type);
+        return index.getComponent(entityId, type, id);
     }
 
     @Override

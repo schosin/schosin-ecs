@@ -25,7 +25,7 @@ public record PooledComponentDataImpl<T extends Pooled>(int id, ClassType<T> typ
 
     @Override
     public T getComponent(int entityId) {
-        return index.getComponent(entityId, type);
+        return index.getComponent(entityId, type, id);
     }
 
     @Override

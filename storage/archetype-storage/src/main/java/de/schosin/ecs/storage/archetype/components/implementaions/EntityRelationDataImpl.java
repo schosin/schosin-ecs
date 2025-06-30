@@ -25,7 +25,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Enti
 
     @Override
     public EntityRelations<R> getComponent(int entityId) {
-        return index.getComponent(entityId, type);
+        return index.getComponent(entityId, type, id);
     }
 
     @Override

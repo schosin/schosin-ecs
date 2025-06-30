@@ -97,14 +97,14 @@ public class EntityIndex {
         return pointer.archetype.contains(pointer.index, componentType);
     }
 
-    public <R> R getComponent(int entityId, RegularComponentType<?, R> componentType) {
+    public <R> R getComponent(int entityId, RegularComponentType<?, R> componentType, int componentId) {
         // Lookup pointer
         var pointer = lookup.getSafe(entityId);
         if (pointer == null || pointer.archetype == null) {
             return null; // TODO this should throw, shouldn't it?
         }
 
-        return pointer.archetype.getComponent(pointer.index, componentType);
+        return pointer.archetype.getComponent(pointer.index, componentType, componentId);
     }
 
     public void addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {

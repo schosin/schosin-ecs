@@ -11,7 +11,7 @@ public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoa
 
     boolean contains(int index, RegularComponentType<?, ?> type);
 
-    <R> R getComponent(int index, RegularComponentType<?, R> componentType);
+    <R> R getComponent(int index, RegularComponentType<?, R> componentType, int componentId);
 
     DataAccessor getAccessor(int entityId);
 

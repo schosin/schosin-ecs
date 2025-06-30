@@ -216,12 +216,11 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> R getComponent(int index, RegularComponentType<?, R> componentType) {
+    public <R> R getComponent(int index, RegularComponentType<?, R> componentType, int componentId) {
         if (index >= alive) {
             return null;
         }
 
-        var componentId = componentIndex.getId(componentType);
         var componentIndex = this.componentTypeIds.get(componentId);
         if (componentIndex == -1) {
             return retrievePendingComponent(index, componentType);

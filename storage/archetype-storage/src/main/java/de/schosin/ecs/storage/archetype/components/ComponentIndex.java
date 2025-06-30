@@ -88,6 +88,10 @@ public class ComponentIndex {
         }
     }
 
+    public int getExistingId(RegularComponentType<?, ?> componentType) {
+        return this.lookup.getOrDefault(componentType, -1);
+    }
+
     public int getId(RegularComponentType<?, ?> componentType) {
         var result = this.lookup.get(componentType);
         if (result != null) {

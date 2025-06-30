@@ -30,7 +30,7 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
 
     @Override
     public ComponentRelation<R, T> getComponent(int entityId) {
-        return index.getComponent(entityId, type);
+        return index.getComponent(entityId, type, id);
     }
 
     @Override

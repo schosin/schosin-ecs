@@ -27,7 +27,7 @@ public record ExclusiveEntityRelationDataImpl<R extends Exclusive>(int id, Exclu
 
     @Override
     public EntityRelation<R> getComponent(int entityId) {
-        return index.getComponent(entityId, type);
+        return index.getComponent(entityId, type, id);
     }
 
     @Override
