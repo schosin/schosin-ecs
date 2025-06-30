@@ -5,8 +5,11 @@ import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 
 class WildcardComponentMapperImplTest extends AbstractMapperTest {
 
@@ -393,6 +396,56 @@ class WildcardComponentMapperImplTest extends AbstractMapperTest {
 
             // Verify
             assertThat((Object) result2).isNotSameAs(result1);
+        }
+
+    }
+
+    @Nested
+    class ReclaimTest {
+
+        @Test
+        void testReclaim() {
+            var component1 = new Component1();
+            var component2 = new Component2("foo");
+            var pooled = new PooledComponent();
+
+            var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
+
+            var mapper = world.getComponents(WILDCARD);
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(component1, component2, pooled, EnumComponent.FIRST);
+            assertThat(result.toString()).contains(component1.toString(), component2.toString(), pooled.toString(), EnumComponent.FIRST.toString());
+
+            var reclaimingMapper = assertThat(mapper).asInstanceOf(InstanceOfAssertFactories.type(ReclaimingComponents.class)).actual();
+            reclaimingMapper.reclaim();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
+        }
+
+        @Test
+        void testReclaim_WorldProcess() {
+            var component1 = new Component1();
+            var component2 = new Component2("foo");
+            var pooled = new PooledComponent();
+
+            var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
+
+            var mapper = world.getComponents(WILDCARD);
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(component1, component2, pooled, EnumComponent.FIRST);
+            assertThat(result.toString()).contains(component1.toString(), component2.toString(), pooled.toString(), EnumComponent.FIRST.toString());
+
+            world.process();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
         }
 
     }

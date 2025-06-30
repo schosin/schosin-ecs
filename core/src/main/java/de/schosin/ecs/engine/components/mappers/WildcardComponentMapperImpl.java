@@ -11,14 +11,15 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.WildcardComponentMapper;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
-import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardComponentMapperImpl<T> implements WildcardComponentMapper<T>, PoolingComponents<ComponentResult<T>>, WildcardMapper<ComponentMapper<? extends T>> {
+public final class WildcardComponentMapperImpl<T> implements WildcardComponentMapper<T>, ReclaimingComponents, WildcardMapper<ComponentMapper<? extends T>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -42,13 +43,6 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
         this.mappers.add(mapper);
         this.componentIds.add(mapper.componentId());
         this.classes.add(mapper.componentType().clazz());
-    }
-
-    @Override
-    public void free(ComponentResult<T> result) {
-        if (result instanceof WildcardComponentResultImpl impl && this.lent.removeIdentity(impl)) {
-            this.pool.free(impl);
-        }
     }
 
     @Override
@@ -76,15 +70,17 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
 
     @Override
     public ComponentResult<T> get(int entityId) {
-        return access(accessor.apply(entityId));
+        var accessor = this.accessor.apply(entityId);
+
+        var componentAccessor = getComponentAccessor(accessor);
+        lent.add(componentAccessor);
+
+        return componentAccessor.getComponent(accessor);
     }
 
     @Override
-    public ComponentResult<T> access(DataAccessor accessor) {
-        var result = pool.getInstance().init(accessor);
-        lent.add(result);
-
-        return result;
+    public WildcardComponentResultImpl getComponentAccessor(DataAccessor accessor) {
+        return pool.getInstance().init(accessor);
     }
 
     @Override
@@ -99,7 +95,7 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
         return removed;
     }
 
-    private final class WildcardComponentResultImpl implements ComponentResult<T>, Iterator<T>, Pooled {
+    private final class WildcardComponentResultImpl implements ComponentResult<T>, Iterator<T>, ComponentAccessor<ComponentResult<T>>, Pooled {
 
         private final IntBag data = new IntBag(4);
 
@@ -116,6 +112,19 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
             this.accessor = accessor;
 
             return this;
+        }
+
+        @Override
+        public ComponentResult<T> getComponent(DataAccessor accessor) {
+            reset();
+            this.accessor = accessor;
+
+            return this;
+        }
+
+        @Override
+        public void free() {
+            pool.free(this);
         }
 
         @NonNull
@@ -189,6 +198,23 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
 
             this.size = -1;
             this.id = -1;
+        }
+
+        @Override
+        public String toString() {
+            if (accessor == null) {
+                return "ComponentResult(invalidated)";
+            }
+
+            var builder = new StringBuilder().append("ComponentResult(");
+            for (int i = 0, s = size(); i < s; i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+
+                builder.append(get(i));
+            }
+            return builder.append(")").toString();
         }
 
     }

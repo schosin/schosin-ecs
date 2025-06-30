@@ -6,8 +6,6 @@ import de.schosin.ecs.codegen.EcsCodegen;
 @EcsCodegen
 public interface BaseData extends Pooled {
 
-    Object getComponent(int i);
-
     void free();
 
 }

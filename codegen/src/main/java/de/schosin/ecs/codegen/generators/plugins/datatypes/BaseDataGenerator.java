@@ -32,6 +32,7 @@ public class BaseDataGenerator {
         files.add(Data.create(packageName, maxParams));
         files.addAll(IntStream.range(2, maxParams + 1).mapToObj(n -> DataN.create(packageName, n)).toList());
         files.addAll(IntStream.range(2, maxParams + 1).mapToObj(n -> DataNImpl.create(packageName, n)).toList());
+        files.addAll(IntStream.range(2, maxParams + 1).mapToObj(n -> DataAccessorN.create(packageName, n)).toList());
 
         return files;
     }
@@ -101,8 +102,10 @@ public class BaseDataGenerator {
                     .addModifiers(Modifier.PUBLIC, Modifier.SEALED)
                     .addSuperinterface(ClassName.get("", "Data"))
                     .addPermittedSubclass(ClassName.get("", "Data%dImpl".formatted(n)))
+                    .addPermittedSubclass(ClassName.get("", "DataAccessor%d".formatted(n)))
                     .addMethod(dataGetInstance(n, typeVariables))
-                    .addMethod(dataFree(n, typeVariables))
+                    .addMethod(dataGetComponentAccessor(n, typeVariables))
+                    .addMethod(dataFree(n))
                     .addMethods(accessors)
                     .build();
 
@@ -138,7 +141,39 @@ public class BaseDataGenerator {
                     .build();
         }
 
-        private static MethodSpec dataFree(int n, List<TypeVariableName> typeVariables) {
+        private static MethodSpec dataGetComponentAccessor(int n, List<TypeVariableName> typeVariables) {
+            var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+            var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
+            var dataAccessorN = ClassName.get("", "DataAccessor" + n);
+
+            var arguments = "";
+
+            var parameters = new ArrayList<ParameterSpec>(typeVariables.size());
+            for (int i = 1; i <= n; i++) {
+                if (i > 1) {
+                    arguments += ", ";
+                }
+                arguments += "mapper%d".formatted(i);
+
+                var mapper = Utils.components(Utils.WILDCARD, typeVariables.get(i - 1));
+                parameters.add(ParameterSpec.builder(mapper, "mapper" + i).build());
+            }
+
+            parameters.add(ParameterSpec.builder(Utils.DATA_ACCESSOR, "accessor").build());
+            arguments += ", accessor";
+
+            var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataType);
+
+            return MethodSpec.methodBuilder("getComponentAccessor")
+                    .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                    .addTypeVariables(typeVariables)
+                    .addParameters(parameters)
+                    .returns(componentAccessor)
+                    .addStatement("return $1T.getComponentAccessor(%s)".formatted(arguments), dataAccessorN)
+                    .build();
+        }
+
+        private static MethodSpec dataFree(int n) {
             var typeVariablesArray = IntStream.range(0, n).mapToObj(i -> Utils.WILDCARD).toArray(WildcardTypeName[]::new);
             var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
             var dataNImpl = ClassName.get("", "Data" + n + "Impl");
@@ -154,6 +189,184 @@ public class BaseDataGenerator {
             return MethodSpec.methodBuilder("component" + i)
                     .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
                     .returns(type)
+                    .build();
+        }
+
+    }
+
+    private static class DataAccessorN {
+
+        public static JavaFile create(String packageName, int n) {
+            return JavaFile.builder(packageName, dataAccessor(n))
+                    .skipJavaLangImports(true)
+                    .indent(Utils.INDENT)
+                    .build();
+        }
+
+        static TypeSpec dataAccessor(int n) {
+            var typeVariables = Utils.generateTypeVariables("T", n);
+            var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+
+            var className = ClassName.get("", "DataAccessor" + n);
+            var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
+
+            var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataType);
+
+            var parameterizedPool = ParameterizedTypeName.get(Utils.POOL, className);
+            var pool = FieldSpec.builder(parameterizedPool, "POOL", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                    .initializer("$1T.unbounded($2T.class, $2T::new)", Utils.POOL, className)
+                    .build();
+
+            var componentAccessors = IntStream.range(1, n + 1)
+                    .mapToObj(i -> componentAccessor(i, typeVariables.get(i - 1)))
+                    .toList();
+
+            return TypeSpec.classBuilder(className)
+                    .addModifiers(Modifier.FINAL)
+                    .addTypeVariables(typeVariables)
+                    .addSuperinterface(componentAccessor)
+                    .addSuperinterface(dataType)
+                    .addSuperinterface(Utils.POOLED)
+                    .addField(pool)
+                    .addField(Utils.DATA_ACCESSOR, "accessor", Modifier.PRIVATE)
+                    .addFields(componentAccessors)
+                    .addMethods(ComponentAccessorImplementation.methods(n, typeVariables))
+                    .addMethods(DataNImplementation.methods(n, typeVariables))
+                    .addMethod(reset(n))
+                    .addMethod(toString(n))
+                    .build();
+        }
+
+        private static FieldSpec componentAccessor(int i, TypeVariableName typeR) {
+            var type = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, typeR);
+            return FieldSpec.builder(type, "accessor" + i, Modifier.PRIVATE).build();
+        }
+
+        private static class ComponentAccessorImplementation {
+
+            static List<MethodSpec> methods(int n, List<TypeVariableName> typeVariables) {
+                return List.of(
+                        dataGetComponentAccessor(n, typeVariables),
+                        getComponent(n, typeVariables),
+                        free());
+            }
+
+            private static MethodSpec dataGetComponentAccessor(int n, List<TypeVariableName> typeVariables) {
+                var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+                var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
+
+                var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataType);
+
+                var parameters = new ArrayList<ParameterSpec>(typeVariables.size());
+
+                var body = CodeBlock.builder();
+                body.addStatement("var instance = POOL.getInstance()");
+
+                for (int i = 1; i <= n; i++) {
+                    var mapper = Utils.components(Utils.WILDCARD, typeVariables.get(i - 1));
+                    parameters.add(ParameterSpec.builder(mapper, "component" + i).build());
+
+                    body.addStatement("instance.accessor%d = component%d.getComponentAccessor(accessor)".formatted(i, i));
+                }
+
+                body.addStatement("return instance");
+
+                parameters.add(ParameterSpec.builder(Utils.DATA_ACCESSOR, "accessor").build());
+
+                return MethodSpec.methodBuilder("getComponentAccessor")
+                        .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+                        .addTypeVariables(typeVariables)
+                        .addParameters(parameters)
+                        .returns(componentAccessor)
+                        .addCode(body.build())
+                        .build();
+            }
+
+            private static MethodSpec getComponent(int n, List<TypeVariableName> typeVariables) {
+                var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+                var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
+
+                return MethodSpec.methodBuilder("getComponent")
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                        .addParameter(Utils.DATA_ACCESSOR, "accessor")
+                        .returns(dataType)
+                        .addStatement("this.accessor = accessor")
+                        .addStatement("return this")
+                        .build();
+            }
+
+            private static MethodSpec free() {
+                return MethodSpec.methodBuilder("free")
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                        .addStatement("POOL.free(this)")
+                        .build();
+            }
+
+        }
+
+        private static class DataNImplementation {
+
+            static List<MethodSpec> methods(int n, List<TypeVariableName> typeVariables) {
+                var result = new ArrayList<MethodSpec>();
+                result.addAll(IntStream.range(1, n + 1).mapToObj(i -> dataAccessor(i, typeVariables.get(i - 1))).toList());
+
+                return result;
+            }
+
+            private static MethodSpec dataAccessor(int i, TypeVariableName type) {
+                return MethodSpec.methodBuilder("component" + i)
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC)
+                        .returns(type)
+                        .addStatement("return accessor%d.getComponent(accessor)".formatted(i))
+                        .build();
+            }
+
+        }
+
+        private static MethodSpec reset(int n) {
+            var body = CodeBlock.builder();
+
+            body.addStatement("this.accessor = null");
+            for (int i = 1; i <= n; i++) {
+                body.addStatement("this.accessor%d.free()".formatted(i));
+                body.addStatement("this.accessor%d = null".formatted(i));
+            }
+
+            return MethodSpec.methodBuilder("reset")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                    .addCode(body.build())
+                    .build();
+        }
+
+        private static MethodSpec toString(int n) {
+            var body = CodeBlock.builder();
+
+            body.beginControlFlow("if (accessor == null)");
+            body.addStatement("return \"Data%d(invalidated)\"".formatted(n));
+            body.endControlFlow();
+
+            body.add("return new $1T().append(\"Data%d(\")".formatted(n), StringBuilder.class);
+
+            for (int i = 1; i <= n; i++) {
+                if (i > 1) {
+                    body.add(".append(\", \")");
+                }
+
+                body.add(System.lineSeparator());
+                body.indent().add(".append(component%d())".formatted(i)).unindent();
+            }
+
+            body.add(System.lineSeparator()).indent().addStatement(".append(\")\").toString()").unindent();
+
+            return MethodSpec.methodBuilder("toString")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(String.class)
+                    .addCode(body.build())
                     .build();
         }
 
@@ -195,11 +408,11 @@ public class BaseDataGenerator {
                     .addField(pool)
                     .addFields(fields)
                     .addMethod(dataGetInstance(n, typeVariables))
-                    .addMethod(dataFree(n, typeVariables))
+                    .addMethod(dataFree(n))
                     .addMethod(free())
                     .addMethods(accessors)
-                    .addMethod(getComponent(n))
                     .addMethod(dataReset(n))
+                    .addMethod(toString(n))
                     .build();
         }
 
@@ -228,7 +441,7 @@ public class BaseDataGenerator {
                     .build();
         }
 
-        private static MethodSpec dataFree(int n, List<TypeVariableName> typeVariables) {
+        private static MethodSpec dataFree(int n) {
             var typeVariablesArray = IntStream.range(0, n).mapToObj(i -> Utils.WILDCARD).toArray(WildcardTypeName[]::new);
             var wildcardDataN = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
 
@@ -267,25 +480,6 @@ public class BaseDataGenerator {
                     .build();
         }
 
-        private static MethodSpec getComponent(int n) {
-            var body = CodeBlock.builder();
-            body.beginControlFlow("return switch(i)");
-            for (int i = 0; i < n; i++) {
-                body.addStatement("case %d -> component%d".formatted(i, i + 1));
-            }
-            body.addStatement("default -> throw new $1T(\"Invalid index %%d\".formatted(i))", IllegalArgumentException.class);
-            body.endControlFlow();
-            body.addStatement(""); // switch expression
-
-            return MethodSpec.methodBuilder("getComponent")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(TypeName.INT, "i")
-                    .returns(Object.class)
-                    .addCode(body.build())
-                    .build();
-        }
-
         private static MethodSpec dataReset(int n) {
             var body = CodeBlock.builder();
             for (int i = 1; i <= n; i++) {
@@ -295,6 +489,30 @@ public class BaseDataGenerator {
             return MethodSpec.methodBuilder("reset")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC)
+                    .addCode(body.build())
+                    .build();
+        }
+
+        private static MethodSpec toString(int n) {
+            var body = CodeBlock.builder();
+
+            body.add("return new $1T().append(\"Data%d(\")".formatted(n), StringBuilder.class);
+
+            for (int i = 1; i <= n; i++) {
+                if (i > 1) {
+                    body.add(".append(\", \")");
+                }
+
+                body.add(System.lineSeparator());
+                body.indent().add(".append(component%d)".formatted(i)).unindent();
+            }
+
+            body.add(System.lineSeparator()).indent().addStatement(".append(\")\").toString()").unindent();
+
+            return MethodSpec.methodBuilder("toString")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PUBLIC)
+                    .returns(String.class)
                     .addCode(body.build())
                     .build();
         }

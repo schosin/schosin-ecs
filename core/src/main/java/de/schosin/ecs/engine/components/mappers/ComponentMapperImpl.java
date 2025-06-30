@@ -2,12 +2,16 @@ package de.schosin.ecs.engine.components.mappers;
 
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.types.ClassType;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.TransmutationManager;
+import de.schosin.ecs.engine.components.mappers.accessors.IndexedAccessorImpl;
+import de.schosin.ecs.engine.components.mappers.accessors.PendingAccessorImpl;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
-import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
+import de.schosin.ecs.utils.collections.Pool;
 
-public class ComponentMapperImpl<T> implements ComponentMapper<T>, ComponentConverter.Factory<T> {
+public class ComponentMapperImpl<T> implements ComponentMapper<T> {
 
     protected final ClassComponent<T> data;
     protected final int componentId;
@@ -16,6 +20,9 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T>, ComponentConv
     private final TransmutationManager.Add<T> add;
     private final TransmutationManager.Remove remove;
 
+    private final Pool<IndexedAccessorImpl<T>> indexedAccessors;
+    private final Pool<PendingAccessorImpl<T>> pendingAccessors;
+
     public ComponentMapperImpl(ClassComponent<T> data, TransmutationManager transmutationManager) {
         this.data = data;
         this.componentId = data.id();
@@ -23,6 +30,17 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T>, ComponentConv
 
         this.add = transmutationManager.getAddTransmuter(data.type());
         this.remove = transmutationManager.getRemoveTransmuter(data.type());
+
+        this.indexedAccessors = Pool.unbounded(IndexedAccessorImpl.class, this::createIndexedAccessor);
+        this.pendingAccessors = Pool.unbounded(PendingAccessorImpl.class, this::createPendingAccessor);
+    }
+
+    private IndexedAccessorImpl<T> createIndexedAccessor() {
+        return new IndexedAccessorImpl<>(indexedAccessors);
+    }
+
+    private PendingAccessorImpl<T> createPendingAccessor() {
+        return new PendingAccessorImpl<>(data.id(), pendingAccessors);
     }
 
     @Override
@@ -53,21 +71,22 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T>, ComponentConv
     }
 
     @Override
-    public final T access(DataAccessor accessor) {
-        return accessor.<T>getComponent(componentId);
+    public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
+        if (!(accessor instanceof ArchetypeAccessor archetypeAccessor)) {
+            throw new IllegalArgumentException("Unexpected IterableAccessor not implementing ArchetypeAccessor: " + accessor);
+        }
+
+        var archetype = archetypeAccessor.getArchetype();
+        var index = archetype.getComponentIndex(componentId);
+
+        return index > -1
+                ? indexedAccessors.getInstance().init(index)
+                : pendingAccessors.getInstance();
     }
 
     @Override
     public final boolean remove(int entityId) {
         return this.remove.apply(entityId);
-    }
-
-    @Override
-    public final ComponentConverter<T> getConverter(Archetype archetype) {
-        var index = archetype.getComponentIndex(componentId);
-        return index > -1
-                ? ComponentConverter.indexed(index)
-                : ComponentConverter.pending(componentId);
     }
 
 }

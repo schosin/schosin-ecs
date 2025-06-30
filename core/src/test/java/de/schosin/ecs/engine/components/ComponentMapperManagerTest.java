@@ -33,11 +33,11 @@ import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEnt
 import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
-import de.schosin.ecs.engine.components.mappers.ComponentConverter;
 
 class ComponentMapperManagerTest extends AbstractWorldTest {
 
@@ -129,27 +129,7 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
         }
 
         @Test
-        void testPoolingComponents_Free() {
-            componentMapperManager.registerCustomComponentType(DefaultComponentType.class, this::factory);
-
-            var type = new DefaultComponentType<>(component(Component1.class), () -> new Component1(-1));
-
-            var mapper = world.getComponents(type);
-            assertThat(mapper.freed).isNull();
-
-            var entityId = world.createEntity();
-            var accessor = storageEngine.getArchetypeForEntity(entityId).getEntityData().getAccessor(entityId);
-
-            var converter = ComponentConverter.wrapped(mapper);
-            var instance = converter.getComponent(accessor);
-            assertThat(instance).isNotNull();
-
-            converter.free(instance);
-            assertThat(mapper.freed).isSameAs(instance);
-        }
-
-        @Test
-        void testPoolingComponents_Reclaim() {
+        void testReclaimingComponents_Reclaim() {
             componentMapperManager.registerCustomComponentType(DefaultComponentType.class, this::factory);
 
             var type = new DefaultComponentType<>(component(Component1.class), () -> new Component1(-1));
@@ -204,7 +184,23 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 
             // Verify
             var accessor = entityManager.getAccessor(entityId);
-            assertThat(mapper.access(accessor)).isSameAs(instance);
+            assertThat(mapper.getComponent(accessor)).isSameAs(instance);
+        }
+
+        @Test
+        void testComponentAccessor() {
+            componentMapperManager.registerCustomComponentType(DefaultComponentType.class, this::factory);
+
+            var type = new DefaultComponentType<>(component(Component1.class), () -> new Component1(-1));
+            var mapper = world.getComponents(type);
+
+            var instance = new Component1(1);
+            var entityId = world.createEntity(instance);
+
+            // Verify
+            var accessor = entityManager.getAccessor(entityId);
+            var componentAccessor = mapper.getComponentAccessor(accessor);
+            assertThat(componentAccessor.getComponent(accessor)).isSameAs(instance);
         }
 
         private <T> DefaultComponents<T> factory(DefaultComponentType<T> type) {
@@ -232,11 +228,9 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
 record DefaultComponentType<T>(RegularComponentType<T, T> type, Supplier<T> defaultInstance) implements CustomComponentType<T, T, DefaultComponents<T>> {
 }
 
-class DefaultComponents<T> implements CustomComponentMapper<T, T>, PoolingComponents<T> {
+class DefaultComponents<T> implements CustomComponentMapper<T, T>, ComponentAccessor<T>, ReclaimingComponents {
 
     private final RegularComponents<T, T> components;
-    private final int componentId;
-
     private final Supplier<T> defaultInstance;
 
     T freed;
@@ -244,9 +238,17 @@ class DefaultComponents<T> implements CustomComponentMapper<T, T>, PoolingCompon
 
     public DefaultComponents(RegularComponents<T, T> components, Supplier<T> defaultInstance) {
         this.components = components;
-        this.componentId = components.componentId();
-
         this.defaultInstance = Objects.requireNonNull(defaultInstance, "defaultInstance cannot be null");
+    }
+
+    @Override
+    public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
+        return this;
+    }
+
+    @Override
+    public T getComponent(DataAccessor accessor) {
+        return get(accessor.entityId());
     }
 
     @Override
@@ -262,20 +264,13 @@ class DefaultComponents<T> implements CustomComponentMapper<T, T>, PoolingCompon
     }
 
     @Override
-    public T access(DataAccessor accessor) {
-        var result = accessor.<T>getComponent(componentId);
-
-        return result != null ? result : defaultInstance.get();
-    }
-
-    @Override
     public boolean remove(int entityId) {
         return components.remove(entityId);
     }
 
     @Override
-    public void free(T result) {
-        this.freed = result;
+    public void free() {
+        reclaim();
     }
 
     @Override

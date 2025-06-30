@@ -2,6 +2,7 @@ package de.schosin.ecs.integration.iteration;
 
 import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
 import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
 
@@ -14,6 +15,8 @@ import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.Result.ComponentResult;
+import de.schosin.ecs.api.components.mappers.ComponentMapper;
+import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.integration.AbstractEcsIT;
 import de.schosin.ecs.integration.components.Favorite;
@@ -27,9 +30,10 @@ import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData2;
 import de.schosin.ecs.plugins.composition.CompositionSet;
+import de.schosin.ecs.plugins.data.mappers.DataTypeMapper;
 import de.schosin.ecs.plugins.data.types.Data3;
 import de.schosin.ecs.plugins.data.types.DataType;
-import de.schosin.ecs.plugins.data.types.DataType3.Processor3;
+import de.schosin.ecs.plugins.data.types.DataType4.Processor4;
 import de.schosin.ecs.plugins.experimental.system.SystemPlugin;
 import de.schosin.ecs.plugins.experimental.system.systems.BaseSystem;
 import de.schosin.ecs.worlds.DefaultWorld;
@@ -326,11 +330,22 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData<Processor3<Data3<Position, Velocity, ComponentResult<Object>>, Size, Hitbox>> composition;
+        private final CompositionData<Processor4<Data3<Position, Velocity, ComponentResult<Object>>, Size, Hitbox, ClassIterationComponents>> composition;
+
+        private final DataTypeMapper<Data3<Position, Velocity, Object>, Data3<Position, Velocity, ComponentResult<Object>>> dataM;
+        private final ComponentMapper<Size> sizeM;
+        private final ComponentMapper<Hitbox> hitboxM;
+        private final ComponentSetMapper<ClassIterationComponents> classComponentsM;
 
         public DataTypeIterationSystem(DefaultWorld world) {
-            this.composition = world.createComposition(Composition.all(Marker.class),
-                    DataType.get(component(Position.class), component(Velocity.class), WILDCARD), component(Size.class), component(Hitbox.class));
+            var dataType = DataType.get(component(Position.class), component(Velocity.class), WILDCARD);
+
+            this.composition = world.createComposition(Composition.all(Marker.class), dataType, component(Size.class), component(Hitbox.class), ClassIterationComponents.TYPE);
+
+            this.dataM = world.getComponents(dataType);
+            this.sizeM = world.getComponents(Size.class);
+            this.hitboxM = world.getComponents(Hitbox.class);
+            this.classComponentsM = world.getComponents(ClassIterationComponents.TYPE);
 
             for (int i = 0; i < 10; i++) {
                 world.createEntity(Marker.INSTANCE,
@@ -344,9 +359,10 @@ public class CompositionIterationIT extends AbstractEcsIT {
         @Override
         public void process() {
             this.composition.process(this::processEntity);
+            this.composition.process(this::processEntityMappers);
         }
 
-        private void processEntity(int entityId, Data3<Position, Velocity, ComponentResult<Object>> data, Size size, Hitbox hitbox) {
+        private void processEntity(int entityId, Data3<Position, Velocity, ComponentResult<Object>> data, Size size, Hitbox hitbox, ClassIterationComponents classComponents) {
             var pos = data.component1();
             var velocity = data.component2();
 
@@ -368,7 +384,14 @@ public class CompositionIterationIT extends AbstractEcsIT {
                 pos.x = -pos.x;
             }
 
+            assertThat(classComponents.pos()).isSameAs(pos);
+            assertThat(classComponents.velocity()).isSameAs(velocity);
+
             ran = true;
+        }
+
+        private void processEntityMappers(int entityId) {
+            processEntity(entityId, dataM.get(entityId), sizeM.get(entityId), hitboxM.get(entityId), classComponentsM.get(entityId));
         }
 
     }

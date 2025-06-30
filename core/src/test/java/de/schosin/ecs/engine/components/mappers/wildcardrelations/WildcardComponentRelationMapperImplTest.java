@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 
 class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
@@ -75,24 +75,6 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
             // Verify
             assertThat(mapper.get(entityId)).isSameAs(result1);
-        }
-
-        @Test
-        @SuppressWarnings("unchecked")
-        void testFree_ResultInstanceReused() {
-            var entityId = world.createEntity();
-
-            var mapper = world.getWildcardComponentRelations(Object.class, Object.class);
-
-            // Call
-            var result1 = mapper.get(entityId);
-
-            var poolingMapper = assertThat(mapper).asInstanceOf(InstanceOfAssertFactories.type(PoolingComponents.class)).actual();
-            poolingMapper.free(result1);
-
-            // Verify
-            assertThat(mapper.get(entityId)).isSameAs(result1);
-
         }
 
         @Test
@@ -250,6 +232,56 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
                 verifyComponentMaskHasComponents(entity3, type1, type2);
                 verifyComponentMaskDoesNotHaveComponents(entity3, type3);
             });
+        }
+
+    }
+
+    @Nested
+    class ReclaimTest {
+
+        @Test
+        void testReclaim() {
+            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
+            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
+            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+
+            var entityId = world.createEntity(relation1, relation2, relation3);
+
+            var mapper = world.getWildcardComponentRelations(Object.class, Object.class);
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1, relation2, relation3);
+            assertThat(result.toString()).contains(relation1.toString(), relation2.toString(), relation3.toString());
+
+            var reclaimingMapper = assertThat(mapper).asInstanceOf(InstanceOfAssertFactories.type(ReclaimingComponents.class)).actual();
+            reclaimingMapper.reclaim();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
+        }
+
+        @Test
+        void testReclaim_WorldProcess() {
+            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
+            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
+            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+
+            var entityId = world.createEntity(relation1, relation2, relation3);
+
+            var mapper = world.getWildcardComponentRelations(Object.class, Object.class);
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1, relation2, relation3);
+            assertThat(result.toString()).contains(relation1.toString(), relation2.toString(), relation3.toString());
+
+            world.process();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
         }
 
     }

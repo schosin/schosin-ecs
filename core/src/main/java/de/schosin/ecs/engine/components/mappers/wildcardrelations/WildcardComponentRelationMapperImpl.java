@@ -13,14 +13,16 @@ import de.schosin.ecs.api.components.mappers.ComponentRelationMappers;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.ComponentRelationMappers.ExclusiveComponentRelationMapper;
 import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardComponentRelationMapper;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
-import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardComponentRelationMapperImpl<R, T> implements WildcardComponentRelationMapper<R, T>, PoolingComponents<ComponentRelations<R, T>>, WildcardMapper<ComponentRelationMappers<R, T, ?>> {
+public final class WildcardComponentRelationMapperImpl<R, T>
+        implements WildcardComponentRelationMapper<R, T>, ReclaimingComponents, WildcardMapper<ComponentRelationMappers<R, T, ?>> {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -31,8 +33,8 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
     private final Bag<ExclusiveComponentRelationMapper> exclusiveMappers;
     private final IntBag exclusiveComponentIds;
 
-    private final Pool<ComponentRelationResultImpl> pool = Pool.unbounded(ComponentRelationResultImpl.class, ComponentRelationResultImpl::new);
-    private final Bag<ComponentRelationResultImpl> lent = new Bag<>(ComponentRelationResultImpl.class, 8);
+    private final Pool<WildcardComponentRelationAccessor> pool = Pool.unbounded(WildcardComponentRelationAccessor.class, WildcardComponentRelationAccessor::new);
+    private final Bag<WildcardComponentRelationAccessor> lent = new Bag<>(WildcardComponentRelationAccessor.class, 8);
 
     public WildcardComponentRelationMapperImpl(IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
@@ -60,17 +62,10 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
     }
 
     @Override
-    public void free(ComponentRelations<R, T> result) {
-        if (result instanceof ComponentRelationResultImpl impl && this.lent.removeIdentity(impl)) {
-            this.pool.free(impl);
-        }
-    }
-
-    @Override
     public void reclaim() {
         var data = lent.getData();
         for (int i = 0, s = lent.getSize(); i < s; i++) {
-            pool.free(data[i]);
+            data[i].free();
         }
 
         lent.clear();
@@ -80,13 +75,13 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
     public boolean has(int entityId) {
         try (var accessor = this.accessor.apply(entityId)) {
             for (int i = 0, s = exclusiveComponentIds.getSize(); i < s; i++) {
-                if (accessor.getComponent(exclusiveComponentIds.get(i)) != null) {
+                if (accessor.hasComponent(exclusiveComponentIds.get(i))) {
                     return true;
                 }
             }
 
             for (int i = 0, s = componentIds.getSize(); i < s; i++) {
-                if (accessor.getComponent(componentIds.get(i)) != null) {
+                if (accessor.hasComponent(componentIds.get(i))) {
                     return true;
                 }
             }
@@ -96,16 +91,18 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
     }
 
     @Override
-    public ComponentRelations<R, T> get(int entityId) {
-        return access(accessor.apply(entityId));
+    public ComponentRelations<? extends R, ? extends T> get(int entityId) {
+        var accessor = this.accessor.apply(entityId);
+
+        var componentAccessor = getComponentAccessor(accessor);
+        lent.add(componentAccessor);
+
+        return componentAccessor.getComponent(accessor);
     }
 
     @Override
-    public ComponentRelations<R, T> access(DataAccessor accessor) {
-        var result = pool.getInstance().init(accessor);
-        lent.add(result);
-
-        return result;
+    public WildcardComponentRelationAccessor getComponentAccessor(DataAccessor accessor) {
+        return pool.getInstance();
     }
 
     @Override
@@ -125,106 +122,85 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
         return removed;
     }
 
-    /**
-     * {@link DataAccessor} based implementation. Calculates the necessary indexes in the first call to {@link #size()}.
-     * 
-     * <ul>
-     * <li>
-     * {@link #data}: Holds the componentIds for all indexes until {@link #size}, beginning with exclusive relations
-     * </li>
-     * <li>
-     * {@link #dataIndex}: Holds the indexes for {@link ComponentRelations} and -1 for exclusive relations
-     * </li>
-     * <li>
-     * {@link #accessor}: Currently assigned {@link DataAccessor}
-     * </li>
-     * <li>
-     * {@link #exclusiveSize}: Holds the number of exclusive relations. These will be located at the beginning of {@link #data}
-     * </li>
-     * <li>
-     * {@link #size}: Holds the number of all relations
-     * </li>
-     * <li>
-     * {@link #id}: Current index for {@link Iterator} implementation
-     * </li>
-     * <ul> 
-     */
-    private class ComponentRelationResultImpl implements ComponentRelations<R, T>, Iterator<ComponentRelation<R, T>>, Pooled {
+    private class WildcardComponentRelationAccessor implements ComponentRelations<R, T>, Iterator<ComponentRelation<R, T>>, ComponentAccessor<ComponentRelations<? extends R, ? extends T>>, Pooled {
 
-        private final IntBag data = new IntBag(4);
+        private final Bag<ComponentAccessor<ComponentRelation<R, T>>> exclusiveAccessors = new Bag<>(ComponentAccessor.class, 4);
+        private final Bag<ComponentAccessor<ComponentRelations<R, T>>> accessors = new Bag<>(ComponentAccessor.class, 4);
+
+        private final IntBag accessorIndex = new IntBag(4);
         private final IntBag dataIndex = new IntBag(4);
 
         private DataAccessor accessor;
 
         private int exclusiveSize = -1;
-        private int size = -1;
+        private int totalSize = -1;
 
         private int id = -1;
 
-        private ComponentRelationResultImpl() {
-            Arrays.fill(this.data.getData(), -1);
+        private WildcardComponentRelationAccessor() {
+            Arrays.fill(this.accessorIndex.getData(), -1);
             Arrays.fill(this.dataIndex.getData(), -1);
         }
 
-        public ComponentRelationResultImpl init(DataAccessor accessor) {
+        @Override
+        public ComponentRelations<? extends R, ? extends T> getComponent(DataAccessor accessor) {
+            reset();
             this.accessor = accessor;
 
             return this;
         }
 
-        @NonNull
         @Override
-        public ComponentRelation<R, T> get(int i) {
+        public @NonNull ComponentRelation<R, T> get(int i) {
             if (i >= size()) {
                 throw new ArrayIndexOutOfBoundsException(i);
             }
 
             if (i < exclusiveSize) {
-                return this.accessor.getComponent(this.data.get(i));
+                return this.exclusiveAccessors.get(i).getComponent(accessor);
             }
 
-            var componentId = this.data.get(i);
-            var relations = this.accessor.<ComponentRelations<R, T>>getComponent(componentId);
+            var index = i - exclusiveSize;
+            var componentAccessor = this.accessors.get(this.accessorIndex.get(index));
+            var relations = componentAccessor.getComponent(accessor);
 
-            return relations.get(this.dataIndex.get(i));
+            return relations.get(this.dataIndex.get(index));
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public int size() {
-            if (size == -1) {
+            if (totalSize == -1) {
                 this.exclusiveSize = 0;
-                var size = 0;
 
-                // Place exclusive relations at the beginning of data
-                for (int i = 0; i < exclusiveComponentIds.getSize(); i++) {
+                for (int i = 0, s = exclusiveMappers.getSize(); i < s; i++) {
                     var componentId = exclusiveComponentIds.get(i);
 
-                    if (this.accessor.hasComponent(componentId)) {
+                    if (accessor.hasComponent(componentId)) {
                         this.exclusiveSize++;
-                        this.data.add(componentId);
-                        this.dataIndex.add(-1);
+                        this.exclusiveAccessors.add(exclusiveMappers.get(i).getComponentAccessor(accessor));
                     }
                 }
 
-                // Add non-exclusive relations after exclusive relations
-                for (int i = 0; i < componentIds.getSize(); i++) {
-                    var componentId = componentIds.get(i);
+                var size = 0;
+                for (int i = 0, s = mappers.getSize(); i < s; i++) {
+                    var componentAccessor = mappers.get(i).getComponentAccessor(accessor);
+                    this.accessors.add(componentAccessor);
 
-                    var relations = this.accessor.<ComponentRelations<R, T>>getComponent(componentId);
+                    var relations = componentAccessor.getComponent(accessor);
                     if (relations != null) {
                         for (int r = 0, rs = relations.size(); r < rs; r++) {
                             size++;
-                            this.data.add(componentId);
+                            this.accessorIndex.add(i);
                             this.dataIndex.add(r);
                         }
                     }
-
                 }
 
-                this.size = size + exclusiveSize;
+                this.totalSize = exclusiveSize + size;
             }
 
-            return this.size;
+            return totalSize;
         }
 
         @Override
@@ -254,19 +230,51 @@ public final class WildcardComponentRelationMapperImpl<R, T> implements Wildcard
         }
 
         @Override
+        public void free() {
+            pool.free(this);
+        }
+
+        @Override
         public void reset() {
-            this.data.clear();
-            Arrays.fill(this.data.getData(), -1);
+            this.accessorIndex.clear();
+            Arrays.fill(this.accessorIndex.getData(), -1);
 
             this.dataIndex.clear();
             Arrays.fill(this.dataIndex.getData(), -1);
 
+            for (int i = 0; i < exclusiveSize; i++) {
+                exclusiveAccessors.get(i).free();
+            }
+            exclusiveAccessors.clear();
+
+            for (int i = 0, s = accessors.getSize(); i < s; i++) {
+                accessors.get(i).free();
+            }
+            accessors.clear();
+
             this.accessor = null;
 
             this.exclusiveSize = -1;
-            this.size = -1;
+            this.totalSize = -1;
 
             this.id = -1;
+        }
+
+        @Override
+        public String toString() {
+            if (accessor == null) {
+                return "ComponentRelations(invalidated)";
+            }
+
+            var builder = new StringBuilder().append("ComponentRelations(");
+            for (int i = 0, s = size(); i < s; i++) {
+                if (i > 0) {
+                    builder.append(", ");
+                }
+
+                builder.append(get(i));
+            }
+            return builder.append(")").toString();
         }
 
     }

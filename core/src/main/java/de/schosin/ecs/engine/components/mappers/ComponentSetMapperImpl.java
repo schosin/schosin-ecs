@@ -1,6 +1,5 @@
 package de.schosin.ecs.engine.components.mappers;
 
-import java.util.Arrays;
 import java.util.function.IntFunction;
 
 import org.jspecify.annotations.NonNull;
@@ -15,15 +14,15 @@ import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentSetType;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
-import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFactory;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.Pool;
 
-public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, PoolingComponents<T> {
+public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, ReclaimingComponents {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -33,8 +32,7 @@ public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements 
 
     private final Components<?, ?>[] mappers;
 
-    private final Bag<T> lent;
-    private final Pool<Object[]> pool;
+    private final Bag<ComponentAccessor<T>> lent = new Bag<>(ComponentAccessor.class, 8);
 
     @SuppressWarnings("unchecked")
     public ComponentSetMapperImpl(ComponentSetType<T, ?> type, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
@@ -50,16 +48,6 @@ public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements 
             var componentType = componentTypes[i];
 
             this.mappers[i] = componentMapperManager.getComponents(componentType.type());
-        }
-
-        this.lent = new Bag<>(type.componentSet(), 8);
-        this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
-    }
-
-    @Override
-    public void free(T result) {
-        if (lent.removeIdentity(result)) {
-            result.free();
         }
     }
 
@@ -122,34 +110,17 @@ public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements 
 
     @Override
     public T get(int entityId) {
-        return access(accessor.apply(entityId));
+        var accessor = this.accessor.apply(entityId);
+
+        var componentAccessor = getComponentAccessor(accessor);
+        lent.add(componentAccessor);
+
+        return componentAccessor.getComponent(accessor);
     }
 
     @Override
-    public T access(DataAccessor accessor) {
-        var components = pool.getInstance();
-        var found = false;
-
-        for (int i = 0; i < size; i++) {
-            var mapper = mappers[i];
-
-            var component = mapper.access(accessor);
-            if (component != null) {
-                components[i] = component;
-                found = true;
-            }
-        }
-
-        if (!found) {
-            pool.free(components);
-            return null;
-        }
-
-        var result = factory.getInstance(accessor.entityId(), components);
-        lent.add(result);
-
-        pool.free(components);
-        return result;
+    public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
+        return factory.getComponentAccessor(accessor, mappers);
     }
 
     @Override

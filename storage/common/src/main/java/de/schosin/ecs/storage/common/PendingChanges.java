@@ -34,15 +34,18 @@ public class PendingChanges {
         this.componentMask = componentMask;
     }
 
+    public boolean containsComponent(RegularComponentType<?, ?> type) {
+        return addedTypes.contains(type);
+    }
+
     @SuppressWarnings("unchecked")
     public <R> R getComponent(RegularComponentType<?, R> type) {
-        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
-            if (addedTypes.get(i).equals(type)) {
-                return (R) added.get(i);
-            }
+        var index = addedTypes.indexOf(type);
+        if (index == -1) {
+            return null;
         }
 
-        return null;
+        return (R) added.get(index);
     }
 
     public boolean isNoAdded() {

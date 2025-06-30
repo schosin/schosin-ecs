@@ -9,11 +9,11 @@ import java.util.function.Function;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
-import de.schosin.ecs.api.components.ComponentSet.ComponentAccessor;
+import de.schosin.ecs.api.components.ComponentSet.AccessorFactory;
+import de.schosin.ecs.api.components.ComponentSet.Component;
 import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetDataBuilder;
-import de.schosin.ecs.api.components.ComponentSet.Factory;
 import de.schosin.ecs.api.components.ComponentSet.IterableProcessor;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
@@ -22,9 +22,11 @@ import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
+import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.data.DataConverter;
+import de.schosin.ecs.api.data.ComponentAccessor;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.api.data.DataProcessor;
 import de.schosin.ecs.api.data.IterableAccessor;
 
@@ -80,18 +82,17 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 
     /**
      * Functional interface for the factory method to instantiate the component set by 
-     * the world.
+     * the world using a {@link IterableAccessor}.
      * 
      * @param <S> type of component set
      */
     @FunctionalInterface
-    interface Factory<S extends ComponentSet<?>> {
-        S create(int entityId, Object... components);
+    interface AccessorFactory<S extends ComponentSet<?>> {
+        ComponentAccessor<S> create(DataAccessor accessor, Components<?, ?>[] mappers);
     }
 
-    @FunctionalInterface
     interface IterableProcessor<S extends ComponentSet<?>, P extends DataProcessor<S>> {
-        void process(P processor, IterableAccessor accessor, List<? extends DataConverter<?>> converters);
+        void process(P processor, IterableAccessor accessor, Components<?, ?>[] mappers);
     }
 
     /**
@@ -110,7 +111,7 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
      * @param <S> type of component set
      */
     sealed interface ComponentSetData<S extends ComponentSet<?>, P extends DataProcessor<S>> {
-        Factory<S> factory();
+        AccessorFactory<S> accessorFactory();
 
         IterableProcessor<S, P> processor();
 
@@ -119,25 +120,21 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 
     /**
      * Builder for creating an instance of {@link ComponentSetData}. Components must be described
-     * in the same order that the passed {@link Factory} evaluates the varargs array.
-     * 
-     * <p>
-     * Use {@link ComponentSet#builder(Factory)} to obtain a builder instance.
-     * </p>
+     * in the same order that the passed {@link AccessorFactory} evaluates the varargs array.
      * 
      * @param <S> type of component set
      */
     sealed interface ComponentSetDataBuilder<S extends ComponentSet<?>, P extends DataProcessor<S>> {
 
         /**
-         * Adds a component by creating an anonymous implementation of {@link ComponentAccessor}. Allows
+         * Adds a component by creating an anonymous implementation of {@link Component}. Allows
          * to just pass the accessor.
          * 
          * {@snippet:
-         * builder.add(new ComponentAccessor<>(MyCompoentSet::getPosition) {})
+         * builder.add(new Component<>(MyCompoentSet::getPosition) {})
          * }
          */
-        <R> ComponentSetDataBuilder<S, P> add(ComponentAccessor<S, R> data);
+        <R> ComponentSetDataBuilder<S, P> add(Component<S, R> data);
 
         /**
          * Creates the {@link ComponentSetData} instance.
@@ -147,14 +144,14 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
     }
 
     /**
-     * Abstract class used by {@link ComponentSetDataBuilder#add(ComponentAccessor)} to obtain the
+     * Abstract class used by {@link ComponentSetDataBuilder#add(Component)} to obtain the
      * {@link ComponentType} from a method reference to the accessor of a component.
      * 
      * @param <S> type of set
      * @param <R> type of component
      */
-    abstract class ComponentAccessor<S extends ComponentSet<?>, R> extends AbstractComponent<S, R> {
-        public ComponentAccessor(Function<S, R> accessor) {
+    abstract class Component<S extends ComponentSet<?>, R> extends AbstractComponent<S, R> {
+        public Component(Function<S, R> accessor) {
             super(accessor);
         }
     }
@@ -162,8 +159,8 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
     /**
      * Creates a {@link ComponentSetDataBuilder} instance given the factory method.
      */
-    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(Factory<S> factory, IterableProcessor<S, P> processor) {
-        return new ComponentSetDataBuilderImpl<>(factory, processor);
+    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(AccessorFactory<S> accessorFactory, IterableProcessor<S, P> processor) {
+        return new ComponentSetDataBuilderImpl<>(accessorFactory, processor);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -189,18 +186,18 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 
 final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetDataBuilder<S, P> {
 
-    private final Factory<S> factory;
+    private final AccessorFactory<S> accessorFactory;
     private final IterableProcessor<S, P> processor;
 
     private final List<ComponentData<S, ?, ?>> components = new ArrayList<>();
 
-    public ComponentSetDataBuilderImpl(Factory<S> factory, IterableProcessor<S, P> processor) {
-        this.factory = factory;
+    public ComponentSetDataBuilderImpl(AccessorFactory<S> accessorFactory, IterableProcessor<S, P> processor) {
+        this.accessorFactory = accessorFactory;
         this.processor = processor;
     }
 
     @Override
-    public <R> ComponentSetDataBuilder<S, P> add(ComponentAccessor<S, R> data) {
+    public <R> ComponentSetDataBuilder<S, P> add(Component<S, R> data) {
         this.components.add(new ComponentData<>(data.componentType, data.accessor));
 
         return this;
@@ -208,26 +205,26 @@ final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends Dat
 
     @Override
     public ComponentSetData<S, P> build() {
-        return new ComponentSetDataImpl<>(factory, processor, components);
+        return new ComponentSetDataImpl<>(accessorFactory, processor, components);
     }
 
 }
 
 final class ComponentSetDataImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetData<S, P> {
 
-    private final Factory<S> factory;
+    private final AccessorFactory<S> accessorFactory;
     private final IterableProcessor<S, P> processor;
     private final List<ComponentData<S, ?, ?>> components;
 
-    ComponentSetDataImpl(Factory<S> factory, IterableProcessor<S, P> processor, List<ComponentData<S, ?, ?>> components) {
-        this.factory = factory;
+    ComponentSetDataImpl(AccessorFactory<S> accessorFactory, IterableProcessor<S, P> processor, List<ComponentData<S, ?, ?>> components) {
+        this.accessorFactory = accessorFactory;
         this.processor = processor;
         this.components = components;
     }
 
     @Override
-    public Factory<S> factory() {
-        return factory;
+    public AccessorFactory<S> accessorFactory() {
+        return accessorFactory;
     }
 
     @Override

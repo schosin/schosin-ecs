@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
+import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.JavaFile;
@@ -27,9 +28,8 @@ public class CompositionManagerGenerator {
 
     private static final ClassName COMPOSITION_MANAGER_HELPER = ClassName.get("", "CompositionManagerHelper");
 
-    private static final ClassName ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
-    private static final ClassName CONVERTER = ClassName.get("de.schosin.ecs.engine.components.mappers", "ComponentConverter");
-    
+    private static final ClassName COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "ComponentAccessor");
+
     public static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
 
     public static JavaFile generateFile(TypeElement type, int maxParams) {
@@ -140,45 +140,36 @@ public class CompositionManagerGenerator {
         private static MethodSpec processAccessor(int n, ParameterizedTypeName processor) {
             var methodBody = CodeBlock.builder();
 
+            methodBody.addStatement("// get accessors");
             for (int i = 1; i <= n; i++) {
                 var typeR = TypeVariableName.get("R" + i);
-                var converter = ParameterizedTypeName.get(CONVERTER, typeR);
+                var mapper = ParameterizedTypeName.get(COMPONENT_ACCESSOR, typeR);
 
-                methodBody.addStatement("var converter%d = ($1T) converters.get(%d)".formatted(i, i - 1), converter);
-            }
-
-            methodBody.beginControlFlow("while(accessor.hasNext())");
-            methodBody.addStatement("var entityId = accessor.next()");
-
-            methodBody.addStatement("// retrieve components");
-            for (int i = 1; i <= n; i++) {
-                methodBody.addStatement("var component%d = converter%d.getComponent(accessor)".formatted(i, i));
+                methodBody.addStatement("var accessor%d = ($1T) mappers[%d].getComponentAccessor(accessor)".formatted(i, i - 1), mapper);
             }
 
             methodBody.addStatement("// process");
-            var processStatement = "processor.process(entityId";
+            methodBody.beginControlFlow("while(accessor.hasNext())");
+            methodBody.add("processor.process(accessor.next()");
             for (int i = 1; i <= n; i++) {
-                processStatement += ", component%d".formatted(i);
+                methodBody.indent().add(", %saccessor%d.getComponent(accessor)".formatted(System.lineSeparator(), i)).unindent();
             }
-            processStatement += ")";
-
-            methodBody.addStatement(processStatement);
-
-            methodBody.addStatement("// free components");
-            for (int i = 1; i <= n; i++) {
-                methodBody.addStatement("converter%d.free(component%d)".formatted(i, i));
-            }
-
+            methodBody.addStatement(")");
             methodBody.endControlFlow(); // while
 
-            var converters = Utils.immutableBag(ParameterizedTypeName.get(CONVERTER, Utils.OBJECT));
+            methodBody.addStatement("// free accessors");
+            for (int i = 1; i <= n; i++) {
+                methodBody.addStatement("accessor%d.free()".formatted(i));
+            }
+
+            var mappers = ArrayTypeName.of(ParameterizedTypeName.get(Utils.COMPONENTS, Utils.WILDCARD, Utils.WILDCARD));
 
             return MethodSpec.methodBuilder("process")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
                     .addParameter(processor, "processor")
-                    .addParameter(ACCESSOR, "accessor")
-                    .addParameter(converters, "converters")
+                    .addParameter(Utils.ITERABLE_ACCESSOR, "accessor")
+                    .addParameter(mappers, "mappers")
                     .addCode(methodBody.build())
                     .build();
         }

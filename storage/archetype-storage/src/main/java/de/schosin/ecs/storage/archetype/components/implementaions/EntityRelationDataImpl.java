@@ -20,7 +20,7 @@ public record EntityRelationDataImpl<R>(int id, EntityRelationType<R> type, Enti
 
     @Override
     public boolean hasComponent(int entityId) {
-        return index.hasComponent(entityId, type);
+        return index.hasComponent(entityId, id);
     }
 
     @Override

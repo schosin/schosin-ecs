@@ -32,7 +32,13 @@ public interface DataAccessor extends AutoCloseable {
     <R> R getPendingComponent(int componentId);
 
     /**
-     * Frees this accessor instance. Must be called after it is not needed anymore.
+     * Returns true if this accessor is valid and can be used. Accessors will be invalidated by calling {@link #free()}.
+     */
+    boolean isValid();
+    
+    /**
+     * Frees this accessor instance. Must be called after it is not needed anymore 
+     * by the code that retrieved this instance.
      * 
      * <p>
      * <b>Warning:</b> Only call this method where the accessor was retrieved. 

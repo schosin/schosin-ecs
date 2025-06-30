@@ -18,7 +18,7 @@ public record ComponentDataImpl<T>(int id, ClassType<T> type, EntityIndex index)
 
     @Override
     public boolean hasComponent(int entityId) {
-        return index.hasComponent(entityId, type);
+        return index.hasComponent(entityId, id);
     }
 
     @Override

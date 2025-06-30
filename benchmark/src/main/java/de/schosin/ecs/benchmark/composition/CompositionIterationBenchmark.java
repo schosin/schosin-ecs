@@ -26,7 +26,9 @@ public class CompositionIterationBenchmark implements SchosinComponents {
 
     public static void main(String[] args) throws RunnerException {
         var options = new OptionsBuilder()
-                .include(benchmarkName(CompositionIterationBenchmark.class))
+                .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack01.class))
+                .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack04.class))
+                .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack08.class))
                 .include(benchmarkName(WildcardIterationBenchmark.class))
                 .build();
 
@@ -137,178 +139,178 @@ public class CompositionIterationBenchmark implements SchosinComponents {
             }
         }
 
-    }
+        public static class Unpack01 extends BaseCompositionIterationBenchmark {
 
-    public static class Unpack01 extends BaseCompositionIterationBenchmark {
+            private CompositionData1<Schosin1> composition;
 
-        private CompositionData1<Schosin1> composition;
+            @Setup(Level.Trial)
+            public void setup(Blackhole bh) {
+                setupEntities();
 
-        @Setup(Level.Trial)
-        public void setup(Blackhole bh) {
-            setupEntities();
+                this.composition = world.createComposition(Composition.all(Schosin1.class), Schosin1.class);
 
-            this.composition = world.createComposition(Composition.all(Schosin1.class), Schosin1.class);
+                this.bh = bh;
+            }
 
-            this.bh = bh;
+            @Benchmark
+            public void direct() {
+                composition.process(this::process);
+            }
+
+            private void process(int entityId, Schosin1 c1) {
+                bh.consume(entityId);
+
+                bh.consume(c1);
+            }
+
         }
 
-        @Benchmark
-        public void direct() {
-            composition.process(this::process);
-        }
+        public static class Unpack04 extends BaseCompositionIterationBenchmark {
 
-        private void process(int entityId, Schosin1 c1) {
-            bh.consume(entityId);
+            public static void main(String[] args) {
+                var benchmark = new Unpack04();
+                benchmark.components = 4;
+                benchmark.entities = 1000000;
 
-            bh.consume(c1);
-        }
+                var bh = new Blackhole("Today's password is swordfish. I understand instantiating Blackholes directly is dangerous.");
+                benchmark.setup(bh);
 
-    }
+                while (true) {
+                    benchmark.componentSet();
+                }
+            }
 
-    public static class Unpack04 extends BaseCompositionIterationBenchmark {
+            private CompositionData4<Schosin1, Schosin2, Schosin3, Schosin4> compositionData;
+            private CompositionSet<ComponentSet4.Processor> compositionSet;
+            private CompositionData1<ComponentResult<Schosin1234>> compositionWildcard;
 
-        public static void main(String[] args) {
-            var benchmark = new Unpack04();
-            benchmark.components = 4;
-            benchmark.entities = 1000000;
+            @Setup(Level.Trial)
+            public void setup(Blackhole bh) {
+                setupEntities();
 
-            var bh = new Blackhole("Today's password is swordfish. I understand instantiating Blackholes directly is dangerous.");
-            benchmark.setup(bh);
+                this.compositionData = world.createComposition(Composition.all(Schosin1.class), Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class);
+                this.compositionSet = world.createComposition(Composition.all(Schosin1.class), ComponentSet4.TYPE);
+                this.compositionWildcard = world.createComposition(Composition.all(Schosin1.class), wildcard(Schosin1234.class));
 
-            while (true) {
-                benchmark.componentSet();
+                this.bh = bh;
+            }
+
+            @Benchmark
+            public void dataType() {
+                compositionData.process(this::process);
+            }
+
+            @Benchmark
+            public void componentSet() {
+                compositionSet.process(this::process);
+            }
+
+            @ComponentSetConfig("ComponentSet4")
+            private void process(int entityId, Schosin1 c1, Schosin2 c2, Schosin3 c3, Schosin4 c4) {
+                bh.consume(entityId);
+
+                bh.consume(c1);
+                bh.consume(c2);
+                bh.consume(c3);
+                bh.consume(c4);
+            }
+
+            @Benchmark
+            public void wildcardLoop() {
+                compositionWildcard.process(this::processLoop);
+            }
+
+            private void processLoop(int entityId, ComponentResult<Schosin1234> components) {
+                bh.consume(entityId);
+
+                for (int i = 0, s = components.size(); i < s; i++) {
+                    bh.consume(components.get(i));
+                }
+            }
+
+            @Benchmark
+            public void wildcardIterator() {
+                compositionWildcard.process(this::processIterator);
+            }
+
+            private void processIterator(int entityId, ComponentResult<Schosin1234> components) {
+                bh.consume(entityId);
+
+                for (var iter = components.iterator(); iter.hasNext();) {
+                    bh.consume(iter.next());
+                }
             }
         }
 
-        private CompositionData4<Schosin1, Schosin2, Schosin3, Schosin4> compositionData;
-        private CompositionSet<ComponentSet4.Processor> compositionSet;
-        private CompositionData1<ComponentResult<Schosin1234>> compositionWildcard;
+        public static class Unpack08 extends BaseCompositionIterationBenchmark {
 
-        @Setup(Level.Trial)
-        public void setup(Blackhole bh) {
-            setupEntities();
+            private CompositionData8<Schosin1, Schosin2, Schosin3, Schosin4, Schosin5, Schosin6, Schosin7, Schosin8> compositionData;
+            private CompositionSet<ComponentSet8.Processor> compositionSet;
+            private CompositionData1<ComponentResult<Schosin>> compositionWildcard;
 
-            this.compositionData = world.createComposition(Composition.all(Schosin1.class), Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class);
-            this.compositionSet = world.createComposition(Composition.all(Schosin1.class), ComponentSet4.TYPE);
-            this.compositionWildcard = world.createComposition(Composition.all(Schosin1.class), wildcard(Schosin1234.class));
+            @Setup(Level.Trial)
+            public void setup(Blackhole bh) {
+                setupEntities();
 
-            this.bh = bh;
-        }
+                this.compositionData = world.createComposition(Composition.all(Schosin1.class),
+                        Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class, Schosin5.class, Schosin6.class, Schosin7.class, Schosin8.class);
 
-        @Benchmark
-        public void dataType() {
-            compositionData.process(this::process);
-        }
+                this.compositionSet = world.createComposition(Composition.all(Schosin1.class), ComponentSet8.TYPE);
+                this.compositionWildcard = world.createComposition(Composition.all(Schosin1.class), wildcard(Schosin.class));
 
-        @Benchmark
-        public void componentSet() {
-            compositionSet.process(this::process);
-        }
-
-        @ComponentSetConfig("ComponentSet4")
-        private void process(int entityId, Schosin1 c1, Schosin2 c2, Schosin3 c3, Schosin4 c4) {
-            bh.consume(entityId);
-
-            bh.consume(c1);
-            bh.consume(c2);
-            bh.consume(c3);
-            bh.consume(c4);
-        }
-
-        @Benchmark
-        public void wildcardLoop() {
-            compositionWildcard.process(this::processLoop);
-        }
-
-        private void processLoop(int entityId, ComponentResult<Schosin1234> components) {
-            bh.consume(entityId);
-
-            for (int i = 0, s = components.size(); i < s; i++) {
-                bh.consume(components.get(i));
+                this.bh = bh;
             }
-        }
 
-        @Benchmark
-        public void wildcardIterator() {
-            compositionWildcard.process(this::processIterator);
-        }
-
-        private void processIterator(int entityId, ComponentResult<Schosin1234> components) {
-            bh.consume(entityId);
-
-            for (var iter = components.iterator(); iter.hasNext();) {
-                bh.consume(iter.next());
+            @Benchmark
+            public void dataType() {
+                compositionData.process(this::process);
             }
-        }
-    }
 
-    public static class Unpack08 extends BaseCompositionIterationBenchmark {
-
-        private CompositionData8<Schosin1, Schosin2, Schosin3, Schosin4, Schosin5, Schosin6, Schosin7, Schosin8> compositionData;
-        private CompositionSet<ComponentSet8.Processor> compositionSet;
-        private CompositionData1<ComponentResult<Schosin>> compositionWildcard;
-
-        @Setup(Level.Trial)
-        public void setup(Blackhole bh) {
-            setupEntities();
-
-            this.compositionData = world.createComposition(Composition.all(Schosin1.class),
-                    Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class, Schosin5.class, Schosin6.class, Schosin7.class, Schosin8.class);
-
-            this.compositionSet = world.createComposition(Composition.all(Schosin1.class), ComponentSet8.TYPE);
-            this.compositionWildcard = world.createComposition(Composition.all(Schosin1.class), wildcard(Schosin.class));
-
-            this.bh = bh;
-        }
-
-        @Benchmark
-        public void dataType() {
-            compositionData.process(this::process);
-        }
-
-        @Benchmark
-        public void componentSet() {
-            compositionSet.process(this::process);
-        }
-
-        @ComponentSetConfig("ComponentSet8")
-        private void process(int entityId, Schosin1 c1, Schosin2 c2, Schosin3 c3, Schosin4 c4, Schosin5 c5, Schosin6 c6, Schosin7 c7, Schosin8 c8) {
-            bh.consume(entityId);
-
-            bh.consume(c1);
-            bh.consume(c2);
-            bh.consume(c3);
-            bh.consume(c4);
-            bh.consume(c5);
-            bh.consume(c6);
-            bh.consume(c7);
-            bh.consume(c8);
-        }
-
-        @Benchmark
-        public void wildcardLoop() {
-            compositionWildcard.process(this::processLoop);
-        }
-
-        private void processLoop(int entityId, ComponentResult<Schosin> components) {
-            bh.consume(entityId);
-
-            for (int i = 0, s = components.size(); i < s; i++) {
-                bh.consume(components.get(i));
+            @Benchmark
+            public void componentSet() {
+                compositionSet.process(this::process);
             }
-        }
 
-        @Benchmark
-        public void wildcardIterator() {
-            compositionWildcard.process(this::processIterator);
-        }
+            @ComponentSetConfig("ComponentSet8")
+            private void process(int entityId, Schosin1 c1, Schosin2 c2, Schosin3 c3, Schosin4 c4, Schosin5 c5, Schosin6 c6, Schosin7 c7, Schosin8 c8) {
+                bh.consume(entityId);
 
-        private void processIterator(int entityId, ComponentResult<Schosin> components) {
-            bh.consume(entityId);
-
-            for (var iter = components.iterator(); iter.hasNext();) {
-                bh.consume(iter.next());
+                bh.consume(c1);
+                bh.consume(c2);
+                bh.consume(c3);
+                bh.consume(c4);
+                bh.consume(c5);
+                bh.consume(c6);
+                bh.consume(c7);
+                bh.consume(c8);
             }
+
+            @Benchmark
+            public void wildcardLoop() {
+                compositionWildcard.process(this::processLoop);
+            }
+
+            private void processLoop(int entityId, ComponentResult<Schosin> components) {
+                bh.consume(entityId);
+
+                for (int i = 0, s = components.size(); i < s; i++) {
+                    bh.consume(components.get(i));
+                }
+            }
+
+            @Benchmark
+            public void wildcardIterator() {
+                compositionWildcard.process(this::processIterator);
+            }
+
+            private void processIterator(int entityId, ComponentResult<Schosin> components) {
+                bh.consume(entityId);
+
+                for (var iter = components.iterator(); iter.hasNext();) {
+                    bh.consume(iter.next());
+                }
+            }
+
         }
 
     }

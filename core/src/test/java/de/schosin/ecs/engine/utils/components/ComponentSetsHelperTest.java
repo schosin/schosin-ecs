@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.components.mappers.MyComponentSet;
 import de.schosin.ecs.engine.components.mappers.RelationComponentSet;
@@ -38,38 +37,6 @@ public class ComponentSetsHelperTest {
                             relation(Location.class, Position.class),
                             exclusiveRelation(Birthplace.class),
                             relation(Location.class));
-        }
-
-    }
-
-    @Nested
-    class GetTest {
-
-        @Test
-        void testSimpleComponents() {
-            var factory = ComponentSetsHelper.getFactory(MyComponentSet.class);
-
-            var pos = new Position();
-            var velocity = new Velocity();
-
-            var instance = factory.getInstance(42, pos, velocity);
-            assertThat(instance.entityId()).isEqualTo(42);
-            assertThat(instance.pos()).isSameAs(pos);
-            assertThat(instance.velocity()).isSameAs(velocity);
-        }
-
-        @Test
-        void testRelationComponentSet() {
-            var factory = ComponentSetsHelper.getFactory(RelationComponentSet.class);
-
-            var birthplace = Relation.create(Birthplace.Birthplace, new Position());
-            var birthplaceId = Relation.create(Birthplace.Birthplace, 1);
-
-            var instance = factory.getInstance(42, birthplace, null, birthplaceId, null);
-            assertThat(instance).isInstanceOf(RelationComponentSet.class);
-            assertThat(instance.entityId()).isEqualTo(42);
-            assertThat(instance.birthplace()).isSameAs(birthplace);
-            assertThat(instance.birthplaceId()).isSameAs(birthplaceId);
         }
 
     }

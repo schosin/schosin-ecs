@@ -25,7 +25,7 @@ public record ExclusiveComponentRelationDataImpl<R extends Exclusive, T>(int id,
 
     @Override
     public boolean hasComponent(int entityId) {
-        return index.hasComponent(entityId, type);
+        return index.hasComponent(entityId, id);
     }
 
     @Override

@@ -9,7 +9,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRe
 import de.schosin.ecs.utils.collections.Pool;
 
 @SuppressWarnings("rawtypes")
-public class EntityRelationDataImpl implements EntityRelationData, Pooled {
+public class EntityRelationDataImpl<R, T> implements EntityRelationData<R, T>, Pooled {
 
     private static final Pool<EntityRelationDataImpl> POOL = Pool.unbounded(EntityRelationDataImpl.class, EntityRelationDataImpl::new);
 
@@ -28,18 +28,18 @@ public class EntityRelationDataImpl implements EntityRelationData, Pooled {
         }
     }
 
-    private EntityRelation<?> relation;
-    private IntFunction<?> dataFunction;
+    private EntityRelation<R> relation;
+    private IntFunction<T> dataFunction;
 
-    private Object data;
+    private T data;
 
     @Override
-    public RegularEntityRelationType<?, ?> type() {
+    public RegularEntityRelationType<R, ?> type() {
         return relation.type();
     }
 
     @Override
-    public Object relationship() {
+    public R relationship() {
         return relation.relationship();
     }
 
@@ -49,13 +49,19 @@ public class EntityRelationDataImpl implements EntityRelationData, Pooled {
     }
 
     @Override
-    public Object data() {
+    public T data() {
         if (dataFunction != null) {
             this.data = dataFunction.apply(relation.target());
             this.dataFunction = null;
         }
 
         return data;
+    }
+
+    @Override
+    public void reset() {
+        this.relation = null;
+        this.dataFunction = null;
     }
 
     // DO NOT REMOVE - easier assertj-tests with extracting(...) requires bean-like accessors

@@ -2,8 +2,6 @@ package de.schosin.ecs.engine.components;
 
 import java.util.Arrays;
 
-import org.jspecify.annotations.NonNull;
-
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation.Exclusive;
@@ -22,7 +20,6 @@ import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.utils.ClassUtils;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
-import de.schosin.ecs.engine.utils.exceptions.UnsupportedComponentTypeException;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
@@ -34,7 +31,6 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelatio
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
-import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 /**
@@ -58,10 +54,6 @@ public class ComponentManager {
         this.classes = classes;
 
         eventManager.registerEventHandler(ComponentAddedEvent.class, this::handleComponentAdded);
-    }
-
-    public Component<?, ?> getComponent(int componentId) {
-        return storageEngine.getComponent(componentId);
     }
 
     public <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type) {
@@ -100,33 +92,8 @@ public class ComponentManager {
         return storageEngine.getComponent(type);
     }
 
-    /**
-     * Do no use {@link ComponentType} for accessing components. Use {@link #getComponent(RegularComponentType)} instead.
-     * 
-     * @throws UnsupportedComponentTypeException operation not supported
-     */
-    @Deprecated
-    public Component<?, ?> getComponent(ComponentType<?, ?> type) throws UnsupportedComponentTypeException {
-        throw new UnsupportedComponentTypeException(type, "ComponentType '%s' not allowed, must use RegularComponentType for accessing components.".formatted(type));
-    }
-
-    public <T> Component<T, ?> getComponent(@NonNull T component) {
-        return getComponent(ComponentType.detectComponentType(component));
-    }
-
-    public void fillVector(BitVector vector, RegularComponentType<?, ?>... components) {
-        for (int i = 0, s = components.length; i < s; i++) {
-            var componentId = getComponent(components[i]).id();
-            vector.set(componentId);
-        }
-    }
-
     public ImmutableBag<Component<?, ?>> getComponents() {
         return storageEngine.getComponents();
-    }
-
-    public <T> ImmutableBag<Component<? extends T, ?>> getComponents(ComponentType<T, ?> bound) {
-        return storageEngine.getComponents(bound);
     }
 
     // currently unused, kept for possible optimizations when using Archetype#getEntityData(RegularComponentType<?, ?>...)

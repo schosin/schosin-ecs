@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 
 class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
@@ -35,8 +35,8 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             var target1 = world.createEntity();
             var target2 = world.createEntity();
 
-            var relation1 = Relation.create(new Relationship1(1), target1);
-            var relation2 = Relation.create(new Relationship2(2), target2);
+            var relation1 = Relation.create(new NonExclusiveRelationship(1), target1);
+            var relation2 = Relation.create(new ExclusiveRelationship(2), target2);
 
             var entity1 = world.createEntity(relation1);
             var entity2 = world.createEntity(relation2);
@@ -59,7 +59,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testResultInstanceReused() {
-            var relation = Relation.create(new Relationship1(1), world.createEntity());
+            var relation = Relation.create(new NonExclusiveRelationship(1), world.createEntity());
             var entityId = world.createEntity(relation);
 
             var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
@@ -74,9 +74,8 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
         }
 
         @Test
-        @SuppressWarnings("unchecked")
-        void testFree_ResultInstanceReused() {
-            var relation = Relation.create(new Relationship1(1), world.createEntity());
+        void testReclaim_ResultInstanceReused() {
+            var relation = Relation.create(new NonExclusiveRelationship(1), world.createEntity());
             var entityId = world.createEntity(relation);
 
             var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
@@ -84,12 +83,11 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             // Call
             var result1 = mapper.get(entityId);
 
-            var poolingMapper = assertThat(mapper).asInstanceOf(InstanceOfAssertFactories.type(PoolingComponents.class)).actual();
-            poolingMapper.free(result1);
+            var reclaimingMapper = assertThat(mapper).asInstanceOf(InstanceOfAssertFactories.type(ReclaimingComponents.class)).actual();
+            reclaimingMapper.reclaim();
 
             // Verify
             assertThat(mapper.get(entityId)).isSameAs(result1);
-
         }
 
         @Test
@@ -111,9 +109,9 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             var target2 = world.createEntity(new Position(2, 20));
             var target3 = world.createEntity(new Position(3, 30));
 
-            var relation1 = Relation.create(new Relationship1(1), target1);
-            var relation2 = Relation.create(new Relationship1(2), target2);
-            var relation3 = Relation.create(new Relationship2(3), target3);
+            var relation1 = Relation.create(new NonExclusiveRelationship(1), target1);
+            var relation2 = Relation.create(new NonExclusiveRelationship(2), target2);
+            var relation3 = Relation.create(new ExclusiveRelationship(3), target3);
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
@@ -141,9 +139,9 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             var target2 = world.createEntity(new Position(2, 20));
             var target3 = world.createEntity(new Position(3, 30));
 
-            var relation1 = Relation.create(new Relationship1(1), target1);
-            var relation2 = Relation.create(new Relationship1(2), target2);
-            var relation3 = Relation.create(new Relationship2(3), target3);
+            var relation1 = Relation.create(new NonExclusiveRelationship(1), target1);
+            var relation2 = Relation.create(new NonExclusiveRelationship(2), target2);
+            var relation3 = Relation.create(new ExclusiveRelationship(3), target3);
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
@@ -179,16 +177,16 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testRemove() {
-            var type1 = relation(Relationship1.class);
-            var type2 = exclusiveRelation(Relationship2.class);
+            var type1 = relation(NonExclusiveRelationship.class);
+            var type2 = exclusiveRelation(ExclusiveRelationship.class);
 
             var target1 = world.createEntity();
             var target2 = world.createEntity();
 
-            var entity1 = world.createEntity(Relation.create(new Relationship1(1), target1));
-            var entity2 = world.createEntity(Relation.create(new Relationship2(2), target2));
-            var entity3 = world.createEntity(Relation.create(new Relationship1(1), target1));
-            var entity4 = world.createEntity(Relation.create(new Relationship2(2), target2));
+            var entity1 = world.createEntity(Relation.create(new NonExclusiveRelationship(1), target1));
+            var entity2 = world.createEntity(Relation.create(new ExclusiveRelationship(2), target2));
+            var entity3 = world.createEntity(Relation.create(new NonExclusiveRelationship(1), target1));
+            var entity4 = world.createEntity(Relation.create(new ExclusiveRelationship(2), target2));
 
             var mapper1 = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
             var mapper2 = world.getWildcardEntityFetchRelations(Exclusive.class, component(Position.class));
@@ -225,10 +223,74 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
     }
 
-    record Relationship1(int value) {
+    @Nested
+    class ReclaimTest {
+
+        @Test
+        void testReclaim() {
+            var pos1 = new Position(42, 1337);
+            var target1 = world.createEntity(pos1);
+
+            var pos2 = new Position(22, 222);
+            var target2 = world.createEntity(pos2);
+
+            var relation1 = Relation.create(new NonExclusiveRelationship(1), target1);
+            var relation2 = Relation.create(new ExclusiveRelationship(2), target2);
+
+            var entityId = world.createEntity(relation1, relation2);
+
+            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1, relation2);
+            assertThat(result.toString())
+                    .containsSubsequence(new NonExclusiveRelationship(1).toString(), Integer.toString(target1), pos1.toString())
+                    .containsSubsequence(new ExclusiveRelationship(2).toString(), Integer.toString(target2), pos2.toString());
+
+            var reclaimingMapper = assertThat(mapper).asInstanceOf(InstanceOfAssertFactories.type(ReclaimingComponents.class)).actual();
+            reclaimingMapper.reclaim();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
+        }
+
+        @Test
+        void testReclaim_WorldProcess() {
+            var pos1 = new Position(42, 1337);
+            var target1 = world.createEntity(pos1);
+
+            var pos2 = new Position(22, 222);
+            var target2 = world.createEntity(pos2);
+
+            var relation1 = Relation.create(new NonExclusiveRelationship(1), target1);
+            var relation2 = Relation.create(new ExclusiveRelationship(2), target2);
+
+            var entityId = world.createEntity(relation1, relation2);
+
+            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1, relation2);
+            assertThat(result.toString())
+                    .containsSubsequence(new NonExclusiveRelationship(1).toString(), Integer.toString(target1), pos1.toString())
+                    .containsSubsequence(new ExclusiveRelationship(2).toString(), Integer.toString(target2), pos2.toString());
+
+            world.process();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
+        }
+
     }
 
-    record Relationship2(int value) implements Exclusive {
+    record NonExclusiveRelationship(int value) {
+    }
+
+    record ExclusiveRelationship(int value) implements Exclusive {
     }
 
     record Position(int x, int y) {

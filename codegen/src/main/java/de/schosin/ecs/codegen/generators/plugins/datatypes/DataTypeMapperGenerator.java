@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
+import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.JavaFile;
@@ -27,7 +28,7 @@ public class DataTypeMapperGenerator {
 
         var helper = TypeSpec.classBuilder("DataTypeMapperHelper")
                 .addModifiers(Modifier.PUBLIC)
-                .addMethod(getInstance(maxParams))
+                .addMethod(getComponentAccessor(maxParams))
                 .build();
 
         return JavaFile.builder(packageName, helper)
@@ -36,12 +37,15 @@ public class DataTypeMapperGenerator {
                 .build();
     }
 
-    private static MethodSpec getInstance(int maxParams) {
+    private static MethodSpec getComponentAccessor(int maxParams) {
         var dataR = TypeVariableName.get("R", DATA);
         var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataR, Utils.WILDCARD);
 
+        var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataR);
+        var mappers = ArrayTypeName.of(Utils.components(Utils.WILDCARD, Utils.WILDCARD));
+
         var body = CodeBlock.builder()
-                .beginControlFlow("return (R) switch(dataType)");
+                .beginControlFlow("return ($1T) switch(dataType)", componentAccessor);
 
         for (int i = 2; i <= maxParams; i++) {
             var typeVariables = IntStream.range(1, i + 1)
@@ -59,22 +63,25 @@ public class DataTypeMapperGenerator {
                     arguments += ", ";
                 }
 
-                arguments += "components[%d]".formatted(j);
+                arguments += "mappers[%d]".formatted(j);
             }
 
+            arguments += ", accessor";
+
             body.add("case $1T type%1$d ->".formatted(i), parameterizedDataTypeN);
-            body.addStatement("$1T.getInstance(%s)".formatted(arguments), dataN);
+            body.addStatement("$1T.getComponentAccessor(%s)".formatted(arguments), dataN);
         }
 
         body.endControlFlow();
         body.addStatement(""); // switch expression
 
-        return MethodSpec.methodBuilder("getInstance")
+        return MethodSpec.methodBuilder("getComponentAccessor")
                 .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                 .addTypeVariable(dataR)
                 .addParameter(dataType, "dataType")
-                .addParameter(Object[].class, "components").varargs()
-                .returns(Utils.R)
+                .addParameter(mappers, "mappers")
+                .addParameter(Utils.DATA_ACCESSOR, "accessor")
+                .returns(componentAccessor)
                 .addCode(body.build())
                 .build();
     }

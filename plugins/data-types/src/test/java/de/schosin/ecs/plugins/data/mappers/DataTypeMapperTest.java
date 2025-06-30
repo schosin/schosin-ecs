@@ -1,8 +1,8 @@
 package de.schosin.ecs.plugins.data.mappers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -57,7 +57,7 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
             var entity3 = world.createEntity(new Component2(9001));
             var entity4 = world.createEntity(new Component1(42), new Component2(9001));
 
-            assertThat(mapper.get(entity1)).isNull();
+            assertThat(mapper.get(entity1)).isNotNull(); // "collection" types always return an instance
             assertThat(mapper.get(entity2)).isNotNull();
             assertThat(mapper.get(entity3)).isNotNull();
             assertThat(mapper.get(entity4)).isNotNull();
@@ -79,35 +79,7 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
         }
 
         @Test
-        void testGet_GetComponents() {
-            var type = DataType.get(component(Component1.class), component(Component2.class));
-            var mapper = world.getComponents(type);
-
-            var component1 = new Component1(42);
-            var component2 = new Component2(9001);
-            var entityId = world.createEntity(component1, component2);
-
-            var result = mapper.get(entityId);
-            assertThat(result).isNotNull();
-
-            assertThat(result.getComponent(0)).isSameAs(component1);
-            assertThat(result.getComponent(1)).isSameAs(component2);
-
-            assertThatThrownBy(() -> result.getComponent(2)).isInstanceOf(IllegalArgumentException.class);
-        }
-
-        @Test
-        void testGet_NoComponents() {
-            var type = DataType.get(component(Component1.class), component(Component2.class));
-            var mapper = world.getComponents(type);
-
-            var entityId = world.createEntity();
-
-            assertThat(mapper.get(entityId)).isNull();
-        }
-
-        @Test
-        void testFree() {
+        void testReclaim() {
             var type = DataType.get(component(Component1.class), component(Component2.class));
             var mapper = world.getComponents(type);
 
@@ -123,11 +95,10 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
             assertThat(result.component2()).isSameAs(component2);
 
             // Call
-            mapper.free(result);
+            mapper.reclaim();
 
             // Verify
-            assertThat(result.component1()).isNull();
-            assertThat(result.component2()).isNull();
+            assertThat(result).extracting(Object::toString, InstanceOfAssertFactories.STRING).contains("invalidated");
 
             assertThat(mapper.get(entity2)).isSameAs(result);
             assertThat(result.component1()).isNotSameAs(component1).extracting("value").isEqualTo(1);
@@ -135,7 +106,7 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
         }
 
         @Test
-        void testReclaim() {
+        void testReclaim_WorldProcess() {
             var type = DataType.get(component(Component1.class), component(Component2.class));
             var mapper = world.getComponents(type);
 
@@ -154,8 +125,7 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
             world.process();
 
             // Verify
-            assertThat(result.component1()).isNull();
-            assertThat(result.component2()).isNull();
+            assertThat(result).extracting(Object::toString, InstanceOfAssertFactories.STRING).contains("invalidated");
 
             assertThat(mapper.get(entity2)).isSameAs(result);
             assertThat(result.component1()).isNotSameAs(component1).extracting("value").isEqualTo(1);
@@ -221,26 +191,6 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
             assertThat(result.component1()).isSameAs(component1);
             assertThat(result.component2()).isSameAs(component2);
             assertThat(result.component3()).isSameAs(component3);
-        }
-
-        @Test
-        void testGet_GetComponents() {
-            var type = DataType.get(component(Component1.class), component(Component2.class), component(Component3.class));
-            var mapper = world.getComponents(type);
-
-            var component1 = new Component1(42);
-            var component2 = new Component2(9001);
-            var component3 = new Component3(9002);
-            var entityId = world.createEntity(component1, component2, component3);
-
-            var result = mapper.get(entityId);
-            assertThat(result).isNotNull();
-
-            assertThat(result.getComponent(0)).isSameAs(component1);
-            assertThat(result.getComponent(1)).isSameAs(component2);
-            assertThat(result.getComponent(2)).isSameAs(component3);
-
-            assertThatThrownBy(() -> result.getComponent(3)).isInstanceOf(IllegalArgumentException.class);
         }
 
     }

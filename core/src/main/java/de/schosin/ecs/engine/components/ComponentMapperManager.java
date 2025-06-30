@@ -63,11 +63,8 @@ import de.schosin.ecs.utils.collections.Bag;
 
 public class ComponentMapperManager implements Components.Creator {
 
-    public interface PoolingComponents<T> {
-        void free(T result);
-
-        default void reclaim() {
-        }
+    public interface ReclaimingComponents {
+        void reclaim();
     }
 
     public interface WildcardMapper<M extends Components<?, ?>> {
@@ -84,7 +81,7 @@ public class ComponentMapperManager implements Components.Creator {
     private final Bag<Components<?, ?>> components;
     private final Map<Enum<?>, EnumComponentMapper<?>> enumComponents = new IdentityHashMap<>();
 
-    private final Bag<PoolingComponents<?>> reclaimingComponents = new Bag<>(PoolingComponents.class, 8);
+    private final Bag<ReclaimingComponents> reclaimingComponents = new Bag<>(ReclaimingComponents.class, 8);
     private final Map<ComponentType<?, ?>, Components<?, ?>> componentMappers = new ConcurrentHashMap<>();
 
     private final Map<Class<? extends CustomComponentType<?, ?, ?>>, Factory> factories = new HashMap<>();
@@ -276,6 +273,8 @@ public class ComponentMapperManager implements Components.Creator {
             }
 
             var mapper = new EntityRelationFetchMapperImpl<>(relation, this, entityManager::getAccessor);
+
+            this.reclaimingComponents.add(mapper);
             this.componentMappers.put(relation, mapper);
 
             return mapper;
@@ -297,6 +296,8 @@ public class ComponentMapperManager implements Components.Creator {
             }
 
             var mapper = new ExclusiveEntityRelationFetchMapperImpl<>(relation, this, entityManager::getAccessor);
+
+            this.reclaimingComponents.add(mapper);
             this.componentMappers.put(relation, mapper);
 
             return mapper;
@@ -411,7 +412,7 @@ public class ComponentMapperManager implements Components.Creator {
                 return result;
             }
 
-            var mapper = new WildcardEntityFetchRelationMapperImpl<>(wildcardRelation, this);
+            var mapper = new WildcardEntityFetchRelationMapperImpl<>(entityManager, wildcardRelation, this);
 
             this.reclaimingComponents.add(mapper);
             this.componentMappers.put(wildcardRelation, mapper);
@@ -442,8 +443,8 @@ public class ComponentMapperManager implements Components.Creator {
 
             var mapper = factory.createComponents(type);
 
-            if (mapper instanceof PoolingComponents<?> pooling) {
-                this.reclaimingComponents.add(pooling);
+            if (mapper instanceof ReclaimingComponents reclaiming) {
+                this.reclaimingComponents.add(reclaiming);
             }
 
             this.componentMappers.put(type, mapper);

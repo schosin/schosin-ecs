@@ -38,6 +38,7 @@ import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
@@ -2623,7 +2624,9 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             default <R> int[] performImpl(Object[][] components, CompositionData<?> composition, ComponentType<?, R> type, TestConsumer<R> consumer) {
                 var test = getTest();
+
                 var world = test.getWorld();
+                world.process(); // clear any pending stuff
 
                 var s = components.length;
                 var entities = new int[s];
@@ -3220,16 +3223,21 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                     var type = wildcard(C1234.class);
                     var composition = composition(Composition.all(), type);
 
-                    var components = new Object[][] {
-                            { new C1(), new C5() },
-                            { new C1(), new C5() },
-                    };
+                    var components1 = new Object[][] { { new C1(), new C5() } };
+                    var components2 = new Object[][] { { new C1(), new C2() } };
 
                     var invocations = new AtomicInteger();
                     var results = new IdentityHashMap<Result<C1234>, Boolean>();
 
-                    perform(components, composition, type, (id, result) -> {
-                        if (id == 0 || id == 1) {
+                    perform(components1, composition, type, (id, result) -> {
+                        if (id == 0 && result.size() == 1) {
+                            invocations.incrementAndGet();
+                            results.put(result, true);
+                        }
+                    });
+
+                    perform(components2, composition, type, (id, result) -> {
+                        if (id == 0) {
                             invocations.incrementAndGet();
                             results.put(result, true);
                         }
@@ -5304,7 +5312,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     sealed interface DefaultComponents<T> extends CustomComponentMapper<T, T> {
     }
 
-    final class DefaultComponentsImpl<T> implements DefaultComponents<T> {
+    final class DefaultComponentsImpl<T> implements DefaultComponents<T>, ComponentAccessor<T> {
 
         private final Components<T, T> components;
         private final Supplier<T> defaultInstance;
@@ -5315,15 +5323,18 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         }
 
         @Override
-        public T get(int entityId) {
-            var result = components.get(entityId);
-
-            return result != null ? result : defaultInstance.get();
+        public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
+            return this;
         }
 
         @Override
-        public T access(DataAccessor accessor) {
-            var result = components.access(accessor);
+        public T getComponent(DataAccessor accessor) {
+            return get(accessor.entityId());
+        }
+
+        @Override
+        public T get(int entityId) {
+            var result = components.get(entityId);
 
             return result != null ? result : defaultInstance.get();
         }

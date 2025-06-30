@@ -14,6 +14,7 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 
 /**
@@ -125,12 +126,17 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
     R get(int entityId);
 
     /**
-     * Retrieves the component given the {@link DataAccessor}.
-     *  
-     * @param accessor data accessor
-     * @return component instance, may be null
+     * Retrieves a component accessor given the {@link DataAccessor}.
+     * 
+     * <p>
+     * The returned accessor must be {@link ComponentAccessor#free() freed} after use. <br/>
+     * The {@link DataAccessor accessor} itself must not be freed!
+     * </p>
+     * 
+     * @param accessor iterable accessor
+     * @return component accessor
      */
-    R access(DataAccessor accessor);
+    ComponentAccessor<R> getComponentAccessor(DataAccessor accessor);
 
     /**
      * Marks the component for removal. The component will be removed during the {@link #process()} call.
@@ -144,7 +150,8 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
      */
     boolean remove(int entityId);
 
-    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelationMappers.Creator, EntityRelationMappers.Creator, EntityFetchRelationMappers.Creator, WildcardRelationMappers.Creator {
+    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelationMappers.Creator, EntityRelationMappers.Creator, EntityFetchRelationMappers.Creator,
+            WildcardRelationMappers.Creator {
 
         /**
          * Retrieves the {@link Components} instance for the given {@link ComponentType}.

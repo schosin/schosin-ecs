@@ -5,9 +5,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.ComponentSet.AccessorFactory;
 import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
-import de.schosin.ecs.api.components.ComponentSet.Factory;
+import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.data.ComponentAccessor;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.api.data.DataProcessor;
 import de.schosin.ecs.engine.utils.exceptions.EcsComponentSetException;
 
@@ -16,7 +19,7 @@ public class ComponentSetsHelper {
     public interface ComponentSetFactory<S extends ComponentSet<?>> {
         List<ComponentData<S, ?, ?>> getComponents();
 
-        S getInstance(int entityId, Object... components);
+        ComponentAccessor<S> getComponentAccessor(DataAccessor accessor, Components<?, ?>[] mappers);
     }
 
     private static final Map<Class<? extends ComponentSet<?>>, ComponentSetFactory<?>> COMPONENT_SET_DATA = new ConcurrentHashMap<>();
@@ -40,11 +43,11 @@ public class ComponentSetsHelper {
     private static class ComponentSetFactoryImpl<S extends ComponentSet<?>> implements ComponentSetFactory<S> {
 
         private final List<ComponentData<S, ?, ?>> componentTypes;
-        private final Factory<S> factory;
+        private final AccessorFactory<S> accessorFactory;
 
         private ComponentSetFactoryImpl(ComponentSetData<S, ?> data) {
             this.componentTypes = data.components();
-            this.factory = data.factory();
+            this.accessorFactory = data.accessorFactory();
         }
 
         @Override
@@ -53,9 +56,10 @@ public class ComponentSetsHelper {
         }
 
         @Override
-        public S getInstance(int entityId, Object... components) {
-            return factory.create(entityId, components);
+        public ComponentAccessor<S> getComponentAccessor(DataAccessor accessor, Components<?, ?>[] mappers) {
+            return accessorFactory.create(accessor, mappers);
         }
+
     }
 
     @SuppressWarnings("unchecked")

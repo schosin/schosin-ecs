@@ -20,10 +20,10 @@ public sealed interface WildcardRelationMappers<R extends Relation<?>, T extends
     non-sealed interface WildcardComponentRelationMapper<R, T> extends WildcardRelationMappers<ComponentRelation<? extends R, ? extends T>, ComponentRelations<? extends R, ? extends T>> {
     }
 
-    non-sealed interface WildcardEntityRelationMapper<R> extends WildcardRelationMappers<EntityRelation<? extends R>, EntityRelations<? extends R>> {
+    non-sealed interface WildcardEntityRelationMapper<R> extends WildcardRelationMappers<EntityRelation<R>, EntityRelations<R>> {
     }
 
-    non-sealed interface WildcardEntityFetchRelationMapper<R, T> extends WildcardRelationMappers<EntityRelationData<? extends R, T>, EntityRelationsData<? extends R, T>> {
+    non-sealed interface WildcardEntityFetchRelationMapper<R, T> extends WildcardRelationMappers<EntityRelationData<R, T>, EntityRelationsData<R, T>> {
     }
 
     interface Creator {

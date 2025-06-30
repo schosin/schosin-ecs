@@ -2,6 +2,7 @@ package de.schosin.ecs.engine.components.mappers.fetch;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.components.mappers.AbstractMapperTest;
 import de.schosin.ecs.engine.components.mappers.MyComponentSet;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelperTest.Position;
@@ -106,7 +108,9 @@ class ExclusiveEntityRelationFetchMapperImplTest extends AbstractMapperTest {
             assertThat(relation.target()).isEqualTo(parentId);
 
             var data = relation.data();
-            assertThat(data).isNull();
+            assertThat(data).isNotNull();
+            assertThat(data.pos()).isNull();
+            assertThat(data.velocity()).isNull();
         }
 
     }
@@ -161,6 +165,54 @@ class ExclusiveEntityRelationFetchMapperImplTest extends AbstractMapperTest {
                 verifyHasComponents(parentId, Position.class, Velocity.class);
                 verifyComponentMaskHasComponents(parentId, Position.class, Velocity.class);
             });
+        }
+
+    }
+
+    @Nested
+    class ReclaimTest {
+
+        @Test
+        void testReclaim() {
+            var relatedPos = new Position();
+            var relatedVelocity = new Velocity();
+            var related = world.createEntity(relatedPos, relatedVelocity);
+
+            var entityId = world.createEntity(Relation.create(Parent.Parent, related));
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).isNotNull();
+            assertThat(result.toString())
+                    .containsSubsequence(Parent.Parent.toString(), Integer.toString(related), relatedPos.toString(), relatedVelocity.toString());
+
+            var reclaimingMapper = assertThat(mapper).asInstanceOf(InstanceOfAssertFactories.type(ReclaimingComponents.class)).actual();
+            reclaimingMapper.reclaim();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
+        }
+
+        @Test
+        void testReclaim_WorldProcess() {
+            var relatedPos = new Position();
+            var relatedVelocity = new Velocity();
+            var related = world.createEntity(relatedPos, relatedVelocity);
+
+            var entityId = world.createEntity(Relation.create(Parent.Parent, related));
+
+            // Call
+            var result = mapper.get(entityId);
+            assertThat(result).isNotNull();
+            assertThat(result.toString())
+                    .containsSubsequence(Parent.Parent.toString(), Integer.toString(related), relatedPos.toString(), relatedVelocity.toString());
+
+            world.process();
+
+            // Verify
+            assertThat(result.toString()).contains("invalidated");
+            assertThat(mapper.get(entityId)).isSameAs(result);
         }
 
     }

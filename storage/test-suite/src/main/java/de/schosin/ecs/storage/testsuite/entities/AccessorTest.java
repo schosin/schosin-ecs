@@ -2,7 +2,6 @@ package de.schosin.ecs.storage.testsuite.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -33,57 +32,46 @@ public class AccessorTest extends AbstractStorageEngineTest {
         assertThat(accessor.entityId()).as("accessor.entityId() must return id when creating for entity").isEqualTo(42);
     }
 
-    @Test
-    void testFree() {
-        var archetype = engine.getArchetype();
-        archetype.createEntity(42, new Object[0]);
+    @Nested
+    class IterableAccessorTest {
 
-        var accessor = engine.getAccessor(42);
-        accessor.free();
+        @Test
+        void testFree() {
+            var archetype = engine.getArchetype();
+            archetype.createEntity(42, new Object[0]);
 
-        try {
-            assertThat(accessor.entityId()).as("accessor.entityId() must return -1 or throw an AIOOBE after free").isEqualTo(-1);
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            // this is okay
-        } catch (Exception ex) {
-            fail("accessor.entityId() must return -1 or throw an AIOOBE after free", ex);
-        }
-    }
+            var accessor = archetype.getEntityData().getAccessor();
+            assertThat(accessor.isValid()).as("accessor.isValid() must return true before free()").isTrue();
 
-    @Test
-    void testClose() {
-        var archetype = engine.getArchetype();
-        archetype.createEntity(42, new Object[0]);
-
-        var accessor = engine.getAccessor(42);
-        accessor.close();
-
-        try {
-            assertThat(accessor.entityId()).as("accessor.entityId() must return -1 or throw an AIOOBE after free").isEqualTo(-1);
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            // this is okay
-        } catch (Exception ex) {
-            fail("accessor.entityId() must return -1 or throw an AIOOBE after free", ex);
-        }
-    }
-
-    @Test
-    void testTryWithResources() {
-        var archetype = engine.getArchetype();
-        archetype.createEntity(42, new Object[0]);
-
-        var accessor = engine.getAccessor(42);
-        try (accessor) {
-            assertThat(accessor.entityId()).as("accessor.entityId() must return id when within try-with-resources").isEqualTo(42);
+            accessor.free();
+            assertThat(accessor.isValid()).as("accessor.isValid() must return false after free()").isFalse();
         }
 
-        try {
-            assertThat(accessor.entityId()).as("accessor.entityId() must return -1 or throw an AIOOBE after free").isEqualTo(-1);
-        } catch (ArrayIndexOutOfBoundsException ex) {
-            // this is okay
-        } catch (Exception ex) {
-            fail("accessor.entityId() must return -1 or throw an AIOOBE after free", ex);
+        @Test
+        void testClose() {
+            var archetype = engine.getArchetype();
+            archetype.createEntity(42, new Object[0]);
+
+            var accessor = archetype.getEntityData().getAccessor();
+            assertThat(accessor.isValid()).as("accessor.isValid() must return true before close()").isTrue();
+
+            accessor.close();
+            assertThat(accessor.isValid()).as("accessor.isValid() must return false after close()").isFalse();
         }
+
+        @Test
+        void testTryWithResources() {
+            var archetype = engine.getArchetype();
+            archetype.createEntity(42, new Object[0]);
+
+            var accessor = archetype.getEntityData().getAccessor();
+            try (accessor) {
+                assertThat(accessor.isValid()).as("accessor.isValid() must return true when within try-with-resources").isTrue();
+            }
+
+            assertThat(accessor.isValid()).as("accessor.isValid() must return false after try-with-resources").isFalse();
+        }
+
     }
 
     @Nested

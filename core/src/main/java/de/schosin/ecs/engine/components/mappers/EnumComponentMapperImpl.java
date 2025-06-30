@@ -4,10 +4,10 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
 import de.schosin.ecs.api.components.types.ClassType;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
-import de.schosin.ecs.storage.api.entities.Archetype;
 
-public final class EnumComponentMapperImpl<T extends Enum<T>> implements EnumComponentMapper<T>, ComponentConverter.Factory<T> {
+public final class EnumComponentMapperImpl<T extends Enum<T>> implements EnumComponentMapper<T> {
 
     private final ComponentMapperImpl<T> delegate;
     private final T defaultComponent;
@@ -53,13 +53,8 @@ public final class EnumComponentMapperImpl<T extends Enum<T>> implements EnumCom
     }
 
     @Override
-    public T access(DataAccessor accessor) {
-        return this.delegate.access(accessor);
-    }
-
-    @Override
-    public ComponentConverter<T> getConverter(Archetype archetype) {
-        return this.delegate.getConverter(archetype);
+    public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
+        return this.delegate.getComponentAccessor(accessor);
     }
 
     @Override

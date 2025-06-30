@@ -8,11 +8,13 @@ import java.util.stream.Stream;
 
 import javax.annotation.processing.Generated;
 import javax.lang.model.element.Element;
+import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.type.DeclaredType;
 
 import com.palantir.javapoet.AnnotationSpec;
+import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.FieldSpec;
@@ -38,21 +40,24 @@ public class ComponentSetsGenerator {
             .build();
 
     static final ClassName COMPONENT_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentType");
+    static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components.mappers", "Components");
+    static final ClassName COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "ComponentAccessor");
     static final ClassName COMPONENT_SET = ClassName.get("de.schosin.ecs.api.components", "ComponentSet");
     static final ClassName COMPONENT_SET_DATA = COMPONENT_SET.nestedClass("ComponentSetData");
-    static final ClassName COMPONENT_ACCESSOR = COMPONENT_SET.nestedClass("ComponentAccessor");
+    static final ClassName COMPONENT_SET_COMPONENT = COMPONENT_SET.nestedClass("Component");
     static final ClassName COMPONENT_ACCESSOR_PROCESSOR = COMPONENT_SET.nestedClass("IterableProcessor");
     static final ClassName COMPONENT_SET_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentSetType");
 
     private static final ClassName POOL = ClassName.get("de.schosin.ecs.utils.collections", "Pool");
 
-    public static final ClassName DATA_CONVERTER = ClassName.get("de.schosin.ecs.api.data", "DataConverter");
     public static final ClassName DATA_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataAccessor");
     public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataProcessor");
     public static final ClassName DATA_PROCESSOR_TYPE = ClassName.get("de.schosin.ecs.api.data", "DataProcessorType");
-    public static final ClassName ITERABLE_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
+    public static final ClassName ITERABLE_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
 
     private static final WildcardTypeName WILDCARD = WildcardTypeName.subtypeOf(Object.class);
+
+    private static final AnnotationSpec SUPPRESS_UNCHECKED = AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build();
 
     public List<TypeData> generate(Set<? extends Element> elements) {
         return elements.stream()
@@ -61,10 +66,11 @@ public class ComponentSetsGenerator {
     }
 
     private Stream<TypeData> generate(Element element) {
-        return switch (element.getKind()) {
-            case METHOD -> ComponentSetTypes.create(element.accept(new MethodVisitor((ExecutableElement) element), null));
-            default -> throw new CancelException("Unsupported kind %s: %s".formatted(element.getKind(), element));
-        };
+        if (element.getKind() == ElementKind.METHOD) {
+            return ComponentSetTypes.create(element.accept(new MethodVisitor((ExecutableElement) element), null));
+        }
+
+        throw new CancelException("Unsupported kind %s: %s".formatted(element.getKind(), element));
     }
 
     private static class ComponentSetTypes {
@@ -87,12 +93,18 @@ public class ComponentSetsGenerator {
                 types.add(implementation);
             }
 
+            var accessor = ComponentSetAccessor.createAccessor(result);
+            if (implementation != null) {
+                types.add(accessor);
+            }
+
             return Stream.of(new TypeData(result, factoryMethod, factoryMethodEntity, types));
         }
 
         private static TypeSpec createInterface(VisitorResult result) {
             var interfaceName = result.interfaceName;
             var implementationName = result.implementationName;
+            var accessorName = ClassName.get(result.interfaceName.packageName(), interfaceName.simpleName() + "Accessor");
             var components = result.components;
 
             var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName, interfaceName.nestedClass("Processor"));
@@ -105,8 +117,10 @@ public class ComponentSetsGenerator {
 
             var componentSet = TypeSpec.interfaceBuilder(interfaceName)
                     .addAnnotation(GENERATED)
-                    .addModifiers(Modifier.PUBLIC)
+                    .addModifiers(Modifier.PUBLIC, Modifier.SEALED)
                     .addSuperinterface(superinterface)
+                    .addPermittedSubclass(implementationName)
+                    .addPermittedSubclass(accessorName)
                     .addField(componentSetData)
                     .addMethod(createFactoryMethod(true, "get", interfaceName, implementationName, components))
                     .addMethod(createFactoryMethod(false, "get", interfaceName, implementationName, components));
@@ -212,6 +226,7 @@ public class ComponentSetsGenerator {
         private static TypeSpec createImplementation(VisitorResult result) {
             var interfaceName = result.interfaceName;
             var implementationName = result.implementationName;
+            var accessorName = ClassName.get(result.interfaceName.packageName(), interfaceName.simpleName() + "Accessor");
             var components = result.components;
 
             var parameterizedPool = ParameterizedTypeName.get(POOL, implementationName);
@@ -235,19 +250,10 @@ public class ComponentSetsGenerator {
                     .addField(entityId);
 
             var componentSetDataInitializer = CodeBlock.builder()
-                    .add("$1T.builder($2T::factory, $3T.INSTANCE)", COMPONENT_SET, implementationName, implementationName.nestedClass("IterableProcessor"));
+                    .add("$1T.builder($2T::getInstance, $3T.INSTANCE)", COMPONENT_SET, accessorName, implementationName.nestedClass("IterableProcessor"));
 
             var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName, interfaceName.nestedClass("Processor"));
             var componentSetData = FieldSpec.builder(componentSetDataType, "DATA", Modifier.STATIC, Modifier.FINAL);
-
-            var factoryBody = CodeBlock.builder()
-                    .add("return get(entityId");
-
-            var factory = MethodSpec.methodBuilder("factory")
-                    .addModifiers(Modifier.PRIVATE, Modifier.STATIC)
-                    .addParameter(TypeName.INT, "entityId")
-                    .addParameter(Object[].class, "components").varargs()
-                    .returns(interfaceName);
 
             var getInstance = MethodSpec.methodBuilder("get")
                     .addModifiers(Modifier.STATIC)
@@ -289,10 +295,7 @@ public class ComponentSetsGenerator {
                 reset.addStatement("this.%s = null".formatted(component.name));
 
                 componentSetDataInitializer.add(System.lineSeparator() + "        ");
-                componentSetDataInitializer.add(".add(new $1T<>($2T::%s) {})".formatted(component.name), COMPONENT_ACCESSOR, interfaceName);
-
-                factoryBody.add("," + System.lineSeparator() + "        ");
-                factoryBody.add("($1T) components[%d]".formatted(i), component.type);
+                componentSetDataInitializer.add(".add(new $1T<>($2T::%s) {})".formatted(component.name), COMPONENT_SET_COMPONENT, interfaceName);
 
                 getInstance.addParameter(component.typeName, component.name);
                 getInstance.addStatement("instance.%s = %s".formatted(component.name, component.name));
@@ -305,7 +308,6 @@ public class ComponentSetsGenerator {
             }
 
             componentSetData.initializer(componentSetDataInitializer.add(System.lineSeparator() + "        .build()").build());
-            factory.addCode(factoryBody.addStatement(")").build());
             getInstance.addStatement("return instance");
 
             toStringBody.add(System.lineSeparator() + "        ");
@@ -323,7 +325,6 @@ public class ComponentSetsGenerator {
                     .addMethod(entityIdAccessor)
                     .addMethod(reset.build())
                     .addMethod(free)
-                    .addMethod(factory.build())
                     .addMethod(getInstance.build())
                     .addMethod(toString)
                     .addType(createIterableProcessorType(result))
@@ -347,47 +348,214 @@ public class ComponentSetsGenerator {
 
             var methodBody = CodeBlock.builder();
 
+            methodBody.addStatement("// get accessors");
             for (int i = 1; i <= n; i++) {
                 var type = components.get(i - 1).typeName;
-                var converter = ParameterizedTypeName.get(DATA_CONVERTER, type);
+                var mapper = ParameterizedTypeName.get(COMPONENT_ACCESSOR, type);
 
-                methodBody.addStatement("var converter%d = ($1T) converters.get(%d)".formatted(i, i - 1), converter);
-            }
-            methodBody.beginControlFlow("while(accessor.hasNext())");
-            methodBody.addStatement("var entityId = accessor.next()");
-
-            methodBody.addStatement("// retrieve components");
-            for (int i = 1; i <= n; i++) {
-                methodBody.addStatement("var component%d = converter%d.getComponent(accessor)".formatted(i, i));
+                methodBody.addStatement("var accessor%d = ($1T) mappers[%d].getComponentAccessor(accessor)".formatted(i, i - 1), mapper);
             }
 
             methodBody.addStatement("// process");
-            var processStatement = "processor.process(entityId";
+            methodBody.beginControlFlow("while(accessor.hasNext())");
+            methodBody.add("processor.process(accessor.next()");
             for (int i = 1; i <= n; i++) {
-                processStatement += ", component%d".formatted(i);
+                methodBody.indent().add(", %saccessor%d.getComponent(accessor)".formatted(System.lineSeparator(), i)).unindent();
             }
-            processStatement += ")";
-
-            methodBody.addStatement(processStatement);
-
-            methodBody.addStatement("// free components");
-            for (int i = 1; i <= n; i++) {
-                methodBody.addStatement("converter%d.free(component%d)".formatted(i, i));
-            }
-
+            methodBody.addStatement(")");
             methodBody.endControlFlow(); // while
 
-            var converters = ParameterizedTypeName.get(ClassName.get(List.class), WildcardTypeName.subtypeOf(ParameterizedTypeName.get(DATA_CONVERTER, WILDCARD)));
+            methodBody.addStatement("// free accessors");
+            for (int i = 1; i <= n; i++) {
+                methodBody.addStatement("accessor%d.free()".formatted(i));
+            }
+
+            var mappers = ArrayTypeName.of(ParameterizedTypeName.get(COMPONENTS, WILDCARD, WILDCARD));
 
             return MethodSpec.methodBuilder("process")
                     .addAnnotation(Override.class)
-                    .addAnnotation(AnnotationSpec.builder(SuppressWarnings.class).addMember("value", "\"unchecked\"").build())
+                    .addAnnotation(SUPPRESS_UNCHECKED)
                     .addModifiers(Modifier.PUBLIC)
                     .addParameter(result.interfaceName.nestedClass("Processor"), "processor")
-                    .addParameter(ITERABLE_PROCESSOR, "accessor")
-                    .addParameter(converters, "converters")
+                    .addParameter(ITERABLE_ACCESSOR, "accessor")
+                    .addParameter(mappers, "mappers")
                     .addCode(methodBody.build())
                     .build();
+        }
+
+        private static class ComponentSetAccessor {
+
+            static TypeSpec createAccessor(VisitorResult result) {
+                var interfaceName = result.interfaceName;
+                var accessorName = ClassName.get(result.interfaceName.packageName(), interfaceName.simpleName() + "Accessor");
+
+                var componentAccessor = ParameterizedTypeName.get(COMPONENT_ACCESSOR, interfaceName);
+
+                var parameterizedPool = ParameterizedTypeName.get(POOL, accessorName);
+                var pool = FieldSpec.builder(parameterizedPool, "POOL", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                        .initializer("$1T.unbounded($2T.class, $2T::new)", POOL, accessorName)
+                        .build();
+
+                var componentAccessors = result.components.stream()
+                        .map(ComponentSetAccessor::componentAccessor)
+                        .toList();
+
+                return TypeSpec.classBuilder(accessorName)
+                        .addAnnotation(GENERATED)
+                        .addModifiers(Modifier.FINAL)
+                        .addSuperinterface(componentAccessor)
+                        .addSuperinterface(interfaceName)
+                        .addField(pool)
+                        .addField(DATA_ACCESSOR, "accessor", Modifier.PRIVATE)
+                        .addFields(componentAccessors)
+                        .addMethods(ComponentAccessorImplementation.methods(result))
+                        .addMethods(ComponentSetImplementation.methods(result))
+                        .addMethod(reset(result))
+                        .build();
+            }
+
+            private static FieldSpec componentAccessor(ComponentData componentData) {
+                var type = ParameterizedTypeName.get(COMPONENT_ACCESSOR, componentData.typeName);
+                return FieldSpec.builder(type, componentData.name, Modifier.PRIVATE).build();
+            }
+
+            private static class ComponentAccessorImplementation {
+
+                static List<MethodSpec> methods(VisitorResult result) {
+                    return List.of(
+                            getInstance(result),
+                            getComponent(result),
+                            free());
+                }
+
+                private static MethodSpec getInstance(VisitorResult result) {
+                    var interfaceName = result.interfaceName;
+                    var componentAccessor = ParameterizedTypeName.get(COMPONENT_ACCESSOR, interfaceName);
+
+                    var mappers = ArrayTypeName.of(ParameterizedTypeName.get(COMPONENTS, WILDCARD, WILDCARD));
+
+                    var body = CodeBlock.builder();
+                    body.addStatement("var instance = POOL.getInstance()");
+
+                    for (int i = 0, s = result.components.size(); i < s; i++) {
+                        var componentData = result.components.get(i);
+                        var accessor = ParameterizedTypeName.get(COMPONENT_ACCESSOR, componentData.typeName);
+
+                        body.addStatement("instance.%s = ($1T) mappers[%d].getComponentAccessor(accessor)".formatted(componentData.name, i), accessor);
+                    }
+
+                    body.addStatement("return instance");
+
+                    return MethodSpec.methodBuilder("getInstance")
+                            .addAnnotation(SUPPRESS_UNCHECKED)
+                            .addModifiers(Modifier.STATIC)
+                            .addParameter(DATA_ACCESSOR, "accessor")
+                            .addParameter(mappers, "mappers")
+                            .returns(componentAccessor)
+                            .addCode(body.build())
+                            .build();
+                }
+
+                private static MethodSpec getComponent(VisitorResult result) {
+                    return MethodSpec.methodBuilder("getComponent")
+                            .addAnnotation(Override.class)
+                            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                            .addParameter(DATA_ACCESSOR, "accessor")
+                            .returns(result.interfaceName)
+                            .addStatement("this.accessor = accessor")
+                            .addStatement("return this")
+                            .build();
+                }
+
+                private static MethodSpec free() {
+                    return MethodSpec.methodBuilder("free")
+                            .addAnnotation(Override.class)
+                            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                            .addStatement("POOL.free(this)")
+                            .build();
+                }
+
+            }
+
+            private static class ComponentSetImplementation {
+
+                static List<MethodSpec> methods(VisitorResult result) {
+                    var methods = new ArrayList<MethodSpec>();
+                    methods.add(entityId());
+                    methods.addAll(result.components.stream().map(ComponentSetImplementation::getter).toList());
+                    methods.add(toString(result));
+
+                    return methods;
+                }
+
+                private static MethodSpec entityId() {
+                    return MethodSpec.methodBuilder("entityId")
+                            .addAnnotation(Override.class)
+                            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                            .returns(TypeName.INT)
+                            .addStatement("return accessor.entityId()")
+                            .build();
+                }
+
+                private static MethodSpec getter(ComponentData componentData) {
+                    return MethodSpec.methodBuilder(componentData.name)
+                            .addAnnotation(Override.class)
+                            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                            .returns(componentData.typeName)
+                            .addStatement("return this.%s.getComponent(this.accessor)".formatted(componentData.name))
+                            .build();
+                }
+
+                private static MethodSpec toString(VisitorResult result) {
+                    var interfaceName = result.interfaceName;
+
+                    var body = CodeBlock.builder();
+
+                    body.beginControlFlow("if (accessor == null)");
+                    body.addStatement("return \"%s(invalidated)\"".formatted(interfaceName.simpleName()));
+                    body.endControlFlow();
+
+                    body.add("return new $1T().append(\"%s(\")".formatted(interfaceName.simpleName()), StringBuilder.class);
+
+                    for (int i = 0, s = result.components.size(); i < s; i++) {
+                        var componentData = result.components.get(i);
+
+                        if (i > 0) {
+                            body.add(".append(\", \")");
+                        }
+
+                        body.add(System.lineSeparator());
+                        body.indent().add(".append(%s())".formatted(componentData.name)).unindent();
+                    }
+
+                    body.add(System.lineSeparator()).indent().addStatement(".append(\")\").toString()").unindent();
+
+                    return MethodSpec.methodBuilder("toString")
+                            .addAnnotation(Override.class)
+                            .addModifiers(Modifier.PUBLIC)
+                            .returns(String.class)
+                            .addCode(body.build())
+                            .build();
+                }
+
+            }
+
+            private static MethodSpec reset(VisitorResult result) {
+                var body = CodeBlock.builder();
+
+                body.addStatement("this.accessor = null");
+                for (var componentData : result.components) {
+                    body.addStatement("this.%s.free()".formatted(componentData.name));
+                    body.addStatement("this.%s = null".formatted(componentData.name));
+                }
+
+                return MethodSpec.methodBuilder("reset")
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                        .addCode(body.build())
+                        .build();
+            }
+
         }
 
     }

@@ -8,17 +8,17 @@ import java.util.function.IntFunction;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
-import de.schosin.ecs.engine.components.ComponentMapperManager.PoolingComponents;
+import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.Pool;
 
 @EcsCodegen
-public class DataTypeMapper<T extends Data, R extends Data> implements CustomComponentMapper<T, R>, PoolingComponents<T> {
+public class DataTypeMapper<T extends Data, R extends Data> implements CustomComponentMapper<T, R>, ReclaimingComponents {
 
     private final IntFunction<DataAccessor> accessor;
 
@@ -26,8 +26,7 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
     private final Components<?, ?>[] mappers;
     private final int size;
 
-    private final Bag<Data> lent;
-    private final Pool<Object[]> pool;
+    private final Bag<ComponentAccessor<R>> lent = new Bag<>(ComponentAccessor.class, 8);
 
     public DataTypeMapper(DataType<T, ?, R, ?> dataType, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
@@ -39,9 +38,6 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
                 .toArray(Components<?, ?>[]::new);
 
         this.size = mappers.length;
-
-        this.lent = new Bag<>(Data.class, 8);
-        this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
     }
 
     private ComponentType<?, ?> getComponentType(RecordComponent component) {
@@ -53,32 +49,13 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
     }
 
     @Override
-    public void free(T result) {
-        if (lent.removeIdentity(result)) {
-            freeData(result);
-        }
-    }
-
-    @Override
     public void reclaim() {
         var data = lent.getData();
         for (int i = 0, s = lent.getSize(); i < s; i++) {
-            freeData(data[i]);
+            data[i].free();
         }
 
         lent.clear();
-    }
-
-    @SuppressWarnings("unchecked")
-    private void freeData(Data result) {
-        for (int i = 0; i < size; i++) {
-            var mapper = mappers[i];
-            if (mapper instanceof PoolingComponents pooling) {
-                pooling.free(result.getComponent(i));
-            }
-        }
-
-        result.free();
     }
 
     @Override
@@ -108,33 +85,17 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
 
     @Override
     public R get(int entityId) {
-        return access(accessor.apply(entityId));
+        var accessor = this.accessor.apply(entityId);
+
+        var componentAccessor = getComponentAccessor(accessor);
+        lent.add(componentAccessor);
+
+        return componentAccessor.getComponent(accessor);
     }
 
     @Override
-    public R access(DataAccessor accessor) {
-        var components = pool.getInstance();
-        var found = false;
-
-        for (int i = 0; i < size; i++) {
-            var mapper = mappers[i];
-
-            var component = components[i] = mapper.access(accessor);
-            if (component != null) {
-                found = true;
-            }
-        }
-
-        if (!found) {
-            pool.free(components);
-            return null;
-        }
-
-        var result = DataTypeMapperHelper.getInstance(dataType, components);
-        lent.add(result);
-
-        pool.free(components);
-        return result;
+    public ComponentAccessor<R> getComponentAccessor(DataAccessor accessor) {
+        return DataTypeMapperHelper.getComponentAccessor(dataType, mappers, accessor);
     }
 
     @Override

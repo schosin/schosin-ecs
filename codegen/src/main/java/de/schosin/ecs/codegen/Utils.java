@@ -49,7 +49,11 @@ public class Utils {
     public static final ParameterizedTypeName REGULAR_COMPONENT_TYPE_WILDCARD = regularComponentType(WILDCARD);
     public static final ArrayTypeName REGULAR_COMPONENT_TYPE_WILDCARD_ARRAY = ArrayTypeName.of(REGULAR_COMPONENT_TYPE_WILDCARD);
 
+    public static final ClassName DATA_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataAccessor");
+    public static final ClassName ITERABLE_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
+    
     public static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components.mappers", "Components");
+    public static final ClassName COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "ComponentAccessor");
 
     public static final ClassName RELATION = ClassName.get("de.schosin.ecs.api.components", "Relation");
     public static final ClassName COMPONENT_RELATION = RELATION.nestedClass("ComponentRelation");
