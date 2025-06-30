@@ -11,6 +11,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import de.schosin.ecs.api.components.ComponentSetConfig;
+import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.benchmark.BaseBenchmark;
 import de.schosin.ecs.benchmark.others.components.DominionComponents;
 import de.schosin.ecs.benchmark.others.components.SchosinComponents;
@@ -43,6 +44,13 @@ public class ComponentIterationBenchmark {
 
         Blackhole bh;
 
+        ComponentMapper<Schosin1> mapper1;
+        ComponentMapper<Schosin2> mapper2;
+        ComponentMapper<Schosin3> mapper3;
+        ComponentMapper<Schosin4> mapper4;
+        ComponentMapper<Schosin5> mapper5;
+        ComponentMapper<Schosin6> mapper6;
+
         public void setup() {
             world = DefaultWorld.builder().expectedEntities(size).build();
 
@@ -65,6 +73,13 @@ public class ComponentIterationBenchmark {
 
             var archetype6 = world.createArchetype(Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class, Schosin5.class, Schosin6.class);
             archetype6.createBatch(batchSize, init -> init.create(new Schosin1(), new Schosin2(), new Schosin3(), new Schosin4(), new Schosin5(), new Schosin6()));
+
+            this.mapper1 = world.getComponents(Schosin1.class);
+            this.mapper2 = world.getComponents(Schosin2.class);
+            this.mapper3 = world.getComponents(Schosin3.class);
+            this.mapper4 = world.getComponents(Schosin4.class);
+            this.mapper5 = world.getComponents(Schosin5.class);
+            this.mapper6 = world.getComponents(Schosin6.class);
         }
 
         public static class IterationUnpack01 extends SchosinEcs {
@@ -111,6 +126,18 @@ public class ComponentIterationBenchmark {
             }
 
             @Benchmark
+            public void componentMappers() {
+                composition.process(this::processMapper);
+            }
+
+            private void processMapper(int entityId) {
+                bh.consume(entityId);
+                bh.consume(mapper1.get(entityId));
+                bh.consume(mapper2.get(entityId));
+                bh.consume(mapper3.get(entityId));
+            }
+
+            @Benchmark
             public void dataType() {
                 composition.process(this::process);
             }
@@ -144,6 +171,21 @@ public class ComponentIterationBenchmark {
                 setComposition = world.createComposition(builder, ComponentSet6.TYPE);
 
                 this.bh = bh;
+            }
+
+            @Benchmark
+            public void componentMappers() {
+                composition.process(this::processMapper);
+            }
+
+            private void processMapper(int entityId) {
+                bh.consume(entityId);
+                bh.consume(mapper1.get(entityId));
+                bh.consume(mapper2.get(entityId));
+                bh.consume(mapper3.get(entityId));
+                bh.consume(mapper4.get(entityId));
+                bh.consume(mapper5.get(entityId));
+                bh.consume(mapper6.get(entityId));
             }
 
             @Benchmark
