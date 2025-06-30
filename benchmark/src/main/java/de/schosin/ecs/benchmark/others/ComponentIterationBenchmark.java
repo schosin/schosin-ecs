@@ -21,7 +21,6 @@ import de.schosin.ecs.plugins.composition.CompositionData3;
 import de.schosin.ecs.plugins.composition.CompositionData6;
 import de.schosin.ecs.plugins.composition.CompositionSet;
 import de.schosin.ecs.worlds.DefaultWorld;
-
 import dev.dominion.ecs.engine.EntityRepository;
 
 public class ComponentIterationBenchmark {
@@ -29,7 +28,7 @@ public class ComponentIterationBenchmark {
     public static void main(String[] args) throws Exception {
         var options = new OptionsBuilder()
                 .include(benchmarkName(SchosinEcs.class))
-                // .include(benchmarkName(Dominion.class))
+                .include(benchmarkName(Dominion.class))
                 .build();
 
         new Runner(options).run();
@@ -86,7 +85,7 @@ public class ComponentIterationBenchmark {
 
             private CompositionData1<Schosin1> composition;
 
-            // @Setup(Level.Trial)
+            @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {
                 setup();
 
@@ -96,7 +95,7 @@ public class ComponentIterationBenchmark {
                 this.bh = bh;
             }
 
-            // @Benchmark
+            @Benchmark
             public void iterate() {
                 composition.process(this::process);
             }
