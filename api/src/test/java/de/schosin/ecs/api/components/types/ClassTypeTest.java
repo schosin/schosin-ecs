@@ -24,12 +24,12 @@ class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestC
 
     enum MatchesTestCases implements AbstractComponentTypeTest.MatchesTestCase {
 
-        equalClassType(component(Component.class), component(Component.class), true),
-        otherClassType(component(Component.class), component(FinalComponent.class), false),
-        componentRelation(component(Component.class), relation(RelationshipComponent.class, TargetComponent.class), false),
-        exclusiveComponentRelation(component(Component.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
-        entityRelation(component(Component.class), relation(EntityRelationshipComponent.class), false),
-        exclusiveEntityRelation(component(Component.class), exclusiveRelation(ExclusiveEntityRelationship.class), false);
+        equalClassType(component(RegularComponent.class), component(RegularComponent.class), true),
+        otherClassType(component(RegularComponent.class), component(FinalComponent.class), false),
+        componentRelation(component(RegularComponent.class), relation(RelationshipComponent.class, TargetComponent.class), false),
+        exclusiveComponentRelation(component(RegularComponent.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
+        entityRelation(component(RegularComponent.class), relation(EntityRelationshipComponent.class), false),
+        exclusiveEntityRelation(component(RegularComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class), false);
 
         private final ClassType<?> type;
         private final RegularComponentType<?, ?> otherType;
@@ -70,19 +70,19 @@ class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestC
 
     @Test
     void testToString() {
-        assertThat(component(Component.class))
+        assertThat(component(RegularComponent.class))
                 .extracting(Object::toString, InstanceOfAssertFactories.STRING)
-                .containsSubsequence("ClassType", Component.class.getSimpleName());
+                .containsSubsequence("ClassType", RegularComponent.class.getSimpleName());
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { Component.class, NonFinalComponent.class, FinalComponent.class })
+    @ValueSource(classes = { RegularComponent.class, NonFinalComponent.class, FinalComponent.class })
     void testValidClassTypes(Class<?> clazz) {
         assertThatCode(() -> new ClassType<>(clazz)).doesNotThrowAnyException();
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { Component.class, NonFinalComponent.class, FinalComponent.class })
+    @ValueSource(classes = { RegularComponent.class, NonFinalComponent.class, FinalComponent.class })
     void testClassTypeReturnsArgument(Class<?> clazz) {
         var classType = new ClassType<>(clazz);
 
@@ -99,13 +99,13 @@ class ClassTypeTest extends AbstractComponentTypeTest<ClassTypeTest.MatchesTestC
 
     @Test
     void testIsInstance() {
-        var classType = new ClassType<>(Component.class);
+        var classType = new ClassType<>(RegularComponent.class);
 
         assertThat(classType.isInstance(null)).isFalse();
-        assertThat(classType.isInstance(new Component("foo"))).isTrue();
+        assertThat(classType.isInstance(new RegularComponent("foo"))).isTrue();
         assertThat(classType.isInstance(new NonFinalComponent())).isFalse();
-        assertThat(classType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
-        assertThat(classType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
+        assertThat(classType.isInstance(Relation.create(new RegularComponent("relationship"), new RegularComponent("target")))).isFalse();
+        assertThat(classType.isInstance(Relation.create(new RegularComponent("relationship"), 42))).isFalse();
     }
 
 }

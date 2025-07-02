@@ -34,11 +34,11 @@ import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 /**
- * Manages {@link Component component data} for every component class
+ * Manages {@link RegularComponent component data} for every component class
  * encountered. 
  * 
  * <p>
- * Each new component class is assigned an {@link Component#id}
+ * Each new component class is assigned an {@link RegularComponent#id}
  * that is used in several places, including as an index into a Bags.
  * </p>
  */

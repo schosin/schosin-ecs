@@ -1,7 +1,7 @@
 package de.schosin.ecs.integration.iteration;
 
-import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.WILDCARD;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
@@ -14,7 +14,6 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.EntityRelationData;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
-import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -36,6 +35,9 @@ import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.plugins.data.types.DataType4.Processor4;
 import de.schosin.ecs.plugins.experimental.system.SystemPlugin;
 import de.schosin.ecs.plugins.experimental.system.systems.BaseSystem;
+import de.schosin.ecs.plugins.wildcards.result.WildcardComponentRelations;
+import de.schosin.ecs.plugins.wildcards.result.WildcardEntityRelations;
+import de.schosin.ecs.plugins.wildcards.result.WildcardResult;
 import de.schosin.ecs.worlds.DefaultWorld;
 
 /**
@@ -237,7 +239,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData1<ComponentRelations<Object, Position>> composition;
+        private final CompositionData1<WildcardComponentRelations<Object, Position>> composition;
 
         public WildcardComponentRelationsIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class), wildcardRelation(Object.class, Position.class));
@@ -280,7 +282,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData2<Position, EntityRelations<Object>> composition;
+        private final CompositionData2<Position, WildcardEntityRelations<Object>> composition;
 
         public WildcardEntityRelationsIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class), component(Position.class), wildcardRelation(Object.class));
@@ -330,9 +332,9 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionData<Processor4<Data3<Position, Velocity, ComponentResult<Object>>, Size, Hitbox, ClassIterationComponents>> composition;
+        private final CompositionData<Processor4<Data3<Position, Velocity, WildcardResult<Object>>, Size, Hitbox, ClassIterationComponents>> composition;
 
-        private final DataTypeMapper<Data3<Position, Velocity, Object>, Data3<Position, Velocity, ComponentResult<Object>>> dataM;
+        private final DataTypeMapper<Data3<Position, Velocity, Object>, Data3<Position, Velocity, WildcardResult<Object>>> dataM;
         private final ComponentMapper<Size> sizeM;
         private final ComponentMapper<Hitbox> hitboxM;
         private final ComponentSetMapper<ClassIterationComponents> classComponentsM;
@@ -362,7 +364,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             this.composition.process(this::processEntityMappers);
         }
 
-        private void processEntity(int entityId, Data3<Position, Velocity, ComponentResult<Object>> data, Size size, Hitbox hitbox, ClassIterationComponents classComponents) {
+        private void processEntity(int entityId, Data3<Position, Velocity, WildcardResult<Object>> data, Size size, Hitbox hitbox, ClassIterationComponents classComponents) {
             var pos = data.component1();
             var velocity = data.component2();
 

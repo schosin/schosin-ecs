@@ -124,7 +124,7 @@ public class RegularComponentTypesExample extends AbstractExample {
         }
 
         static void componentType() {
-            System.out.println("---- Component type");
+            System.out.println("---- RegularComponent type");
 
             // The class type has only one type argument
             ClassType<Position> classType = ComponentType.component(Position.class);
@@ -144,7 +144,7 @@ public class RegularComponentTypesExample extends AbstractExample {
         }
 
         static void componentMapper() {
-            System.out.println("---- Component mappers");
+            System.out.println("---- RegularComponent mappers");
 
             ClassType<Position> classType = ComponentType.component(Position.class);
             ComponentType<Position, Position> componentType = classType;
@@ -293,7 +293,7 @@ public class RegularComponentTypesExample extends AbstractExample {
     }
 
     /**
-     * Component relations use ComponentRelationType. A component relation consists
+     * RegularComponent relations use ComponentRelationType. A component relation consists
      * of a relationship component and a target component.
      * 
      * <p>
@@ -306,7 +306,7 @@ public class RegularComponentTypesExample extends AbstractExample {
      * which allows for assigned multiple positions with different roles to entities.
      * 
      * <p>
-     * Component relations themselves are separated into two types: non-exclusive and exclusive. <br/>
+     * RegularComponent relations themselves are separated into two types: non-exclusive and exclusive. <br/>
      * Non-exclusive component relations can be added to an entity multiple times as long as the targets
      * are not equal to an existing target. <br/>
      * Exclusive component relations can be added only once to an entity, replacing an existing relation
@@ -315,7 +315,7 @@ public class RegularComponentTypesExample extends AbstractExample {
     static class ComponentRelationExample {
 
         static void run() {
-            System.out.println("-- Component relation examples");
+            System.out.println("-- RegularComponent relation examples");
 
             nonExclusiveComponentType();
             removeEntities();

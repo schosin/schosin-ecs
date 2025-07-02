@@ -153,7 +153,7 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
         A, B
     }
 
-    record Component(String value) {
+    record RegularComponent(String value) {
     }
 
     record GenericComponent<T>(T value) {
@@ -210,14 +210,14 @@ public abstract class AbstractComponentTypeTest<T extends Enum<T> & MatchesTestC
         interface Processor extends DataProcessor<MyComponentSet> {
         }
 
-        Component component();
+        RegularComponent component();
     }
 
     interface OtherComponentSet extends ComponentSet<OtherComponentSet.Processor> {
         interface Processor extends DataProcessor<OtherComponentSet> {
         }
 
-        Component component();
+        RegularComponent component();
     }
 
 }

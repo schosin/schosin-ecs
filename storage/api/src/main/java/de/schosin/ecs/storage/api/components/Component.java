@@ -42,8 +42,8 @@ public sealed interface Component<T, R> {
         /**
          * Returns a pooled instance of the component. The implementation should
          * reuse instances when a component is removed from an entity, either via
-         * {@link Component#removeComponent(int)}, {@link Component#applyRemoval(int)},
-         * or {@link Component#applyRemovals()}.
+         * {@link RegularComponent#removeComponent(int)}, {@link RegularComponent#applyRemoval(int)},
+         * or {@link RegularComponent#applyRemovals()}.
          * 
          * <p>
          * An implementation may throw a {@link RuntimeException} when a new instance

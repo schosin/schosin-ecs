@@ -6,7 +6,7 @@ import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 
 /**
- * {@link Components Component mapper} for {@link ComponentSetType} components. 
+ * {@link Components RegularComponent mapper} for {@link ComponentSetType} components. 
  * 
  * @param <T> type of component set
  */

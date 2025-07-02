@@ -3,10 +3,8 @@ package de.schosin.ecs.api.components;
 import java.util.Iterator;
 
 import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.components.types.Wildcard;
 
 /**
  * Represents a result containing no, one or more components matching
@@ -32,27 +30,6 @@ public interface Result<T> extends Iterable<T> {
     @SuppressWarnings("unchecked")
     static <T> Result<T> empty() {
         return EmptyResult.INSTANCE;
-    }
-
-    /**
-     * Specilized type used by {@link Wildcard} that allows accessing a component
-     * by its {@link Class}
-     * 
-     * @param <T> type of component
-     */
-    interface ComponentResult<T> extends Result<T> {
-
-        /**
-         * Retrieves a component that has the given {@code clazz}. The components
-         * will be checked by {@code component.getClass() == clazz}.
-         *  
-         * @param <R> type of component
-         * @param clazz class of component
-         * @return matching component, or null if not present
-         */
-        @Nullable
-        <R extends T> R get(Class<R> clazz);
-
     }
 
     /**

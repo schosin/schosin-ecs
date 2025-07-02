@@ -1,11 +1,9 @@
 package de.schosin.ecs.api.components.types;
 
-import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
 import static de.schosin.ecs.api.components.types.ComponentType.component;
 import static de.schosin.ecs.api.components.types.ComponentType.componentSet;
 import static de.schosin.ecs.api.components.types.ComponentType.exclusiveRelation;
 import static de.schosin.ecs.api.components.types.ComponentType.relation;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
@@ -18,8 +16,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relations;
-import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.Component;
-import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.ComponentInterface;
+import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.RegularComponent;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.ExclusiveComponent;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.MyComponentSet;
 import de.schosin.ecs.api.components.types.AbstractComponentTypeTest.RelationshipComponent;
@@ -37,7 +34,7 @@ class ComponentTypeTest {
 
         @Test
         void testComponent() {
-            assertThat(component(Component.class)).as("must not be refactored to something else").isInstanceOf(ClassType.class);
+            assertThat(component(RegularComponent.class)).as("must not be refactored to something else").isInstanceOf(ClassType.class);
         }
 
         @Test
@@ -63,16 +60,6 @@ class ComponentTypeTest {
         @Test
         void testComponentSet() {
             assertThat(componentSet(MyComponentSet.class, MyComponentSet.Processor.class)).as("must not be refactored to something else").isInstanceOf(ComponentSetType.class);
-        }
-
-        @Test
-        void testWildcard() {
-            assertThat(wildcard(ComponentInterface.class)).as("must not be refactored to something else").isInstanceOf(Wildcard.class);
-        }
-
-        @Test
-        void testWildcardConstant() {
-            assertThat(WILDCARD).as("must not be refactored to something else").isInstanceOf(Wildcard.class);
         }
 
     }

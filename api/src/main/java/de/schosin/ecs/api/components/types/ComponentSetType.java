@@ -30,7 +30,7 @@ class ComponentSetTypeHelper extends ComponentTypeHelper {
 
     public static void validateComponentSet(Class<?> componentSet) {
         if (!componentSet.isInterface()) {
-            throw new IllegalArgumentException("Class '%s' cannot be used as a component set. Component sets must be interfaces.".formatted(componentSet.getName()));
+            throw new IllegalArgumentException("Class '%s' cannot be used as a component set. RegularComponent sets must be interfaces.".formatted(componentSet.getName()));
         }
     }
 

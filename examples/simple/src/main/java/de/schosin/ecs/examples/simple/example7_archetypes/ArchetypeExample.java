@@ -1,24 +1,21 @@
 package de.schosin.ecs.examples.simple.example7_archetypes;
 
-import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.WILDCARD;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcard;
 
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import de.schosin.ecs.api.components.Result.ComponentResult;
-import de.schosin.ecs.examples.simple.AbstractExample;
+import de.schosin.ecs.api.World;
 import de.schosin.ecs.examples.simple.components.Position;
 import de.schosin.ecs.examples.simple.components.Velocity;
-import de.schosin.ecs.examples.simple.example7_archetypes.ArchetypeExample.Enemy;
-import de.schosin.ecs.examples.simple.example7_archetypes.ArchetypeExample.UnitType;
 import de.schosin.ecs.plugins.archetype.Archetype2;
 import de.schosin.ecs.plugins.archetype.ArchetypePlugin;
 import de.schosin.ecs.plugins.composition.Composition;
+import de.schosin.ecs.plugins.wildcards.result.WildcardResult;
 import de.schosin.ecs.worlds.DefaultWorld;
 
 /**
@@ -34,7 +31,9 @@ import de.schosin.ecs.worlds.DefaultWorld;
  * The concept of plugins has been introduced in example 5.
  */
 @SuppressWarnings("unused")
-public class ArchetypeExample extends AbstractExample {
+public class ArchetypeExample {
+
+    protected static final ArchetypeExampleWorld world = createWorld();
 
     public static void main(String[] args) {
         archetype();
@@ -110,7 +109,7 @@ public class ArchetypeExample extends AbstractExample {
         /*
          * We'll use a clean world so no compositions of the previous method will do anything.
          */
-        var world = DefaultWorld.create();
+        var world = createWorld();
 
         /*
          * Once again we'll use WILDCARD to iterate all components of created entities. This time just the explicit form.
@@ -309,10 +308,22 @@ public class ArchetypeExample extends AbstractExample {
          */
     }
 
-    private static String formatComponents(ComponentResult<Object> components) {
+    private static String formatComponents(WildcardResult<Object> components) {
         return StreamSupport.stream(components.spliterator(), false)
                 .map(component -> "  " + component)
                 .collect(Collectors.joining(System.lineSeparator()));
+    }
+
+    private static ArchetypeExampleWorld createWorld() {
+        return World.builder(ArchetypeExampleWorld.class).build();
+    }
+
+    private static void removeEntities() {
+        // Composition matching all entities to pass each to World#deleteEntity
+        world.createComposition(Composition.all()).process(world::deleteEntity);
+
+        // Flush deletions
+        world.process();
     }
 
 }

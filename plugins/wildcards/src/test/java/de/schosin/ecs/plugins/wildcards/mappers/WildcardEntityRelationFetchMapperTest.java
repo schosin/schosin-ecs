@@ -1,5 +1,6 @@
-package de.schosin.ecs.engine.components.mappers.wildcardrelations;
+package de.schosin.ecs.plugins.wildcards.mappers;
 
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
@@ -10,10 +11,9 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 
-class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
+class WildcardEntityRelationFetchMapperTest extends AbstractMapperTest {
 
     @Nested
     class HasTest {
@@ -22,8 +22,8 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
         void testEmptyEntity() {
             var entityId = world.createEntity();
 
-            var mapper1 = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
-            var mapper2 = world.getWildcardEntityFetchRelations(Exclusive.class, component(Position.class));
+            var mapper1 = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
+            var mapper2 = world.getComponents(wildcardRelation(Exclusive.class, component(Position.class)));
 
             // Verify
             assertThat(mapper1.has(entityId)).isFalse();
@@ -41,8 +41,8 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             var entity1 = world.createEntity(relation1);
             var entity2 = world.createEntity(relation2);
 
-            var mapper1 = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
-            var mapper2 = world.getWildcardEntityFetchRelations(Exclusive.class, component(Position.class));
+            var mapper1 = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
+            var mapper2 = world.getComponents(wildcardRelation(Exclusive.class, component(Position.class)));
 
             // Verify
             assertThat(mapper1.has(entity1)).isTrue();
@@ -62,7 +62,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             var relation = Relation.create(new NonExclusiveRelationship(1), world.createEntity());
             var entityId = world.createEntity(relation);
 
-            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+            var mapper = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
 
             // Call
             var result1 = mapper.get(entityId);
@@ -78,7 +78,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             var relation = Relation.create(new NonExclusiveRelationship(1), world.createEntity());
             var entityId = world.createEntity(relation);
 
-            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+            var mapper = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
 
             // Call
             var result1 = mapper.get(entityId);
@@ -94,7 +94,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
         void testNoRelations() {
             var entityId = world.createEntity();
 
-            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+            var mapper = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
 
             // Call
             var result = mapper.get(entityId);
@@ -115,7 +115,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
-            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+            var mapper = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
 
             // Call
             var result = mapper.get(entityId);
@@ -145,7 +145,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
-            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+            var mapper = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
 
             // Call
             var result = mapper.get(entityId);
@@ -188,8 +188,8 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
             var entity3 = world.createEntity(Relation.create(new NonExclusiveRelationship(1), target1));
             var entity4 = world.createEntity(Relation.create(new ExclusiveRelationship(2), target2));
 
-            var mapper1 = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
-            var mapper2 = world.getWildcardEntityFetchRelations(Exclusive.class, component(Position.class));
+            var mapper1 = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
+            var mapper2 = world.getComponents(wildcardRelation(Exclusive.class, component(Position.class)));
 
             verify(verify -> {
                 verify.expectUpdated(entity1, NO_COMPONENTS);
@@ -239,7 +239,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(relation1, relation2);
 
-            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+            var mapper = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
 
             // Call
             var result = mapper.get(entityId);
@@ -269,7 +269,7 @@ class WildcardEntityFetchRelationMapperImplTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(relation1, relation2);
 
-            var mapper = world.getWildcardEntityFetchRelations(Object.class, component(Position.class));
+            var mapper = world.getComponents(wildcardRelation(Object.class, component(Position.class)));
 
             // Call
             var result = mapper.get(entityId);

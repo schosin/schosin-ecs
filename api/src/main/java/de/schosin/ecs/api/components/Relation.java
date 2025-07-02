@@ -24,7 +24,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRe
  * Sealed base type of component and entity relations. A relation is a type of component
  * that can be added to entities and consist of a relationship component and a target.
  * 
- * <h3>Component relations</h3>
+ * <h3>RegularComponent relations</h3>
  * 
  * <p>
  * The relationship component describes the type of relation the owning entity has with the target.

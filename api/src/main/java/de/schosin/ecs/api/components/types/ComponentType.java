@@ -10,7 +10,6 @@ import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
-import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
@@ -19,9 +18,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 import de.schosin.ecs.api.data.DataProcessor;
 
 /**
@@ -39,10 +35,7 @@ import de.schosin.ecs.api.data.DataProcessor;
  * 
  * <p>
  * {@link ComponentType ComponentTypes} not extending {@link RegularComponentType} are intended to
- * provide additional capabilities when reading component data. {@link Wildcard} supports reading
- * a {@link ComponentResult} of components matching the {@link Wildcard#bound()}, {@link ComponentSetType}
- * supports retrieves a set of components as if it were a single component, and {@link RelationFetchType}
- * allows to fetch components of the target entity of the relation.
+ * provide additional capabilities when reading component data.
  * </p>
  * 
  * <p>
@@ -54,7 +47,7 @@ import de.schosin.ecs.api.data.DataProcessor;
  * @param <T> type of a single component instance (write operations)
  * @param <R> type of component data when reading (read operations)
  */
-public sealed interface ComponentType<T, R> permits RegularComponentType, Wildcard, ComponentSetType, RelationFetchType, WildcardRelationType, CustomComponentType {
+public sealed interface ComponentType<T, R> permits RegularComponentType, ComponentSetType, RelationFetchType, CustomComponentType {
 
     /**
      * Describes component types that can be directly assigned to entities.
@@ -73,11 +66,6 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
         boolean isInstance(Object component);
 
     }
-
-    /**
-     * Wildcard matching all {@link ClassType} components.
-     */
-    static Wildcard<Object> WILDCARD = Wildcard.WILDCARD;
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     static <T> RegularComponentType<T, ?> detectComponentType(T component) {
@@ -125,22 +113,6 @@ public sealed interface ComponentType<T, R> permits RegularComponentType, Wildca
 
     static <T extends ComponentSet<P>, P extends DataProcessor<T>> ComponentSetType<T, P> componentSet(Class<T> set, Class<P> processor) {
         return new ComponentSetType<>(set, processor);
-    }
-
-    static <T> Wildcard<T> wildcard(Class<T> bound) {
-        return new Wildcard<>(bound);
-    }
-
-    static <R, T> WildcardComponentRelationType<R, T> wildcardRelation(Class<R> relationshipBound, Class<T> targetBound) {
-        return new WildcardComponentRelationType<>(relationshipBound, targetBound);
-    }
-
-    static <R> WildcardEntityRelationType<R> wildcardRelation(Class<R> relationshipBound) {
-        return new WildcardEntityRelationType<>(relationshipBound);
-    }
-
-    static <R, T> WildcardEntityRelationFetchType<R, T> wildcardRelation(Class<R> relationship, ComponentType<?, T> fetch) {
-        return new WildcardEntityRelationFetchType<>(relationship, fetch);
     }
 
     /**

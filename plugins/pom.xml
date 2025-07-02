@@ -17,6 +17,7 @@
         <module>transmuter</module>
         <module>composition</module>
         <module>events</module>
+        <module>wildcards</module>
         <module>experimental</module>
     </modules>
   

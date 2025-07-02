@@ -1,7 +1,7 @@
 package de.schosin.ecs.plugins.composition.manager;
 
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcard;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -32,7 +32,6 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.Result;
-import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
@@ -57,6 +56,7 @@ import de.schosin.ecs.plugins.composition.CompositionData7;
 import de.schosin.ecs.plugins.composition.CompositionData8;
 import de.schosin.ecs.plugins.composition.Spec;
 import de.schosin.ecs.plugins.data.types.DataType;
+import de.schosin.ecs.plugins.wildcards.result.WildcardResult;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.test.AbstractEcsTest;
 import de.schosin.ecs.utils.collections.BitVector;
@@ -3818,7 +3818,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 @ComponentSetConfig("MyComponentSet")
                 private void myComponentSet(int entityId, C1 c1, ComponentRelation<ExclusiveRelationship, Target> componentRelation,
                         ComponentRelations<RelationshipComponent, Target> componentRelations, EntityRelation<ExclusiveRelationship> entityRelation,
-                        EntityRelations<RelationshipComponent> entityRelations, ComponentResult<C1234> c1234) {
+                        EntityRelations<RelationshipComponent> entityRelations, WildcardResult<C1234> c1234) {
                 }
 
             }
@@ -3886,7 +3886,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                 @Test
                 void testWildcardRelationship() {
-                    var fetchType = ComponentType.wildcardRelation(Object.class, Target.class);
+                    var fetchType = wildcardRelation(Object.class, Target.class);
                     var composition = composition(Composition.all(P1.class), fetchType);
 
                     var relation11 = Relation.create(new C1(), new Target(1));
@@ -3923,7 +3923,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                 @Test
                 void testWildcardTarget() {
-                    var fetchType = ComponentType.wildcardRelation(C1.class, Object.class);
+                    var fetchType = wildcardRelation(C1.class, Object.class);
                     var composition = composition(Composition.all(P1.class), fetchType);
 
                     var relation11 = Relation.create(new C1(), new C1());
@@ -3959,7 +3959,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                 @Test
                 void testWildcardBoth() {
-                    var fetchType = ComponentType.wildcardRelation(Object.class, Object.class);
+                    var fetchType = wildcardRelation(Object.class, Object.class);
                     var composition = composition(Composition.all(P1.class), fetchType);
 
                     var relation11 = Relation.create(new C1(), new C1());
@@ -4063,7 +4063,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                 @Test
                 void testWildcard() {
-                    var fetchType = ComponentType.wildcardRelation(Object.class);
+                    var fetchType = wildcardRelation(Object.class);
                     var composition = composition(Composition.all(P1.class), fetchType);
 
                     var target1 = world.createEntity();
@@ -4168,7 +4168,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
                 @Test
                 void testWildcardFetch() {
-                    var fetchType = ComponentType.wildcardRelation(Object.class, wildcard(C1234.class));
+                    var fetchType = wildcardRelation(Object.class, wildcard(C1234.class));
                     var composition = composition(Composition.all(P1.class), fetchType);
 
                     var component1 = new C1();

@@ -63,6 +63,11 @@
                 <artifactId>ecs-plugins-events</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>de.schosin.ecs.plugins</groupId>
+                <artifactId>ecs-plugins-wildcards</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             
             <dependency>
                 <groupId>de.schosin.ecs.plugins.experimental</groupId>

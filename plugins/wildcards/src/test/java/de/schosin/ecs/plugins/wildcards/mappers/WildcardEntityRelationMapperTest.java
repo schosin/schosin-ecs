@@ -1,18 +1,31 @@
-package de.schosin.ecs.engine.components.mappers.wildcardrelations;
+package de.schosin.ecs.plugins.wildcards.mappers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.*;
+import java.util.Objects;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 
-class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
+class WildcardEntityRelationMapperTest extends AbstractMapperTest {
+
+    int target1;
+    int target2;
+    int target3;
+
+    @BeforeEach
+    void setupTargets() {
+        this.target1 = world.createEntity();
+        this.target2 = world.createEntity();
+        this.target3 = world.createEntity();
+    }
 
     @Nested
     class HasTest {
@@ -21,8 +34,8 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
         void testEmptyEntity() {
             var entityId = world.createEntity();
 
-            var mapper1 = world.getWildcardComponentRelations(Object.class, Object.class);
-            var mapper2 = world.getWildcardComponentRelations(Relationship12.class, Object.class);
+            var mapper1 = world.getComponents(wildcardRelation(Object.class));
+            var mapper2 = world.getComponents(wildcardRelation(Relationship12.class));
 
             // Verify
             assertThat(mapper1.has(entityId)).isFalse();
@@ -31,17 +44,17 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testHas() {
-            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
-            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
-            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+            var relation1 = Relation.create(new Relationship1(1), target1);
+            var relation2 = Relation.create(new Relationship2(2), target2);
+            var relation3 = Relation.create(new Relationship3(3), target3);
 
             var entity1 = world.createEntity(relation1);
             var entity2 = world.createEntity(relation2);
             var entity3 = world.createEntity(relation3);
 
-            var mapper1 = world.getWildcardComponentRelations(Object.class, Object.class);
-            var mapper2 = world.getWildcardComponentRelations(Relationship12.class, Object.class);
-            var mapper3 = world.getWildcardComponentRelations(Relationship3.class, Object.class);
+            var mapper1 = world.getComponents(wildcardRelation(Object.class));
+            var mapper2 = world.getComponents(wildcardRelation(Relationship12.class));
+            var mapper3 = world.getComponents(wildcardRelation(Relationship3.class));
 
             // Verify
             assertThat(mapper1.has(entity1)).isTrue();
@@ -66,7 +79,7 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
         void testResultInstanceReused() {
             var entityId = world.createEntity();
 
-            var mapper = world.getWildcardComponentRelations(Object.class, Object.class);
+            var mapper = world.getComponents(wildcardRelation(Object.class));
 
             // Call
             var result1 = mapper.get(entityId);
@@ -81,8 +94,8 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
         void testEmptyEntity() {
             var entityId = world.createEntity();
 
-            var mapper1 = world.getWildcardComponentRelations(Object.class, Object.class);
-            var mapper2 = world.getWildcardComponentRelations(Relationship12.class, Object.class);
+            var mapper1 = world.getComponents(wildcardRelation(Object.class));
+            var mapper2 = world.getComponents(wildcardRelation(Relationship12.class));
 
             // Verify
             var result1 = mapper1.get(entityId);
@@ -98,17 +111,17 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testGet() {
-            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
-            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
-            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+            var relation1 = Relation.create(new Relationship1(1), target1);
+            var relation2 = Relation.create(new Relationship2(2), target2);
+            var relation3 = Relation.create(new Relationship3(3), target3);
 
             var entity1 = world.createEntity(relation1);
             var entity2 = world.createEntity(relation2);
             var entity3 = world.createEntity(relation3);
 
-            var mapper1 = world.getWildcardComponentRelations(Object.class, Object.class);
-            var mapper2 = world.getWildcardComponentRelations(Relationship12.class, Object.class);
-            var mapper3 = world.getWildcardComponentRelations(Relationship3.class, Object.class);
+            var mapper1 = world.getComponents(wildcardRelation(Object.class));
+            var mapper2 = world.getComponents(wildcardRelation(Relationship12.class));
+            var mapper3 = world.getComponents(wildcardRelation(Relationship3.class));
 
             // Verify
             assertThat(mapper1.get(entity1)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1);
@@ -126,15 +139,15 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testGet_MultipleRelations() {
-            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
-            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
-            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+            var relation1 = Relation.create(new Relationship1(1), target1);
+            var relation2 = Relation.create(new Relationship2(2), target2);
+            var relation3 = Relation.create(new Relationship3(3), target3);
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
-            var mapper1 = world.getWildcardComponentRelations(Object.class, Object.class);
-            var mapper2 = world.getWildcardComponentRelations(Relationship12.class, Object.class);
-            var mapper3 = world.getWildcardComponentRelations(Relationship3.class, Object.class);
+            var mapper1 = world.getComponents(wildcardRelation(Object.class));
+            var mapper2 = world.getComponents(wildcardRelation(Relationship12.class));
+            var mapper3 = world.getComponents(wildcardRelation(Relationship3.class));
 
             // Verify
             assertThat(mapper1.get(entityId)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).containsExactlyInAnyOrder(relation1, relation2, relation3);
@@ -144,13 +157,13 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testGetByIndex() {
-            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
-            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
-            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+            var relation1 = Relation.create(new Relationship1(1), target1);
+            var relation2 = Relation.create(new Relationship2(2), target2);
+            var relation3 = Relation.create(new Relationship3(3), target3);
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
-            var mapper = world.getWildcardComponentRelations(Object.class, Object.class);
+            var mapper = world.getComponents(wildcardRelation(Object.class));
 
             // Verify
             var result = mapper.get(entityId);
@@ -172,8 +185,8 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
         void testEmptyEntity() {
             var entityId = world.createEntity();
 
-            var mapper1 = world.getWildcardComponentRelations(Object.class, Object.class);
-            var mapper2 = world.getWildcardComponentRelations(Relationship12.class, Object.class);
+            var mapper1 = world.getComponents(wildcardRelation(Object.class));
+            var mapper2 = world.getComponents(wildcardRelation(Relationship12.class));
 
             // Verify
             assertThat(mapper1.remove(entityId)).isFalse();
@@ -182,28 +195,28 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testGet_MultipleRelations() {
-            var type1 = relation(Relationship1.class, Target1.class);
-            var type2 = relation(Relationship2.class, Target1.class);
-            var type3 = exclusiveRelation(Relationship3.class, Target1.class);
+            var type1 = relation(Relationship1.class);
+            var type2 = relation(Relationship2.class);
+            var type3 = exclusiveRelation(Relationship3.class);
 
             var entity1 = world.createEntity(
-                    Relation.create(new Relationship1(1), new Target1(10)),
-                    Relation.create(new Relationship2(2), new Target1(20)),
-                    Relation.create(new Relationship3(3), new Target1(30)));
+                    Relation.create(new Relationship1(1), target1),
+                    Relation.create(new Relationship2(2), target2),
+                    Relation.create(new Relationship3(3), target3));
 
             var entity2 = world.createEntity(
-                    Relation.create(new Relationship1(1), new Target1(10)),
-                    Relation.create(new Relationship2(2), new Target1(20)),
-                    Relation.create(new Relationship3(3), new Target1(30)));
+                    Relation.create(new Relationship1(1), target1),
+                    Relation.create(new Relationship2(2), target2),
+                    Relation.create(new Relationship3(3), target3));
 
             var entity3 = world.createEntity(
-                    Relation.create(new Relationship1(1), new Target1(10)),
-                    Relation.create(new Relationship2(2), new Target1(20)),
-                    Relation.create(new Relationship3(3), new Target1(30)));
+                    Relation.create(new Relationship1(1), target1),
+                    Relation.create(new Relationship2(2), target2),
+                    Relation.create(new Relationship3(3), target3));
 
-            var mapper1 = world.getWildcardComponentRelations(Object.class, Object.class);
-            var mapper2 = world.getWildcardComponentRelations(Relationship12.class, Object.class);
-            var mapper3 = world.getWildcardComponentRelations(Relationship3.class, Object.class);
+            var mapper1 = world.getComponents(wildcardRelation(Object.class));
+            var mapper2 = world.getComponents(wildcardRelation(Relationship12.class));
+            var mapper3 = world.getComponents(wildcardRelation(Relationship3.class));
 
             verify(verify -> {
                 verify.expectUpdated(entity1, NO_COMPONENTS);
@@ -241,13 +254,13 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testReclaim() {
-            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
-            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
-            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+            var relation1 = Relation.create(new Relationship1(1), target1);
+            var relation2 = Relation.create(new Relationship2(2), target2);
+            var relation3 = Relation.create(new Relationship3(3), target3);
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
-            var mapper = world.getWildcardComponentRelations(Object.class, Object.class);
+            var mapper = world.getComponents(wildcardRelation(Object.class));
 
             // Call
             var result = mapper.get(entityId);
@@ -264,13 +277,13 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
 
         @Test
         void testReclaim_WorldProcess() {
-            var relation1 = Relation.create(new Relationship1(1), new Target1(10));
-            var relation2 = Relation.create(new Relationship2(2), new Target1(20));
-            var relation3 = Relation.create(new Relationship3(3), new Target1(30));
+            var relation1 = Relation.create(new Relationship1(1), target1);
+            var relation2 = Relation.create(new Relationship2(2), target2);
+            var relation3 = Relation.create(new Relationship3(3), target3);
 
             var entityId = world.createEntity(relation1, relation2, relation3);
 
-            var mapper = world.getWildcardComponentRelations(Object.class, Object.class);
+            var mapper = world.getComponents(wildcardRelation(Object.class));
 
             // Call
             var result = mapper.get(entityId);
@@ -295,7 +308,30 @@ class WildcardComponentRelationMapperImplTest extends AbstractWorldTest {
     record Relationship2(int value) implements Relationship12 {
     }
 
-    record Relationship3(int value) implements Exclusive {
+    static class Relationship3 implements Exclusive {
+        private int value;
+
+        public Relationship3(int value) {
+            this.value = value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(value);
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Relationship3 other = (Relationship3) obj;
+            return this.value == other.value;
+        }
+
     }
 
     record Target1(int value) {

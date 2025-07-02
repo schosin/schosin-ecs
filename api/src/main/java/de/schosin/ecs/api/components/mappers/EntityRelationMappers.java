@@ -16,7 +16,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntity
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 
 /**
- * {@link Components Component mapper} for {@link RegularEntityRelationType} components. Contains subtypes
+ * {@link Components RegularComponent mapper} for {@link RegularEntityRelationType} components. Contains subtypes
  * for both non-exclusive and exclusive variants.
  * 
  * @param <R> type of relationship component

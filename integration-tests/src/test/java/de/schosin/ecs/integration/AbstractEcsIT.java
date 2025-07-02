@@ -8,9 +8,8 @@ import java.util.Random;
 
 import de.schosin.ecs.plugins.experimental.system.SystemPlugin;
 import de.schosin.ecs.test.AbstractEcsTest;
-import de.schosin.ecs.worlds.DefaultWorld;
 
-public abstract class AbstractEcsIT extends AbstractEcsTest<DefaultWorld> {
+public abstract class AbstractEcsIT extends AbstractEcsTest<SimulationWorld> {
 
     protected static final Random RNG = new Random(0);
 

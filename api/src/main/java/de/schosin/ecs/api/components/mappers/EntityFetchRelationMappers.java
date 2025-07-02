@@ -9,7 +9,7 @@ import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetch
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
 
 /**
- * {@link Components Component mapper} for {@link RelationFetchType} components. Contains subtypes
+ * {@link Components RegularComponent mapper} for {@link RelationFetchType} components. Contains subtypes
  * for both non-exclusive and exclusive variants.
  * 
  * @param <R> type of relationship component

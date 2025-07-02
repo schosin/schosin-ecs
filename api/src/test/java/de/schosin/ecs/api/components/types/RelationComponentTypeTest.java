@@ -29,28 +29,28 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
 
     enum MatchesTestCases implements AbstractComponentTypeTest.MatchesTestCase {
 
-        component_classType(relation(RelationshipComponent.class, TargetComponent.class), component(Component.class), false),
+        component_classType(relation(RelationshipComponent.class, TargetComponent.class), component(RegularComponent.class), false),
         component_componentRelation(relation(RelationshipComponent.class, TargetComponent.class), relation(RelationshipComponent.class, TargetComponent.class), true),
-        component_otherComponentRelation(relation(RelationshipComponent.class, TargetComponent.class), relation(RelationshipComponent.class, Component.class), false),
+        component_otherComponentRelation(relation(RelationshipComponent.class, TargetComponent.class), relation(RelationshipComponent.class, RegularComponent.class), false),
         component_exclusiveComponentRelation(relation(RelationshipComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
         component_entityRelation(relation(RelationshipComponent.class, TargetComponent.class), relation(EntityRelationshipComponent.class), false),
         component_exclusiveEntityRelation(relation(RelationshipComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
 
-        exclusiveComponent_classType(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), component(Component.class), false),
+        exclusiveComponent_classType(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), component(RegularComponent.class), false),
         exclusiveComponent_componentRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), relation(RelationshipComponent.class, TargetComponent.class), false),
         exclusiveComponent_exclusiveComponentRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), true),
-        exclusiveComponent_otherExclusiveComponentRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveComponent.class, Component.class), false),
+        exclusiveComponent_otherExclusiveComponentRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveComponent.class, RegularComponent.class), false),
         exclusiveComponent_entityRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), relation(EntityRelationshipComponent.class), false),
         exclusiveComponent_exclusiveEntityRelation(exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
 
-        entity_classType(relation(EntityRelationshipComponent.class), component(Component.class), false),
+        entity_classType(relation(EntityRelationshipComponent.class), component(RegularComponent.class), false),
         entity_componentRelation(relation(EntityRelationshipComponent.class), relation(RelationshipComponent.class, TargetComponent.class), false),
         entity_exclusiveComponentRelation(relation(EntityRelationshipComponent.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
         entity_entityRelation(relation(EntityRelationshipComponent.class), relation(EntityRelationshipComponent.class), true),
-        entity_otherEntityRelation(relation(EntityRelationshipComponent.class), relation(Component.class), false),
+        entity_otherEntityRelation(relation(EntityRelationshipComponent.class), relation(RegularComponent.class), false),
         entity_exclusiveEntityRelation(relation(EntityRelationshipComponent.class), exclusiveRelation(ExclusiveEntityRelationship.class), false),
 
-        exclusiveEntity_classType(exclusiveRelation(ExclusiveEntityRelationship.class), component(Component.class), false),
+        exclusiveEntity_classType(exclusiveRelation(ExclusiveEntityRelationship.class), component(RegularComponent.class), false),
         exclusiveEntity_componentRelation(exclusiveRelation(ExclusiveEntityRelationship.class), relation(RelationshipComponent.class, TargetComponent.class), false),
         exclusiveEntity_exclusiveComponentRelation(exclusiveRelation(ExclusiveEntityRelationship.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
         exclusiveEntity_entityRelation(exclusiveRelation(ExclusiveEntityRelationship.class), relation(EntityRelationshipComponent.class), false),
@@ -96,15 +96,15 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
 
         @Test
         void testIsInstance() {
-            var relationType = new ComponentRelationType<>(Component.class, EnumComponent.class);
+            var relationType = new ComponentRelationType<>(RegularComponent.class, EnumComponent.class);
 
             assertThat(relationType.isInstance(null)).isFalse();
-            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new RegularComponent("foo"))).isFalse();
             assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isTrue();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), new RegularComponent("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), EnumComponent.A))).isTrue();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), 42))).isFalse();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isFalse();
         }
 
@@ -234,12 +234,12 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
             var relationType = new ExclusiveComponentRelationType<>(ExclusiveComponent.class, EnumComponent.class);
 
             assertThat(relationType.isInstance(null)).isFalse();
-            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new RegularComponent("foo"))).isFalse();
             assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), new RegularComponent("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), EnumComponent.A))).isFalse();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isTrue();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), 42))).isFalse();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isFalse();
         }
 
@@ -340,15 +340,15 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
 
         @Test
         void testIsInstance() {
-            var relationType = new EntityRelationType<>(Component.class);
+            var relationType = new EntityRelationType<>(RegularComponent.class);
 
             assertThat(relationType.isInstance(null)).isFalse();
-            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new RegularComponent("foo"))).isFalse();
             assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), new RegularComponent("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), EnumComponent.A))).isFalse();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isTrue();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), 42))).isTrue();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isFalse();
         }
 
@@ -405,12 +405,12 @@ class RelationComponentTypeTest extends AbstractComponentTypeTest<RelationCompon
             var relationType = new ExclusiveEntityRelationType<>(ExclusiveComponent.class);
 
             assertThat(relationType.isInstance(null)).isFalse();
-            assertThat(relationType.isInstance(new Component("foo"))).isFalse();
+            assertThat(relationType.isInstance(new RegularComponent("foo"))).isFalse();
             assertThat(relationType.isInstance(new NonFinalComponent())).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), new Component("target")))).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), EnumComponent.A))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), new RegularComponent("target")))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), EnumComponent.A))).isFalse();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, EnumComponent.A))).isFalse();
-            assertThat(relationType.isInstance(Relation.create(new Component("relationship"), 42))).isFalse();
+            assertThat(relationType.isInstance(Relation.create(new RegularComponent("relationship"), 42))).isFalse();
             assertThat(relationType.isInstance(Relation.create(ExclusiveComponent.A, 42))).isTrue();
         }
 

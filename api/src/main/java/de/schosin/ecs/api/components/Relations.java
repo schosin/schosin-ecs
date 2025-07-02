@@ -17,9 +17,6 @@ import de.schosin.ecs.api.components.Relations.EntityRelations;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 
 public interface Relations<T extends Relation<?>> extends Result<T> {
 
@@ -119,7 +116,7 @@ public interface Relations<T extends Relation<?>> extends Result<T> {
          * its relationship if it is equal.
          * 
          * <p>
-         * In the case of {@link WildcardComponentRelationType} this method
+         * In the case of wildcard types this method
          * will always return null, as a target component can have multiple 
          * relationships with the entity.
          * </p>
@@ -143,7 +140,7 @@ public interface Relations<T extends Relation<?>> extends Result<T> {
          * Retrieves the relationship given the target entity.
          * 
          * <p>
-         * In the case of {@link WildcardEntityRelationType} this method
+         * In the case of wildcard types this method
          * will always return null, as a target entity can have multiple 
          * relationships with the entity.
          * </p>
@@ -156,7 +153,7 @@ public interface Relations<T extends Relation<?>> extends Result<T> {
     }
 
     /**
-     * Specialized type used by {@link EntityRelationFetchType} and {@link WildcardEntityRelationFetchType}
+     * Specialized type used by {@link EntityRelationFetchType} 
      * that allows accessing components of the target entity.
      * 
      * @param <R> type of relationship component

@@ -1,7 +1,7 @@
 package de.schosin.ecs.benchmark.composition;
 
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static de.schosin.ecs.benchmark.BaseBenchmark.benchmarkName;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcard;
 
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
@@ -13,7 +13,6 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import de.schosin.ecs.api.components.ComponentSetConfig;
-import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.benchmark.EcsBenchmark;
 import de.schosin.ecs.benchmark.others.components.SchosinComponents;
 import de.schosin.ecs.plugins.composition.Composition;
@@ -21,6 +20,7 @@ import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData4;
 import de.schosin.ecs.plugins.composition.CompositionData8;
 import de.schosin.ecs.plugins.composition.CompositionSet;
+import de.schosin.ecs.plugins.wildcards.result.WildcardResult;
 
 public class CompositionIterationBenchmark implements SchosinComponents {
 
@@ -40,8 +40,8 @@ public class CompositionIterationBenchmark implements SchosinComponents {
         @Param({ "1000000" })
         int entities;
 
-        CompositionData1<ComponentResult<Schosin12>> composition12;
-        CompositionData1<ComponentResult<Schosin1234>> composition1234;
+        CompositionData1<WildcardResult<Schosin12>> composition12;
+        CompositionData1<WildcardResult<Schosin1234>> composition1234;
 
         Blackhole bh;
 
@@ -80,7 +80,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
             this.composition1234.process(this::process);
         }
 
-        private <T> void process(int entityId, ComponentResult<T> components) {
+        private <T> void process(int entityId, WildcardResult<T> components) {
             bh.consume(entityId);
 
             for (var iter = components.iterator(); iter.hasNext();) {
@@ -182,7 +182,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
 
             private CompositionData4<Schosin1, Schosin2, Schosin3, Schosin4> compositionData;
             private CompositionSet<ComponentSet4.Processor> compositionSet;
-            private CompositionData1<ComponentResult<Schosin1234>> compositionWildcard;
+            private CompositionData1<WildcardResult<Schosin1234>> compositionWildcard;
 
             @Setup(Level.Trial)
             public void setup(Blackhole bh) {
@@ -220,7 +220,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
                 compositionWildcard.process(this::processLoop);
             }
 
-            private void processLoop(int entityId, ComponentResult<Schosin1234> components) {
+            private void processLoop(int entityId, WildcardResult<Schosin1234> components) {
                 bh.consume(entityId);
 
                 for (int i = 0, s = components.size(); i < s; i++) {
@@ -233,7 +233,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
                 compositionWildcard.process(this::processIterator);
             }
 
-            private void processIterator(int entityId, ComponentResult<Schosin1234> components) {
+            private void processIterator(int entityId, WildcardResult<Schosin1234> components) {
                 bh.consume(entityId);
 
                 for (var iter = components.iterator(); iter.hasNext();) {
@@ -246,7 +246,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
 
             private CompositionData8<Schosin1, Schosin2, Schosin3, Schosin4, Schosin5, Schosin6, Schosin7, Schosin8> compositionData;
             private CompositionSet<ComponentSet8.Processor> compositionSet;
-            private CompositionData1<ComponentResult<Schosin>> compositionWildcard;
+            private CompositionData1<WildcardResult<Schosin>> compositionWildcard;
 
             @Setup(Level.Trial)
             public void setup(Blackhole bh) {
@@ -290,7 +290,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
                 compositionWildcard.process(this::processLoop);
             }
 
-            private void processLoop(int entityId, ComponentResult<Schosin> components) {
+            private void processLoop(int entityId, WildcardResult<Schosin> components) {
                 bh.consume(entityId);
 
                 for (int i = 0, s = components.size(); i < s; i++) {
@@ -303,7 +303,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
                 compositionWildcard.process(this::processIterator);
             }
 
-            private void processIterator(int entityId, ComponentResult<Schosin> components) {
+            private void processIterator(int entityId, WildcardResult<Schosin> components) {
                 bh.consume(entityId);
 
                 for (var iter = components.iterator(); iter.hasNext();) {

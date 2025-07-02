@@ -23,13 +23,13 @@ class RelationFetchTypeTest extends AbstractComponentTypeTest<RelationFetchTypeT
 
     enum MatchesTestCases implements AbstractComponentTypeTest.MatchesTestCase {
 
-        classType(relation(EntityRelationshipComponent.class, FETCH), component(Component.class), false),
+        classType(relation(EntityRelationshipComponent.class, FETCH), component(RegularComponent.class), false),
         componentRelation(relation(EntityRelationshipComponent.class, FETCH), relation(RelationshipComponent.class, TargetComponent.class), false),
         exclusiveComponentRelation(relation(EntityRelationshipComponent.class, FETCH), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
         entityRelation(relation(EntityRelationshipComponent.class, FETCH), relation(EntityRelationshipComponent.class), true),
         exclusiveEntityRelation(relation(EntityRelationshipComponent.class, FETCH), exclusiveRelation(ExclusiveEntityRelationship.class), false),
 
-        exclusive_classType(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), component(Component.class), false),
+        exclusive_classType(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), component(RegularComponent.class), false),
         exclusive_componentRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), relation(RelationshipComponent.class, TargetComponent.class), false),
         exclusive_exclusiveComponentRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),
         exclusive_entityRelation(exclusiveRelation(ExclusiveEntityRelationship.class, FETCH), relation(EntityRelationshipComponent.class), false),

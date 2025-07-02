@@ -23,9 +23,6 @@ import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRe
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityFetchRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -37,9 +34,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.RelationMapperManager;
@@ -91,7 +85,7 @@ public class EngineWorld implements World, StorageWorld {
         this.changeManager = addSingleton(new ChangeManager(storageEngine, eventManager, entityManager));
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager));
         this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager));
-        this.componentMapperManager = addSingleton(new ComponentMapperManager(eventManager, bagManager, componentManager, entityManager, transmutationManager, relationMapperManager));
+        this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, entityManager, transmutationManager, relationMapperManager));
 
         // Initialized configured singletons
         for (var singleton : builder.singletons.values()) {
@@ -187,21 +181,6 @@ public class EngineWorld implements World, StorageWorld {
     @Override
     public <T extends ComponentSet<?>> ComponentSetMapper<T> getComponents(ComponentSetType<T, ?> type) {
         return componentMapperManager.getComponents(type);
-    }
-
-    @Override
-    public <R, T> WildcardComponentRelationMapper<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation) {
-        return componentMapperManager.getComponents(wildcardRelation);
-    }
-
-    @Override
-    public <R> WildcardEntityRelationMapper<R> getComponents(WildcardEntityRelationType<R> wildcardRelation) {
-        return componentMapperManager.getComponents(wildcardRelation);
-    }
-
-    @Override
-    public <R, T> WildcardEntityFetchRelationMapper<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
-        return componentMapperManager.getComponents(wildcardRelation);
     }
 
     @Override

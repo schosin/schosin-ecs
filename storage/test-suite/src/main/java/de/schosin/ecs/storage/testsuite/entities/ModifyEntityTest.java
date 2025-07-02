@@ -1,6 +1,6 @@
 package de.schosin.ecs.storage.testsuite.entities;
 
-import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;

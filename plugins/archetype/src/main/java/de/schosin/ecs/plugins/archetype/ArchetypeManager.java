@@ -94,13 +94,13 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         private void validateNoPooledComponents(Object[] components) {
             for (var component : components) {
                 if (component instanceof Relation<?>) {
-                    throw new IllegalArgumentException("Component '%s' passed via 'with(...)' cannot implement Relation.".formatted(component));
+                    throw new IllegalArgumentException("RegularComponent '%s' passed via 'with(...)' cannot implement Relation.".formatted(component));
                 }
                 if (component instanceof Relations<?>) {
-                    throw new IllegalArgumentException("Component '%s' passed via 'with(...)' cannot implement Relations.".formatted(component));
+                    throw new IllegalArgumentException("RegularComponent '%s' passed via 'with(...)' cannot implement Relations.".formatted(component));
                 }
                 if (component instanceof Pooled) {
-                    throw new IllegalArgumentException("Component '%s' passed via 'with(...)' cannot implement Pooled.".formatted(component.getClass().getSimpleName()));
+                    throw new IllegalArgumentException("RegularComponent '%s' passed via 'with(...)' cannot implement Pooled.".formatted(component.getClass().getSimpleName()));
                 }
             }
         }
@@ -130,7 +130,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 var component = components.get(i);
 
                 if (!set.add(component)) {
-                    throw new IllegalArgumentException("Component '%s' already defined, cannot add duplicates.".formatted(component));
+                    throw new IllegalArgumentException("RegularComponent '%s' already defined, cannot add duplicates.".formatted(component));
                 }
             }
         }

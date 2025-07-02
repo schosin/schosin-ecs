@@ -1,7 +1,7 @@
 package de.schosin.ecs.plugins.transmuter;
 
-import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.WILDCARD;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

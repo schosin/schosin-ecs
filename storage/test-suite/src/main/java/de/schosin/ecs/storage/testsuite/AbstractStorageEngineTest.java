@@ -2,12 +2,11 @@ package de.schosin.ecs.storage.testsuite;
 
 import java.util.function.Consumer;
 
-import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.test.AbstractEcsTest;
 
-public abstract class AbstractStorageEngineTest extends AbstractEcsTest<World> {
+public abstract class AbstractStorageEngineTest extends AbstractEcsTest<TestWorld> {
 
     protected static final Consumer<RegularComponentType<?, ?>> NO_OP = AbstractStorageEngineTest::noOp;
 
@@ -18,7 +17,7 @@ public abstract class AbstractStorageEngineTest extends AbstractEcsTest<World> {
     protected StorageEngine engine;
 
     @Override
-    protected World createWorld() {
+    protected TestWorld createWorld() {
         var world = super.createWorld();
         this.engine = world.getSingleton(StorageEngine.class);
 

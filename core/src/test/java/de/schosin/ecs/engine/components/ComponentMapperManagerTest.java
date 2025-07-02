@@ -1,7 +1,5 @@
 package de.schosin.ecs.engine.components;
 
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,16 +26,12 @@ import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRe
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityFetchRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
-import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
 
 class ComponentMapperManagerTest extends AbstractWorldTest {
 
@@ -74,10 +68,6 @@ class ComponentMapperManagerTest extends AbstractWorldTest {
                 Arguments.arguments(relation(Component1.class, component(Component1.class)), EntityRelationFetchMapper.class),
                 Arguments.arguments(exclusiveRelation(Exclusive1.class, component(Component1.class)), ExclusiveEntityRelationFetchMapper.class),
                 Arguments.arguments(TestSet.TYPE, ComponentSetMapper.class),
-                Arguments.arguments(wildcard(Object.class), WildcardMapper.class),
-                Arguments.arguments(wildcardRelation(Object.class, Object.class), WildcardComponentRelationMapper.class),
-                Arguments.arguments(wildcardRelation(Object.class), WildcardEntityRelationMapper.class),
-                Arguments.arguments(wildcardRelation(Object.class, component(Component1.class)), WildcardEntityFetchRelationMapper.class),
                 Arguments.arguments(new DefaultComponentType<>(component(Component1.class), Component1::new), DefaultComponents.class));
     }
 

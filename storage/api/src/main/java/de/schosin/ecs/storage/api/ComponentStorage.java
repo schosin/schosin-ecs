@@ -38,12 +38,12 @@ public interface ComponentStorage {
      * </p>
      * 
      * @param componentId id of component
-     * @return {@link Component} instance
+     * @return {@link RegularComponent} instance
      */
     Component<?, ?> getComponent(int componentId);
 
     /**
-     * Returns the {@link Component} instance for the {@link RegularComponentType type}.
+     * Returns the {@link RegularComponent} instance for the {@link RegularComponentType type}.
      * 
      * <p>
      * Implementation must return the same instance for multiple calls
@@ -52,7 +52,7 @@ public interface ComponentStorage {
      * 
      * <p>
      * Implementation must pass {@literal type} to the {@literal validate} exactly once
-     * when this is the first time the storage sees this type and before the {@link Component}
+     * when this is the first time the storage sees this type and before the {@link RegularComponent}
      * instance is created. No exceptions shall be caught when that {@literal validate} might
      * throw. 
      * </p>
@@ -92,7 +92,7 @@ public interface ComponentStorage {
      * 
      * <p>
      * Implementation must pass {@literal type} to the {@literal validate} exactly once
-     * when this is the first time the storage sees this type and before the {@link Component}
+     * when this is the first time the storage sees this type and before the {@link RegularComponent}
      * instance is created. No exceptions shall be caught when that {@literal validate} might
      * throw. 
      * </p>
@@ -113,7 +113,7 @@ public interface ComponentStorage {
      * 
      * <p>
      * Implementation must pass {@literal type} to the {@literal validate} exactly once
-     * when this is the first time the storage sees this type and before the {@link Component}
+     * when this is the first time the storage sees this type and before the {@link RegularComponent}
      * instance is created. No exceptions shall be caught when that {@literal validate} might
      * throw. 
      * </p>

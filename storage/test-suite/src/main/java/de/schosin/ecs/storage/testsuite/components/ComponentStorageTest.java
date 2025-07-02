@@ -1,7 +1,8 @@
 package de.schosin.ecs.storage.testsuite.components;
 
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.WILDCARD;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcard;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
@@ -14,15 +15,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.ClassType;
-import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
-import de.schosin.ecs.api.components.types.Wildcard;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
+import de.schosin.ecs.plugins.wildcards.types.WildcardClassType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
@@ -188,7 +187,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
     @Nested
     class GetBoundComponentsTest {
 
-        final Wildcard<Bound> bound = ComponentType.wildcard(Bound.class);
+        final WildcardClassType<Bound> bound = wildcard(Bound.class);
 
         @Test
         void testInitiallyEmpty() {
@@ -200,9 +199,9 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testResult_WhenEqualType_ReturnsSameInstance() {
-            var components = engine.getComponents(ComponentType.wildcard(Bound.class));
+            var components = engine.getComponents(wildcard(Bound.class));
 
-            assertThat(engine.getComponents(ComponentType.wildcard(Bound.class))).as("must return same instance for equal bounds").isSameAs(components);
+            assertThat(engine.getComponents(wildcard(Bound.class))).as("must return same instance for equal bounds").isSameAs(components);
         }
 
         @Test
@@ -216,14 +215,14 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
         void testResult_WhenDifferentType_ReturnsDifferentInstance() {
             var components = engine.getComponents(bound);
 
-            assertThat(ComponentType.WILDCARD).as("must return different instance for different bounds").isNotSameAs(components);
+            assertThat(WILDCARD).as("must return different instance for different bounds").isNotSameAs(components);
         }
 
         @Test
         void testMultipleCallsReturnSameImmutableBag() {
-            var components = engine.getComponents(ComponentType.wildcard(Bound.class));
+            var components = engine.getComponents(wildcard(Bound.class));
 
-            assertThat(engine.getComponents(ComponentType.wildcard(Bound.class))).as("must return same instance for equal wildcards").isSameAs(components);
+            assertThat(engine.getComponents(wildcard(Bound.class))).as("must return same instance for equal wildcards").isSameAs(components);
         }
 
         @Test
@@ -266,7 +265,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testLiveCollection_ObjectBound() {
-            var components = engine.getComponents(ComponentType.wildcard(Object.class));
+            var components = engine.getComponents(wildcard(Object.class));
 
             var instance1 = engine.getComponent(new ClassType<>(C1.class));
             var instance2 = engine.getComponent(new ClassType<>(C2.class));
@@ -281,7 +280,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testLiveCollection_ObjectBound_Constant() {
-            var components = engine.getComponents(ComponentType.WILDCARD);
+            var components = engine.getComponents(WILDCARD);
 
             var instance1 = engine.getComponent(new ClassType<>(C1.class));
             var instance2 = engine.getComponent(new ClassType<>(C2.class));
@@ -475,7 +474,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
             var relation2 = engine.getComponent(new EntityRelationType<>(C2.class)).type();
             engine.getComponent(new EntityRelationType<>(C3.class)).type();
 
-            var componentTypes = engine.getRegularComponentTypes(new WildcardEntityRelationFetchType<>(Bound.class, component(C2.class)));
+            var componentTypes = engine.getRegularComponentTypes(wildcardRelation(Bound.class, component(C2.class)));
             assertThat(componentTypes).containsExactlyInAnyOrder(relation1, relation2);
         }
 

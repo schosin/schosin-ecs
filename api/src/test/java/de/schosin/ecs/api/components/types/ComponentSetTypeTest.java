@@ -20,7 +20,7 @@ class ComponentSetTypeTest extends AbstractComponentTypeTest<ComponentSetTypeTes
 
     enum MatchesTestCases implements AbstractComponentTypeTest.MatchesTestCase {
 
-        equalClassType(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), component(Component.class), false),
+        equalClassType(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), component(RegularComponent.class), false),
         otherClassType(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), component(FinalComponent.class), false),
         componentRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), relation(RelationshipComponent.class, TargetComponent.class), false),
         exclusiveComponentRelation(componentSet(MyComponentSet.class, MyComponentSet.Processor.class), exclusiveRelation(ExclusiveComponent.class, TargetComponent.class), false),

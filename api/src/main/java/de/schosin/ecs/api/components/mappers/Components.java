@@ -46,7 +46,7 @@ import de.schosin.ecs.api.data.DataAccessor;
  * Some implementations support adding components to entities as well. 
  * </p>
  * 
- * Component mapper for accessing and modifying components of an entity.
+ * RegularComponent mapper for accessing and modifying components of an entity.
  * Use {@link World#getComponents(Class)} and {@link World#getPooledComponents(Class)}
  * to create instances of this interface.
  * 
@@ -78,7 +78,7 @@ import de.schosin.ecs.api.data.DataAccessor;
  * 
  * @param <T> component type
  */
-public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, WildcardComponentMapper, EntityFetchRelationMappers, WildcardRelationMappers, CustomComponentMapper {
+public sealed interface Components<T, R> permits RegularComponents, ComponentSetMapper, EntityFetchRelationMappers, CustomComponentMapper {
 
     sealed interface RegularComponents<T, R> extends Components<T, R> permits ComponentMapper, ComponentRelationMappers, EntityRelationMappers {
 
@@ -150,8 +150,7 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
      */
     boolean remove(int entityId);
 
-    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelationMappers.Creator, EntityRelationMappers.Creator, EntityFetchRelationMappers.Creator,
-            WildcardRelationMappers.Creator {
+    interface Creator extends ComponentMapper.Creator, ComponentSetMapper.Creator, ComponentRelationMappers.Creator, EntityRelationMappers.Creator, EntityFetchRelationMappers.Creator {
 
         /**
          * Retrieves the {@link Components} instance for the given {@link ComponentType}.

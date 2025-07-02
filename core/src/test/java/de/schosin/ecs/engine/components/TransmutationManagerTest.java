@@ -1,11 +1,8 @@
 package de.schosin.ecs.engine.components;
 
-import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.lang.reflect.Modifier;
 import java.util.LinkedHashSet;
 import java.util.SequencedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -427,145 +424,6 @@ class TransmutationManagerTest extends AbstractWorldTest {
                 remove1.apply(entityId);
                 world.process();
             });
-        }
-
-        @Nested
-        static class WildcardTest extends AbstractWorldTest {
-
-            @Test
-            void ensureTestClassIsStatic() {
-                // must be static and extend AbstractWorldTest so that each test has a fresh, empty world not altered by @BeforeEach of outer class
-                assertThat(Modifier.isStatic(this.getClass().getModifiers())).as("test class is static").isTrue();
-            }
-
-            @Test
-            void testInterfaceWildcard() {
-                var remove12 = transmutationManager.getRemoveTransmuter(wildcard(C12.class));
-                var remove123 = transmutationManager.getRemoveTransmuter(wildcard(C123.class));
-                var remove23 = transmutationManager.getRemoveTransmuter(wildcard(C23.class));
-                var remove = transmutationManager.getRemoveTransmuter(wildcard(C.class));
-
-                var entity1 = world.createEntity(new C1(), new C2(), new C3());
-                var entity2 = world.createEntity(new C1(), new C2(), new C3());
-                var entity3 = world.createEntity(new C1(), new C2(), new C3());
-                var entity4 = world.createEntity(new C1(), new C2(), new C3());
-
-                // Call
-                remove12.apply(entity1);
-                remove123.apply(entity2);
-                remove23.apply(entity3);
-                remove.apply(entity4);
-
-                world.process();
-
-                // Verify
-                verifyHasComponents(entity1, C3.class);
-                verifyDoesNotHaveComponents(entity1, C1.class, C2.class);
-                verifyComponentMaskHasComponents(entity1, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class);
-
-                verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-
-                verifyHasComponents(entity3, C1.class);
-                verifyDoesNotHaveComponents(entity3, C2.class, C3.class);
-                verifyComponentMaskHasComponents(entity3, C1.class);
-                verifyComponentMaskDoesNotHaveComponents(entity3, C2.class, C3.class);
-
-                verifyDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
-            }
-
-            @Test
-            void testInterfaceWildcard_ComponentsKnownBeforehand() {
-                componentManager.getComponent(component(C1.class));
-                componentManager.getComponent(component(C2.class));
-                componentManager.getComponent(component(C3.class));
-
-                var remove12 = transmutationManager.getRemoveTransmuter(wildcard(C12.class));
-                var remove123 = transmutationManager.getRemoveTransmuter(wildcard(C123.class));
-                var remove23 = transmutationManager.getRemoveTransmuter(wildcard(C23.class));
-                var remove = transmutationManager.getRemoveTransmuter(wildcard(C.class));
-
-                var entity1 = world.createEntity(new C1(), new C2(), new C3());
-                var entity2 = world.createEntity(new C1(), new C2(), new C3());
-                var entity3 = world.createEntity(new C1(), new C2(), new C3());
-                var entity4 = world.createEntity(new C1(), new C2(), new C3());
-
-                // Call
-                remove12.apply(entity1);
-                remove123.apply(entity2);
-                remove23.apply(entity3);
-                remove.apply(entity4);
-
-                world.process();
-
-                // Verify
-                verifyHasComponents(entity1, C3.class);
-                verifyDoesNotHaveComponents(entity1, C1.class, C2.class);
-                verifyComponentMaskHasComponents(entity1, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class);
-
-                verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-
-                verifyHasComponents(entity3, C1.class);
-                verifyDoesNotHaveComponents(entity3, C2.class, C3.class);
-                verifyComponentMaskHasComponents(entity3, C1.class);
-                verifyComponentMaskDoesNotHaveComponents(entity3, C2.class, C3.class);
-
-                verifyDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
-            }
-
-            @Test
-            void testWildcard() {
-                var removeConstant = transmutationManager.getRemoveTransmuter(WILDCARD);
-                var removeObject = transmutationManager.getRemoveTransmuter(wildcard(Object.class));
-
-                var entity1 = world.createEntity(new C1(), new C2(), new C3());
-                var entity2 = world.createEntity(new C1(), new C2(), new C3());
-
-                // Call
-                removeConstant.apply(entity1);
-                removeObject.apply(entity2);
-
-                world.process();
-
-                // Verify
-                verifyDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
-
-                verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-            }
-
-            @Test
-            void testWildcard_ComponentsKnownBeforehand() {
-                componentManager.getComponent(component(C1.class));
-                componentManager.getComponent(component(C2.class));
-                componentManager.getComponent(component(C3.class));
-
-                var removeConstant = transmutationManager.getRemoveTransmuter(WILDCARD);
-                var removeObject = transmutationManager.getRemoveTransmuter(wildcard(Object.class));
-
-                var entity1 = world.createEntity(new C1(), new C2(), new C3());
-                var entity2 = world.createEntity(new C1(), new C2(), new C3());
-
-                // Call
-                removeConstant.apply(entity1);
-                removeObject.apply(entity2);
-
-                world.process();
-
-                // Verify
-                verifyDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
-
-                verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-            }
-
         }
 
     }

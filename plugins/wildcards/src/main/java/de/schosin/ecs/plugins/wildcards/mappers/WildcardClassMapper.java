@@ -1,4 +1,4 @@
-package de.schosin.ecs.engine.components.mappers;
+package de.schosin.ecs.plugins.wildcards.mappers;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -8,34 +8,30 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
-import de.schosin.ecs.api.components.mappers.WildcardComponentMapper;
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
-import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
+import de.schosin.ecs.plugins.wildcards.WildcardManager.WildcardMapper;
+import de.schosin.ecs.plugins.wildcards.result.WildcardResult;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardComponentMapperImpl<T> implements WildcardComponentMapper<T>, ReclaimingComponents, WildcardMapper<ComponentMapper<? extends T>> {
+public class WildcardClassMapper<T> implements CustomComponentMapper<T, WildcardResult<T>>, ReclaimingComponents, WildcardMapper<ComponentMapper<? extends T>> {
 
     private final IntFunction<DataAccessor> accessor;
 
-    private final Bag<ComponentMapper<? extends T>> mappers;
-    private final IntBag componentIds;
-    private final Bag<Class<? extends T>> classes;
+    private final Bag<ComponentMapper<? extends T>> mappers = new Bag<>(ComponentMapper.class, 4);
+    private final IntBag componentIds = new IntBag(4);
+    private final Bag<Class<? extends T>> classes = new Bag<>(Class.class, 4);
 
     private final Pool<WildcardComponentResultImpl> pool = Pool.unbounded(WildcardComponentResultImpl.class, WildcardComponentResultImpl::new);
     private final Bag<WildcardComponentResultImpl> lent = new Bag<>(WildcardComponentResultImpl.class, 8);
 
-    public WildcardComponentMapperImpl(IntFunction<DataAccessor> accessor) {
+    public WildcardClassMapper(IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
-
-        this.mappers = new Bag<>(ComponentMapper.class, 4);
-        this.componentIds = new IntBag(4);
-        this.classes = new Bag<>(Class.class, 4);
     }
 
     @Override
@@ -69,7 +65,7 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
     }
 
     @Override
-    public ComponentResult<T> get(int entityId) {
+    public WildcardResult<T> get(int entityId) {
         var accessor = this.accessor.apply(entityId);
 
         var componentAccessor = getComponentAccessor(accessor);
@@ -95,7 +91,7 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
         return removed;
     }
 
-    private final class WildcardComponentResultImpl implements ComponentResult<T>, Iterator<T>, ComponentAccessor<ComponentResult<T>>, Pooled {
+    private final class WildcardComponentResultImpl implements WildcardResult<T>, Iterator<T>, ComponentAccessor<WildcardResult<T>>, Pooled {
 
         private final IntBag data = new IntBag(4);
 
@@ -115,7 +111,7 @@ public final class WildcardComponentMapperImpl<T> implements WildcardComponentMa
         }
 
         @Override
-        public ComponentResult<T> getComponent(DataAccessor accessor) {
+        public WildcardResult<T> getComponent(DataAccessor accessor) {
             reset();
             this.accessor = accessor;
 

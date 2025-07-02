@@ -1,4 +1,4 @@
-package de.schosin.ecs.engine.components.mappers.wildcardrelations;
+package de.schosin.ecs.plugins.wildcards.mappers;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -8,41 +8,36 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
-import de.schosin.ecs.api.components.Relations.EntityRelations;
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityRelationMapper;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
-import de.schosin.ecs.engine.components.ComponentMapperManager.WildcardMapper;
+import de.schosin.ecs.plugins.wildcards.WildcardManager.WildcardMapper;
+import de.schosin.ecs.plugins.wildcards.result.WildcardEntityRelations;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.IntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
-public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntityRelationMapper<R>, ReclaimingComponents, WildcardMapper<EntityRelationMappers<R, ?>> {
+public class WildcardEntityRelationMapper<R> implements CustomComponentMapper<EntityRelation<R>, WildcardEntityRelations<R>>,
+        ReclaimingComponents, WildcardMapper<EntityRelationMappers<R, ?>> {
 
     private final IntFunction<DataAccessor> accessor;
 
-    private final Bag<EntityRelationMapper<R>> mappers;
-    private final IntBag componentIds;
+    private final Bag<EntityRelationMapper<R>> mappers = new Bag<>(EntityRelationMapper.class, 4);
+    private final IntBag componentIds = new IntBag(4);
 
     @SuppressWarnings("rawtypes")
-    private final Bag<ExclusiveEntityRelationMapper> exclusiveMappers;
-    private final IntBag exclusiveComponentIds;
+    private final Bag<ExclusiveEntityRelationMapper> exclusiveMappers = new Bag<>(ExclusiveEntityRelationMapper.class, 4);
+    private final IntBag exclusiveComponentIds = new IntBag(4);
 
     private final Pool<WildcardEntityRelationAccessor> pool = Pool.unbounded(WildcardEntityRelationAccessor.class, WildcardEntityRelationAccessor::new);
     private final Bag<WildcardEntityRelationAccessor> lent = new Bag<>(WildcardEntityRelationAccessor.class, 8);
 
-    public WildcardEntityRelationMapperImpl(IntFunction<DataAccessor> accessor) {
+    public WildcardEntityRelationMapper(IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
-
-        this.mappers = new Bag<>(EntityRelationMapper.class, 4);
-        this.componentIds = new IntBag(4);
-
-        this.exclusiveMappers = new Bag<>(ExclusiveEntityRelationMapper.class, 4);
-        this.exclusiveComponentIds = new IntBag(4);
     }
 
     @Override
@@ -90,7 +85,7 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
     }
 
     @Override
-    public EntityRelations<R> get(int entityId) {
+    public WildcardEntityRelations<R> get(int entityId) {
         var accessor = this.accessor.apply(entityId);
 
         var componentAccessor = getComponentAccessor(accessor);
@@ -121,7 +116,7 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
         return removed;
     }
 
-    private class WildcardEntityRelationAccessor implements EntityRelations<R>, Iterator<EntityRelation<R>>, ComponentAccessor<EntityRelations<R>>, Pooled {
+    private class WildcardEntityRelationAccessor implements WildcardEntityRelations<R>, Iterator<EntityRelation<R>>, ComponentAccessor<WildcardEntityRelations<R>>, Pooled {
 
         private final Bag<ComponentAccessor<EntityRelation<R>>> exclusiveAccessors = new Bag<>(ComponentAccessor.class, 4);
         private final Bag<ComponentAccessor<EntityRelations<R>>> accessors = new Bag<>(ComponentAccessor.class, 4);
@@ -142,7 +137,7 @@ public final class WildcardEntityRelationMapperImpl<R> implements WildcardEntity
         }
 
         @Override
-        public EntityRelations<R> getComponent(DataAccessor accessor) {
+        public WildcardEntityRelations<R> getComponent(DataAccessor accessor) {
             reset();
             this.accessor = accessor;
 

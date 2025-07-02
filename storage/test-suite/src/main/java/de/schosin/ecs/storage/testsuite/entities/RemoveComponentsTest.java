@@ -1,8 +1,8 @@
 package de.schosin.ecs.storage.testsuite.entities;
 
-import static de.schosin.ecs.api.components.types.ComponentType.WILDCARD;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcard;
-import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.WILDCARD;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcard;
+import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

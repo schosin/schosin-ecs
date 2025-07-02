@@ -1,7 +1,5 @@
 package de.schosin.ecs.engine.components;
 
-import static de.schosin.ecs.api.components.types.ComponentType.wildcardRelation;
-
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,7 +57,7 @@ public class RelationMapperManager implements RemovedRelationTypeHandler {
 
     private void handleEntityRemovedEvent(EntityRemovedEvent event) {
         if (components == null) {
-            this.components = engine.getComponents(wildcardRelation(Object.class));
+            this.components = engine.getComponents();
         }
 
         // Remove relations with entity as target

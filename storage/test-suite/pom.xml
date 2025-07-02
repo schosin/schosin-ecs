@@ -22,6 +22,12 @@
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>de.schosin.ecs.plugins</groupId>
+            <artifactId>ecs-plugins-wildcards</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>

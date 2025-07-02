@@ -10,7 +10,7 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 
 /**
- * {@link Components Component mapper} for {@link ClassType} components. Contains additional subtypes providing
+ * {@link Components RegularComponent mapper} for {@link ClassType} components. Contains additional subtypes providing
  * additional functionality
  * 
  * <ol>

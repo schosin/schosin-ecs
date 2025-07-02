@@ -10,7 +10,6 @@ import org.jspecify.annotations.NonNull;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.Result.ComponentResult;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
@@ -26,9 +25,6 @@ import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRe
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.ExclusiveEntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardComponentRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityFetchRelationMapper;
-import de.schosin.ecs.api.components.mappers.WildcardRelationMappers.WildcardEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
@@ -40,25 +36,15 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.Wildcard;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardComponentRelationType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationFetchType;
-import de.schosin.ecs.api.components.types.WildcardRelationType.WildcardEntityRelationType;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.components.mappers.ComponentMapperImpl;
 import de.schosin.ecs.engine.components.mappers.ComponentSetMapperImpl;
 import de.schosin.ecs.engine.components.mappers.EnumComponentMapperImpl;
 import de.schosin.ecs.engine.components.mappers.PooledComponentMapperImpl;
-import de.schosin.ecs.engine.components.mappers.WildcardComponentMapperImpl;
 import de.schosin.ecs.engine.components.mappers.fetch.EntityRelationFetchMapperImpl;
 import de.schosin.ecs.engine.components.mappers.fetch.ExclusiveEntityRelationFetchMapperImpl;
-import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardComponentRelationMapperImpl;
-import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardEntityFetchRelationMapperImpl;
-import de.schosin.ecs.engine.components.mappers.wildcardrelations.WildcardEntityRelationMapperImpl;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.events.ComponentAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
 
 public class ComponentMapperManager implements Components.Creator {
@@ -67,16 +53,10 @@ public class ComponentMapperManager implements Components.Creator {
         void reclaim();
     }
 
-    public interface WildcardMapper<M extends Components<?, ?>> {
-        void addMapper(M components);
-    }
-
     private final ComponentManager componentManager;
     private final EntityManager entityManager;
     private final TransmutationManager transmutationManager;
     private final RelationMapperManager relationMapperManager;
-
-    private final ComponentEventHandler eventHandler;
 
     private final Bag<Components<?, ?>> components;
     private final Map<Enum<?>, EnumComponentMapper<?>> enumComponents = new IdentityHashMap<>();
@@ -86,15 +66,13 @@ public class ComponentMapperManager implements Components.Creator {
 
     private final Map<Class<? extends CustomComponentType<?, ?, ?>>, Factory> factories = new HashMap<>();
 
-    public ComponentMapperManager(EventManager eventManager, BagManager bagManager, ComponentManager componentManager, EntityManager entityManager, TransmutationManager transmutationManager,
+    public ComponentMapperManager(BagManager bagManager, ComponentManager componentManager, EntityManager entityManager, TransmutationManager transmutationManager,
             RelationMapperManager relationMapperManager) {
 
         this.componentManager = componentManager;
         this.entityManager = entityManager;
         this.transmutationManager = transmutationManager;
         this.relationMapperManager = relationMapperManager;
-
-        this.eventHandler = new ComponentEventHandler(eventManager);
 
         this.components = bagManager.createComponentBag(Components.class);
     }
@@ -143,10 +121,6 @@ public class ComponentMapperManager implements Components.Creator {
             case EntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getComponents(fetch);
             case ExclusiveEntityRelationFetchType<?, ?> fetch -> (Components<T, R>) getComponents(fetch);
             case ComponentSetType<?, ?> set -> (Components<T, R>) getComponents(set);
-            case Wildcard<?> wildcard -> (Components<T, R>) getWildcardComponents(wildcard);
-            case WildcardComponentRelationType<?, ?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
-            case WildcardEntityRelationType<?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
-            case WildcardEntityRelationFetchType<?, ?> wildcardRelation -> (Components<T, R>) getComponents(wildcardRelation);
             case CustomComponentType<?, ?, ?> custom -> (Components<T, R>) getComponents(custom);
         };
     }
@@ -327,100 +301,6 @@ public class ComponentMapperManager implements Components.Creator {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private <T> Components<T, ComponentResult<T>> getWildcardComponents(Wildcard<T> wildcard) {
-        var result = (Components<T, ComponentResult<T>>) componentMappers.get(wildcard);
-        if (result != null) {
-            return result;
-        }
-
-        synchronized (this.componentMappers) {
-            result = (Components<T, ComponentResult<T>>) componentMappers.get(wildcard);
-            if (result != null) {
-                return result;
-            }
-
-            var mapper = new WildcardComponentMapperImpl<T>(entityManager::getAccessor);
-            eventHandler.registerWildcardMapper(wildcard, mapper);
-
-            this.reclaimingComponents.add(mapper);
-            this.componentMappers.put(wildcard, mapper);
-
-            return mapper;
-        }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <R, T> WildcardComponentRelationMapper<R, T> getComponents(WildcardComponentRelationType<R, T> wildcardRelation) {
-        var result = (WildcardComponentRelationMapper<R, T>) componentMappers.get(wildcardRelation);
-        if (result != null) {
-            return result;
-        }
-
-        synchronized (this.componentMappers) {
-            result = (WildcardComponentRelationMapper<R, T>) componentMappers.get(wildcardRelation);
-            if (result != null) {
-                return result;
-            }
-
-            var mapper = new WildcardComponentRelationMapperImpl<R, T>(entityManager::getAccessor); // no singleton possible, see this.componentMappers
-            eventHandler.registerWildcardMapper(wildcardRelation, mapper);
-
-            this.reclaimingComponents.add(mapper);
-            this.componentMappers.put(wildcardRelation, mapper);
-
-            return mapper;
-        }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <R> WildcardEntityRelationMapper<R> getComponents(WildcardEntityRelationType<R> wildcardRelation) {
-        var result = (WildcardEntityRelationMapper<R>) componentMappers.get(wildcardRelation);
-        if (result != null) {
-            return result;
-        }
-
-        synchronized (this.componentMappers) {
-            result = (WildcardEntityRelationMapper<R>) componentMappers.get(wildcardRelation);
-            if (result != null) {
-                return result;
-            }
-
-            var mapper = new WildcardEntityRelationMapperImpl<R>(entityManager::getAccessor);
-            eventHandler.registerWildcardMapper(wildcardRelation, mapper);
-
-            this.reclaimingComponents.add(mapper);
-            this.componentMappers.put(wildcardRelation, mapper);
-
-            return mapper;
-        }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <R, T> WildcardEntityFetchRelationMapper<R, T> getComponents(WildcardEntityRelationFetchType<R, T> wildcardRelation) {
-        var result = (WildcardEntityFetchRelationMapper<R, T>) componentMappers.get(wildcardRelation);
-        if (result != null) {
-            return result;
-        }
-
-        synchronized (this.componentMappers) {
-            result = (WildcardEntityFetchRelationMapper<R, T>) componentMappers.get(wildcardRelation);
-            if (result != null) {
-                return result;
-            }
-
-            var mapper = new WildcardEntityFetchRelationMapperImpl<>(entityManager, wildcardRelation, this);
-
-            this.reclaimingComponents.add(mapper);
-            this.componentMappers.put(wildcardRelation, mapper);
-
-            return mapper;
-        }
-    }
-
     @NonNull
     @Override
     @SuppressWarnings("unchecked")
@@ -451,50 +331,6 @@ public class ComponentMapperManager implements Components.Creator {
 
             return mapper;
         }
-    }
-
-    private class ComponentEventHandler {
-
-        @SuppressWarnings("rawtypes")
-        private final Map<ComponentType<?, ?>, Bag<WildcardMapper>> components = new ConcurrentHashMap<>();
-
-        public ComponentEventHandler(EventManager eventManager) {
-            eventManager.registerEventHandler(ComponentAddedEvent.class, this::handleComponentAdded);
-        }
-
-        @SuppressWarnings("unchecked")
-        private void handleComponentAdded(ComponentAddedEvent event) {
-            for (var entry : components.entrySet()) {
-                var componentType = entry.getKey();
-
-                if (componentType.matches(event.type())) {
-                    var bags = entry.getValue();
-
-                    var data = bags.getData();
-                    for (int i = 0, s = bags.getSize(); i < s; i++) {
-                        data[i].addMapper(getComponents(event.type()));
-                    }
-                }
-            }
-        }
-
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        public void registerWildcardMapper(ComponentType<?, ?> type, WildcardMapper mapper) {
-            // Add known components
-            var components = componentManager.getComponents();
-            for (int i = 0, s = components.getSize(); i < s; i++) {
-                var component = components.get(i);
-
-                if (type.matches(component.type())) {
-                    mapper.addMapper(getComponents(component.type()));
-                }
-            }
-
-            // Add bag to tracked bags
-            var bags = this.components.computeIfAbsent(type, ignore -> new Bag<>(WildcardMapper.class, 32));
-            bags.add(mapper);
-        }
-
     }
 
 }
