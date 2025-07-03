@@ -12,7 +12,7 @@ public interface StorageWorld extends World {
      * entities in this word. Allows working on indexes without
      * size checks.
      * 
-     * @param <T> type of lement
+     * @param <T> type of element
      * @param clazz class of element
      * @return synchronized bag
      */
