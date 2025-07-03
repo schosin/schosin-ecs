@@ -47,7 +47,7 @@ import de.schosin.ecs.api.data.DataProcessor;
  * @param <T> type of a single component instance (write operations)
  * @param <R> type of component data when reading (read operations)
  */
-public sealed interface ComponentType<T, R> permits RegularComponentType, ComponentSetType, RelationFetchType, CustomComponentType {
+public sealed interface ComponentType<T, R> permits RegularComponentType, ComponentSetType, RelationFetchType, CustomComponentType, DataProcessorType {
 
     /**
      * Describes component types that can be directly assigned to entities.

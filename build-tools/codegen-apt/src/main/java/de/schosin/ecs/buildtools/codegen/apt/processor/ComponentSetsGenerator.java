@@ -52,7 +52,6 @@ public class ComponentSetsGenerator {
 
     public static final ClassName DATA_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataAccessor");
     public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataProcessor");
-    public static final ClassName DATA_PROCESSOR_TYPE = ClassName.get("de.schosin.ecs.api.data", "DataProcessorType");
     public static final ClassName ITERABLE_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
 
     private static final WildcardTypeName WILDCARD = WildcardTypeName.subtypeOf(Object.class);
@@ -134,8 +133,6 @@ public class ComponentSetsGenerator {
                 componentSet.addMethod(interfaceAccessor);
             }
 
-            var dataProcessorType = ParameterizedTypeName.get(DATA_PROCESSOR_TYPE, interfaceName, processor);
-            componentSet.addSuperinterface(dataProcessorType);
             componentSet.addType(createProcessorType(result));
 
             var type = ParameterizedTypeName.get(COMPONENT_SET_TYPE, interfaceName, processor);

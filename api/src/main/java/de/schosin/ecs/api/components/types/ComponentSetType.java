@@ -8,7 +8,7 @@ import de.schosin.ecs.api.data.DataProcessor;
  * 
  * @param <T> type of component set
  */
-public record ComponentSetType<T extends ComponentSet<P>, P extends DataProcessor<T>>(Class<T> componentSet, Class<P> processor) implements ComponentType<T, T> {
+public record ComponentSetType<T extends ComponentSet<P>, P extends DataProcessor<T>>(Class<T> componentSet, Class<P> processor) implements ComponentType<T, T>, DataProcessorType<T, T, P> {
 
     public ComponentSetType {
         ComponentSetTypeHelper.validateComponentSet(componentSet);
