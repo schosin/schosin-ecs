@@ -19,6 +19,7 @@ import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.FieldSpec;
 import com.palantir.javapoet.MethodSpec;
+import com.palantir.javapoet.ParameterSpec;
 import com.palantir.javapoet.ParameterizedTypeName;
 import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
@@ -46,6 +47,7 @@ public class ComponentSetsGenerator {
     static final ClassName COMPONENT_SET_DATA = COMPONENT_SET.nestedClass("ComponentSetData");
     static final ClassName COMPONENT_SET_COMPONENT = COMPONENT_SET.nestedClass("Component");
     static final ClassName COMPONENT_ACCESSOR_PROCESSOR = COMPONENT_SET.nestedClass("IterableProcessor");
+    static final ClassName ITERABLE_COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableComponentAccessor");
     static final ClassName COMPONENT_SET_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentSetType");
 
     private static final ClassName POOL = ClassName.get("de.schosin.ecs.utils.collections", "Pool");
@@ -332,10 +334,10 @@ public class ComponentSetsGenerator {
             var superInterface = ParameterizedTypeName.get(COMPONENT_ACCESSOR_PROCESSOR, result.interfaceName, result.interfaceName.nestedClass("Processor"));
 
             return TypeSpec.enumBuilder("IterableProcessor")
-                    .addModifiers(Modifier.PRIVATE)
                     .addSuperinterface(superInterface)
                     .addEnumConstant("INSTANCE")
                     .addMethod(iterableProcessorImpl(result))
+                    .addMethod(iterableProcessorProcess(result))
                     .build();
         }
 
@@ -380,13 +382,40 @@ public class ComponentSetsGenerator {
                     .build();
         }
 
+        private static MethodSpec iterableProcessorProcess(VisitorResult result) {
+            var parameters = new ArrayList<ParameterSpec>();
+
+            var body = CodeBlock.builder();
+            body.beginControlFlow("while(accessor.hasNext())");
+            body.add("processor.process(accessor.next()");
+
+            for (int i = 1, s = result.components.size(); i <= s; i++) {
+                var component = result.components.get(i - 1);
+                var componentAccessor = ParameterizedTypeName.get(COMPONENT_ACCESSOR, component.typeName);
+
+                parameters.add(ParameterSpec.builder(componentAccessor, "accessor" + i).build());
+
+                body.add(", " + System.lineSeparator()).indent().add("accessor%d.getComponent(accessor)".formatted(i)).unindent();
+            }
+
+            body.addStatement(")");
+            body.endControlFlow();
+
+            return MethodSpec.methodBuilder("process")
+                    .addParameter(result.interfaceName.nestedClass("Processor"), "processor")
+                    .addParameter(ITERABLE_ACCESSOR, "accessor")
+                    .addParameters(parameters)
+                    .addCode(body.build())
+                    .build();
+        }
+
         private static class ComponentSetAccessor {
 
             static TypeSpec createAccessor(VisitorResult result) {
                 var interfaceName = result.interfaceName;
                 var accessorName = ClassName.get(result.interfaceName.packageName(), interfaceName.simpleName() + "Accessor");
 
-                var componentAccessor = ParameterizedTypeName.get(COMPONENT_ACCESSOR, interfaceName);
+                var iterableComponentAccessor = ParameterizedTypeName.get(ITERABLE_COMPONENT_ACCESSOR, interfaceName, interfaceName.nestedClass("Processor"));
 
                 var parameterizedPool = ParameterizedTypeName.get(POOL, accessorName);
                 var pool = FieldSpec.builder(parameterizedPool, "POOL", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
@@ -400,12 +429,12 @@ public class ComponentSetsGenerator {
                 return TypeSpec.classBuilder(accessorName)
                         .addAnnotation(GENERATED)
                         .addModifiers(Modifier.FINAL)
-                        .addSuperinterface(componentAccessor)
                         .addSuperinterface(interfaceName)
+                        .addSuperinterface(iterableComponentAccessor)
                         .addField(pool)
                         .addField(DATA_ACCESSOR, "accessor", Modifier.PRIVATE)
                         .addFields(componentAccessors)
-                        .addMethods(ComponentAccessorImplementation.methods(result))
+                        .addMethods(IterableComponentAccessorImplementation.methods(result))
                         .addMethods(ComponentSetImplementation.methods(result))
                         .addMethod(reset(result))
                         .build();
@@ -416,12 +445,13 @@ public class ComponentSetsGenerator {
                 return FieldSpec.builder(type, componentData.name, Modifier.PRIVATE).build();
             }
 
-            private static class ComponentAccessorImplementation {
+            private static class IterableComponentAccessorImplementation {
 
                 static List<MethodSpec> methods(VisitorResult result) {
                     return List.of(
                             getInstance(result),
                             getComponent(result),
+                            process(result),
                             free());
                 }
 
@@ -461,6 +491,26 @@ public class ComponentSetsGenerator {
                             .returns(result.interfaceName)
                             .addStatement("this.accessor = accessor")
                             .addStatement("return this")
+                            .build();
+                }
+
+                private static MethodSpec process(VisitorResult result) {
+                    var processor = result.interfaceName.nestedClass("Processor");
+                    var iterableProcessor = result.implementationName.nestedClass("IterableProcessor");
+
+                    var body = CodeBlock.builder();
+                    body.add("$1T.INSTANCE.process(processor, accessor", iterableProcessor);
+                    for (var component : result.components) {
+                        body.add(", " + System.lineSeparator()).indent().add(component.name).unindent();
+                    }
+                    body.addStatement(")");
+
+                    return MethodSpec.methodBuilder("process")
+                            .addAnnotation(Override.class)
+                            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                            .addParameter(ITERABLE_ACCESSOR, "accessor")
+                            .addParameter(processor, "processor")
+                            .addCode(body.build())
                             .build();
                 }
 

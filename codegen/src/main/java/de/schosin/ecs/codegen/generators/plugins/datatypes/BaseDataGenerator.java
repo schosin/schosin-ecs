@@ -14,7 +14,6 @@ import com.palantir.javapoet.JavaFile;
 import com.palantir.javapoet.MethodSpec;
 import com.palantir.javapoet.ParameterSpec;
 import com.palantir.javapoet.ParameterizedTypeName;
-import com.palantir.javapoet.TypeName;
 import com.palantir.javapoet.TypeSpec;
 import com.palantir.javapoet.TypeVariableName;
 import com.palantir.javapoet.WildcardTypeName;
@@ -144,6 +143,7 @@ public class BaseDataGenerator {
         private static MethodSpec dataGetComponentAccessor(int n, List<TypeVariableName> typeVariables) {
             var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
             var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
+            var dataTypeProcessor = ParameterizedTypeName.get(ClassName.get("", "DataType" + n).nestedClass("Processor" + n), typeVariablesArray);
             var dataAccessorN = ClassName.get("", "DataAccessor" + n);
 
             var arguments = "";
@@ -162,13 +162,13 @@ public class BaseDataGenerator {
             parameters.add(ParameterSpec.builder(Utils.DATA_ACCESSOR, "accessor").build());
             arguments += ", accessor";
 
-            var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataType);
+            var iterableComponentAccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_ACCESSOR, dataType, dataTypeProcessor);
 
             return MethodSpec.methodBuilder("getComponentAccessor")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .addTypeVariables(typeVariables)
                     .addParameters(parameters)
-                    .returns(componentAccessor)
+                    .returns(iterableComponentAccessor)
                     .addStatement("return $1T.getComponentAccessor(%s)".formatted(arguments), dataAccessorN)
                     .build();
         }
@@ -209,8 +209,9 @@ public class BaseDataGenerator {
 
             var className = ClassName.get("", "DataAccessor" + n);
             var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
+            var dataTypeProcessor = ParameterizedTypeName.get(ClassName.get("", "DataType" + n).nestedClass("Processor" + n), typeVariablesArray);
 
-            var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataType);
+            var iterableComponentAccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_ACCESSOR, dataType, dataTypeProcessor);
 
             var parameterizedPool = ParameterizedTypeName.get(Utils.POOL, className);
             var pool = FieldSpec.builder(parameterizedPool, "POOL", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
@@ -224,7 +225,7 @@ public class BaseDataGenerator {
             return TypeSpec.classBuilder(className)
                     .addModifiers(Modifier.FINAL)
                     .addTypeVariables(typeVariables)
-                    .addSuperinterface(componentAccessor)
+                    .addSuperinterface(iterableComponentAccessor)
                     .addSuperinterface(dataType)
                     .addSuperinterface(Utils.POOLED)
                     .addField(pool)
@@ -248,14 +249,16 @@ public class BaseDataGenerator {
                 return List.of(
                         dataGetComponentAccessor(n, typeVariables),
                         getComponent(n, typeVariables),
+                        process(n, typeVariables),
                         free());
             }
 
             private static MethodSpec dataGetComponentAccessor(int n, List<TypeVariableName> typeVariables) {
                 var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
                 var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
+                var dataTypeProcessor = ParameterizedTypeName.get(ClassName.get("", "DataType" + n).nestedClass("Processor" + n), typeVariablesArray);
 
-                var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataType);
+                var iterableComponentAccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_ACCESSOR, dataType, dataTypeProcessor);
 
                 var parameters = new ArrayList<ParameterSpec>(typeVariables.size());
 
@@ -277,7 +280,7 @@ public class BaseDataGenerator {
                         .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                         .addTypeVariables(typeVariables)
                         .addParameters(parameters)
-                        .returns(componentAccessor)
+                        .returns(iterableComponentAccessor)
                         .addCode(body.build())
                         .build();
             }
@@ -293,6 +296,28 @@ public class BaseDataGenerator {
                         .returns(dataType)
                         .addStatement("this.accessor = accessor")
                         .addStatement("return this")
+                        .build();
+            }
+
+            private static MethodSpec process(int n, List<TypeVariableName> typeVariables) {
+                var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
+                var dataTypeProcessor = ParameterizedTypeName.get(ClassName.get("", "DataType" + n).nestedClass("Processor" + n), typeVariablesArray);
+
+                var body = CodeBlock.builder();
+                body.beginControlFlow("while(accessor.hasNext())");
+                body.add("processor.process(accessor.next()");
+                for (int i = 1; i <= n; i++) {
+                    body.add(", " + System.lineSeparator()).indent().add("accessor%d.getComponent(accessor)".formatted(i)).unindent();
+                }
+                body.addStatement(")");
+                body.endControlFlow();
+
+                return MethodSpec.methodBuilder("process")
+                        .addAnnotation(Override.class)
+                        .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                        .addParameter(Utils.ITERABLE_ACCESSOR, "accessor")
+                        .addParameter(dataTypeProcessor, "processor")
+                        .addCode(body.build())
                         .build();
             }
 

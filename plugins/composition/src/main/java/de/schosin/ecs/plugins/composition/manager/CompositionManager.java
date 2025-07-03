@@ -16,8 +16,9 @@ import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.components.types.DataProcessorType;
 import de.schosin.ecs.api.data.DataProcessor;
-import de.schosin.ecs.api.data.IterableAccessor;
+import de.schosin.ecs.api.data.IterableComponentAccessor;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
@@ -28,7 +29,6 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionData;
@@ -62,7 +62,8 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private final Bag<Bag<CompositionImpl>> compositionsByMask = new Bag<>(Bag.class, 64);
     private final Bag<ComponentMask> fill = new Bag<>(ComponentMask.class, 64);
 
-    public CompositionManager(World world, DataTypePlugin dataTypePlugin) {
+    // DataTypePlugin used as argument to initialize the plugin
+    public CompositionManager(World world, @SuppressWarnings("unused") DataTypePlugin dataTypePlugin) {
         super(world);
 
         world.addSingleton(this);
@@ -92,6 +93,13 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     @Override
     public Composition createComposition(Builder builder) {
         return create(builder, entityManager::getEntities);
+    }
+
+    @Override
+    public <R, P extends DataProcessor<R>> CompositionData<P> createComposition(Composition.Builder builder, DataProcessorType<?, R, P> componentType) {
+        var composition = (CompositionImpl) createComposition(builder);
+
+        return composition.createCompositionData(componentType);
     }
 
     @Override
@@ -290,6 +298,35 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 for (var data : compositionData.values()) {
                     data.addArchetype(archetype);
                 }
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        private <R, P extends DataProcessor<R>> CompositionData<P> createCompositionData(DataProcessorType<?, R, P> componentType) {
+            if (componentType instanceof DataType<?, ?, ?, ?> dataType) {
+                return (CompositionData<P>) createCompositionData(dataType);
+            }
+            if (componentType instanceof ComponentSetType<?, ?> componentSetType) {
+                return (CompositionData<P>) createCompositionData(componentSetType);
+            }
+
+            var result = (CompositionData<P>) compositionData.get(componentType);
+            if (result != null) {
+                return result;
+            }
+
+            synchronized (compositionData) {
+                result = (CompositionData<P>) compositionData.get(componentType);
+                if (result != null) {
+                    return result;
+                }
+
+                var compositionData = new IterableAccessorComposition<>(this, componentType);
+                initializeCompositionData(compositionData);
+
+                this.compositionData.put(componentType, compositionData);
+
+                return compositionData;
             }
         }
 
@@ -592,71 +629,46 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     }
 
-    static final class ComponentSetComposition<T extends ComponentSet<P>, P extends DataProcessor<T>> extends AbstractAccessorComposition<T, P> implements CompositionSet<P> {
-
-        private final ComponentSet.IterableProcessor<T, P> processor;
-
-        private final ComponentType<?, ?>[] componentTypes;
-        private final Components<?, ?>[] mappers;
+    private static final class ComponentSetComposition<T extends ComponentSet<P>, P extends DataProcessor<T>> extends IterableAccessorComposition<T, P> implements CompositionSet<P> {
 
         protected ComponentSetComposition(Composition composition, ComponentSetType<T, P> componentSetType) {
             super(composition, componentSetType);
-
-            var data = ComponentSetsHelper.<T, P>getData(componentSetType.componentSet());
-            this.processor = data.processor();
-
-            this.componentTypes = data.components().stream()
-                    .map(ComponentSet.ComponentData::type)
-                    .toArray(ComponentType<?, ?>[]::new);
-
-            this.mappers = IntStream.range(0, componentTypes.length)
-                    .mapToObj(i -> (Components<?, ?>) this.composition.getComponents(componentTypes[i]))
-                    .toArray(Components<?, ?>[]::new);
-        }
-
-        @Override
-        public final void process(P processor) {
-            for (int i = 0, s = entityData.getSize(); i < s; i++) {
-                var data = entityData.get(i);
-                var accessor = data.getAccessor();
-
-                this.processor.process(processor, accessor, mappers);
-
-                accessor.free();
-            }
         }
 
     }
 
-    abstract static class AbstractCompositionN<R extends Data, P extends DataProcessor<R>> extends AbstractAccessorComposition<R, P> {
-
-        private final ComponentType<?, ?>[] componentTypes;
-
-        protected final Components<?, ?>[] mappers;
+    abstract static class AbstractCompositionN<R extends Data, P extends DataProcessor<R>> extends IterableAccessorComposition<R, P> {
 
         protected AbstractCompositionN(Composition composition, DataType<?, ?, R, P> dataType) {
             super(composition, dataType);
+        }
 
-            this.componentTypes = dataType.getComponentTypes();
+    }
 
-            this.mappers = IntStream.range(0, componentTypes.length)
-                    .mapToObj(i -> (Components<?, ?>) this.composition.getComponents(componentTypes[i]))
-                    .toArray(Components<?, ?>[]::new);
+    protected static class IterableAccessorComposition<R, P extends DataProcessor<R>> extends AbstractAccessorComposition<R, P> {
+
+        private final Components<?, R> mapper;
+
+        protected IterableAccessorComposition(Composition composition, DataProcessorType<?, R, P> componentType) {
+            super(composition, componentType);
+
+            this.mapper = this.composition.getComponents(componentType);
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public final void process(P processor) {
             for (int i = 0, s = entityData.getSize(); i < s; i++) {
                 var data = entityData.get(i);
                 var accessor = data.getAccessor();
 
-                process(processor, accessor, this.mappers);
+                var componentAccessor = (IterableComponentAccessor<R, P>) mapper.getComponentAccessor(accessor);
+                componentAccessor.process(accessor, processor);
+                componentAccessor.free();
 
                 accessor.free();
             }
         }
-
-        protected abstract void process(P processor, IterableAccessor accessor, Components<?, ?>[] mappers2);
 
     }
 

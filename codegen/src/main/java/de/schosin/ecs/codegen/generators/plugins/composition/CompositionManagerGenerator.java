@@ -6,7 +6,6 @@ import java.util.stream.Stream;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
 
-import com.palantir.javapoet.ArrayTypeName;
 import com.palantir.javapoet.ClassName;
 import com.palantir.javapoet.CodeBlock;
 import com.palantir.javapoet.JavaFile;
@@ -27,8 +26,6 @@ public class CompositionManagerGenerator {
     private static final ClassName ABSTRACT_COMPOSITION_N = COMPOSITION_MANAGER.nestedClass("AbstractCompositionN");
 
     private static final ClassName COMPOSITION_MANAGER_HELPER = ClassName.get("", "CompositionManagerHelper");
-
-    private static final ClassName COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "ComponentAccessor");
 
     public static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
 
@@ -133,44 +130,6 @@ public class CompositionManagerGenerator {
                     .superclass(superclass)
                     .addSuperinterface(compositionDataN)
                     .addMethod(constructor)
-                    .addMethod(processAccessor(n, processor))
-                    .build();
-        }
-
-        private static MethodSpec processAccessor(int n, ParameterizedTypeName processor) {
-            var methodBody = CodeBlock.builder();
-
-            methodBody.addStatement("// get accessors");
-            for (int i = 1; i <= n; i++) {
-                var typeR = TypeVariableName.get("R" + i);
-                var mapper = ParameterizedTypeName.get(COMPONENT_ACCESSOR, typeR);
-
-                methodBody.addStatement("var accessor%d = ($1T) mappers[%d].getComponentAccessor(accessor)".formatted(i, i - 1), mapper);
-            }
-
-            methodBody.addStatement("// process");
-            methodBody.beginControlFlow("while(accessor.hasNext())");
-            methodBody.add("processor.process(accessor.next()");
-            for (int i = 1; i <= n; i++) {
-                methodBody.indent().add(", %saccessor%d.getComponent(accessor)".formatted(System.lineSeparator(), i)).unindent();
-            }
-            methodBody.addStatement(")");
-            methodBody.endControlFlow(); // while
-
-            methodBody.addStatement("// free accessors");
-            for (int i = 1; i <= n; i++) {
-                methodBody.addStatement("accessor%d.free()".formatted(i));
-            }
-
-            var mappers = ArrayTypeName.of(ParameterizedTypeName.get(Utils.COMPONENTS, Utils.WILDCARD, Utils.WILDCARD));
-
-            return MethodSpec.methodBuilder("process")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-                    .addParameter(processor, "processor")
-                    .addParameter(Utils.ITERABLE_ACCESSOR, "accessor")
-                    .addParameter(mappers, "mappers")
-                    .addCode(methodBody.build())
                     .build();
         }
 

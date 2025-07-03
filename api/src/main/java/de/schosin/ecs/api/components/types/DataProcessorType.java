@@ -1,6 +1,9 @@
 package de.schosin.ecs.api.components.types;
 
+import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
+import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.api.data.DataProcessor;
+import de.schosin.ecs.api.data.IterableComponentAccessor;
 
 /**
  * Interface for {@link ComponentType ComponentTypes} to extend. Provides additional type information
@@ -14,7 +17,9 @@ import de.schosin.ecs.api.data.DataProcessor;
  * 
  * <p>
  * Custom component types can choose to implement {@link CustomComponentType} if they wish 
- * to provide custom {@link DataProcessor} types.
+ * to provide custom {@link DataProcessor} types. If you do, the corresponding {@link CustomComponentMapper}
+ * MUST return an {@link IterableComponentAccessor} whenever {@link CustomComponentMapper#getComponentAccessor(DataAccessor)}
+ * is called.
  * </p>
  *  
  * @param <T> matches {@link ComponentType} {@code T}

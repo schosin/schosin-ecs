@@ -51,9 +51,10 @@ public class Utils {
 
     public static final ClassName DATA_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataAccessor");
     public static final ClassName ITERABLE_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableAccessor");
-    
+
     public static final ClassName COMPONENTS = ClassName.get("de.schosin.ecs.api.components.mappers", "Components");
     public static final ClassName COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "ComponentAccessor");
+    public static final ClassName ITERABLE_COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableComponentAccessor");
 
     public static final ClassName RELATION = ClassName.get("de.schosin.ecs.api.components", "Relation");
     public static final ClassName COMPONENT_RELATION = RELATION.nestedClass("ComponentRelation");
