@@ -3,7 +3,6 @@ package de.schosin.ecs.storage.archetype.entities;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.entities.Archetype;
@@ -71,7 +70,7 @@ public class EntityIndex {
         return determineArchetype(componentMask);
     }
 
-    public DataAccessor getAccessor(int entityId) {
+    public ArchetypeAccessor getAccessor(int entityId) {
         var pointer = lookup.getSafe(entityId);
         if (pointer == null || !pointer.isValid()) {
             throw new StorageEngineException("Cannot get accessor for entity %d: Entity not present in storage".formatted(entityId));
@@ -353,6 +352,11 @@ final class ArchetypePointer implements ArchetypeAccessor {
     @Override
     public <R> R getComponent(int componentId) {
         return accessor.getComponent(componentId);
+    }
+
+    @Override
+    public <R> R getComponent(RegularComponentType<?, R> componentType) {
+        return accessor.getComponent(componentType);
     }
 
     @Override

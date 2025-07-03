@@ -30,6 +30,14 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 public interface ComponentStorage {
 
     /**
+     * Returns the id assigned to the component type, or -1 if not yet used.
+     * 
+     * @param componentType component type
+     * @return id of component type or -1
+     */
+    int getComponentId(RegularComponentType<?, ?> componentType);
+
+    /**
      * Returns the component assigned to that id.
      * 
      * <p>

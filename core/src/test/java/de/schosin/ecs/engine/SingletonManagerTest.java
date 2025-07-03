@@ -17,6 +17,7 @@ import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
+import de.schosin.ecs.engine.entities.EntityBagManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.storage.api.StorageEngine;
@@ -59,6 +60,7 @@ class SingletonManagerTest extends AbstractWorldTest {
             var transmutationManager = new TransmutationManager(changeManager);
             var relationMapperManager = new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager);
             var componentMapperManager = new ComponentMapperManager(bagManager, componentManager, entityManager, transmutationManager, relationMapperManager);
+            var entityBagManager = new EntityBagManager(null, entityManager, componentMapperManager, eventManager);
 
             return Stream.of(
                     Arguments.of(Named.of("eventManager", eventManager)),
@@ -69,7 +71,8 @@ class SingletonManagerTest extends AbstractWorldTest {
                     Arguments.of(Named.of("changeManager", changeManager)),
                     Arguments.of(Named.of("transmutationManager", transmutationManager)),
                     Arguments.of(Named.of("relationMapperManager", relationMapperManager)),
-                    Arguments.of(Named.of("componentMapperManager", componentMapperManager)));
+                    Arguments.of(Named.of("componentMapperManager", componentMapperManager)),
+                    Arguments.of(Named.of("entityBagManager", entityBagManager)));
         }
 
     }

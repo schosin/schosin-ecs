@@ -600,6 +600,164 @@ class EntityManagerTest extends AbstractWorldTest {
 
     }
 
+    @Nested
+    class GetEntityTest {
+
+        @Test
+        void testNoComponents() {
+            var entityId = world.createEntity();
+
+            var entity = world.getEntity(entityId);
+            assertThat(entity).isNotNull();
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            assertThat(entity.get(Component1.class)).isNull();
+            assertThat(entity.get(component(Component1.class))).isNull();
+
+            assertThat(entity.get(C1.class)).isNull();
+            assertThat(entity.get(component(C1.class))).isNull();
+        }
+
+        @Test
+        void testCreatedWithComponents() {
+            var component = new Component1();
+            var entityId = world.createEntity(component);
+
+            var entity = world.getEntity(entityId);
+            assertThat(entity).isNotNull();
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            assertThat(entity.get(Component1.class)).isSameAs(component);
+            assertThat(entity.get(component(Component1.class))).isSameAs(component);
+
+            assertThat(entity.get(C1.class)).isNull();
+            assertThat(entity.get(component(C1.class))).isNull();
+        }
+
+        @Test
+        void testPendingComponents() {
+            var component = new Component1();
+            var entityId = world.createEntity();
+
+            var mapper = world.getComponents(Component1.class);
+            mapper.add(entityId, component);
+
+            var entity = world.getEntity(entityId);
+            assertThat(entity).isNotNull();
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            assertThat(entity.get(Component1.class)).isSameAs(component);
+            assertThat(entity.get(component(Component1.class))).isSameAs(component);
+
+            assertThat(entity.get(C1.class)).isNull();
+            assertThat(entity.get(component(C1.class))).isNull();
+        }
+
+        @Test
+        void testAddedComponents() {
+            var component = new Component1();
+            var entityId = world.createEntity();
+
+            var mapper = world.getComponents(Component1.class);
+            mapper.add(entityId, component);
+
+            world.process();
+
+            var entity = world.getEntity(entityId);
+            assertThat(entity).isNotNull();
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            assertThat(entity.get(Component1.class)).isSameAs(component);
+            assertThat(entity.get(component(Component1.class))).isSameAs(component);
+
+            assertThat(entity.get(C1.class)).isNull();
+            assertThat(entity.get(component(C1.class))).isNull();
+        }
+
+        @Test
+        void testDeletedEntity() {
+            var component = new Component1();
+            var entityId = world.createEntity(component);
+
+            // Before delete
+            var entity = world.getEntity(entityId);
+            assertThat(entity).isNotNull();
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            assertThat(entity.get(Component1.class)).isSameAs(component);
+            assertThat(entity.get(component(Component1.class))).isSameAs(component);
+
+            assertThat(entity.get(C1.class)).isNull();
+            assertThat(entity.get(component(C1.class))).isNull();
+
+            // After delete
+            world.deleteEntity(entityId);
+
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            assertThat(entity.get(Component1.class)).isSameAs(component);
+            assertThat(entity.get(component(Component1.class))).isSameAs(component);
+
+            assertThat(entity.get(C1.class)).isNull();
+            assertThat(entity.get(component(C1.class))).isNull();
+
+            // After process
+            world.process();
+
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isFalse();
+
+            assertThatThrownBy(() -> entity.get(Component1.class))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContainingAll("Entity %d".formatted(entityId), "not alive");
+
+            assertThatThrownBy(() -> entity.get(component(Component1.class)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContainingAll("Entity %d".formatted(entityId), "not alive");
+        }
+
+        @Test
+        void testDeletedEntity_ReusedAfterwards() {
+            var component = new Component1();
+            var entityId = world.createEntity(component);
+
+            var entity = world.getEntity(entityId);
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            world.deleteEntity(entityId);
+            world.process();
+
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isFalse();
+
+            assertThatThrownBy(() -> entity.get(Component1.class))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContainingAll("Entity %d".formatted(entityId), "not alive");
+
+            assertThatThrownBy(() -> entity.get(component(Component1.class)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContainingAll("Entity %d".formatted(entityId), "not alive");
+
+            // Reuse entity
+            var otherEntityId = world.createEntity(new Component2());
+            assertThat(otherEntityId).isEqualTo(entityId);
+
+            assertThat(entity.id()).isEqualTo(entityId);
+            assertThat(entity.isAlive()).isTrue();
+
+            var otherEntity = world.getEntity(otherEntityId);
+            assertThat(otherEntity).isSameAs(entity);
+        }
+
+    }
+
     private record Component1() {
     }
 

@@ -17,6 +17,8 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
+import de.schosin.ecs.api.data.IterableAccessor;
+import de.schosin.ecs.api.entities.Entity;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.storage.api.StorageEngine;
@@ -41,11 +43,13 @@ public class EntityManager {
     private final BagManager bagManager;
 
     private final AtomicInteger entityId = new AtomicInteger(1);
-    private final Bag<Entity> entities = new Bag<>(Entity.class, 64);
-    private final Pool<Entity> pool = Pool.unbounded(Entity.class, () -> new Entity(createEntityId()), Entity::reset);
+    private final Bag<EntityInstance> entities = new Bag<>(EntityInstance.class, 64);
+    private final Pool<EntityInstance> pool = Pool.unbounded(EntityInstance.class, () -> new EntityInstance(createEntityId()), EntityInstance::reset);
 
     private final Pool<IntBag> intBagPool = Pool.unbounded(IntBag.class, () -> new IntBag(1000), IntBag::clear);
     private final Bag<IntBag> lentIntBags = new Bag<>(IntBag.class, 8);
+
+    private final Pool<IterableEntityImpl> iterablePool;
 
     private ChangeManager changeManager;
 
@@ -54,6 +58,8 @@ public class EntityManager {
         this.storageEngine = storageEngine;
 
         this.bagManager = bagManager;
+
+        this.iterablePool = Pool.unbounded(IterableEntityImpl.class, () -> new IterableEntityImpl(storageEngine, this));
     }
 
     public void process() {
@@ -82,7 +88,7 @@ public class EntityManager {
 
         // Create entity
         var entity = createEntityInstance();
-        entity.componentMask = archetype.getComponentMask();
+        entity.setComponentMask(archetype.getComponentMask());
 
         archetype.createEntity(entity.id, components);
 
@@ -204,7 +210,7 @@ public class EntityManager {
 
         // Create entity
         var entity = createEntityInstance();
-        entity.componentMask = componentMask;
+        entity.setComponentMask(componentMask);
 
         archetype.createEntity(entity.id, components);
 
@@ -226,7 +232,7 @@ public class EntityManager {
 
         IntSupplier entityIdSupplier = () -> {
             var entity = createEntityInstance();
-            entity.componentMask = componentMask;
+            entity.setComponentMask(componentMask);
 
             entities.set(entity.id, entity);
             entityIds.add(entity.id);
@@ -259,7 +265,7 @@ public class EntityManager {
         changeManager.inserted(entityIds, componentMask);
     }
 
-    private Entity createEntityInstance() {
+    private EntityInstance createEntityInstance() {
         return pool.getInstance();
     }
 
@@ -275,7 +281,22 @@ public class EntityManager {
     }
 
     public boolean isActive(int entityId) {
-        return this.entities.get(entityId) != null;
+        var entity = this.entities.get(entityId);
+        return entity != null && entity.componentMask != null;
+    }
+
+    boolean isActive(int entityId, int modCount) {
+        var entity = this.entities.get(entityId);
+        return entity != null && entity.modCount == modCount;
+    }
+
+    public Entity getEntity(int entityId) {
+        var entity = this.entities.get(entityId);
+        if (entity == null || entity.componentMask == null) {
+            throw new IllegalArgumentException("Entity %d is not alive");
+        }
+
+        return storageEngine.getAccessor(entity.id);
     }
 
     public IntBag getEntities(ComponentsPredicate predicate) {
@@ -345,13 +366,83 @@ public class EntityManager {
         return entity.setComponentMask(componentMask);
     }
 
-    private class Entity implements Pooled {
+    FreeableEntity getIterableEntity(IterableAccessor accessor) {
+        var entity = this.iterablePool.getInstance();
+        entity.accessor = accessor;
+
+        return entity;
+    }
+
+    void freeEntity(Entity entity) {
+        if (entity instanceof IterableEntityImpl iterableEntity) {
+            this.iterablePool.free(iterableEntity);
+        }
+    }
+
+    interface FreeableEntity extends Entity {
+        void free();
+    }
+
+    private static final class IterableEntityImpl implements FreeableEntity, Pooled {
+
+        private final StorageEngine storageEngine;
+        private final EntityManager entityManager;
+
+        private IterableAccessor accessor;
+
+        public IterableEntityImpl(StorageEngine storageEngine, EntityManager entityManager) {
+            this.storageEngine = storageEngine;
+            this.entityManager = entityManager;
+        }
+
+        @Override
+        public void free() {
+            this.entityManager.iterablePool.free(this);
+        }
+
+        @Override
+        public int id() {
+            return accessor.entityId();
+        }
+
+        @Override
+        public boolean isAlive() {
+            return true;
+        }
+
+        @Override
+        public <R> R get(RegularComponentType<?, R> componentType) {
+            var componentId = storageEngine.getComponentId(componentType);
+            if (componentId == -1) {
+                return null;
+            }
+
+            return accessor.getComponent(componentId);
+        }
+
+        @Override
+        public void reset() {
+            this.accessor = null;
+        }
+
+        @Override
+        public String toString() {
+            return new StringBuilder()
+                    .append("Entity(id = ").append(id()).append(", alive = true").append(")")
+                    .toString();
+        }
+
+    }
+
+    private final class EntityInstance implements Pooled {
 
         private final int id;
+        private int modCount;
 
         private ComponentMask componentMask;
+        private Archetype archetype;
 
-        private Entity(int entityId) {
+        private EntityInstance(int entityId) {
             this.id = entityId;
         }
 
@@ -362,17 +453,21 @@ public class EntityManager {
          * @return true if the component mask differs from the current one
          */
         private boolean setComponentMask(ComponentMask componentMask) {
-            if (componentMask.getId() == this.componentMask.getId()) {
+            if (this.componentMask != null && componentMask.getId() == this.componentMask.getId()) {
                 return false;
             }
 
             this.componentMask = componentMask;
+            this.archetype = storageEngine.getArchetypeById(componentMask.getId());
             return true;
         }
 
         @Override
         public void reset() {
+            this.modCount++;
+
             this.componentMask = null;
+            this.archetype = null;
         }
 
     }

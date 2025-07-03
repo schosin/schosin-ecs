@@ -26,6 +26,7 @@ import de.schosin.ecs.worlds.DefaultWorld;
  * The archetype storage mishandled the tracking of the indexes for entities by their id.
  * When a component array could be reused, it failed to set the lookup IntBag `entities`.
  */
+@SuppressWarnings("unused")
 public class ContinuousCreationDeletionIT extends AbstractEcsIT {
 
     @Test

@@ -30,6 +30,29 @@ import de.schosin.ecs.utils.collections.Bag;
 public class ComponentStorageTest extends AbstractStorageEngineTest {
 
     @Nested
+    class GetComponentIdTest {
+
+        @ParameterizedTest
+        @MethodSource("regularComponentTypes")
+        void testGetUnknownComponentType(RegularComponentType<?, ?> componentType) {
+            assertThat(engine.getComponentId(componentType)).as("getComponentId must return -1 for unknown component types").isEqualTo(-1);
+        }
+
+        @ParameterizedTest
+        @MethodSource("regularComponentTypes")
+        void testKnownComponentType(RegularComponentType<?, ?> componentType) {
+            var id = engine.getComponent(componentType).id();
+
+            assertThat(engine.getComponentId(componentType)).as("getComponentId must return id for known component types").isEqualTo(id);
+        }
+
+        static Stream<RegularComponentType<?, ?>> regularComponentTypes() {
+            return GetRegularComponentTypesTest.regularComponentTypes();
+        }
+
+    }
+
+    @Nested
     class GetComponentTest {
 
         @Test

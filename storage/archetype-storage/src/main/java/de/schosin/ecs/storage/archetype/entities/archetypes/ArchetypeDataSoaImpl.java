@@ -607,6 +607,11 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 return null;
             }
 
+            return getAccessorByIndex(index);
+        }
+
+        @Override
+        public ArchetypeAccessor getAccessorByIndex(int index) {
             var accessor = accessors.getInstance();
             accessor.index = index;
 
@@ -663,6 +668,16 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 }
 
                 return retrievePendingComponent(index, componentId);
+            }
+
+            @Override
+            public <R> R getComponent(RegularComponentType<?, R> componentType) {
+                var componentId = componentIndex.getExistingId(componentType);
+                if (componentId == -1) {
+                    return retrievePendingComponent(index, componentType);
+                }
+
+                return getComponent(componentType, componentId);
             }
 
             @Override

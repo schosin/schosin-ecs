@@ -15,7 +15,6 @@ import org.jspecify.annotations.Nullable;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
-import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.ArchetypeStorage;
 import de.schosin.ecs.storage.api.ComponentStorage;
 import de.schosin.ecs.storage.api.EntityStorage;
@@ -23,6 +22,7 @@ import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.RelationComponent;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.ComponentMaskImpl;
@@ -58,7 +58,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
-    public DataAccessor getAccessor(int entityId) {
+    public ArchetypeAccessor getAccessor(int entityId) {
         return entityIndex.getAccessor(entityId);
     }
 

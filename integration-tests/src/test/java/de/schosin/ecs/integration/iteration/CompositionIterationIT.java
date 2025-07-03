@@ -47,6 +47,7 @@ import de.schosin.ecs.worlds.DefaultWorld;
  * <p>
  * Use {@link #runSimulation(SystemPlugin, Duration)} to increase duration. 
  */
+@SuppressWarnings("unused")
 public class CompositionIterationIT extends AbstractEcsIT {
 
     @Test

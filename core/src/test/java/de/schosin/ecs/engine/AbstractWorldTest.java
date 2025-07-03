@@ -6,6 +6,7 @@ import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
+import de.schosin.ecs.engine.entities.EntityBagManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.test.AbstractEngineTest;
@@ -22,6 +23,7 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
     protected BagManager bagManager;
     protected ComponentManager componentManager;
     protected EntityManager entityManager;
+    protected EntityBagManager entityBagManager;
     protected ChangeManager changeManager;
     protected TransmutationManager transmutationManager;
     protected ComponentMapperManager componentMapperManager;
@@ -37,6 +39,7 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
         this.bagManager = world.getSingleton(BagManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
+        this.entityBagManager = world.getSingleton(EntityBagManager.class);
         this.changeManager = world.getSingleton(ChangeManager.class);
         this.transmutationManager = world.getSingleton(TransmutationManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);

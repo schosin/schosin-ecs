@@ -62,6 +62,16 @@ public class ComponentStorageImpl implements ComponentStorage {
     }
 
     @Override
+    public int getComponentId(RegularComponentType<?, ?> componentType) {
+        var component = componentData.get(componentType);
+        if (component == null) {
+            return -1;
+        }
+
+        return component.id();
+    }
+
+    @Override
     public Component<?, ?> getComponent(int componentId) {
         return components.get(componentId);
     }

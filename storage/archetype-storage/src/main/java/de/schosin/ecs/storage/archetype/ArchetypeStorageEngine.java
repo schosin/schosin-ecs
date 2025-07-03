@@ -13,7 +13,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelati
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
@@ -25,6 +24,7 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelatio
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
@@ -61,6 +61,11 @@ public class ArchetypeStorageEngine implements StorageEngine {
         }
 
         return ArchetypeStorageConfig.getConfig();
+    }
+
+    @Override
+    public int getComponentId(RegularComponentType<?, ?> componentType) {
+        return this.componentStorage.getComponentId(componentType);
     }
 
     @Override
@@ -114,7 +119,7 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
-    public DataAccessor getAccessor(int entityId) {
+    public ArchetypeAccessor getAccessor(int entityId) {
         return this.entityStorage.getAccessor(entityId);
     }
 

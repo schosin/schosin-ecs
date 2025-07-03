@@ -8,6 +8,9 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.Plugin.PluginConfig;
 import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.entities.Entity;
+import de.schosin.ecs.api.entities.ImmutableEntityBag;
 
 /**
  * Base API for working with entities and components.
@@ -199,6 +202,14 @@ public interface World extends Components.Creator {
      * @return true if active
      */
     boolean isActive(int entityId);
+
+    Entity getEntity(int entityId);
+
+    ImmutableEntityBag getAllEntities();
+
+    ImmutableEntityBag getEntities(Class<?>... componentTypes);
+
+    ImmutableEntityBag getEntities(RegularComponentType<?, ?>... componentTypes);
 
     /**
      * Adds a singleton to this world. Can be used when the singleton requires functionality of World.

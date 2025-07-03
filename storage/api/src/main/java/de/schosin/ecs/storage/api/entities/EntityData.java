@@ -1,6 +1,5 @@
 package de.schosin.ecs.storage.api.entities;
 
-import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.api.data.IterableAccessor;
 
 public interface EntityData {
@@ -13,6 +12,8 @@ public interface EntityData {
 
     IterableAccessor getAccessor();
 
-    DataAccessor getAccessor(int entityId);
+    ArchetypeAccessor getAccessor(int entityId);
+    
+    ArchetypeAccessor getAccessorByIndex(int index);
 
 }

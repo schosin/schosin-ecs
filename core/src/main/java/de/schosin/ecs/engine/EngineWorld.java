@@ -34,10 +34,13 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
+import de.schosin.ecs.api.entities.Entity;
+import de.schosin.ecs.api.entities.ImmutableEntityBag;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
+import de.schosin.ecs.engine.entities.EntityBagManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.events.builtin.ProcessEvent;
@@ -69,6 +72,7 @@ public class EngineWorld implements World, StorageWorld {
     private final TransmutationManager transmutationManager;
     private final RelationMapperManager relationMapperManager;
     private final ComponentMapperManager componentMapperManager;
+    private final EntityBagManager entityBagManager;
 
     public EngineWorld(WorldBuilder<?> builder, StorageEngine storageEngine) {
         this.config = new Config(builder);
@@ -86,6 +90,7 @@ public class EngineWorld implements World, StorageWorld {
         this.transmutationManager = addSingleton(new TransmutationManager(changeManager));
         this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager));
         this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, entityManager, transmutationManager, relationMapperManager));
+        this.entityBagManager = addSingleton(new EntityBagManager(storageEngine, entityManager, componentMapperManager, eventManager));
 
         // Initialized configured singletons
         for (var singleton : builder.singletons.values()) {
@@ -106,6 +111,26 @@ public class EngineWorld implements World, StorageWorld {
     @Override
     public boolean isActive(int entityId) {
         return entityManager.isActive(entityId);
+    }
+
+    @Override
+    public Entity getEntity(int entityId) {
+        return entityManager.getEntity(entityId);
+    }
+
+    @Override
+    public ImmutableEntityBag getAllEntities() {
+        return entityBagManager.getAllEntities();
+    }
+
+    @Override
+    public ImmutableEntityBag getEntities(Class<?>... componentTypes) {
+        return entityBagManager.getEntities(componentTypes);
+    }
+
+    @Override
+    public ImmutableEntityBag getEntities(RegularComponentType<?, ?>... componentTypes) {
+        return entityBagManager.getEntities(componentTypes);
     }
 
     @Override

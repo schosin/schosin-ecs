@@ -1,5 +1,6 @@
 package de.schosin.ecs.benchmark.others;
 
+import static de.schosin.ecs.api.components.types.ComponentType.component;
 import static de.schosin.ecs.benchmark.BaseBenchmark.benchmarkName;
 
 import org.openjdk.jmh.annotations.Benchmark;
@@ -12,6 +13,7 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
+import de.schosin.ecs.api.entities.ImmutableProcessableBag;
 import de.schosin.ecs.benchmark.BaseBenchmark;
 import de.schosin.ecs.benchmark.others.components.DominionComponents;
 import de.schosin.ecs.benchmark.others.components.SchosinComponents;
@@ -20,6 +22,8 @@ import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData3;
 import de.schosin.ecs.plugins.composition.CompositionData6;
 import de.schosin.ecs.plugins.composition.CompositionSet;
+import de.schosin.ecs.plugins.data.types.DataType;
+import de.schosin.ecs.plugins.data.types.DataType3.Processor3;
 import de.schosin.ecs.worlds.DefaultWorld;
 import dev.dominion.ecs.engine.EntityRepository;
 
@@ -28,7 +32,7 @@ public class ComponentIterationBenchmark {
     public static void main(String[] args) throws Exception {
         var options = new OptionsBuilder()
                 .include(benchmarkName(SchosinEcs.class))
-               // .include(benchmarkName(Dominion.class))
+                //.include(benchmarkName(Dominion.class))
                 .build();
 
         new Runner(options).run();
@@ -85,7 +89,7 @@ public class ComponentIterationBenchmark {
 
             private CompositionData1<Schosin1> composition;
 
-           // @Setup(Level.Trial)
+            // @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {
                 setup();
 
@@ -95,7 +99,7 @@ public class ComponentIterationBenchmark {
                 this.bh = bh;
             }
 
-           // @Benchmark
+            // @Benchmark
             public void iterate() {
                 composition.process(this::process);
             }
@@ -112,6 +116,8 @@ public class ComponentIterationBenchmark {
 
             private CompositionData3<Schosin1, Schosin2, Schosin3> composition;
             private CompositionSet<ComponentSet3.Processor> setComposition;
+            private ImmutableProcessableBag<Processor3<Schosin1, Schosin2, Schosin3>> entities;
+            private ImmutableProcessableBag<ComponentSet3.Processor> setEntities;
 
             @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {
@@ -121,10 +127,13 @@ public class ComponentIterationBenchmark {
                 composition = world.createComposition(builder, Schosin1.class, Schosin2.class, Schosin3.class);
                 setComposition = world.createComposition(builder, ComponentSet3.TYPE);
 
+                entities = world.getEntities(Schosin1.class, Schosin2.class, Schosin3.class).forType(DataType.get(component(Schosin1.class), component(Schosin2.class), component(Schosin3.class)));
+                setEntities = world.getEntities(Schosin1.class, Schosin2.class, Schosin3.class).forType(ComponentSet3.TYPE);
+
                 this.bh = bh;
             }
 
-           // @Benchmark
+            // @Benchmark
             public void componentMappers() {
                 composition.process(this::processMapper);
             }
@@ -136,14 +145,24 @@ public class ComponentIterationBenchmark {
                 bh.consume(mapper3.get(entityId));
             }
 
-           // @Benchmark
+            // @Benchmark
             public void dataType() {
                 composition.process(this::process);
             }
 
-            @Benchmark
+            // @Benchmark
             public void componentSet() {
                 setComposition.process(this::process);
+            }
+
+            @Benchmark
+            public void entities() {
+                entities.process(this::process);
+            }
+
+            @Benchmark
+            public void entitiesSet() {
+                setEntities.process(this::process);
             }
 
             @ComponentSetConfig("ComponentSet3")
@@ -160,6 +179,7 @@ public class ComponentIterationBenchmark {
 
             private CompositionData6<Schosin1, Schosin2, Schosin3, Schosin4, Schosin5, Schosin6> composition;
             private CompositionSet<ComponentSet6.Processor> setComposition;
+            private ImmutableProcessableBag<ComponentSet6.Processor> entities;
 
             @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {
@@ -168,6 +188,7 @@ public class ComponentIterationBenchmark {
                 var builder = Composition.all(Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class, Schosin5.class, Schosin6.class);
                 composition = world.createComposition(builder, Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class, Schosin5.class, Schosin6.class);
                 setComposition = world.createComposition(builder, ComponentSet6.TYPE);
+                entities = world.getEntities(Schosin1.class, Schosin2.class, Schosin3.class, Schosin4.class, Schosin5.class, Schosin6.class).forType(ComponentSet6.TYPE);
 
                 this.bh = bh;
             }
@@ -195,6 +216,11 @@ public class ComponentIterationBenchmark {
             @Benchmark
             public void componentSet() {
                 setComposition.process(this::process);
+            }
+
+            @Benchmark
+            public void entities() {
+                entities.process(this::process);
             }
 
             @ComponentSetConfig("ComponentSet6")
