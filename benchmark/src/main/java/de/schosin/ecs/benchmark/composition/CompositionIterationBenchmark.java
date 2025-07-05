@@ -16,10 +16,10 @@ import de.schosin.ecs.api.components.ComponentSetConfig;
 import de.schosin.ecs.benchmark.EcsBenchmark;
 import de.schosin.ecs.benchmark.others.components.SchosinComponents;
 import de.schosin.ecs.plugins.composition.Composition;
+import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData4;
 import de.schosin.ecs.plugins.composition.CompositionData8;
-import de.schosin.ecs.plugins.composition.CompositionSet;
 import de.schosin.ecs.plugins.wildcards.result.WildcardResult;
 
 public class CompositionIterationBenchmark implements SchosinComponents {
@@ -181,7 +181,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
             }
 
             private CompositionData4<Schosin1, Schosin2, Schosin3, Schosin4> compositionData;
-            private CompositionSet<ComponentSet4.Processor> compositionSet;
+            private CompositionData<ComponentSet4.Processor> compositionSet;
             private CompositionData1<WildcardResult<Schosin1234>> compositionWildcard;
 
             @Setup(Level.Trial)
@@ -245,7 +245,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
         public static class Unpack08 extends BaseCompositionIterationBenchmark {
 
             private CompositionData8<Schosin1, Schosin2, Schosin3, Schosin4, Schosin5, Schosin6, Schosin7, Schosin8> compositionData;
-            private CompositionSet<ComponentSet8.Processor> compositionSet;
+            private CompositionData<ComponentSet8.Processor> compositionSet;
             private CompositionData1<WildcardResult<Schosin>> compositionWildcard;
 
             @Setup(Level.Trial)

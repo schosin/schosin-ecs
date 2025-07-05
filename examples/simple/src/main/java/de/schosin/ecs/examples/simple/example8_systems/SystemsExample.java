@@ -21,7 +21,6 @@ import de.schosin.ecs.examples.simple.components.Position;
 import de.schosin.ecs.examples.simple.components.Velocity;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.CompositionData;
-import de.schosin.ecs.plugins.composition.CompositionSet;
 import de.schosin.ecs.plugins.data.types.DataType2;
 import de.schosin.ecs.worlds.DefaultWorld;
 
@@ -230,7 +229,7 @@ class CompositionSystems {
      * 
      * Once again, "composition" would be a final field in a regular class.
      */
-    record System2(CompositionSet<CompositionSystemsSet.Processor> composition) implements Runnable {
+    record System2(CompositionData<CompositionSystemsSet.Processor> composition) implements Runnable {
 
         public System2(DefaultWorld world) {
             this(world.createComposition(Composition.all(), CompositionSystemsSet.TYPE));
@@ -266,7 +265,7 @@ class CompositionSystems {
      * for the JVM to create and invoke a lambda. You can see the difference when running this example in the
      * printed stack traces.
      */
-    record System3(CompositionSet<CompositionSystemsSet.Processor> composition) implements Runnable, CompositionSystemsSet.Processor {
+    record System3(CompositionData<CompositionSystemsSet.Processor> composition) implements Runnable, CompositionSystemsSet.Processor {
 
         public System3(DefaultWorld world) {
             this(world.createComposition(Composition.all(), CompositionSystemsSet.TYPE));
@@ -601,7 +600,7 @@ class SystemHierarchy {
      */
     abstract static class ComponentSetSystem<T extends ComponentSet<P>, P extends DataProcessor<T>> extends BaseSystem {
 
-        protected final CompositionSet<P> composition;
+        protected final CompositionData<P> composition;
         private final P processor;
 
         @SuppressWarnings("unchecked")
@@ -612,7 +611,7 @@ class SystemHierarchy {
             this.processor = (P) this;
         }
 
-        private CompositionSet<P> buildComposition(DefaultWorld world, ComponentSetType<T, P> componentType) {
+        private CompositionData<P> buildComposition(DefaultWorld world, ComponentSetType<T, P> componentType) {
             /*
              * ComponentSetsHelper is actually a type in core module and not intended to be used in user code.
              * 

@@ -26,8 +26,8 @@ import de.schosin.ecs.examples.simple.components.Velocity;
 import de.schosin.ecs.examples.simple.example1_physics.PhysicsExample;
 import de.schosin.ecs.examples.simple.example3_regularComponentTypes.RegularComponentTypesExample;
 import de.schosin.ecs.plugins.composition.Composition;
+import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData2;
-import de.schosin.ecs.plugins.composition.CompositionSet;
 
 /**
  * <b>Note:</b> If this example does not compile, make sure that annotation processing is
@@ -173,12 +173,17 @@ public class ComponentSetExample extends AbstractExample {
 
         /*
          * When creating a composition and passing along only a single component set type after the 
-         * builder, a CompositionSet will be returned.
+         * builder, a CompositionData will be returned.
          * 
          * Note that its type argument is not the set, but an inner type called Processor. 
          * This functional interface defines how the callbacks for process, inserted and removed work.
+         * 
+         * Hint:
+         * When working with multiple component sets, try to use `FirstComponentSet.Processor`. Some IDEs
+         * might import the `Processor` and only use that, which won't work when working with multiple
+         * component sets.
          */
-        CompositionSet<FirstComponentSet.Processor> composition1 = world.createComposition(Composition.all(), FirstComponentSet.TYPE);
+        CompositionData<FirstComponentSet.Processor> composition1 = world.createComposition(Composition.all(), FirstComponentSet.TYPE);
 
         /*
          * The signature will match the annotated method (processSimpleComponents).
@@ -201,7 +206,7 @@ public class ComponentSetExample extends AbstractExample {
          * what one expects: Return a CompositionBuilder that requires entities to have either all or one of the components described
          * by the component set.
          */
-        CompositionSet<FirstComponentSet.Processor> composition2 = world.createComposition(Composition.all(componentSetType), FirstComponentSet.TYPE);
+        CompositionData<FirstComponentSet.Processor> composition2 = world.createComposition(Composition.all(componentSetType), FirstComponentSet.TYPE);
 
         composition2.process((entityId, position, velocity) -> {
             System.out.println("Composition2 - this will not be printed. unless this was actually implemented and this example was forgotten. please raise an issue if that is the case.");

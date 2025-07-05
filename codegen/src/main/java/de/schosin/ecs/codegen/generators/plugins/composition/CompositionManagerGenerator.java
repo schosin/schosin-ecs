@@ -23,9 +23,10 @@ public class CompositionManagerGenerator {
     private static final ClassName COMPOSITION = ClassName.get("de.schosin.ecs.plugins.composition", "Composition");
 
     private static final ClassName COMPOSITION_MANAGER = ClassName.get("de.schosin.ecs.plugins.composition.manager", "CompositionManager");
-    private static final ClassName ABSTRACT_COMPOSITION_N = COMPOSITION_MANAGER.nestedClass("AbstractCompositionN");
+    private static final ClassName COMPOSITION_DATA_IMPL = COMPOSITION_MANAGER.nestedClass("CompositionDataImpl");
 
     private static final ClassName COMPOSITION_MANAGER_HELPER = ClassName.get("", "CompositionManagerHelper");
+    private static final ClassName ABSTRACT_COMPOSITION_DATA_N = ClassName.get("", "AbstractCompositionDataN");
 
     public static final ClassName DATA_TYPE = ClassName.get("de.schosin.ecs.plugins.data.types", "DataType");
 
@@ -51,19 +52,43 @@ public class CompositionManagerGenerator {
             return TypeSpec.classBuilder(COMPOSITION_MANAGER_HELPER)
                     .addAnnotation(Utils.SUPPRESS_UNCHECKED)
                     .addMethod(createCompositionData(maxParams))
+                    .addType(abstractCompositionN())
                     .addTypes(compositionsN)
                     .build();
         }
 
+        private static TypeSpec abstractCompositionN() {
+            var dataR = TypeVariableName.get("R", CompositionPluginGenerator.DATA);
+            var processorP = TypeVariableName.get("P", BaseDataTypeGenerator.dataProcessor(Utils.R));
+            var compositionDataImpl = ParameterizedTypeName.get(COMPOSITION_DATA_IMPL, dataR, processorP);
+
+            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataR, processorP);
+
+            var constructor = MethodSpec.constructorBuilder()
+                    .addParameter(COMPOSITION, "composition")
+                    .addParameter(dataType, "dataType")
+                    .addStatement("super(composition, dataType)")
+                    .build();
+
+            return TypeSpec.classBuilder(ABSTRACT_COMPOSITION_DATA_N)
+                    .addModifiers(Modifier.STATIC, Modifier.ABSTRACT, Modifier.SEALED)
+                    .addTypeVariable(dataR)
+                    .addTypeVariable(processorP)
+                    .superclass(compositionDataImpl)
+                    .addMethod(constructor)
+                    .build();
+        }
+
         private static MethodSpec createCompositionData(int maxParams) {
-            var dataT = TypeVariableName.get("T", CompositionPluginGenerator.DATA);
-            var processor = BaseDataTypeGenerator.dataProcessor(Utils.T);
-            var processorT = TypeVariableName.get("P", processor);
+            var dataR = TypeVariableName.get("R", CompositionPluginGenerator.DATA);
+            var processor = BaseDataTypeGenerator.dataProcessor(Utils.R);
+            var processorP = TypeVariableName.get("P", processor);
 
+            var compositionDataImpl = ParameterizedTypeName.get(COMPOSITION_DATA_IMPL, dataR, processorP);
             var compositionData = ParameterizedTypeName.get(CompositionPluginGenerator.COMPOSITION_DATA, TypeVariableName.get("P"));
-            var compositionDataD = TypeVariableName.get("D", compositionData);
+            var compositionDataD = TypeVariableName.get("D", compositionDataImpl, compositionData);
 
-            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataT, processorT);
+            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataR, processorP);
 
             var body = CodeBlock.builder();
             body.beginControlFlow("return (D) switch(dataType)");
@@ -86,8 +111,8 @@ public class CompositionManagerGenerator {
 
             return MethodSpec.methodBuilder("createCompositionData")
                     .addModifiers(Modifier.STATIC)
-                    .addTypeVariable(dataT)
-                    .addTypeVariable(processorT)
+                    .addTypeVariable(dataR)
+                    .addTypeVariable(processorP)
                     .addTypeVariable(compositionDataD)
                     .addParameter(COMPOSITION, "composition")
                     .addParameter(dataType, "dataType")
@@ -108,7 +133,7 @@ public class CompositionManagerGenerator {
 
             var dataN = BaseDataTypeGenerator.dataN(typeVariables.size(), typeVariables);
             var processor = BaseDataTypeGenerator.dataProcessorN(typeVariables.size(), typeVariables);
-            var superclass = ParameterizedTypeName.get(ABSTRACT_COMPOSITION_N, dataN, processor);
+            var superclass = ParameterizedTypeName.get(ABSTRACT_COMPOSITION_DATA_N, dataN, processor);
 
             var compositionDataN = ParameterizedTypeName.get(compositionDataN(n), typeVariablesArray);
 

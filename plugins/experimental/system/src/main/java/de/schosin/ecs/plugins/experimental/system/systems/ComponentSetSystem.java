@@ -6,8 +6,8 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.data.DataProcessor;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
 import de.schosin.ecs.plugins.composition.Composition;
+import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionPlugin;
-import de.schosin.ecs.plugins.composition.CompositionSet;
 
 /**
  * Iterating system based on {@link ComponentSetType} and its {@link DataProcessor}.
@@ -24,8 +24,8 @@ import de.schosin.ecs.plugins.composition.CompositionSet;
  * </p>
  * 
  * <p>
- * To use {@link CompositionSet#inserted(DataProcessor)} and {@link CompositionSet#removed(DataProcessor)}, you can pass a method
- * reference to {@code this:composition} in the constructor. The signature must match the {@link DataProcessor} signature.
+ * To use {@link CompositionData#inserted(DataProcessor)} and {@link CompositionSet#removed(DataProcessor)}, you can pass a method
+ * reference to {@code this.composition} in the constructor. The signature must match the {@link DataProcessor} signature.
  * 
  * {@snippet:
  * public MySystem(DefaultWorld world) {
@@ -47,7 +47,7 @@ import de.schosin.ecs.plugins.composition.CompositionSet;
 public abstract class ComponentSetSystem<T extends ComponentSet<P>, P extends DataProcessor<T>> extends AbstractSystem {
 
     private final P processor;
-    protected final CompositionSet<P> composition;
+    protected final CompositionData<P> composition;
 
     public ComponentSetSystem(CompositionPlugin world, ComponentSetType<T, P> componentType) {
         this(world, componentType, buildComposition(world, componentType));

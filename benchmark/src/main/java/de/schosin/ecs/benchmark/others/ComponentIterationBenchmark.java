@@ -16,11 +16,12 @@ import de.schosin.ecs.benchmark.BaseBenchmark;
 import de.schosin.ecs.benchmark.others.components.DominionComponents;
 import de.schosin.ecs.benchmark.others.components.SchosinComponents;
 import de.schosin.ecs.plugins.composition.Composition;
+import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData3;
 import de.schosin.ecs.plugins.composition.CompositionData6;
-import de.schosin.ecs.plugins.composition.CompositionSet;
 import de.schosin.ecs.worlds.DefaultWorld;
+
 import dev.dominion.ecs.engine.EntityRepository;
 
 public class ComponentIterationBenchmark {
@@ -111,7 +112,7 @@ public class ComponentIterationBenchmark {
         public static class IterationUnpack03 extends SchosinEcs {
 
             private CompositionData3<Schosin1, Schosin2, Schosin3> composition;
-            private CompositionSet<ComponentSet3.Processor> setComposition;
+            private CompositionData<ComponentSet3.Processor> setComposition;
 
             @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {
@@ -159,7 +160,7 @@ public class ComponentIterationBenchmark {
         public static class IterationUnpack06 extends SchosinEcs {
 
             private CompositionData6<Schosin1, Schosin2, Schosin3, Schosin4, Schosin5, Schosin6> composition;
-            private CompositionSet<ComponentSet6.Processor> setComposition;
+            private CompositionData<ComponentSet6.Processor> setComposition;
 
             @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {

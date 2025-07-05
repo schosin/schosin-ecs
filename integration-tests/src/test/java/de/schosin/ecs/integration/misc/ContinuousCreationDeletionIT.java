@@ -14,7 +14,7 @@ import de.schosin.ecs.integration.components.Size;
 import de.schosin.ecs.integration.components.Velocity;
 import de.schosin.ecs.plugins.archetype.Archetype3;
 import de.schosin.ecs.plugins.composition.Composition;
-import de.schosin.ecs.plugins.composition.CompositionSet;
+import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.experimental.system.SystemPlugin;
 import de.schosin.ecs.plugins.experimental.system.systems.BaseSystem;
 import de.schosin.ecs.worlds.DefaultWorld;
@@ -71,7 +71,7 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
 
     static class HitboxSystem implements BaseSystem {
 
-        private final CompositionSet<HitboxComponents.Processor> composition;
+        private final CompositionData<HitboxComponents.Processor> composition;
         private final PooledComponentMapper<Hitbox> hitboxM;
 
         public HitboxSystem(DefaultWorld world) {
@@ -106,7 +106,7 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
 
     static class MovementSystem implements BaseSystem {
 
-        private CompositionSet<MovementComponents.Processor> composition;
+        private CompositionData<MovementComponents.Processor> composition;
 
         public MovementSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Position.class, Velocity.class), MovementComponents.TYPE);

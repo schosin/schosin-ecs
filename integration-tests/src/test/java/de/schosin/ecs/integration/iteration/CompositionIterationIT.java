@@ -28,7 +28,6 @@ import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionData2;
-import de.schosin.ecs.plugins.composition.CompositionSet;
 import de.schosin.ecs.plugins.data.mappers.DataTypeMapper;
 import de.schosin.ecs.plugins.data.types.Data3;
 import de.schosin.ecs.plugins.data.types.DataType;
@@ -83,7 +82,7 @@ public class CompositionIterationIT extends AbstractEcsIT {
             INSTANCE
         }
 
-        private final CompositionSet<ClassIterationComponents.Processor> composition;
+        private final CompositionData<ClassIterationComponents.Processor> composition;
 
         public ClassIterationSystem(DefaultWorld world) {
             this.composition = world.createComposition(Composition.all(Marker.class), ClassIterationComponents.TYPE);
