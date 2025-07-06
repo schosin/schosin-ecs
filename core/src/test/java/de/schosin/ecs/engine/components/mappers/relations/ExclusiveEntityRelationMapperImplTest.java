@@ -108,7 +108,7 @@ class ExclusiveEntityRelationMapperImplTest extends AbstractEntityRelationsTest 
         }
 
         @Test
-        void testComponentMaskUpdated_IfRelationRemovedByDeletedTarget() {
+        void testArchetypeUpdated_IfRelationRemovedByDeletedTarget() {
             var entityId = world.createEntity(new RegularComponent(), relation(Loves.LOVES, target1));
 
             verify(verify -> {
@@ -126,8 +126,8 @@ class ExclusiveEntityRelationMapperImplTest extends AbstractEntityRelationsTest 
                 verifyHasComponents(entityId, RegularComponent.class);
                 verifyDoesNotHaveComponents(entityId, type1);
 
-                verifyComponentMaskHasComponents(entityId, RegularComponent.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, type1);
+                verifyArchetypeHasComponents(entityId, RegularComponent.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, type1);
             });
         }
 

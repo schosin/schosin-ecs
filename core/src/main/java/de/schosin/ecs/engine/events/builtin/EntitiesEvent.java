@@ -2,7 +2,7 @@ package de.schosin.ecs.engine.events.builtin;
 
 import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
@@ -10,7 +10,7 @@ public sealed interface EntitiesEvent extends Event {
 
     ImmutableIntBag entityIds();
 
-    ComponentMask componentMask();
+    Archetype archetype();
 
     /**
      * This event will be dispatched when a batch of entities is created.
@@ -22,8 +22,8 @@ public sealed interface EntitiesEvent extends Event {
      */
     sealed interface EntitiesInsertedEvent extends EntitiesEvent {
 
-        static EntitiesInsertedEvent get(ImmutableIntBag entityIds, ComponentMask componentMask) {
-            return EntitiesInsertedEventImpl.get(entityIds, componentMask);
+        static EntitiesInsertedEvent get(ImmutableIntBag entityIds, Archetype archetype) {
+            return EntitiesInsertedEventImpl.get(entityIds, archetype);
         }
 
     }
@@ -33,7 +33,7 @@ public sealed interface EntitiesEvent extends Event {
 abstract sealed class AbstractEntitiesEvent implements EntitiesEvent {
 
     protected ImmutableIntBag entityIds;
-    protected ComponentMask componentMask;
+    protected Archetype archetype;
 
     @Override
     public ImmutableIntBag entityIds() {
@@ -41,14 +41,14 @@ abstract sealed class AbstractEntitiesEvent implements EntitiesEvent {
     }
 
     @Override
-    public ComponentMask componentMask() {
-        return componentMask;
+    public Archetype archetype() {
+        return archetype;
     }
 
     @Override
     public void reset() {
         this.entityIds = null;
-        this.componentMask = null;
+        this.archetype = null;
     }
 
 }
@@ -57,10 +57,10 @@ final class EntitiesInsertedEventImpl extends AbstractEntitiesEvent implements E
 
     private static final Pool<EntitiesInsertedEventImpl> POOL = Pool.unbounded(EntitiesInsertedEventImpl.class, EntitiesInsertedEventImpl::new);
 
-    static EntitiesInsertedEvent get(ImmutableIntBag entityIds, ComponentMask componentMask) {
+    static EntitiesInsertedEvent get(ImmutableIntBag entityIds, Archetype archetype) {
         var instance = POOL.getInstance();
         instance.entityIds = entityIds;
-        instance.componentMask = componentMask;
+        instance.archetype = archetype;
 
         return instance;
     }

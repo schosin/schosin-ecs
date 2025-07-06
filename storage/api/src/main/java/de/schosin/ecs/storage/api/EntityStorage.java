@@ -1,14 +1,11 @@
 package de.schosin.ecs.storage.api;
 
-import java.util.function.Predicate;
-
 import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
-import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public interface EntityStorage {
@@ -16,42 +13,26 @@ public interface EntityStorage {
     DataAccessor getAccessor(int entityId);
 
     /**
-     * Retrieve the component mask of the entity.
-     * 
-     * @param entityId id of component mask
-     * @return component mask or null if entity not known
-     */
-    ComponentMask getComponentMaskForEntity(int entityId);
-
-    ComponentMask getComponentMaskById(int componentMaskId);
-
-    ComponentMask getComponentMask(RegularComponentType<?, ?>... componentTypes);
-
-    ImmutableBag<ComponentMask> getComponentMasks();
-
-    void getComponentMasks(Predicate<ComponentMask> predicate, Bag<ComponentMask> fill);
-
-    /**
      * Modify an existing entity by adding the components, overwriting existing values in case of collisions.
      * 
      * <p>
-     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * If the addition changes the {@link Archetype} of the entity, the addition of components that caused
      * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
      * component relations that replace an existing one.
      * </p>
      * 
      * @param entityId id of entity
      * @param components components to add to the entity
-     * @return updated component mask of entity
+     * @return updated archetype of entity
      */
-    ComponentMask add(int entityId, Object[] components);
+    Archetype add(int entityId, Object[] components);
 
     /**
      * Modify an existing entity by adding the components, overwriting existing values in case of collisions.
      * The component types must match the components by index.
      * 
      * <p>
-     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * If the addition changes the {@link Archetype} of the entity, the addition of components that caused
      * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
      * component relations that replace an existing one.
      * </p>
@@ -59,32 +40,32 @@ public interface EntityStorage {
      * @param entityId id of entity
      * @param components components to add to the entity
      * @param componentTypes component types of components
-     * @return updated component mask of entity
+     * @return updated archetype of entity
      */
-    ComponentMask add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components);
+    Archetype add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components);
 
     /**
      * Modify an existing entity by removing the components. The actual removal is delayed.
      * 
      * @param entityId id of entity
      * @param componentTypes component types to remove from the entity
-     * @return updated component mask of entity
+     * @return updated archetype of entity
      */
-    ComponentMask remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes);
+    Archetype remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes);
 
     /**
      * Delete an entity, clearing all stored component data.
      * 
      * @param entityId id of entity
-     * @return previous component mask or null if entity not known
+     * @return previous archetype or null if entity not known
      */
-    ComponentMask delete(int entityId);
+    Archetype delete(int entityId);
 
     /**
      * Modify an existing entity by adding and removing components.
      * 
      * <p>
-     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * If the addition changes the {@link Archetype} of the entity, the addition of components that caused
      * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
      * component relations that replace an existing one.
      * </p>
@@ -92,9 +73,9 @@ public interface EntityStorage {
      * @param entityId id of entity
      * @param add added components
      * @param removeTypes component types of removed components
-     * @return updated component mask of entity
+     * @return updated archetype of entity
      */
-    default ComponentMask modify(int entityId, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
+    default Archetype modify(int entityId, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         add(entityId, add);
         return remove(entityId, removeTypes);
     }
@@ -103,7 +84,7 @@ public interface EntityStorage {
      * Modify an existing entity by adding and removing components.
      * 
      * <p>
-     * If the addition changes the {@link ComponentMask} of the entity, the addition of components that caused
+     * If the addition changes the {@link Archetype} of the entity, the addition of components that caused
      * the change are delayed. They are still accessible when retrieving them with the exception of exclusive
      * component relations that replace an existing one.
      * </p>
@@ -112,29 +93,29 @@ public interface EntityStorage {
      * @param addTypes component types of added components
      * @param add added components
      * @param removeTypes component types of removed components
-     * @return updated component mask of entity
+     * @return updated archetype of entity
      */
-    default ComponentMask modify(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
+    default Archetype modify(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         add(entityId, addTypes, add);
         return remove(entityId, removeTypes);
     }
 
     /**
-     * Returns the component mask for pending changes.
+     * Returns the archetype for pending changes.
      * 
      * @param entityId id of entity
-     * @return component mask for pending changes or null if none
+     * @return archetype for pending changes or null if none
      */
     @Nullable
-    ComponentMask getPendingComponentMask(int entityId);
+    Archetype getPendingArchetype(int entityId);
 
     /**
      * Flushes pending changes by {@link #add(int, Object[])}, {@link #remove(int, ImmutableBag)} or
      * {@link #modify(int, Object[], ImmutableBag)} (and overloads) for the entity.
      * 
      * @param entityId id of entity
-     * @return component mask after changes have been applied
+     * @return archetype after changes have been applied
      */
-    ComponentMask flushChanges(int entityId);
+    Archetype flushChanges(int entityId);
 
 }

@@ -28,14 +28,14 @@ public class ExclusiveEntityRelationDataTest
 
         var entityId = world.createEntity(instance1);
         assertThat(getComponent(entityId, type)).as("returns instance passed at creation").isSameAs(instance1);
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after creation").isNull();
 
         // Call
         storageEngine.add(entityId, ImmutableBag.of(type), new Object[] { instance2 });
 
         // Verify
         assertThat(getComponent(entityId, type)).as("returns instance passed at creation").isSameAs(instance2);
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null if add caused no archetype change").isNull();
     }
 
     @Nested

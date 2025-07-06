@@ -61,7 +61,7 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
 
         var mapper1 = storageEngine.getComponent(component(C1.class));
 
-        // Reuse entity ids, creating a new with the component mask before alteration
+        // Reuse entity ids, creating a new with the archetype before alteration
         for (int i = 1; i <= 11; i++) {
             storageEngine.delete(i);
 
@@ -126,7 +126,7 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
     }
 
     @Nested
-    class ComponentMaskTest {
+    class ArchetypeTest {
 
         @Test
         void testClassTypes() {
@@ -134,12 +134,10 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             archetype.createEntity(1, new Object[] { new C1(), new C2() });
 
             // Verify
-            var componentMask = archetype.getComponentMask();
-            assertThat(componentMask).as("must return component mask").isNotNull();
-            assertThat(componentMask.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
-            assertThat(componentMask.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
+            assertThat(archetype.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
+            assertThat(archetype.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
 
-            assertThat(storageEngine.getComponentMaskForEntity(1)).as("getComponentMaskForEntity returns same instance").isSameAs(componentMask);
+            assertThat(storageEngine.getArchetypeForEntity(1)).as("getArchetypeForEntity returns same instance").isSameAs(archetype);
         }
 
         @Test
@@ -148,12 +146,10 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             archetype.createEntity(1, new Object[] { new P1(), new P2() });
 
             // Verify
-            var componentMask = archetype.getComponentMask();
-            assertThat(componentMask).as("must return component mask").isNotNull();
-            assertThat(componentMask.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(component(P1.class), component(P2.class));
-            assertThat(componentMask.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(component(P1.class), component(P2.class));
+            assertThat(archetype.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(component(P1.class), component(P2.class));
+            assertThat(archetype.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(component(P1.class), component(P2.class));
 
-            assertThat(storageEngine.getComponentMaskForEntity(1)).as("getComponentMaskForEntity returns same instance").isSameAs(componentMask);
+            assertThat(storageEngine.getArchetypeForEntity(1)).as("getArchetypeForEntity returns same instance").isSameAs(archetype);
         }
 
         @Test
@@ -162,13 +158,10 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             archetype.createEntity(1, new Object[] { Relation.create(new C1(), new C2()), Relation.create(new C2(), new C1()) });
 
             // Verify
-            var componentMask = archetype.getComponentMask();
-            assertThat(componentMask).as("must return component mask").isNotNull();
-            assertThat(componentMask.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class, C2.class), relation(C2.class, C1.class));
-            assertThat(componentMask.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class, C2.class),
-                    relation(C2.class, C1.class));
+            assertThat(archetype.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class, C2.class), relation(C2.class, C1.class));
+            assertThat(archetype.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class, C2.class), relation(C2.class, C1.class));
 
-            assertThat(storageEngine.getComponentMaskForEntity(1)).as("getComponentMaskForEntity returns same instance").isSameAs(componentMask);
+            assertThat(storageEngine.getArchetypeForEntity(1)).as("getArchetypeForEntity returns same instance").isSameAs(archetype);
         }
 
         @Test
@@ -177,14 +170,12 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             archetype.createEntity(1, new Object[] { Relation.create(E1.INSTANCE, new C2()), Relation.create(E2.INSTANCE, new C2()) });
 
             // Verify
-            var componentMask = archetype.getComponentMask();
-            assertThat(componentMask).as("must return component mask").isNotNull();
-            assertThat(componentMask.getComponentTypes())
+            assertThat(archetype.getComponentTypes())
                     .as("must contain matching component types").containsExactlyInAnyOrder(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
-            assertThat(componentMask.getComponents()).extracting("type")
+            assertThat(archetype.getComponents()).extracting("type")
                     .as("must contain matching component types").containsExactlyInAnyOrder(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
 
-            assertThat(storageEngine.getComponentMaskForEntity(1)).as("getComponentMaskForEntity returns same instance").isSameAs(componentMask);
+            assertThat(storageEngine.getArchetypeForEntity(1)).as("getArchetypeForEntity returns same instance").isSameAs(archetype);
         }
 
         @Test
@@ -193,12 +184,10 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             archetype.createEntity(1, new Object[] { Relation.create(new C1(), 2), Relation.create(new C2(), 2) });
 
             // Verify
-            var componentMask = archetype.getComponentMask();
-            assertThat(componentMask).as("must return component mask").isNotNull();
-            assertThat(componentMask.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class), relation(C2.class));
-            assertThat(componentMask.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class), relation(C2.class));
+            assertThat(archetype.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class), relation(C2.class));
+            assertThat(archetype.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(relation(C1.class), relation(C2.class));
 
-            assertThat(storageEngine.getComponentMaskForEntity(1)).as("getComponentMaskForEntity returns same instance").isSameAs(componentMask);
+            assertThat(storageEngine.getArchetypeForEntity(1)).as("getArchetypeForEntity returns same instance").isSameAs(archetype);
         }
 
         @Test
@@ -207,13 +196,10 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             archetype.createEntity(1, new Object[] { Relation.create(E1.INSTANCE, 2), Relation.create(E2.INSTANCE, 2) });
 
             // Verify
-            var componentMask = archetype.getComponentMask();
-            assertThat(componentMask).as("must return component mask").isNotNull();
-            assertThat(componentMask.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
-            assertThat(componentMask.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(exclusiveRelation(E1.class),
-                    exclusiveRelation(E2.class));
+            assertThat(archetype.getComponentTypes()).as("must contain matching component types").containsExactlyInAnyOrder(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
+            assertThat(archetype.getComponents()).extracting("type").as("must contain matching component types").containsExactlyInAnyOrder(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
 
-            assertThat(storageEngine.getComponentMaskForEntity(1)).as("getComponentMaskForEntity returns same instance").isSameAs(componentMask);
+            assertThat(storageEngine.getArchetypeForEntity(1)).as("getArchetypeForEntity returns same instance").isSameAs(archetype);
         }
 
     }
@@ -360,89 +346,6 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             // Verify
             assertThat(storageEngine.getComponent(exclusiveRelation(E1.class)).getComponent(1)).as("Must store component instance").isSameAs(component1);
             assertThat(storageEngine.getComponent(exclusiveRelation(E2.class)).getComponent(1)).as("Must store component instance").isSameAs(component2);
-        }
-
-        @Nested
-        class PredefinedComponentMaskTest {
-
-            @Test
-            void testClassTypes() {
-                var component1 = new C1();
-                var component2 = new C2();
-                var archetype = storageEngine.getArchetype(component(C1.class), component(C2.class));
-
-                archetype.createEntity(1, new Object[] { component1, component2 });
-
-                // Verify
-                assertThat(storageEngine.getComponent(component(C1.class)).getComponent(1)).as("Must store component instance").isSameAs(component1);
-                assertThat(storageEngine.getComponent(component(C2.class)).getComponent(1)).as("Must store component instance").isSameAs(component2);
-            }
-
-            @Test
-            void testPooledClassTypes() {
-                var component1 = new P1();
-                var component2 = new P2();
-                var archetype = storageEngine.getArchetype(component(P1.class), component(P2.class));
-
-                archetype.createEntity(1, new Object[] { component1, component2 });
-
-                // Verify
-                assertThat(storageEngine.getComponent(component(P1.class)).getComponent(1)).as("Must store component instance").isSameAs(component1);
-                assertThat(storageEngine.getComponent(component(P2.class)).getComponent(1)).as("Must store component instance").isSameAs(component2);
-            }
-
-            @Test
-            void testComponentRelations() {
-                var component1 = Relation.create(new C1(), new C2());
-                var component2 = Relation.create(new C2(), new C1());
-                var archetype = storageEngine.getArchetype(relation(C1.class, C2.class), relation(C2.class, C1.class));
-
-                archetype.createEntity(1, new Object[] { component1, component2 });
-
-                // Verify
-                assertThat(storageEngine.getComponent(relation(C1.class, C2.class)).getComponent(1)).as("Must store component instance").containsExactly(component1);
-                assertThat(storageEngine.getComponent(relation(C2.class, C1.class)).getComponent(1)).as("Must store component instance").containsExactly(component2);
-            }
-
-            @Test
-            void testExclusiveComponentRelations() {
-                var component1 = Relation.create(E1.INSTANCE, new C2());
-                var component2 = Relation.create(E2.INSTANCE, new C2());
-                var archetype = storageEngine.getArchetype(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
-
-                archetype.createEntity(1, new Object[] { component1, component2 });
-
-                // Verify
-                assertThat(storageEngine.getComponent(exclusiveRelation(E1.class, C2.class)).getComponent(1)).as("Must store component instance").isSameAs(component1);
-                assertThat(storageEngine.getComponent(exclusiveRelation(E2.class, C2.class)).getComponent(1)).as("Must store component instance").isSameAs(component2);
-            }
-
-            @Test
-            void testEntityRelations() {
-                var component1 = Relation.create(new C1(), 2);
-                var component2 = Relation.create(new C2(), 2);
-                var archetype = storageEngine.getArchetype(relation(C1.class), relation(C2.class));
-
-                archetype.createEntity(1, new Object[] { component1, component2 });
-
-                // Verify
-                assertThat(storageEngine.getComponent(relation(C1.class)).getComponent(1)).as("Must store component instance").containsExactly(component1);
-                assertThat(storageEngine.getComponent(relation(C2.class)).getComponent(1)).as("Must store component instance").containsExactly(component2);
-            }
-
-            @Test
-            void testExclusiveEntityRelations() {
-                var component1 = Relation.create(E1.INSTANCE, 2);
-                var component2 = Relation.create(E2.INSTANCE, 2);
-                var archetype = storageEngine.getArchetype(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
-
-                archetype.createEntity(1, new Object[] { component1, component2 });
-
-                // Verify
-                assertThat(storageEngine.getComponent(exclusiveRelation(E1.class)).getComponent(1)).as("Must store component instance").isSameAs(component1);
-                assertThat(storageEngine.getComponent(exclusiveRelation(E2.class)).getComponent(1)).as("Must store component instance").isSameAs(component2);
-            }
-
         }
 
     }

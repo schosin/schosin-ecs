@@ -34,7 +34,7 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.components.Component;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
@@ -135,29 +135,29 @@ public abstract class AbstractEngineTest {
         }
     }
 
-    protected void verifyComponentMaskHasComponents(int entityId, Class<?>... classes) {
-        verifyComponentMaskHasComponents(entityId, convert(classes));
+    protected void verifyArchetypeHasComponents(int entityId, Class<?>... classes) {
+        verifyArchetypeHasComponents(entityId, convert(classes));
     }
 
-    protected void verifyComponentMaskHasComponents(int entityId, RegularComponentType<?, ?>... types) {
-        var componentMask = entityManager.getComponentMask(entityId);
+    protected void verifyArchetypeHasComponents(int entityId, RegularComponentType<?, ?>... types) {
+        var archetype = entityManager.getArchetype(entityId);
 
         for (var type : types) {
             var component = componentManager.getComponent(type);
-            assertThat(componentMask.getComponents()).as("component mask has %s", type).contains(component);
+            assertThat(archetype.getComponents()).as("archetype has %s", type).contains(component);
         }
     }
 
-    protected void verifyComponentMaskDoesNotHaveComponents(int entityId, Class<?>... classes) {
-        verifyComponentMaskDoesNotHaveComponents(entityId, convert(classes));
+    protected void verifyArchetypeDoesNotHaveComponents(int entityId, Class<?>... classes) {
+        verifyArchetypeDoesNotHaveComponents(entityId, convert(classes));
     }
 
-    protected void verifyComponentMaskDoesNotHaveComponents(int entityId, RegularComponentType<?, ?>... types) {
-        var componentMask = entityManager.getComponentMask(entityId);
+    protected void verifyArchetypeDoesNotHaveComponents(int entityId, RegularComponentType<?, ?>... types) {
+        var archetype = entityManager.getArchetype(entityId);
 
         for (var type : types) {
             var component = componentManager.getComponent(type);
-            assertThat(componentMask.getComponents()).as("component mask does not have %s", type).doesNotContain(component);
+            assertThat(archetype.getComponents()).as("archetype does not have %s", type).doesNotContain(component);
         }
     }
 
@@ -216,10 +216,10 @@ public abstract class AbstractEngineTest {
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>(),
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>());
 
-            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.componentMask()));
-            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.componentMask()));
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.componentMask()));
-            eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.componentMask()));
+            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.archetype()));
+            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.archetype()));
+            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.archetype()));
+            eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.archetype()));
         }
 
         @Override
@@ -283,16 +283,16 @@ public abstract class AbstractEngineTest {
             return this;
         }
 
-        private void handleInserted(ImmutableIntBag entityIds, ComponentMask componentMask) {
+        private void handleInserted(ImmutableIntBag entityIds, Archetype archetype) {
             for (var iter = entityIds.iterator(); iter.hasNext();) {
                 var entityId = iter.nextInt();
 
-                handleInserted(entityId, componentMask);
+                handleInserted(entityId, archetype);
             }
         }
 
-        private void handleInserted(int entityId, ComponentMask componentMask) {
-            var components = componentMask.getComponents();
+        private void handleInserted(int entityId, Archetype archetype) {
+            var components = archetype.getComponents();
             expected: for (var iter = inserted.iterator(); iter.hasNext();) {
                 var expected = iter.next();
 
@@ -306,10 +306,10 @@ public abstract class AbstractEngineTest {
                 return;
             }
 
-            unexpectedInserted.add(new Updated(entityId, set(componentMask)));
+            unexpectedInserted.add(new Updated(entityId, set(archetype)));
         }
 
-        private void handleUpdated(int entityId, ComponentMask componentMask) {
+        private void handleUpdated(int entityId, Archetype archetype) {
             for (var iter = updated.iterator(); iter.hasNext();) {
                 var expected = iter.next();
 
@@ -319,7 +319,7 @@ public abstract class AbstractEngineTest {
 
                 iter.remove();
 
-                var present = new Bag<>(componentMask.getComponents());
+                var present = new Bag<>(archetype.getComponents());
                 var missing = new ArrayList<String>();
 
                 if (expected.components == null) {
@@ -346,10 +346,10 @@ public abstract class AbstractEngineTest {
                 return;
             }
 
-            unexpectedUpdated.add(new Updated(entityId, set(componentMask)));
+            unexpectedUpdated.add(new Updated(entityId, set(archetype)));
         }
 
-        private void handleRemoved(int entityId, ComponentMask componentMask) {
+        private void handleRemoved(int entityId, Archetype archetype) {
             for (var iter = removed.iterator(); iter.hasNext();) {
                 var expected = iter.next();
 
@@ -361,7 +361,7 @@ public abstract class AbstractEngineTest {
                 return;
             }
 
-            unexpectedRemoved.add(new Updated(entityId, set(componentMask)));
+            unexpectedRemoved.add(new Updated(entityId, set(archetype)));
         }
 
         @Override
@@ -404,8 +404,8 @@ public abstract class AbstractEngineTest {
             softly.assertAll();
         }
 
-        private static Set<Component<?, ?>> set(ComponentMask componentMask) {
-            var components = componentMask.getComponents();
+        private static Set<Component<?, ?>> set(Archetype archetype) {
+            var components = archetype.getComponents();
 
             return components.stream().collect(Collectors.toSet());
         }

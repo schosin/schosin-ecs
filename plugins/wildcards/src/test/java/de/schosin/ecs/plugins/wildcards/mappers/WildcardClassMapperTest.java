@@ -64,7 +64,7 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
         var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
         verifyHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
 
         // Call
         assertThat(components.remove(entityId)).isTrue();
@@ -73,7 +73,7 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
         // Verify
         verifyDoesNotHaveComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
     }
 
     @Test
@@ -86,14 +86,14 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
         var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
         verifyHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
 
         // Call
         assertThat(components.remove(entityId)).isTrue();
 
         // Verify
         verifyHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
     }
 
     @Test
@@ -104,7 +104,7 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
         var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
         verifyHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
 
         var components = world.getComponents(WILDCARD);
 
@@ -115,7 +115,7 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
         // Verify
         verifyDoesNotHaveComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
     }
 
     @Test
@@ -128,7 +128,7 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
         var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
         verifyHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
 
         // Call
         assertThat(components.remove(entityId)).isTrue();
@@ -139,8 +139,8 @@ class WildcardClassMapperTest extends AbstractMapperTest {
         verifyHasComponents(entityId, PooledComponent.class, EnumComponent.class);
         verifyDoesNotHaveComponents(entityId, Component1.class, Component2.class);
 
-        verifyComponentMaskHasComponents(entityId, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, Component1.class, Component2.class);
+        verifyArchetypeHasComponents(entityId, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, Component1.class, Component2.class);
     }
 
     @Test
@@ -151,7 +151,7 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
         var entityId = world.createEntity(component1, component2, pooled, EnumComponent.FIRST);
         verifyHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeHasComponents(entityId, Component1.class, Component2.class, PooledComponent.class, EnumComponent.class);
 
         var components = world.getComponents(wildcard(Regular.class));
 
@@ -164,8 +164,8 @@ class WildcardClassMapperTest extends AbstractMapperTest {
         verifyHasComponents(entityId, PooledComponent.class, EnumComponent.class);
         verifyDoesNotHaveComponents(entityId, Component1.class, Component2.class);
 
-        verifyComponentMaskHasComponents(entityId, PooledComponent.class, EnumComponent.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, Component1.class, Component2.class);
+        verifyArchetypeHasComponents(entityId, PooledComponent.class, EnumComponent.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, Component1.class, Component2.class);
     }
 
     @Nested
@@ -484,19 +484,19 @@ class WildcardClassMapperTest extends AbstractMapperTest {
             // Verify
             verifyHasComponents(entity1, C3.class);
             verifyDoesNotHaveComponents(entity1, C1.class, C2.class);
-            verifyComponentMaskHasComponents(entity1, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class);
+            verifyArchetypeHasComponents(entity1, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity1, C1.class, C2.class);
 
             verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
 
             verifyHasComponents(entity3, C1.class);
             verifyDoesNotHaveComponents(entity3, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entity3, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entity3, C2.class, C3.class);
+            verifyArchetypeHasComponents(entity3, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entity3, C2.class, C3.class);
 
             verifyDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
         }
 
         @Test
@@ -526,19 +526,19 @@ class WildcardClassMapperTest extends AbstractMapperTest {
             // Verify
             verifyHasComponents(entity1, C3.class);
             verifyDoesNotHaveComponents(entity1, C1.class, C2.class);
-            verifyComponentMaskHasComponents(entity1, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class);
+            verifyArchetypeHasComponents(entity1, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity1, C1.class, C2.class);
 
             verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
 
             verifyHasComponents(entity3, C1.class);
             verifyDoesNotHaveComponents(entity3, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entity3, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entity3, C2.class, C3.class);
+            verifyArchetypeHasComponents(entity3, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entity3, C2.class, C3.class);
 
             verifyDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity4, C1.class, C2.class, C3.class);
         }
 
         @Test
@@ -557,10 +557,10 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
             // Verify
             verifyDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
 
             verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
         }
 
         @Test
@@ -583,10 +583,10 @@ class WildcardClassMapperTest extends AbstractMapperTest {
 
             // Verify
             verifyDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity1, C1.class, C2.class, C3.class);
 
             verifyDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity2, C1.class, C2.class, C3.class);
         }
 
         interface C {

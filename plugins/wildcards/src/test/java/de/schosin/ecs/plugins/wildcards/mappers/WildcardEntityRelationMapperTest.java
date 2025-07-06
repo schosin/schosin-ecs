@@ -233,17 +233,17 @@ class WildcardEntityRelationMapperTest extends AbstractMapperTest {
 
                 // Verify
                 verifyDoesNotHaveComponents(entity1, type1, type2, type3);
-                verifyComponentMaskDoesNotHaveComponents(entity1, type1, type2, type3);
+                verifyArchetypeDoesNotHaveComponents(entity1, type1, type2, type3);
 
                 verifyHasComponents(entity2, type3);
                 verifyDoesNotHaveComponents(entity2, type1, type2);
-                verifyComponentMaskHasComponents(entity2, type3);
-                verifyComponentMaskDoesNotHaveComponents(entity2, type1, type2);
+                verifyArchetypeHasComponents(entity2, type3);
+                verifyArchetypeDoesNotHaveComponents(entity2, type1, type2);
 
                 verifyHasComponents(entity3, type1, type2);
                 verifyDoesNotHaveComponents(entity3, type3);
-                verifyComponentMaskHasComponents(entity3, type1, type2);
-                verifyComponentMaskDoesNotHaveComponents(entity3, type3);
+                verifyArchetypeHasComponents(entity3, type1, type2);
+                verifyArchetypeDoesNotHaveComponents(entity3, type3);
             });
         }
 

@@ -62,7 +62,7 @@ class EntityManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyHasComponents(entityId, Component1.class, Component2.class);
-            verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class);
+            verifyArchetypeHasComponents(entityId, Component1.class, Component2.class);
         }
 
         @Test
@@ -76,7 +76,7 @@ class EntityManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyHasComponents(entityId, Component1.class, Component2.class);
-            verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class);
+            verifyArchetypeHasComponents(entityId, Component1.class, Component2.class);
         }
 
         @Test
@@ -104,11 +104,9 @@ class EntityManagerTest extends AbstractWorldTest {
 
         @Test
         void testDuplicateTypes() {
-            var otherComponent1 = new Component1();
-
-            assertThatThrownBy(() -> world.createEntity(new Component1(), new Component2(), otherComponent1, new Component2()))
+            assertThatThrownBy(() -> world.createEntity(new Component1(), new Component2(), new Component1()))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContaining("duplicate component types");
+                    .hasMessageContainingAll(Component1.class.getSimpleName(), "duplicate component type");
         }
 
         @Test
@@ -159,7 +157,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(mask -> true);
+            var entities = entityManager.getEntities(archetype -> true);
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(5);
@@ -179,7 +177,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.containsComponent(component1.id()) && mask.containsComponent(component2.id()));
+            var entities = entityManager.getEntities(archetype -> archetype.containsComponent(component1.id()) && archetype.containsComponent(component2.id()));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(2);
@@ -199,7 +197,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.containsComponent(component1.id()) || mask.containsComponent(component3.id()));
+            var entities = entityManager.getEntities(archetype -> archetype.containsComponent(component1.id()) || archetype.containsComponent(component3.id()));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(4);
@@ -220,7 +218,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(mask -> !mask.containsComponent(component1.id()) && !mask.containsComponent(component3.id()));
+            var entities = entityManager.getEntities(archetype -> !archetype.containsComponent(component1.id()) && !archetype.containsComponent(component3.id()));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(1);
@@ -233,83 +231,83 @@ class EntityManagerTest extends AbstractWorldTest {
 
         @Test
         void testResultInstanceNotReused() {
-            var entities = entityManager.getEntities(mask -> true);
+            var entities = entityManager.getEntities(archetype -> true);
 
-            assertThat(entityManager.getEntities(mask -> true)).isNotSameAs(entities);
+            assertThat(entityManager.getEntities(archetype -> true)).isNotSameAs(entities);
         }
 
     }
 
     @Nested
-    class ComponentMaskTest {
+    class ArchetypeTest {
 
         @Test
-        void testComponentOrderDoesNotAffectComponentMask() {
+        void testComponentOrderDoesNotAffectArchetype() {
             // Setup
             var entity12 = world.createEntity(new Component1(), new Component2());
             var entity21 = world.createEntity(new Component1(), new Component2());
 
             // Call
-            var componentMask12 = entityManager.getComponentMask(entity12);
-            var componentMask21 = entityManager.getComponentMask(entity21);
+            var archetype12 = entityManager.getArchetype(entity12);
+            var archetype21 = entityManager.getArchetype(entity21);
 
             // Verify
-            assertThat(componentMask12).isSameAs(componentMask21);
+            assertThat(archetype12).isSameAs(archetype21);
         }
 
         @Test
         void testGetUnknownEntity() {
             // Call
-            var componentMask = entityManager.getComponentMask(42);
+            var archetype = entityManager.getArchetype(42);
 
             // Verify
-            assertThat(componentMask).isNull();
+            assertThat(archetype).isNull();
         }
 
         @Test
-        void testUpdateComponentMask() {
+        void testUpdateArchetype() {
             // Setup
             var entityId = world.createEntity(new Component1(), new Component2());
 
-            var componentMask = entityManager.getComponentMask(entityId);
-            assertThat(componentMask.containsComponent(component1.id())).isTrue();
-            assertThat(componentMask.containsComponent(component2.id())).isTrue();
+            var archetype = entityManager.getArchetype(entityId);
+            assertThat(archetype.containsComponent(component1.id())).isTrue();
+            assertThat(archetype.containsComponent(component2.id())).isTrue();
 
-            var otherComponentMask = storageEngine.getComponentMask(component(Component3.class));
-            assertThat(otherComponentMask).isNotSameAs(componentMask).isNotEqualTo(componentMask);
+            var otherArchetype = storageEngine.getArchetype(component(Component3.class));
+            assertThat(otherArchetype).isNotSameAs(archetype).isNotEqualTo(archetype);
 
             // Call
-            assertThat(entityManager.updateComponentMask(entityId, otherComponentMask)).isTrue();
+            assertThat(entityManager.updateArchetype(entityId, otherArchetype)).isTrue();
 
             // Verify
-            assertThat(entityManager.getComponentMask(entityId)).isSameAs(otherComponentMask);
+            assertThat(entityManager.getArchetype(entityId)).isSameAs(otherArchetype);
         }
 
         @Test
-        void testUpdateComponentMask_NoChange() {
+        void testUpdateArchetype_NoChange() {
             // Setup
             var entityId = world.createEntity(new Component1(), new Component2());
 
-            var componentMask = entityManager.getComponentMask(entityId);
-            assertThat(componentMask.containsComponent(component1.id())).isTrue();
-            assertThat(componentMask.containsComponent(component2.id())).isTrue();
+            var archetype = entityManager.getArchetype(entityId);
+            assertThat(archetype.containsComponent(component1.id())).isTrue();
+            assertThat(archetype.containsComponent(component2.id())).isTrue();
 
-            var sameComponentMask = storageEngine.getComponentMask(component(Component2.class), component(Component1.class));
-            assertThat(sameComponentMask).isSameAs(componentMask);
+            var sameArchetype = storageEngine.getArchetype(component(Component2.class), component(Component1.class));
+            assertThat(sameArchetype).isSameAs(archetype);
 
             // Call
-            assertThat(entityManager.updateComponentMask(entityId, sameComponentMask)).isFalse();
+            assertThat(entityManager.updateArchetype(entityId, sameArchetype)).isFalse();
 
             // Verify
-            assertThat(entityManager.getComponentMask(entityId)).isSameAs(componentMask);
+            assertThat(entityManager.getArchetype(entityId)).isSameAs(archetype);
         }
 
         @Test
-        void testUpdateComponentMask_UnknownEntity() {
-            var componentMask = storageEngine.getComponentMask(component(Component1.class));
+        void testUpdateArchetype_UnknownEntity() {
+            var archetype = storageEngine.getArchetype(component(Component1.class));
 
-            assertThat(entityManager.updateComponentMask(42, null)).isFalse();
-            assertThat(entityManager.updateComponentMask(42, componentMask)).isFalse();
+            assertThat(entityManager.updateArchetype(42, null)).isFalse();
+            assertThat(entityManager.updateArchetype(42, archetype)).isFalse();
         }
 
     }
@@ -328,7 +326,7 @@ class EntityManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity(new Component1());
             verifyHasComponents(entityId, Component1.class);
-            verifyComponentMaskHasComponents(entityId, Component1.class);
+            verifyArchetypeHasComponents(entityId, Component1.class);
 
             // Call
             verify(verify -> {
@@ -341,7 +339,7 @@ class EntityManagerTest extends AbstractWorldTest {
             assertThat(world.isActive(entityId)).as("is active").isTrue();
 
             verifyHasComponents(entityId, Component1.class);
-            verifyComponentMaskHasComponents(entityId, Component1.class);
+            verifyArchetypeHasComponents(entityId, Component1.class);
         }
 
         @Test
@@ -390,20 +388,20 @@ class EntityManagerTest extends AbstractWorldTest {
         void testDeletionDuringCreation() {
             // Setup listeners
             eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                if (event.componentMask().containsComponent(id1)) {
+                if (event.archetype().containsComponent(id1)) {
                     pooled2.add(event.entityId());
                 }
             });
 
             eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                var mask = event.componentMask();
+                var archetype = event.archetype();
                 var entityId = event.entityId();
 
-                if (mask.containsComponent(id2)) {
+                if (archetype.containsComponent(id2)) {
                     pooled3.add(entityId);
                 }
 
-                if (mask.containsComponent(id3)) {
+                if (archetype.containsComponent(id3)) {
                     world.deleteEntity(entityId);
                 }
             });
@@ -432,15 +430,15 @@ class EntityManagerTest extends AbstractWorldTest {
                 });
 
                 eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var mask = event.componentMask();
-                    var prevMask = event.previousComponentMask();
+                    var archetype = event.archetype();
+                    var prevArchetype = event.previousArchetype();
                     var entityId = event.entityId();
 
-                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
+                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
                         pooled3.add(entityId);
                     }
 
-                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
+                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
                         pooled1.remove(entityId);
                     }
                 });
@@ -453,8 +451,8 @@ class EntityManagerTest extends AbstractWorldTest {
                 verifyHasComponents(entityId, C2.class, C3.class);
                 verifyDoesNotHaveComponents(entityId, C1.class);
 
-                verifyComponentMaskHasComponents(entityId, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+                verifyArchetypeHasComponents(entityId, C2.class, C3.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
             });
         }
 
@@ -474,15 +472,15 @@ class EntityManagerTest extends AbstractWorldTest {
                 });
 
                 eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var mask = event.componentMask();
-                    var prevMask = event.previousComponentMask();
+                    var archetype = event.archetype();
+                    var prevArchetype = event.previousArchetype();
                     var entityId = event.entityId();
 
-                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
+                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
                         pooled3.add(entityId);
                     }
 
-                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
+                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
                         pooled1.remove(entityId);
                     }
                 });
@@ -494,8 +492,8 @@ class EntityManagerTest extends AbstractWorldTest {
                 verifyHasComponents(entityId, C2.class, C3.class);
                 verifyDoesNotHaveComponents(entityId, C1.class);
 
-                verifyComponentMaskHasComponents(entityId, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+                verifyArchetypeHasComponents(entityId, C2.class, C3.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
             });
         }
 
@@ -512,18 +510,18 @@ class EntityManagerTest extends AbstractWorldTest {
 
                 // Setup listeners
                 eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var mask = event.componentMask();
-                    var prevMask = event.previousComponentMask();
+                    var archetype = event.archetype();
+                    var prevArchetype = event.previousArchetype();
                     var id = event.entityId();
 
-                    if (!prevMask.containsComponent(id1) && mask.containsComponent(id1)) {
+                    if (!prevArchetype.containsComponent(id1) && archetype.containsComponent(id1)) {
                         pooled2.add(id);
                     }
-                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
+                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
                         pooled3.add(id);
                     }
 
-                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
+                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
                         pooled1.remove(id);
                     }
                 });
@@ -536,28 +534,28 @@ class EntityManagerTest extends AbstractWorldTest {
                 verifyHasComponents(entityId, C1.class, C2.class);
                 verifyDoesNotHaveComponents(entityId, C3.class);
 
-                verifyComponentMaskHasComponents(entityId, C1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, C2.class, C3.class);
+                verifyArchetypeHasComponents(entityId, C1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, C2.class, C3.class);
 
                 // Process 2
                 world.process(1);
                 verifyHasComponents(entityId, C1.class, C2.class, C3.class);
 
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, C3.class);
+                verifyArchetypeHasComponents(entityId, C1.class, C2.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, C3.class);
 
                 // Process 3
                 world.process(1);
                 verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-                verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+                verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
 
                 // Process 4
                 world.process(1);
                 verifyHasComponents(entityId, C2.class, C3.class);
                 verifyDoesNotHaveComponents(entityId, C1.class);
 
-                verifyComponentMaskHasComponents(entityId, C2.class, C3.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+                verifyArchetypeHasComponents(entityId, C2.class, C3.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
             });
         }
 
@@ -574,15 +572,15 @@ class EntityManagerTest extends AbstractWorldTest {
                 });
 
                 eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var mask = event.componentMask();
-                    var prevMask = event.previousComponentMask();
+                    var archetype = event.archetype();
+                    var prevArchetype = event.previousArchetype();
                     var id = event.entityId();
 
-                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
+                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
                         pooled3.add(id);
                     }
 
-                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
+                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
                         pooled1.remove(id);
                     }
                 });
@@ -594,7 +592,7 @@ class EntityManagerTest extends AbstractWorldTest {
                 verifyHasComponents(entityId, C1.class);
                 verifyDoesNotHaveComponents(entityId, C2.class, C3.class);
 
-                verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class, C3.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class, C3.class);
             });
         }
 

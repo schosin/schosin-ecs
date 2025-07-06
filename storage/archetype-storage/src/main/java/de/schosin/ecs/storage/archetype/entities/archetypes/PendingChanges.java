@@ -11,7 +11,6 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.storage.api.StorageEngineException;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.archetype.utils.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.archetype.utils.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
@@ -19,19 +18,15 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public class PendingChanges {
 
-    private ComponentMask componentMask;
+    private final ArchetypeData archetype;
 
     private final Bag<RegularComponentType<?, ?>> addedTypes = new Bag<>(RegularComponentType.class, 4);
     private final Bag<Object> added = new Bag<>(Object.class, 4);
 
     private final Bag<RegularComponentType<?, ?>> removedTypes = new Bag<>(RegularComponentType.class, 4);
 
-    public PendingChanges(ComponentMask componentMask) {
-        this.componentMask = componentMask;
-    }
-
-    public void setComponentMask(ComponentMask componentMask) {
-        this.componentMask = componentMask;
+    public PendingChanges(ArchetypeData archetype) {
+        this.archetype = archetype;
     }
 
     public boolean containsComponent(RegularComponentType<?, ?> type) {
@@ -56,8 +51,8 @@ public class PendingChanges {
         return this.addedTypes.isEmpty() && this.removedTypes.isEmpty();
     }
 
-    public ComponentMask getComponentMask() {
-        return this.componentMask;
+    public ArchetypeData getArchetype() {
+        return this.archetype;
     }
 
     public ImmutableBag<RegularComponentType<?, ?>> getAddedTypes() {
@@ -88,8 +83,8 @@ public class PendingChanges {
         // Undo remove
         removedTypes.remove(type);
 
-        // Don't add if type already part of current component mask (no archetype change)
-        if (componentMask.getComponentTypes().contains(type)) {
+        // Don't add if type already part of current archetype (no archetype change)
+        if (archetype.getComponentTypes().contains(type)) {
             return false;
         }
 
@@ -149,8 +144,8 @@ public class PendingChanges {
     }
 
     private void addExclusiveComponentRelation(ExclusiveComponentRelationType<?, ?> relationType, Object component) {
-        // Remove matching relations from component mask
-        var componentTypes = componentMask.getComponentTypes();
+        // Remove matching relations from archetype
+        var componentTypes = archetype.getComponentTypes();
 
         for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
             if (componentTypes.get(i) instanceof ExclusiveComponentRelationType<?, ?> other && other.relationship().equals(relationType.relationship())) {
@@ -235,15 +230,15 @@ public class PendingChanges {
     }
 
     public void remove(RegularComponentType<?, ?> type) {
-        var componentMaskType = componentMask.getComponentTypes().contains(type);
+        var archetypeType = archetype.getComponentTypes().contains(type);
 
-        // Skip if no-op (not part of component mask or added types)
-        if (!addedTypes.contains(type) && !componentMaskType) {
+        // Skip if no-op (not part of archetype or added types)
+        if (!addedTypes.contains(type) && !archetypeType) {
             return;
         }
 
         // Add remove
-        if (componentMaskType && !removedTypes.contains(type)) {
+        if (archetypeType && !removedTypes.contains(type)) {
             removedTypes.add(type);
         }
 
@@ -278,10 +273,12 @@ public class PendingChanges {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("PendingChanges(componentMask = ").append(this.componentMask.getId()).append(", addedTypes = ").append(this.addedTypes).append(", removedTypes = ").append(this.removedTypes)
-                .append(")");
-        return builder.toString();
+        return new StringBuilder()
+                .append("PendingChanges(archetype = ").append(this.archetype.getId())
+                .append(", addedTypes = ").append(this.addedTypes)
+                .append(", removedTypes = ").append(this.removedTypes)
+                .append(")")
+                .toString();
     }
 
 }

@@ -18,7 +18,7 @@ import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.StorageEngineException;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
@@ -30,7 +30,7 @@ public class ModifyEntityTest {
     class AddOnlyTest extends AddComponentsTest {
 
         @Override
-        public ComponentMask addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+        public Archetype addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
             return storageEngine.modify(entityId, componentTypes, components, ImmutableBag.emptyBag());
         }
 
@@ -40,7 +40,7 @@ public class ModifyEntityTest {
     class RemoveOnlyTest extends RemoveComponentsTest {
 
         @Override
-        public ComponentMask removeComponents(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
+        public Archetype removeComponents(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
             return storageEngine.modify(entityId, new Object[0], componentTypes);
         }
 
@@ -55,14 +55,14 @@ public class ModifyEntityTest {
             var componentType = ComponentType.detectComponentType(component);
 
             var entityId = world.createEntity();
-            var expectedComponentMask = storageEngine.getComponentMask();
+            var emptyArchetype = storageEngine.getArchetype();
 
             try {
                 // Call
-                var componentMask = storageEngine.modify(entityId, new Object[] { component }, ImmutableBag.of(componentType));
+                var archetype = storageEngine.modify(entityId, new Object[] { component }, ImmutableBag.of(componentType));
 
                 // Verify
-                assertThat(componentMask).as("removes component if added and removed at the same time").isSameAs(expectedComponentMask);
+                assertThat(archetype).as("removes component if added and removed at the same time").isSameAs(emptyArchetype);
             } catch (StorageEngineException ex) {
                 // throwing StorageEngineException is fine
             }
@@ -74,26 +74,26 @@ public class ModifyEntityTest {
             var componentType = ComponentType.detectComponentType(component);
 
             var entityId = world.createEntity();
-            var expectedComponentMask = storageEngine.getComponentMask();
+            var emptyArchetype = storageEngine.getArchetype();
 
             // Call
-            var componentMask = storageEngine.modify(entityId, ImmutableBag.of(componentType), new Object[] { component }, ImmutableBag.of(componentType));
+            var archetype = storageEngine.modify(entityId, ImmutableBag.of(componentType), new Object[] { component }, ImmutableBag.of(componentType));
 
             // Verify
-            assertThat(componentMask).as("removes component if added and removed at the same time").isSameAs(expectedComponentMask);
+            assertThat(archetype).as("removes component if added and removed at the same time").isSameAs(emptyArchetype);
         }
 
         @Test
         void testRemovedWildcardMatchingAddedTypes() {
             var entityId = world.createEntity();
-            var expectedComponentMask = storageEngine.getComponentMask();
+            var emptyArchetype = storageEngine.getArchetype();
 
             // Call
-            var componentMask = storageEngine.modify(entityId, ImmutableBag.of(component(C1.class)), new Object[] { new C1() }, ImmutableBag.of(WILDCARD));
+            var archetype = storageEngine.modify(entityId, ImmutableBag.of(component(C1.class)), new Object[] { new C1() }, ImmutableBag.of(WILDCARD));
 
             // Verify
-            assertThat(componentMask).as("does not add components if removed component type matches added type").isSameAs(expectedComponentMask);
-            assertThat(storageEngine.getPendingComponentMask(entityId)).as("does not add components if removed component type matches added type").isNull();
+            assertThat(archetype).as("does not add components if removed component type matches added type").isSameAs(emptyArchetype);
+            assertThat(storageEngine.getPendingArchetype(entityId)).as("does not add components if removed component type matches added type").isNull();
             assertThat(getComponent(entityId, C1.class)).as("does not add components if removed component type matches added type").isNull();
         }
 

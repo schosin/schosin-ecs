@@ -1,7 +1,5 @@
 package de.schosin.ecs.storage.archetype;
 
-import java.util.function.Predicate;
-
 import com.google.auto.service.AutoService;
 
 import de.schosin.ecs.api.Pooled;
@@ -25,11 +23,9 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelatio
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.entities.Archetype;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
-import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 @AutoService(StorageEngine.class)
@@ -44,10 +40,10 @@ public class ArchetypeStorageEngine implements StorageEngine {
 
         var componentIndex = new ComponentIndex(storageConfig.classIdCount(), storageConfig.relationCount());
         var relationIndex = new EntityRelationIndex(world);
-        var entityIndex = new EntityIndex(world, storageConfig, componentIndex, relationIndex);
+        var entityIndex = new EntityIndex(world, storageConfig, this, componentIndex, relationIndex);
 
         this.componentStorage = new ComponentStorageImpl(world, componentIndex, entityIndex, relationIndex);
-        this.entityStorage = new EntityStorageImpl(componentIndex, entityIndex, componentStorage);
+        this.entityStorage = new EntityStorageImpl(entityIndex, componentStorage);
     }
 
     static ArchetypeStorageConfig retrieveStorageConfig(Object config) {
@@ -119,67 +115,42 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
-    public ComponentMask getComponentMaskForEntity(int entityId) {
-        return this.entityStorage.getComponentMaskForEntity(entityId);
-    }
-
-    @Override
-    public ComponentMask getComponentMaskById(int componentMaskId) {
-        return this.entityStorage.getComponentMaskById(componentMaskId);
-    }
-
-    @Override
-    public ComponentMask getComponentMask(RegularComponentType<?, ?>... componentTypes) {
-        return this.entityStorage.getComponentMask(componentTypes);
-    }
-
-    @Override
-    public ImmutableBag<ComponentMask> getComponentMasks() {
-        return this.entityStorage.getComponentMasks();
-    }
-
-    @Override
-    public void getComponentMasks(Predicate<ComponentMask> predicate, Bag<ComponentMask> fill) {
-        this.entityStorage.getComponentMasks(predicate, fill);
-    }
-
-    @Override
-    public ComponentMask add(int entityId, Object[] components) {
+    public Archetype add(int entityId, Object[] components) {
         return this.entityStorage.add(entityId, components);
     }
 
     @Override
-    public ComponentMask add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+    public Archetype add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         return this.entityStorage.add(entityId, componentTypes, components);
     }
 
     @Override
-    public ComponentMask remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
+    public Archetype remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes) {
         return this.entityStorage.remove(entityId, componentTypes);
     }
 
     @Override
-    public ComponentMask modify(int entityId, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
+    public Archetype modify(int entityId, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         return this.entityStorage.modify(entityId, add, removeTypes);
     }
 
     @Override
-    public ComponentMask modify(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
+    public Archetype modify(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
         return this.entityStorage.modify(entityId, addTypes, add, removeTypes);
     }
 
     @Override
-    public ComponentMask delete(int entityId) {
+    public Archetype delete(int entityId) {
         return this.entityStorage.delete(entityId);
     }
 
     @Override
-    public ComponentMask getPendingComponentMask(int entityId) {
-        return this.entityStorage.getPendingComponentMask(entityId);
+    public Archetype getPendingArchetype(int entityId) {
+        return this.entityStorage.getPendingArchetype(entityId);
     }
 
     @Override
-    public ComponentMask flushChanges(int entityId) {
+    public Archetype flushChanges(int entityId) {
         return this.entityStorage.flushChanges(entityId);
     }
 

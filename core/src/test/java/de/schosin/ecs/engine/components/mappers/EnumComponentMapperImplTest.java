@@ -62,10 +62,10 @@ class EnumComponentMapperImplTest extends AbstractMapperTest {
             assertThat(secondEnum.get(entity2)).isSameAs(EnumComponent.FIRST);
 
             verifyHasComponents(entity1, EnumComponent.class);
-            verifyComponentMaskHasComponents(entity1, EnumComponent.class);
+            verifyArchetypeHasComponents(entity1, EnumComponent.class);
 
             verifyHasComponents(entity2, EnumComponent.class);
-            verifyComponentMaskHasComponents(entity2, EnumComponent.class);
+            verifyArchetypeHasComponents(entity2, EnumComponent.class);
         });
     }
 
@@ -93,10 +93,10 @@ class EnumComponentMapperImplTest extends AbstractMapperTest {
             assertThat(secondEnum.get(entity2)).isSameAs(EnumComponent.SECOND);
 
             verifyHasComponents(entity1, EnumComponent.class);
-            verifyComponentMaskHasComponents(entity1, EnumComponent.class);
+            verifyArchetypeHasComponents(entity1, EnumComponent.class);
 
             verifyHasComponents(entity2, EnumComponent.class);
-            verifyComponentMaskHasComponents(entity2, EnumComponent.class);
+            verifyArchetypeHasComponents(entity2, EnumComponent.class);
         });
     }
 
@@ -130,16 +130,16 @@ class EnumComponentMapperImplTest extends AbstractMapperTest {
             assertThat(firstEnum.get(entity4)).isNull();
 
             verifyDoesNotHaveComponents(entity1, EnumComponent.class);
-            verifyComponentMaskDoesNotHaveComponents(entity1, EnumComponent.class);
+            verifyArchetypeDoesNotHaveComponents(entity1, EnumComponent.class);
 
             verifyDoesNotHaveComponents(entity2, EnumComponent.class);
-            verifyComponentMaskDoesNotHaveComponents(entity2, EnumComponent.class);
+            verifyArchetypeDoesNotHaveComponents(entity2, EnumComponent.class);
 
             verifyDoesNotHaveComponents(entity3, EnumComponent.class);
-            verifyComponentMaskDoesNotHaveComponents(entity3, EnumComponent.class);
+            verifyArchetypeDoesNotHaveComponents(entity3, EnumComponent.class);
 
             verifyDoesNotHaveComponents(entity4, EnumComponent.class);
-            verifyComponentMaskDoesNotHaveComponents(entity4, EnumComponent.class);
+            verifyArchetypeDoesNotHaveComponents(entity4, EnumComponent.class);
         });
     }
 

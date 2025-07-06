@@ -25,7 +25,7 @@ import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEnti
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.StorageEngineException;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
@@ -33,7 +33,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
 
     private static final String COMPONENTS_SOURCE = "de.schosin.ecs.storage.testsuite.entities.AddComponentsTest#components";
 
-    public ComponentMask addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+    public Archetype addComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         return storageEngine.add(entityId, componentTypes, components);
     }
 
@@ -58,7 +58,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var entityId = world.createEntity();
 
             // Call
-            var componentMask = addComponents(entityId, ImmutableBag.of(componentType), new Object[] { component });
+            var archetype = addComponents(entityId, ImmutableBag.of(componentType), new Object[] { component });
 
             // Verify
             var components = world.getComponents(componentType);
@@ -71,7 +71,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
                 case ExclusiveEntityRelationMapper mapper -> assertThat(mapper.get(entityId)).as("must store component").isSameAs(component);
             }
 
-            assertThat(componentMask.getComponentTypes()).as("component mask must only contain type of passed component").containsExactly(componentType);
+            assertThat(archetype.getComponentTypes()).as("archetype must only contain type of passed component").containsExactly(componentType);
         }
 
         @SuppressWarnings("rawtypes")
@@ -83,7 +83,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var component2 = new C2();
-            var componentMask = addComponents(entityId, ImmutableBag.of(componentType, component(C2.class)), new Object[] { component, component2 });
+            var archetype = addComponents(entityId, ImmutableBag.of(componentType, component(C2.class)), new Object[] { component, component2 });
 
             // Verify
             var components = world.getComponents(componentType);
@@ -98,14 +98,14 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
 
             assertThat(world.getComponents(component(C2.class)).get(entityId)).as("must store component").isSameAs(component2);
 
-            assertThat(componentMask.getComponentTypes()).as("component mask must only contain type of passed component").containsExactlyInAnyOrder(componentType, component(C2.class));
+            assertThat(archetype.getComponentTypes()).as("archetype must only contain type of passed component").containsExactlyInAnyOrder(componentType, component(C2.class));
         }
 
         @SuppressWarnings("rawtypes")
         @ParameterizedTest
         @MethodSource(COMPONENTS_SOURCE)
         void testAddToMultipleEntities_FlushChanges(Object component) {
-            var emptyComponentMask = engine.getComponentMask();
+            var emptyArchetype = engine.getArchetype();
 
             var componentType = ComponentType.detectComponentType(component);
             var entity1 = world.createEntity();
@@ -114,7 +114,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             // Call
             var component2 = new C2();
             addComponents(entity1, ImmutableBag.of(componentType), new Object[] { component });
-            var componentMask2 = addComponents(entity2, ImmutableBag.of(component(C2.class)), new Object[] { component2 });
+            var archetype = addComponents(entity2, ImmutableBag.of(component(C2.class)), new Object[] { component2 });
 
             storageEngine.flushChanges(entity1);
 
@@ -129,15 +129,15 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
                 case ExclusiveEntityRelationMapper mapper -> assertThat(mapper.get(entity1)).as("must store component").isSameAs(component);
             }
 
-            assertThat(storageEngine.getComponentMaskForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(emptyComponentMask);
-            assertThat(storageEngine.getPendingComponentMask(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(componentMask2);
+            assertThat(storageEngine.getArchetypeForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(emptyArchetype);
+            assertThat(storageEngine.getPendingArchetype(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(archetype);
             assertThat(getComponent(entity2, C2.class)).as("flushing changes must not affect pending changes for other entities").isSameAs(component2);
 
             // Flush second entity
             storageEngine.flushChanges(entity2);
 
-            assertThat(storageEngine.getComponentMaskForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(componentMask2);
-            assertThat(storageEngine.getPendingComponentMask(entity2)).as("flushing changes must not affect pending changes for other entities").isNull();
+            assertThat(storageEngine.getArchetypeForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(archetype);
+            assertThat(storageEngine.getPendingArchetype(entity2)).as("flushing changes must not affect pending changes for other entities").isNull();
             assertThat(getComponent(entity2, C2.class)).as("flushing changes must not affect pending changes for other entities").isSameAs(component2);
         }
 

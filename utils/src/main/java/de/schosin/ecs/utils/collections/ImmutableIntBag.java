@@ -85,6 +85,16 @@ final class ImmutableIntBagImpl implements ImmutableIntBag {
         return new ImmutableIntBagIterator(bag);
     }
 
+    @Override
+    public int hashCode() {
+        return this.bag.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return this.bag.equals(obj);
+    }
+
     private static class ImmutableIntBagIterator implements PrimitiveIterator.OfInt {
 
         private final int[] data;

@@ -4,13 +4,19 @@ import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 public interface Archetype {
 
     int getId();
 
-    ComponentMask getComponentMask();
+    boolean containsComponent(int componentId);
+
+    ImmutableBag<Component<?, ?>> getComponents();
+
+    ImmutableBag<RegularComponentType<?, ?>> getComponentTypes();
 
     int getCount();
 

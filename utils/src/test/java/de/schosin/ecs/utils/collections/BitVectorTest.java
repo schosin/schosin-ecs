@@ -335,6 +335,49 @@ class BitVectorTest {
         }
 
         @Test
+        void testClear_ClearLastBitEqualToEmpty() {
+            var empty = new BitVector();
+
+            var vector = new BitVector();
+            assertThat(vector).isEqualTo(empty);
+
+            vector.set(1);
+            assertThat(vector).isNotEqualTo(empty);
+
+            vector.clear(1);
+            assertThat(vector).isEqualTo(empty);
+        }
+
+        @Test
+        void testClear_ClearLastBitEqualToEmpty_LastBitNotFirstWord() {
+            var empty = new BitVector();
+
+            var vector = new BitVector();
+            assertThat(vector).isEqualTo(empty);
+
+            vector.set(70);
+            assertThat(vector).isNotEqualTo(empty);
+
+            vector.clear(70);
+            assertThat(vector).isEqualTo(empty);
+        }
+
+        @Test
+        void testClear_ClearAllEqualToEmpty() {
+            var empty = new BitVector();
+
+            var vector = new BitVector();
+            assertThat(vector).isEqualTo(empty);
+
+            vector.set(1);
+            vector.set(9001);
+            assertThat(vector).isNotEqualTo(empty);
+
+            vector.clear();
+            assertThat(vector).isEqualTo(empty);
+        }
+
+        @Test
         void testUnsafeClear() {
             var vector = new BitVector();
             vector.set(1);

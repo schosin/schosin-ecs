@@ -218,11 +218,12 @@ public class BitVector {
         }
 
         if ((this.words[wordIndex] &= ~(1L << index)) == 0 && wordIndex == this.currentWord) {
-            for (this.currentWord = wordIndex - 1; this.currentWord > 0; --this.currentWord) {
+            for (this.currentWord = wordIndex - 1; this.currentWord > -1; --this.currentWord) {
                 if (this.words[this.currentWord] > 0) {
                     return;
                 }
             }
+
         }
     }
 

@@ -169,8 +169,8 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 verifyHasComponents(entityId, Component1.class);
                 verifyDoesNotHaveComponents(entityId, Position.class, Velocity.class);
 
-                verifyComponentMaskHasComponents(entityId, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Position.class, Velocity.class);
+                verifyArchetypeHasComponents(entityId, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Position.class, Velocity.class);
             });
         }
 
@@ -192,7 +192,7 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
 
                 // Verify
                 verifyHasComponents(entityId, Position.class, Velocity.class, Component1.class);
-                verifyComponentMaskHasComponents(entityId, Position.class, Velocity.class, Component1.class);
+                verifyArchetypeHasComponents(entityId, Position.class, Velocity.class, Component1.class);
             });
         }
 
@@ -215,8 +215,8 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 verifyHasComponents(entityId, Position.class, Component1.class);
                 verifyDoesNotHaveComponents(entityId, Velocity.class);
 
-                verifyComponentMaskHasComponents(entityId, Position.class, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Velocity.class);
+                verifyArchetypeHasComponents(entityId, Position.class, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Velocity.class);
             });
         }
 
@@ -239,8 +239,8 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 verifyHasComponents(entityId, Velocity.class, Component1.class);
                 verifyDoesNotHaveComponents(entityId, Position.class);
 
-                verifyComponentMaskHasComponents(entityId, Velocity.class, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Position.class);
+                verifyArchetypeHasComponents(entityId, Velocity.class, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Position.class);
             });
         }
 
@@ -264,7 +264,7 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
 
                 // Verify
                 verifyHasComponents(entityId, exclusiveRelation(Birthplace.class, Position.class), exclusiveRelation(Birthplace.class), component(Component1.class));
-                verifyComponentMaskHasComponents(entityId, exclusiveRelation(Birthplace.class, Position.class), exclusiveRelation(Birthplace.class), component(Component1.class));
+                verifyArchetypeHasComponents(entityId, exclusiveRelation(Birthplace.class, Position.class), exclusiveRelation(Birthplace.class), component(Component1.class));
             });
         }
 
@@ -284,7 +284,7 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 world.process();
 
                 verifyDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
             });
         }
 
@@ -300,7 +300,7 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 world.process();
 
                 verifyDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
             });
         }
 
@@ -316,7 +316,7 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 world.process();
 
                 verifyDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
             });
         }
 
@@ -332,7 +332,7 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 world.process();
 
                 verifyDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Position.class, Velocity.class, Component1.class);
             });
         }
 
@@ -350,8 +350,8 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 verifyHasComponents(entityId, Component1.class);
                 verifyDoesNotHaveComponents(entityId, Position.class, Velocity.class);
 
-                verifyComponentMaskHasComponents(entityId, Component1.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, Position.class, Velocity.class);
+                verifyArchetypeHasComponents(entityId, Component1.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, Position.class, Velocity.class);
             });
         }
 
@@ -365,7 +365,7 @@ class ComponentSetMapperImplTest extends AbstractMapperTest {
                 assertThat(mapper.remove(entityId)).isTrue();
 
                 verifyHasComponents(entityId, Position.class, Velocity.class, Component1.class);
-                verifyComponentMaskHasComponents(entityId, Position.class, Velocity.class, Component1.class);
+                verifyArchetypeHasComponents(entityId, Position.class, Velocity.class, Component1.class);
             });
         }
 

@@ -1,16 +1,24 @@
 package de.schosin.ecs.storage.archetype.entities;
 
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.TreeSet;
+
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
+import de.schosin.ecs.storage.api.components.Component;
+import de.schosin.ecs.storage.api.components.Component.RelationComponent;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
+import de.schosin.ecs.storage.archetype.ArchetypeStorageEngine;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeData;
 import de.schosin.ecs.storage.archetype.entities.archetypes.ArchetypeDataSoaImpl;
@@ -18,6 +26,7 @@ import de.schosin.ecs.storage.archetype.entities.archetypes.PendingChanges;
 import de.schosin.ecs.storage.archetype.utils.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.archetype.utils.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.Pool;
 
@@ -28,26 +37,47 @@ import de.schosin.ecs.utils.collections.Pool;
  */
 public class EntityIndex {
 
+    private static final Comparator<Component<?, ?>> COMPONENT_COMPARATOR = Comparator.comparing(Component::id);
+
     private final StorageWorld world;
     private final ArchetypeStorageConfig config;
+
+    private final ArchetypeStorageEngine storage;
 
     private final ComponentIndex componentIndex;
     private final EntityRelationIndex relationIndex;
 
     private final Bag<ArchetypePointer> lookup;
+
     private final Bag<ArchetypeData> archetypes = new Bag<>(ArchetypeData.class, 8);
+    private final Map<BitVector, ArchetypeData> archetypesLookup = new HashMap<>();
     private final ImmutableBag<Archetype> immutableArchetypes = ImmutableBag.create(archetypes);
+
+    private final ArchetypeData emptyArchetype;
 
     private final Pool<Bag<Object>> componentsPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class), Bag::clear);
 
-    public EntityIndex(StorageWorld world, ArchetypeStorageConfig config, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
+    public EntityIndex(StorageWorld world, ArchetypeStorageConfig config, ArchetypeStorageEngine storage, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
         this.world = world;
         this.config = config;
 
+        this.storage = storage;
         this.componentIndex = componentIndex;
         this.relationIndex = relationIndex;
 
         this.lookup = world.createEntityBag(ArchetypePointer.class);
+
+        this.emptyArchetype = createEmptyArchetype();
+    }
+
+    private ArchetypeData createEmptyArchetype() {
+        var componentIds = new BitVector();
+
+        var archetype = createArchetype(0, componentIds, ImmutableBag.emptyBag());
+        this.archetypes.set(0, archetype);
+        this.archetypesLookup.put(componentIds, archetype);
+
+        return archetype;
     }
 
     public ArchetypeData getArchetypeDataById(int archetypeId) {
@@ -67,10 +97,6 @@ public class EntityIndex {
         return pointer.getArchetype();
     }
 
-    public ArchetypeData getArchetype(ComponentMaskImpl componentMask) {
-        return determineArchetype(componentMask);
-    }
-
     public DataAccessor getAccessor(int entityId) {
         var pointer = lookup.getSafe(entityId);
         if (pointer == null || !pointer.isValid()) {
@@ -78,15 +104,6 @@ public class EntityIndex {
         }
 
         return pointer;
-    }
-
-    public ComponentMask getComponentMask(int entityId) {
-        var archetype = getArchetypeDataForEntity(entityId);
-        if (archetype == null) {
-            return null;
-        }
-
-        return archetype.getComponentMask();
     }
 
     public boolean hasComponent(int entityId, int componentId) {
@@ -163,34 +180,125 @@ public class EntityIndex {
         pointer.setPointer(archetype, index);
     }
 
-    private ArchetypeData determineArchetype(ComponentMaskImpl componentMask) {
-        var existing = componentMask.getId() < this.archetypes.getSize() ? this.archetypes.get(componentMask.getId()) : null;
-        if (existing != null) {
-            return existing;
-        }
+    public ArchetypeData getArchetype(RegularComponentType<?, ?>... componentTypes) {
+        return switch (componentTypes.length) {
+            case 0 -> emptyArchetype;
+            case 1 -> emptyArchetype.addComponentType(componentTypes[0]);
+            default -> {
+                var result = emptyArchetype;
+                for (int i = 0, s = componentTypes.length; i < s; i++) {
+                    var componentType = componentTypes[i];
 
-        synchronized (this.archetypes) {
-            existing = componentMask.getId() < this.archetypes.getSize() ? this.archetypes.get(componentMask.getId()) : null;
-            if (existing != null) {
-                return existing;
+                    var next = result.addComponentType(componentType);
+                    if (next == result) {
+                        throw new StorageEngineException("Cannot create archetype, detected duplicate component type: %s".formatted(componentType));
+                    }
+
+                    result = next;
+                }
+
+                yield result;
             }
-
-            var archetype = createArchetype(componentMask);
-            this.archetypes.set(componentMask.getId(), archetype);
-
-            this.world.dispatchEvent(new ArchetypeAddedEvent(componentMask, archetype));
-
-            return archetype;
-        }
-    }
-
-    private ArchetypeData createArchetype(ComponentMaskImpl componentMask) {
-        return switch (config.variant()) {
-            case StructOfArrays -> new ArchetypeDataSoaImpl(componentIndex, relationIndex, this, componentMask, config, world);
         };
     }
 
-    public ComponentMask deleteEntity(int entityId) {
+    public ArchetypeData addToArchetype(ArchetypeData base, int componentId, RegularComponentType<?, ?> componentType) {
+        var componentIds = new BitVector(base.getComponentIds());
+        componentIds.set(componentId);
+
+        var result = this.archetypesLookup.get(componentIds);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.archetypesLookup) {
+            result = this.archetypesLookup.get(componentIds);
+            if (result != null) {
+                return result;
+            }
+
+            var components = new Bag<>(base.getComponents());
+            components.add(storage.getComponent(componentType));
+
+            components = sortComponents(components);
+
+            if (components.getSize() != base.getComponents().getSize() + 1) {
+                // this indicates a bug and should not be reachable
+                throw new IllegalArgumentException("Cannot add '%s' to archetype '%s': Component type already contained".formatted(componentType, base));
+            }
+
+            result = createArchetype(this.archetypesLookup.size(), componentIds, components);
+            this.archetypes.set(result.getId(), result);
+            this.archetypesLookup.put(componentIds, result);
+
+            world.dispatchEvent(new ArchetypeAddedEvent(result));
+
+            return result;
+        }
+    }
+
+    private Bag<Component<?, ?>> sortComponents(Bag<Component<?, ?>> components) {
+        var duplicates = new HashSet<RegularComponentType<?, ?>>();
+
+        var set = new TreeSet<>(COMPONENT_COMPARATOR);
+        for (int i = 0, s = components.getSize(); i < s; i++) {
+            var component = components.get(i);
+
+            if (!set.add(component) && !(component instanceof RelationComponent<?, ?, ?>)) {
+                duplicates.add(component.type());
+            }
+        }
+
+        // Check for duplicates
+        if (!duplicates.isEmpty()) {
+            throw new StorageEngineException("Detected duplicate component types: %s".formatted(duplicates));
+        }
+
+        // Build sorted bag
+        var result = new Bag<Component<?, ?>>(Component.class, set.size());
+        for (var component : set) {
+            result.add(component);
+        }
+
+        return result;
+    }
+
+    public ArchetypeData removeFromArchetype(ArchetypeData base, int componentId, RegularComponentType<?, ?> componentType) {
+        var componentIds = new BitVector(base.getComponentIds());
+        componentIds.clear(componentId);
+
+        var result = this.archetypesLookup.get(componentIds);
+        if (result != null) {
+            return result;
+        }
+
+        synchronized (this.archetypesLookup) {
+            result = this.archetypesLookup.get(componentIds);
+            if (result != null) {
+                return result;
+            }
+
+            var components = new Bag<>(base.getComponents());
+            if (!components.remove(storage.getComponent(componentId))) {
+                // this indicates a bug and should not be reachable
+                throw new IllegalArgumentException("Cannot remove '%s' from archetype '%s': Component type not contained".formatted(componentType, base));
+            }
+
+            result = createArchetype(this.archetypesLookup.size(), componentIds, components);
+            this.archetypes.set(result.getId(), result);
+            this.archetypesLookup.put(componentIds, result);
+
+            return result;
+        }
+    }
+
+    private ArchetypeData createArchetype(int id, BitVector componentIds, ImmutableBag<Component<?, ?>> components) {
+        return switch (config.variant()) {
+            case StructOfArrays -> new ArchetypeDataSoaImpl(id, componentIds, components, componentIndex, relationIndex, this, config, world);
+        };
+    }
+
+    public ArchetypeData deleteEntity(int entityId) {
         // Lookup pointer
         var pointer = lookup.get(entityId);
         if (pointer == null || !pointer.isValid()) {
@@ -204,10 +312,9 @@ public class EntityIndex {
         }
 
         // Delete entity from archetype
-        var componentMask = pointer.getArchetype().getComponentMask();
         removeEntity(pointer, null);
 
-        return componentMask;
+        return pointer.getArchetype();
     }
 
     public void removeEntity(ArchetypePointer pointer, Bag<Object> fill) {
@@ -233,10 +340,10 @@ public class EntityIndex {
         return pointer.getPendingChanges();
     }
 
-    public ComponentMask flushChanges(int entityId, ComponentMaskImpl componentMask) {
+    public ArchetypeData flushChanges(int entityId, ArchetypeData archetype) {
         // Lookup pointer
         var pointer = lookup.get(entityId);
-        var previousComponentMask = pointer.getArchetype().getComponentMask();
+        var previousArchetype = pointer.getArchetype();
 
         // Retrieve changes, return early if none
         var changes = pointer.getPendingChanges();
@@ -246,8 +353,7 @@ public class EntityIndex {
         removeEntity(pointer, data);
 
         // Add to archetype
-        var archetype = determineArchetype(componentMask);
-        var index = archetype.addEntity(entityId, previousComponentMask.getComponentTypes(), data, changes.getAddedTypes(), changes.getAdded());
+        var index = archetype.addEntity(entityId, previousArchetype.getComponentTypes(), data, changes.getAddedTypes(), changes.getAdded());
 
         pointer.setPointer(archetype, index);
 
@@ -255,7 +361,7 @@ public class EntityIndex {
         changes.reset();
         componentsPool.free(data);
 
-        return componentMask;
+        return archetype;
     }
 
     public int getEntityIndex(ArchetypeData archetypeData, int entityId) {

@@ -31,14 +31,14 @@ public class ExclusiveComponentRelationDataTest extends
 
         var entityId = world.createEntity(instance1);
         assertThat(getComponent(entityId, type)).as("returns instance passed at creation").isSameAs(instance1);
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after creation").isNull();
 
         // Call
         storageEngine.add(entityId, ImmutableBag.of(type), new Object[] { instance2 });
 
         // Verify
         assertThat(getComponent(entityId, type)).as("returns instance passed at creation").isSameAs(instance2);
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null if add caused no archetype change").isNull();
     }
 
     @Test
@@ -50,29 +50,29 @@ public class ExclusiveComponentRelationDataTest extends
         var type2 = detectComponentType(instance2);
 
         var entityId = world.createEntity(instance1);
-        var componentMask = storageEngine.getComponentMaskForEntity(entityId);
+        var archetype = storageEngine.getArchetypeForEntity(entityId);
         
         assertThat(getComponent(entityId, type1)).as("returns instance passed at creation").isSameAs(instance1);
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after creation").isNull();
 
         // Call
-        var updatedComponentMask = storageEngine.add(entityId, ImmutableBag.of(type2), new Object[] { instance2 });
-        assertThat(updatedComponentMask).as("adding exclusive relation with different target returns different component mask").isNotEqualTo(componentMask);
-        assertThat(updatedComponentMask.getComponentTypes()).as("adding exclusive relation with different target discards old exclusive relation type").containsExactly(type2);
+        var updatedArchetype = storageEngine.add(entityId, ImmutableBag.of(type2), new Object[] { instance2 });
+        assertThat(updatedArchetype).as("adding exclusive relation with different target returns different archetype").isNotEqualTo(archetype);
+        assertThat(updatedArchetype.getComponentTypes()).as("adding exclusive relation with different target discards old exclusive relation type").containsExactly(type2);
 
         // Verify
         assertThat(getComponent(entityId, type1)).as("returns instance passed at creation").isSameAs(instance1);
         assertThat(getComponent(entityId, type2)).as("returns pending instance passed at add").isSameAs(instance2);
-        assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns old component mask").isSameAs(componentMask);
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns updated component mask").isSameAs(updatedComponentMask);
+        assertThat(storageEngine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity returns old archetype").isSameAs(archetype);
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns updated archetype").isSameAs(updatedArchetype);
         
         // Flush
         storageEngine.flushChanges(entityId);
         
         assertThat(getComponent(entityId, type1)).as("returns instance passed at creation").isNull();
         assertThat(getComponent(entityId, type2)).as("returns pending instance passed at add").isSameAs(instance2);
-        assertThat(storageEngine.getComponentMaskForEntity(entityId)).as("getComponentMaskForEntity returns updated component mask after flush").isSameAs(updatedComponentMask);
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after flush").isNull();
+        assertThat(storageEngine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity returns updated archetype after flush").isSameAs(updatedArchetype);
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after flush").isNull();
         
     }
 

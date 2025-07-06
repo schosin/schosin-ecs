@@ -9,7 +9,7 @@ import java.util.Set;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.entities.EntityManager;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.Archetype;
 
 public sealed interface EngineSpec extends EntityManager.ComponentsPredicate {
 
@@ -48,9 +48,9 @@ record AllSpec(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) implements
     }
 
     @Override
-    public boolean isInterested(ComponentMask componentMask) {
-        return (types == null || types.stream().allMatch(type -> componentMask.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
-                && (specs == null || specs.stream().allMatch(spec -> spec.isInterested(componentMask)));
+    public boolean isInterested(Archetype archetype) {
+        return (types == null || types.stream().allMatch(type -> archetype.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
+                && (specs == null || specs.stream().allMatch(spec -> spec.isInterested(archetype)));
     }
 
     @Override
@@ -75,9 +75,9 @@ record OneSpec(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) implements
     }
 
     @Override
-    public boolean isInterested(ComponentMask componentMask) {
-        return (types != null && types.stream().anyMatch(type -> componentMask.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
-                || (specs != null && specs.stream().anyMatch(spec -> spec.isInterested(componentMask)));
+    public boolean isInterested(Archetype archetype) {
+        return (types != null && types.stream().anyMatch(type -> archetype.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
+                || (specs != null && specs.stream().anyMatch(spec -> spec.isInterested(archetype)));
     }
 
     @Override
@@ -102,9 +102,9 @@ record NoneSpec(Set<ComponentType<?, ?>> types, Set<EngineSpec> specs) implement
     }
 
     @Override
-    public boolean isInterested(ComponentMask componentMask) {
-        return (types == null || types.stream().noneMatch(type -> componentMask.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
-                && (specs == null || specs.stream().noneMatch(spec -> spec.isInterested(componentMask)));
+    public boolean isInterested(Archetype archetype) {
+        return (types == null || types.stream().noneMatch(type -> archetype.getComponentTypes().stream().anyMatch(otherType -> type.matches(otherType))))
+                && (specs == null || specs.stream().noneMatch(spec -> spec.isInterested(archetype)));
     }
 
     @Override
@@ -124,7 +124,7 @@ enum MatchAll implements EngineSpec {
     INSTANCE;
 
     @Override
-    public boolean isInterested(ComponentMask componentMask) {
+    public boolean isInterested(Archetype archetype) {
         return true;
     }
 
@@ -152,10 +152,10 @@ final class EngineSpecImpl implements EngineSpec {
     }
 
     @Override
-    public boolean isInterested(ComponentMask componentMask) {
-        return (all == null || all.isInterested(componentMask))
-                && (ones == null || ones.stream().allMatch(one -> one.isInterested(componentMask)))
-                && (none == null || none.isInterested(componentMask));
+    public boolean isInterested(Archetype archetype) {
+        return (all == null || all.isInterested(archetype))
+                && (ones == null || ones.stream().allMatch(one -> one.isInterested(archetype)))
+                && (none == null || none.isInterested(archetype));
     }
 
     @Override

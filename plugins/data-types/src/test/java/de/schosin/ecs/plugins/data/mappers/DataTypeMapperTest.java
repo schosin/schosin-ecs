@@ -158,16 +158,16 @@ class DataTypeMapperTest extends AbstractEcsTest<DataTypeWorld> {
 
                 // Verify
                 verifyDoesNotHaveComponents(entity1, Component1.class, Component2.class);
-                verifyComponentMaskDoesNotHaveComponents(entity1, Component1.class, Component2.class);
+                verifyArchetypeDoesNotHaveComponents(entity1, Component1.class, Component2.class);
 
                 verifyDoesNotHaveComponents(entity2, Component1.class, Component2.class);
-                verifyComponentMaskDoesNotHaveComponents(entity2, Component1.class, Component2.class);
+                verifyArchetypeDoesNotHaveComponents(entity2, Component1.class, Component2.class);
 
                 verifyDoesNotHaveComponents(entity3, Component1.class, Component2.class);
-                verifyComponentMaskDoesNotHaveComponents(entity3, Component1.class, Component2.class);
+                verifyArchetypeDoesNotHaveComponents(entity3, Component1.class, Component2.class);
 
                 verifyDoesNotHaveComponents(entity4, Component1.class, Component2.class);
-                verifyComponentMaskDoesNotHaveComponents(entity4, Component1.class, Component2.class);
+                verifyArchetypeDoesNotHaveComponents(entity4, Component1.class, Component2.class);
             });
         }
 

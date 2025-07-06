@@ -10,7 +10,7 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
@@ -43,19 +43,19 @@ public class ChangeManager {
         this.updatedEntitiesOverflow = new BitVector(64);
     }
 
-    public void inserted(int entityId, ComponentMask componentMask) {
+    public void inserted(int entityId, Archetype archetype) {
         // Dispatch event, return early if no handlers
-        if (!eventManager.dispatchEvent(EntityInsertedEvent.get(entityId, componentMask))) {
+        if (!eventManager.dispatchEvent(EntityInsertedEvent.get(entityId, archetype))) {
             return;
         }
 
         // Process composition updates
-        processEntityCreation(entityId, componentMask);
+        processEntityCreation(entityId, archetype);
     }
 
-    public void inserted(ImmutableIntBag entityIds, ComponentMask componentMask) {
+    public void inserted(ImmutableIntBag entityIds, Archetype archetype) {
         // Dispatch event, skip if no handlers
-        if (!eventManager.dispatchEvent(EntitiesInsertedEvent.get(entityIds, componentMask))) {
+        if (!eventManager.dispatchEvent(EntitiesInsertedEvent.get(entityIds, archetype))) {
             return;
         }
 
@@ -63,18 +63,18 @@ public class ChangeManager {
         for (int i = 0, s = entityIds.getSize(); i < s; i++) {
             var entityId = entityIds.get(i);
 
-            processEntityCreation(entityId, componentMask);
+            processEntityCreation(entityId, archetype);
         }
     }
 
-    private void processEntityCreation(int entityId, ComponentMask componentMask) {
+    private void processEntityCreation(int entityId, Archetype archetype) {
         var tries = MAX_PROCESS_REPITITIONS;
         while (!processEntityInCreation(entityId) && --tries > 0) {
             // just repeat until done
         }
 
         if (tries == 0) {
-            System.err.println("Creating entity %d caused too many recursive updates while processing compositions. Initial component mask: %s".formatted(entityId, componentMask));
+            System.err.println("Creating entity %d caused too many recursive updates while processing compositions. Initial archetype: %s".formatted(entityId, archetype));
         }
     }
 
@@ -162,14 +162,14 @@ public class ChangeManager {
     }
 
     private void processDeletedEntity(int entityId) {
-        // Get component mask, return early if null (entity not active)
-        var componentMask = entityManager.getComponentMask(entityId);
-        if (componentMask == null) {
+        // Get archetype, return early if null (entity not active)
+        var archetype = entityManager.getArchetype(entityId);
+        if (archetype == null) {
             return;
         }
 
         // Notify handlers
-        eventManager.dispatchEvent(EntityRemovedEvent.get(entityId, componentMask));
+        eventManager.dispatchEvent(EntityRemovedEvent.get(entityId, archetype));
 
         // Delete entity
         entityManager.deleteEntity(entityId);
@@ -180,21 +180,21 @@ public class ChangeManager {
             return;
         }
 
-        var pendingComponentMask = storageEngine.getPendingComponentMask(entityId);
-        if (pendingComponentMask == null) {
+        var pendingArchetype = storageEngine.getPendingArchetype(entityId);
+        if (pendingArchetype == null) {
             return;
         }
 
         // Dispatch before event
-        var previousComponentMask = entityManager.getComponentMask(entityId);
-        eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(entityId, previousComponentMask, pendingComponentMask));
+        var previousArchetype = entityManager.getArchetype(entityId);
+        eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(entityId, previousArchetype, pendingArchetype));
 
         // Apply changes
         storageEngine.flushChanges(entityId);
-        entityManager.updateComponentMask(entityId, pendingComponentMask);
+        entityManager.updateArchetype(entityId, pendingArchetype);
 
         // Dispatch after event
-        eventManager.dispatchEvent(EntityUpdatedEvent.get(entityId, previousComponentMask, pendingComponentMask));
+        eventManager.dispatchEvent(EntityUpdatedEvent.get(entityId, previousArchetype, pendingArchetype));
     }
 
     public void deleteEntity(int entityId) {
@@ -209,11 +209,11 @@ public class ChangeManager {
         }
 
         // Modify components in storage
-        var previousComponentMask = entityManager.getComponentMask(entityId);
-        var componentMask = storageEngine.modify(entityId, addTypes, add, removeTypes);
+        var previousArchetype = entityManager.getArchetype(entityId);
+        var archetype = storageEngine.modify(entityId, addTypes, add, removeTypes);
 
         // Track changed entity
-        var changed = previousComponentMask.getId() != componentMask.getId();
+        var changed = previousArchetype.getId() != archetype.getId();
         if (changed) {
             this.updatedEntities.set(entityId);
         }

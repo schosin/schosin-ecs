@@ -21,7 +21,6 @@ import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -30,7 +29,7 @@ import de.schosin.ecs.utils.collections.Pool;
 public class EntityManager {
 
     public interface ComponentsPredicate {
-        boolean isInterested(ComponentMask componentMask);
+        boolean isInterested(Archetype archetype);
     }
 
     private static final RegularComponentType<?, ?>[] EMPTY_COMPONENT_TYPES = new RegularComponentType<?, ?>[0];
@@ -82,7 +81,7 @@ public class EntityManager {
 
         // Create entity
         var entity = createEntityInstance();
-        entity.componentMask = archetype.getComponentMask();
+        entity.archetype = archetype;
 
         archetype.createEntity(entity.id, components);
 
@@ -90,7 +89,7 @@ public class EntityManager {
         this.entities.set(entity.id, entity);
 
         // Notify handlers
-        inserted(entity.id, entity.componentMask);
+        inserted(entity.id, archetype);
 
         return entity.id;
     }
@@ -200,11 +199,9 @@ public class EntityManager {
     }
 
     public int createEntity(Archetype archetype, Object[] components) {
-        var componentMask = archetype.getComponentMask();
-
         // Create entity
         var entity = createEntityInstance();
-        entity.componentMask = componentMask;
+        entity.archetype = archetype;
 
         archetype.createEntity(entity.id, components);
 
@@ -212,21 +209,19 @@ public class EntityManager {
         this.entities.set(entity.id, entity);
 
         // Notify handlers
-        inserted(entity.id, componentMask);
+        inserted(entity.id, archetype);
 
         return entity.id;
     }
 
     public ImmutableIntBag createEntities(Archetype archetype, int count, ObjIntConsumer<Object[]> componentsConsumer) {
-        var componentMask = archetype.getComponentMask();
-
         // Build supplier of entityIds
         var entityIds = intBagPool.getInstance();
         this.lentIntBags.add(entityIds);
 
         IntSupplier entityIdSupplier = () -> {
             var entity = createEntityInstance();
-            entity.componentMask = componentMask;
+            entity.archetype = archetype;
 
             entities.set(entity.id, entity);
             entityIds.add(entity.id);
@@ -238,25 +233,25 @@ public class EntityManager {
         archetype.createEntities(count, entityIdSupplier, componentsConsumer);
 
         // Notify listeners
-        inserted(entityIds, componentMask);
+        inserted(entityIds, archetype);
 
         return entityIds;
     }
 
-    private void inserted(int entityId, ComponentMask componentMask) {
+    private void inserted(int entityId, Archetype archetype) {
         if (changeManager == null) {
             this.changeManager = world.getSingleton(ChangeManager.class);
         }
 
-        changeManager.inserted(entityId, componentMask);
+        changeManager.inserted(entityId, archetype);
     }
 
-    private void inserted(ImmutableIntBag entityIds, ComponentMask componentMask) {
+    private void inserted(ImmutableIntBag entityIds, Archetype archetype) {
         if (changeManager == null) {
             this.changeManager = world.getSingleton(ChangeManager.class);
         }
 
-        changeManager.inserted(entityIds, componentMask);
+        changeManager.inserted(entityIds, archetype);
     }
 
     private Entity createEntityInstance() {
@@ -284,7 +279,7 @@ public class EntityManager {
         var archetypes = storageEngine.getArchetypes();
         for (int i = 0, s = archetypes.getSize(); i < s; i++) {
             var archetype = archetypes.get(i);
-            if (!predicate.isInterested(archetype.getComponentMask())) {
+            if (!predicate.isInterested(archetype)) {
                 continue;
             }
 
@@ -316,63 +311,63 @@ public class EntityManager {
     }
 
     /**
-     * @return component mask for the entity or null if entity does not exist
+     * @return archetype of the entity or null if entity does not exist
      */
-    public ComponentMask getComponentMask(int entityId) {
+    public Archetype getArchetype(int entityId) {
         var entity = this.entities.get(entityId);
         if (entity == null) {
             return null;
         }
 
-        return entity.componentMask;
+        return entity.archetype;
     }
 
     /**
-     * Sets the component mask
+     * Updates the archetype for the entity.
      * 
      * @param entityId id of the entity
-     * @param componentMask new component mask
-     * @return true if the entity exists and the mask was updated (e.g. not unchanged)
+     * @param archetype new archetype
+     * @return true if the entity exists and the archetype was changed
      */
-    public boolean updateComponentMask(int entityId, ComponentMask componentMask) {
+    public boolean updateArchetype(int entityId, Archetype archetype) {
         // Retrieve entity, return early if not found or no changes
         var entity = this.entities.get(entityId);
         if (entity == null) {
             return false;
         }
 
-        // Update component mask
-        return entity.setComponentMask(componentMask);
+        // Update archetype
+        return entity.setArchetype(archetype);
     }
 
     private class Entity implements Pooled {
 
         private final int id;
 
-        private ComponentMask componentMask;
+        private Archetype archetype;
 
         private Entity(int entityId) {
             this.id = entityId;
         }
 
         /**
-         * Sets the component mask unless the entity already has the same mask. 
+         * Sets the archetype unless the entity already has that archetype. 
          * 
-         * @param componentMask component mask to set
-         * @return true if the component mask differs from the current one
+         * @param archetype archetype to set
+         * @return true if the archetype differs from the current one
          */
-        private boolean setComponentMask(ComponentMask componentMask) {
-            if (componentMask.getId() == this.componentMask.getId()) {
+        private boolean setArchetype(Archetype archetype) {
+            if (archetype == this.archetype) {
                 return false;
             }
 
-            this.componentMask = componentMask;
+            this.archetype = archetype;
             return true;
         }
 
         @Override
         public void reset() {
-            this.componentMask = null;
+            this.archetype = null;
         }
 
     }

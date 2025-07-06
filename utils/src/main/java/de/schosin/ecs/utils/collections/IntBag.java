@@ -54,7 +54,7 @@ public final class IntBag implements ImmutableIntBag {
 
     public void addAll(ImmutableIntBag other) {
         ensureCapacity(getCapacity() + other.getSize());
-        
+
         for (int i = 0, s = other.getSize(); i < s; i++) {
             add(other.get(i));
         }
@@ -143,6 +143,35 @@ public final class IntBag implements ImmutableIntBag {
     @Override
     public OfInt iterator() {
         return new IntBagIterator(this);
+    }
+
+    @Override
+    public int hashCode() {
+        var result = 1;
+        for (int i = 0, s = this.size; i < s; i++) {
+            result = 31 * result + this.data[i];
+        }
+
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ImmutableIntBag other)) {
+            return false;
+        }
+
+        if (this.size != other.getSize()) {
+            return false;
+        }
+
+        for (int i = 0, s = this.size; i < s; i++) {
+            if (this.data[i] != other.get(i)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override

@@ -49,7 +49,7 @@ class EntityRelationMapperImplTest extends AbstractEntityRelationsTest {
                 world.process();
 
                 verifyHasComponents(entityId, type1, type2);
-                verifyComponentMaskHasComponents(entityId, type1, type2);
+                verifyArchetypeHasComponents(entityId, type1, type2);
             });
         }
 
@@ -111,7 +111,7 @@ class EntityRelationMapperImplTest extends AbstractEntityRelationsTest {
         }
 
         @Test
-        void testComponentMaskUpdated_IfRelationRemovedByDeletedTarget() {
+        void testArchetypeUpdated_IfRelationRemovedByDeletedTarget() {
             var entityId = world.createEntity(new RegularComponent(), relation(Hates.HATES, target1), relation(Hates.DESPISES, target2));
 
             verify(verify -> {
@@ -136,8 +136,8 @@ class EntityRelationMapperImplTest extends AbstractEntityRelationsTest {
                 verifyHasComponents(entityId, RegularComponent.class);
                 verifyDoesNotHaveComponents(entityId, type1);
 
-                verifyComponentMaskHasComponents(entityId, RegularComponent.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, type1);
+                verifyArchetypeHasComponents(entityId, RegularComponent.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, type1);
             });
         }
 

@@ -72,18 +72,18 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
         }
 
         @Test
-        void testAddRelationship_UpdatesComponentMask() {
+        void testAddRelationship_UpdatesArchetype() {
             var entityId = world.createEntity();
-            var componentMask = entityManager.getComponentMask(entityId);
+            var archetype = entityManager.getArchetype(entityId);
 
             // Call
             add1(mapper1, entityId, relationship1);
             world.process();
 
             // Verify
-            var updatedComponentMask = entityManager.getComponentMask(entityId);
-            assertThat(updatedComponentMask).isNotSameAs(componentMask);
-            assertThat(updatedComponentMask.getComponents()).hasSize(1);
+            var updatedArchetype = entityManager.getArchetype(entityId);
+            assertThat(updatedArchetype).isNotSameAs(archetype);
+            assertThat(updatedArchetype.getComponents()).hasSize(1);
         }
 
         @Test
@@ -175,7 +175,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
         }
 
         @Test
-        void testMultipleRelations_WhenNotProcessed_DoesNotUpdateMask() {
+        void testMultipleRelations_WhenNotProcessed_DoesNotUpdateArchetype() {
             var entityId = world.createEntity();
 
             verify(verify -> {
@@ -190,7 +190,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
                 } else {
                     verifyHasComponents(entityId, type1, type2);
                 }
-                verifyComponentMaskDoesNotHaveComponents(entityId, type1, type2);
+                verifyArchetypeDoesNotHaveComponents(entityId, type1, type2);
             });
         }
 
@@ -220,7 +220,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
 
                 assertThat(mapper1.has(entityId)).isTrue();
                 verifyHasComponents(entityId, type1);
-                verifyComponentMaskDoesNotHaveComponents(entityId, type1);
+                verifyArchetypeDoesNotHaveComponents(entityId, type1);
             });
         }
 
@@ -237,7 +237,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
 
                 assertThat(mapper1.has(entityId)).isTrue();
                 verifyHasComponents(entityId, type1);
-                verifyComponentMaskHasComponents(entityId, type1);
+                verifyArchetypeHasComponents(entityId, type1);
             });
         }
 

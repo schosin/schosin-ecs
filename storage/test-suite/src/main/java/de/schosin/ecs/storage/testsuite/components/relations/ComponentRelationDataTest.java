@@ -44,7 +44,7 @@ public class ComponentRelationDataTest extends
                 .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
                 .as("returns result with relation").containsExactlyInAnyOrder(instance1);
 
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after creation").isNull();
 
         // Call
         storageEngine.add(entityId, ImmutableBag.of(type), new Object[] { instance2 });
@@ -54,7 +54,7 @@ public class ComponentRelationDataTest extends
                 .as("returns result with both relations").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
                 .as("returns result with both relations").containsExactlyInAnyOrder(instance1, instance2);
 
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null if add caused no archetype change").isNull();
     }
 
     @Test
@@ -72,7 +72,7 @@ public class ComponentRelationDataTest extends
                 .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
                 .as("returns result with relation").containsExactlyInAnyOrder(instance1);
 
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after creation").isNull();
 
         // Call
         storageEngine.add(entityId, ImmutableBag.of(type, type), new Object[] { instance2, instance3 });
@@ -82,7 +82,7 @@ public class ComponentRelationDataTest extends
                 .as("returns result with all relations").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
                 .as("returns result with all relations").containsExactlyInAnyOrder(instance1, instance2, instance3);
 
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null if add caused no archetype change").isNull();
     }
 
     @Test
@@ -100,7 +100,7 @@ public class ComponentRelationDataTest extends
                 .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
                 .as("returns result with relation").containsExactlyInAnyOrder(instance1);
 
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null after creation").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after creation").isNull();
 
         // Call
         storageEngine.add(entityId, ImmutableBag.of(type, type), new Object[] { instance2, instance3 });
@@ -110,7 +110,7 @@ public class ComponentRelationDataTest extends
                 .as("returns result with added relations only").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
                 .as("returns result with added relations only").containsExactlyInAnyOrder(instance2, instance3);
 
-        assertThat(storageEngine.getPendingComponentMask(entityId)).as("getPendingComponentMask returns null if add caused no component mask change").isNull();
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null if add caused no archetype change").isNull();
     }
 
     @Test

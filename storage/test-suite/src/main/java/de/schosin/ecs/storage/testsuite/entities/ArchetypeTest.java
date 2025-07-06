@@ -190,7 +190,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @Test
             void testEmptyComponents() {
                 var archetype = getArchetype(component(C1.class));
-                var expected = archetype.getComponentMask().getComponentTypes().getSize();
+                var expected = archetype.getComponentTypes().getSize();
 
                 assertThatThrownBy(() -> archetype.createEntity(42, new Object[0]))
                         .as("Archetype must throw when components is empty").isInstanceOf(StorageEngineException.class)
@@ -200,7 +200,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @Test
             void testMismatchingSize() {
                 var archetype = getArchetype(component(C1.class));
-                var expected = archetype.getComponentMask().getComponentTypes().getSize();
+                var expected = archetype.getComponentTypes().getSize();
 
                 var components = expected == 1 ? new Object[] { new C1(1), new C3() } : new Object[] { new C1(1) };
 
@@ -443,7 +443,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             void testTooFewComponents() {
                 var archetype = getArchetype(component(C1.class));
 
-                var expected = archetype.getComponentMask().getComponentTypes().getSize();
+                var expected = archetype.getComponentTypes().getSize();
                 assumeThat(expected).isGreaterThan(1);
 
                 var count = 5;
@@ -464,7 +464,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             void testMismatchingTypes(RegularComponentType<?, ?> componentType, Object component) {
                 var archetype = getArchetype(componentType);
 
-                var expected = archetype.getComponentMask().getComponentTypes().getSize();
+                var expected = archetype.getComponentTypes().getSize();
                 assumeThat(expected).isGreaterThan(1);
 
                 var count = 5;

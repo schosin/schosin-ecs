@@ -54,8 +54,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
         verifyDoesNotHaveComponents(entityId, C1.class);
         verifyHasComponents(entityId, C2.class);
 
-        verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
-        verifyComponentMaskHasComponents(entityId, C2.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
+        verifyArchetypeHasComponents(entityId, C2.class);
 
         // Call
         add1.apply(entityId, new C1());
@@ -66,8 +66,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
         verifyHasComponents(entityId, C1.class);
         verifyDoesNotHaveComponents(entityId, C2.class);
 
-        verifyComponentMaskHasComponents(entityId, C1.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, C2.class);
+        verifyArchetypeHasComponents(entityId, C1.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, C2.class);
     }
 
     @Test
@@ -86,7 +86,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             add1.apply(entityId, new C1());
@@ -94,7 +94,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -105,7 +105,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(oldC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
 
             // Call
             add1.apply(entityId, newC1);
@@ -114,7 +114,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Verify
             assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -125,7 +125,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(oldC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
 
             remove1.apply(entityId);
 
@@ -136,7 +136,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Verify
             assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -147,7 +147,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(oldC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
 
             verify(verify -> {
                 verify.expectNoMoreUpdated();
@@ -160,7 +160,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
                 // Verify
                 assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
                 verifyHasComponents(entityId, C1.class);
-                verifyComponentMaskHasComponents(entityId, C1.class);
+                verifyArchetypeHasComponents(entityId, C1.class);
             });
         }
 
@@ -169,7 +169,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
@@ -178,7 +178,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -186,14 +186,14 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             add1.apply(entityId, new C1());
 
             // Verify
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -230,7 +230,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
             add1.apply(entityId, new C1());
@@ -239,7 +239,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyHasComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -247,7 +247,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
@@ -256,7 +256,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -264,7 +264,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             assertThatThrownBy(() -> add1.apply(entityId, (C1) null))
                     .isInstanceOf(StorageEngineException.class)
@@ -275,7 +275,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
     }
@@ -288,7 +288,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
 
             // Remove 1
             remove1.apply(entityId);
@@ -298,8 +298,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyDoesNotHaveComponents(entityId, C1.class);
             verifyHasComponents(entityId, C2.class, C3.class);
 
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C2.class, C3.class);
         }
 
         @Test
@@ -307,7 +307,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entityId = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
 
             // Remove 2 & 3
             remove2.apply(entityId);
@@ -319,8 +319,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyHasComponents(entityId, C1.class);
             verifyDoesNotHaveComponents(entityId, C2.class, C3.class);
 
-            verifyComponentMaskHasComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C2.class, C3.class);
         }
 
         @Test
@@ -328,11 +328,11 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entity1 = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entity1, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entity1, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entity1, C1.class, C2.class, C3.class);
 
             var entity2 = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entity2, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entity2, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entity2, C1.class, C2.class, C3.class);
 
             // Remove 2
             remove2.apply(entity1);
@@ -344,14 +344,14 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyHasComponents(entity1, C1.class, C3.class);
             verifyDoesNotHaveComponents(entity1, C2.class);
 
-            verifyComponentMaskHasComponents(entity1, C1.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity1, C2.class);
+            verifyArchetypeHasComponents(entity1, C1.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity1, C2.class);
 
             verifyHasComponents(entity2, C1.class, C3.class);
             verifyDoesNotHaveComponents(entity2, C2.class);
 
-            verifyComponentMaskHasComponents(entity2, C1.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity2, C2.class);
+            verifyArchetypeHasComponents(entity2, C1.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity2, C2.class);
         }
 
         // Verifies "entities.clear()" in ChangeManager  
@@ -360,7 +360,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             // Setup
             var entity1 = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entity1, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entity1, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entity1, C1.class, C2.class, C3.class);
 
             // Remove 2 
             remove2.apply(entity1);
@@ -374,7 +374,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             assertThat(entity2).as("entityId reused").isEqualTo(entity1);
 
             verifyHasComponents(entity2, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entity2, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entity2, C1.class, C2.class, C3.class);
 
             var entity3 = world.createEntity(new C1(), new C2(), new C3());
 
@@ -387,14 +387,14 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyHasComponents(entity2, C1.class, C2.class);
             verifyDoesNotHaveComponents(entity2, C3.class);
 
-            verifyComponentMaskHasComponents(entity2, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entity2, C3.class);
+            verifyArchetypeHasComponents(entity2, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entity2, C3.class);
 
             verifyHasComponents(entity3, C1.class, C3.class);
             verifyDoesNotHaveComponents(entity3, C2.class);
 
-            verifyComponentMaskHasComponents(entity3, C1.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entity3, C2.class);
+            verifyArchetypeHasComponents(entity3, C1.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entity3, C2.class);
         }
 
         @Test
@@ -439,7 +439,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             remove1.apply(entityId);
 
             // Verify
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
         }
 
         @Test
@@ -451,8 +451,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             world.process();
 
             // Verify
-            verifyComponentMaskHasComponents(entityId, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -464,7 +464,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             remove2.apply(entityId);
 
             // Verify
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
         }
 
         @Test
@@ -477,8 +477,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             world.process();
 
             // Verify
-            verifyComponentMaskHasComponents(entityId, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeHasComponents(entityId, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -491,7 +491,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             remove3.apply(entityId);
 
             // Verify
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
         }
 
         @Test
@@ -505,7 +505,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
             world.process();
 
             // Verify
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class, C3.class);
         }
 
         @Test
@@ -555,7 +555,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
             transmuter.apply(entityId, new C1(), new C2());
@@ -564,7 +564,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyHasComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -574,7 +574,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
             assertThatThrownBy(() -> transmuter.apply(entityId, new C2(), new C1()));
@@ -587,7 +587,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
             assertThatThrownBy(() -> transmuter.apply(entityId, new C1()))
@@ -598,7 +598,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -608,7 +608,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
             assertThatThrownBy(() -> transmuter.apply(entityId, new C1(), new C2(), new C3()))
@@ -616,7 +616,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
                     .hasMessageContainingAll("Expected 2", "got 3");
 
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -626,7 +626,7 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             var entityId = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class);
 
             // Call
             transmuter.apply(entityId);
@@ -637,8 +637,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
             verifyHasComponents(entityId, C3.class);
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
 
-            verifyComponentMaskHasComponents(entityId, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeHasComponents(entityId, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
         private static class CustomBuilder implements Builder {

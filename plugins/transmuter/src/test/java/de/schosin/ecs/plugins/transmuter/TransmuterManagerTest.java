@@ -70,8 +70,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         verifyDoesNotHaveComponents(entityId, C1.class);
         verifyHasComponents(entityId, C2.class);
 
-        verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
-        verifyComponentMaskHasComponents(entityId, C2.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
+        verifyArchetypeHasComponents(entityId, C2.class);
 
         // Call
         add1remove2.apply(entityId, new C1());
@@ -81,8 +81,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
         verifyHasComponents(entityId, C1.class);
         verifyDoesNotHaveComponents(entityId, C2.class);
 
-        verifyComponentMaskHasComponents(entityId, C1.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, C2.class);
+        verifyArchetypeHasComponents(entityId, C1.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, C2.class);
     }
 
     @Test
@@ -193,7 +193,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             add1.apply(entityId, new C1());
@@ -201,7 +201,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Verify
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -212,7 +212,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(oldC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
 
             // Call
             add1.apply(entityId, newC1);
@@ -221,7 +221,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Verify
             assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -232,7 +232,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(oldC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
 
             remove1.apply(entityId);
 
@@ -243,7 +243,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Verify
             assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -254,7 +254,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(oldC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
 
             var changed = new ArrayList<Integer>();
             eventManager.registerEventHandler(EntityInsertedEvent.class, event -> changed.add(event.entityId()));
@@ -272,7 +272,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             assertThat(getComponent(entityId, C1.class)).isSameAs(newC1);
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -280,7 +280,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, null))
@@ -289,7 +289,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -297,14 +297,14 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             add1.apply(entityId, new C1());
 
             // Verify
             verifyHasComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -318,8 +318,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var updated = new IntBag(1);
             eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                assertThat(event.previousComponentMask().getComponents()).isEmpty();
-                assertThat(event.componentMask().getComponents()).containsExactly(componentManager.getComponent(component(C1.class)));
+                assertThat(event.previousArchetype().getComponents()).isEmpty();
+                assertThat(event.archetype().getComponents()).containsExactly(componentManager.getComponent(component(C1.class)));
 
                 updated.add(event.entityId());
             });
@@ -356,7 +356,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
             verifyDoesNotHaveComponents(entityId, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
             add1add2.apply(entityId, new C1(), new C2());
@@ -365,7 +365,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Verify
             verifyHasComponents(entityId, C1.class);
             verifyHasComponents(entityId, C2.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -377,7 +377,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
             verifyDoesNotHaveComponents(entityId, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
 
             // Call
             assertThatThrownBy(() -> add1add2.apply(entityId, null, null))
@@ -394,7 +394,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
         }
 
         @Test
@@ -402,7 +402,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             // Call
             assertThatThrownBy(() -> add1.apply(entityId, null))
@@ -411,7 +411,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -419,7 +419,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Setup
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
 
             assertThatThrownBy(() -> add1.apply(entityId, null))
                     .isInstanceOf(StorageEngineException.class)
@@ -430,7 +430,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, C1.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         abstract class AbstractAddTest {
@@ -448,7 +448,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
                 // Verify
                 verifyHasComponents(entityId, classes);
-                verifyComponentMaskHasComponents(entityId, classes);
+                verifyArchetypeHasComponents(entityId, classes);
             }
 
             @Test
@@ -619,7 +619,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
 
             // Remove 1
             remove1.apply(entityId);
@@ -629,8 +629,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyDoesNotHaveComponents(entityId, C1.class);
             verifyHasComponents(entityId, C2.class, C3.class);
 
-            verifyComponentMaskHasComponents(entityId, C2.class, C3.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, C1.class);
+            verifyArchetypeHasComponents(entityId, C2.class, C3.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C1.class);
         }
 
         @Test
@@ -640,7 +640,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(new C1(), new C2(), new C3());
             verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entityId, C1.class, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
 
             // Remove 2 & 3
             remove23.apply(entityId);
@@ -650,8 +650,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyHasComponents(entityId, C1.class);
             verifyDoesNotHaveComponents(entityId, C2.class, C3.class);
 
-            verifyComponentMaskDoesNotHaveComponents(entityId, C2.class, C3.class);
-            verifyComponentMaskHasComponents(entityId, C1.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, C2.class, C3.class);
+            verifyArchetypeHasComponents(entityId, C1.class);
         }
 
         @Test
@@ -692,7 +692,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                 // Setup
                 var entityId = world.createEntity(new D1(), new D2());
                 verifyHasComponents(entityId, D1.class, D2.class);
-                verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+                verifyArchetypeHasComponents(entityId, D1.class, D2.class);
 
                 verify(verify -> {
                     // Remove 1
@@ -708,7 +708,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                     // Verify
                     verifyDoesNotHaveComponents(entityId, D1.class);
                     verifyHasComponents(entityId, D2.class);
-                    verifyComponentMaskHasComponents(entityId, expected);
+                    verifyArchetypeHasComponents(entityId, expected);
                 });
             }
 
@@ -717,7 +717,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                 // Setup
                 var entityId = world.createEntity(new D1(), new D2());
                 verifyHasComponents(entityId, D1.class, D2.class);
-                verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+                verifyArchetypeHasComponents(entityId, D1.class, D2.class);
 
                 verify(verify -> {
                     // Remove 2
@@ -731,7 +731,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
                     // Verify
                     verifyDoesNotHaveComponents(entityId, D1.class, D2.class);
-                    verifyComponentMaskHasComponents(entityId, added);
+                    verifyArchetypeHasComponents(entityId, added);
                 });
             }
 
@@ -740,7 +740,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                 // Setup
                 var entityId = world.createEntity(new D1(), new D2());
                 verifyHasComponents(entityId, D1.class, D2.class);
-                verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+                verifyArchetypeHasComponents(entityId, D1.class, D2.class);
 
                 verify(verify -> {
                     verify.expectNoMoreUpdated();
@@ -750,7 +750,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
                     // Verify
                     verifyHasComponents(entityId, D1.class, D2.class);
-                    verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+                    verifyArchetypeHasComponents(entityId, D1.class, D2.class);
                 });
             }
 
@@ -759,7 +759,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                 // Setup
                 var entityId = world.createEntity(new D1(), new D2());
                 verifyHasComponents(entityId, D1.class, D2.class);
-                verifyComponentMaskHasComponents(entityId, D1.class, D2.class);
+                verifyArchetypeHasComponents(entityId, D1.class, D2.class);
 
                 verify(verify -> {
                     // Remove 2
@@ -775,8 +775,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                     verifyDoesNotHaveComponents(entityId, added);
                     verifyDoesNotHaveComponents(entityId, D1.class, D2.class);
 
-                    verifyComponentMaskDoesNotHaveComponents(entityId, added);
-                    verifyComponentMaskDoesNotHaveComponents(entityId, D1.class, D2.class);
+                    verifyArchetypeDoesNotHaveComponents(entityId, added);
+                    verifyArchetypeDoesNotHaveComponents(entityId, D1.class, D2.class);
                 });
             }
 
@@ -785,7 +785,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                 // Setup
                 var entityId = world.createEntity(new A1(), new A2());
                 verifyHasComponents(entityId, A1.class, A2.class);
-                verifyComponentMaskHasComponents(entityId, A1.class, A2.class);
+                verifyArchetypeHasComponents(entityId, A1.class, A2.class);
 
                 verify(verify -> {
                     // Remove 2
@@ -801,8 +801,8 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
                     verifyHasComponents(entityId, added);
                     verifyDoesNotHaveComponents(entityId, A1.class, A2.class);
 
-                    verifyComponentMaskHasComponents(entityId, added);
-                    verifyComponentMaskDoesNotHaveComponents(entityId, A1.class, A2.class);
+                    verifyArchetypeHasComponents(entityId, added);
+                    verifyArchetypeDoesNotHaveComponents(entityId, A1.class, A2.class);
                 });
             }
 
@@ -1102,25 +1102,25 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
 
             // Call
             add.apply(entityId, Relation.create(new C1(), new C2()));
 
             // Verify
             verifyHasComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
         }
 
         @Test
-        void testAddRelation_WhenProcessed_ChangesComponentMask() {
+        void testAddRelation_WhenProcessed_ChangesArchetype() {
             var type = relation(C1.class, C2.class);
             var mapper = world.getComponents(type);
             var add = world.createTransmuter(Transmuter.add(type));
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
 
             // Call
             add.apply(entityId, Relation.create(new C1(), new C2()));
@@ -1131,7 +1131,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             assertThat(mapper.get(entityId)).hasSize(1);
 
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
         }
 
         @Test
@@ -1141,14 +1141,14 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(Relation.create(new C1(), new C2()));
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
 
             // Call
             remove.apply(entityId);
 
             // Verify
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
         }
 
         @Test
@@ -1158,7 +1158,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(Relation.create(new C1(), new C2()));
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
 
             // Call
             remove.apply(entityId);
@@ -1167,7 +1167,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
         }
 
         @Test
@@ -1183,7 +1183,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             assertThat(mapper.get(entityId)).hasSize(2);
 
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
 
             // Call
             remove.apply(entityId);
@@ -1194,7 +1194,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             assertThat(mapper.get(entityId)).isNull();
 
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
         }
 
     }
@@ -1211,18 +1211,18 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
 
             // Call
             add.apply(entityId, Relation.create(new C1(), target));
 
             // Verify
             verifyHasComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
         }
 
         @Test
-        void testAddRelation_WhenProcessed_ChangesComponentMask() {
+        void testAddRelation_WhenProcessed_ChangesArchetype() {
             var type = relation(C1.class);
             var mapper = world.getComponents(type);
             var add = world.createTransmuter(Transmuter.add(type));
@@ -1231,7 +1231,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity();
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
 
             // Call
             add.apply(entityId, Relation.create(new C1(), target));
@@ -1242,7 +1242,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             assertThat(mapper.get(entityId)).hasSize(1);
 
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
         }
 
         @Test
@@ -1254,14 +1254,14 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(Relation.create(new C1(), target));
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
 
             // Call
             remove.apply(entityId);
 
             // Verify
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
         }
 
         @Test
@@ -1273,7 +1273,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             var entityId = world.createEntity(Relation.create(new C1(), target));
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
 
             // Call
             remove.apply(entityId);
@@ -1282,7 +1282,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
 
             // Verify
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
         }
 
         @Test
@@ -1301,7 +1301,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             assertThat(mapper.get(entityId)).hasSize(2);
 
             verifyHasComponents(entityId, type);
-            verifyComponentMaskHasComponents(entityId, type);
+            verifyArchetypeHasComponents(entityId, type);
 
             // Call
             remove.apply(entityId);
@@ -1312,7 +1312,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             assertThat(mapper.get(entityId)).isNull();
 
             verifyDoesNotHaveComponents(entityId, type);
-            verifyComponentMaskDoesNotHaveComponents(entityId, type);
+            verifyArchetypeDoesNotHaveComponents(entityId, type);
         }
 
     }

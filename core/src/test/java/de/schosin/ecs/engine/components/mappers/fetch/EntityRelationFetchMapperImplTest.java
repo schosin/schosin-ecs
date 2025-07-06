@@ -229,8 +229,8 @@ class EntityRelationFetchMapperImplTest extends AbstractMapperTest {
                 verifyHasComponents(entityId, Position.class);
                 verifyDoesNotHaveComponents(entityId, relation(Related.class));
 
-                verifyComponentMaskHasComponents(entityId, Position.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, relation(Related.class));
+                verifyArchetypeHasComponents(entityId, Position.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, relation(Related.class));
             });
         }
 
@@ -253,7 +253,7 @@ class EntityRelationFetchMapperImplTest extends AbstractMapperTest {
 
                 // Verify
                 verifyHasComponents(relatedId, Position.class, Velocity.class);
-                verifyComponentMaskHasComponents(relatedId, Position.class, Velocity.class);
+                verifyArchetypeHasComponents(relatedId, Position.class, Velocity.class);
             });
         }
 

@@ -76,8 +76,8 @@ class ExclusiveComponentRelationMapperImplTest extends AbstractComponentRelation
                 verifyDoesNotHaveComponents(entityId, type1);
                 verifyHasComponents(entityId, type2);
 
-                verifyComponentMaskDoesNotHaveComponents(entityId, type1);
-                verifyComponentMaskHasComponents(entityId, type2);
+                verifyArchetypeDoesNotHaveComponents(entityId, type1);
+                verifyArchetypeHasComponents(entityId, type2);
             });
         }
 
@@ -97,8 +97,8 @@ class ExclusiveComponentRelationMapperImplTest extends AbstractComponentRelation
                 verifyDoesNotHaveComponents(entityId, type1);
                 verifyHasComponents(entityId, type2);
 
-                verifyComponentMaskDoesNotHaveComponents(entityId, type1);
-                verifyComponentMaskHasComponents(entityId, type2);
+                verifyArchetypeDoesNotHaveComponents(entityId, type1);
+                verifyArchetypeHasComponents(entityId, type2);
             });
         }
 

@@ -139,8 +139,8 @@ class ExclusiveEntityRelationFetchMapperImplTest extends AbstractMapperTest {
                 verifyHasComponents(entityId, Position.class);
                 verifyDoesNotHaveComponents(entityId, exclusiveRelation(Parent.class));
 
-                verifyComponentMaskHasComponents(entityId, Position.class);
-                verifyComponentMaskDoesNotHaveComponents(entityId, exclusiveRelation(Parent.class));
+                verifyArchetypeHasComponents(entityId, Position.class);
+                verifyArchetypeDoesNotHaveComponents(entityId, exclusiveRelation(Parent.class));
             });
         }
 
@@ -163,7 +163,7 @@ class ExclusiveEntityRelationFetchMapperImplTest extends AbstractMapperTest {
 
                 // Verify
                 verifyHasComponents(parentId, Position.class, Velocity.class);
-                verifyComponentMaskHasComponents(parentId, Position.class, Velocity.class);
+                verifyArchetypeHasComponents(parentId, Position.class, Velocity.class);
             });
         }
 

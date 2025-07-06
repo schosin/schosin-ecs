@@ -58,7 +58,7 @@ class ComponentMapperImplTest extends AbstractMapperTest {
             assertThat(component2.get(entityId)).isSameAs(instance2);
 
             verifyHasComponents(entityId, Component1.class, Component2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, Component1.class, Component2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, Component1.class, Component2.class);
 
             world.process();
 
@@ -67,7 +67,7 @@ class ComponentMapperImplTest extends AbstractMapperTest {
             assertThat(component2.get(entityId)).isSameAs(instance2);
 
             verifyHasComponents(entityId, Component1.class, Component2.class);
-            verifyComponentMaskHasComponents(entityId, Component1.class, Component2.class);
+            verifyArchetypeHasComponents(entityId, Component1.class, Component2.class);
         });
     }
 
@@ -90,7 +90,7 @@ class ComponentMapperImplTest extends AbstractMapperTest {
             assertThat(component2.get(entityId)).isNull();
 
             verifyDoesNotHaveComponents(entityId, Component1.class, Component2.class);
-            verifyComponentMaskDoesNotHaveComponents(entityId, Component1.class, Component2.class);
+            verifyArchetypeDoesNotHaveComponents(entityId, Component1.class, Component2.class);
         });
     }
 

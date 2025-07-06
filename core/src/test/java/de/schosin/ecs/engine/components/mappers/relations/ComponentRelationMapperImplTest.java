@@ -52,7 +52,7 @@ class ComponentRelationMapperImplTest extends AbstractComponentRelationsTest {
                 world.process();
 
                 verifyHasComponents(entityId, type1, type2);
-                verifyComponentMaskHasComponents(entityId, type1, type2);
+                verifyArchetypeHasComponents(entityId, type1, type2);
             });
         }
 

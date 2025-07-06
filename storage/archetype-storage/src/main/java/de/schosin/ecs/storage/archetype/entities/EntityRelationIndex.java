@@ -63,8 +63,7 @@ public class EntityRelationIndex {
                     continue;
                 }
 
-                var componentMask = archetypeData.getComponentMask();
-                var componentMappers = componentMask.getComponents();
+                var componentMappers = archetypeData.getComponents();
                 for (int c = 0, cs = componentMappers.getSize(); c < cs; c++) {
                     var componentMapper = componentMappers.get(c);
                     if (!(componentMapper.type() instanceof RegularEntityRelationType<?, ?> relationType)) {

@@ -20,7 +20,10 @@ public class ArchetypeStorageTest extends AbstractStorageEngineTest {
         void testNoArchetypes() {
             var archetypes = engine.getArchetypes();
             assertThat(archetypes).as("getArchetypes must not return null").isNotNull();
-            assertThat(archetypes.getSize()).as("getArchetypes must return empty bag if no archetypes created").isZero();
+            assertThat(archetypes.getSize()).as("getArchetypes must return bag containing only empty archetype if no archetypes created").isEqualTo(1);
+
+            var emptyArchetype = engine.getArchetype();
+            assertThat(archetypes).as("getArchetypes must return bag containing only empty archetype if no archetypes created").containsExactly(emptyArchetype);
         }
 
         @Test
@@ -70,20 +73,6 @@ public class ArchetypeStorageTest extends AbstractStorageEngineTest {
     }
 
     @Test
-    void testComponentMask() {
-        var componentMask = engine.getComponentMask();
-        var archetype = engine.getArchetype();
-
-        assertThat(archetype.getComponentMask()).as("archetype.getComponentMask() must be same as returned by engine for same types").isSameAs(componentMask);
-    }
-
-    @Test
-    void testIdMatchesComponentMask() {
-        var archetype = engine.getArchetype();
-        assertThat(archetype.getId()).as("archetype.getId() must be equal to archetype.componentMask().getId()").isEqualTo(archetype.getComponentMask().getId());
-    }
-
-    @Test
     void testGetById() {
         var archetype = engine.getArchetype();
         var archetype1 = engine.getArchetype(component(C1.class));
@@ -110,20 +99,20 @@ public class ArchetypeStorageTest extends AbstractStorageEngineTest {
         eventManager.registerEventHandler(ArchetypeAddedEvent.class, events::add);
 
         // Access empty archetype
-        var archetype = engine.getArchetype();
-        assertThat(events).extracting("archetype").as("accessing an archetype for the first time must dispatch ArchetypeAddedEvent").containsExactly(archetype);
+        var archetype1 = engine.getArchetype(component(C1.class));
+        assertThat(events).extracting("archetype").as("accessing an archetype for the first time must dispatch ArchetypeAddedEvent").containsExactly(archetype1);
 
         // Access empty archetype again
-        engine.getArchetype();
-        assertThat(events).extracting("archetype").as("accessing an archetype multiple times must dispatch ArchetypeAddedEvent only once").containsExactly(archetype);
+        engine.getArchetype(component(C1.class));
+        assertThat(events).extracting("archetype").as("accessing an archetype multiple times must dispatch ArchetypeAddedEvent only once").containsExactly(archetype1);
 
-        // Access more archetypes
-        var archetype1 = engine.getArchetype(component(C1.class));
+        // Access archetypes
         var archetype2 = engine.getArchetype(component(C2.class));
         var archetype12 = engine.getArchetype(component(C1.class), component(C2.class));
+
         assertThat(events).extracting("archetype")
                 .as("accessing an archetype multiple times must dispatch ArchetypeAddedEvent only once")
-                .containsExactly(archetype, archetype1, archetype2, archetype12);
+                .containsExactly(archetype1, archetype2, archetype12);
     }
 
     record C1() {

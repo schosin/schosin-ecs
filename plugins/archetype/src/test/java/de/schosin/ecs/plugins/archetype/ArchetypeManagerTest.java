@@ -615,7 +615,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             // Verify
             verifyHasComponents(entityId, componentType);
-            verifyComponentMaskHasComponents(entityId, componentType);
+            verifyArchetypeHasComponents(entityId, componentType);
         }
 
         @ParameterizedTest
@@ -632,7 +632,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             // Verify
             verifyHasComponents(entityId, componentType, component(E1.class), component(E2.class));
-            verifyComponentMaskHasComponents(entityId, componentType, component(E1.class), component(E2.class));
+            verifyArchetypeHasComponents(entityId, componentType, component(E1.class), component(E2.class));
         }
 
         @ParameterizedTest
@@ -646,7 +646,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             var called = new AtomicBoolean(false);
             eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                assertThat(event.componentMask().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                assertThat(event.archetype().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
                 called.set(true);
             });
 
@@ -768,7 +768,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var entityId = entityIds.get(i);
 
                 verifyHasComponents(entityId, componentType);
-                verifyComponentMaskHasComponents(entityId, componentType);
+                verifyArchetypeHasComponents(entityId, componentType);
             }
         }
 
@@ -795,7 +795,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 var entityId = entityIds.get(i);
 
                 verifyHasComponents(entityId, componentType, component(E1.class), component(E2.class));
-                verifyComponentMaskHasComponents(entityId, componentType, component(E1.class), component(E2.class));
+                verifyArchetypeHasComponents(entityId, componentType, component(E1.class), component(E2.class));
             }
         }
 
@@ -814,7 +814,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             var called = new AtomicBoolean(false);
             eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> {
-                assertThat(event.componentMask().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                assertThat(event.archetype().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
                 assertThat(event.entityIds().getSize()).isEqualTo(count);
 
                 called.set(true);
@@ -857,7 +857,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             var called = new AtomicBoolean(false);
             eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> {
-                assertThat(event.componentMask().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                assertThat(event.archetype().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
                 assertThat(event.entityIds().getSize()).isEqualTo(count);
 
                 called.set(true);

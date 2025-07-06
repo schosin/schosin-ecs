@@ -64,8 +64,6 @@ import de.schosin.ecs.utils.collections.IntBag;
 
 public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
-    private static final AtomicInteger MASK_ID = new AtomicInteger(0);
-
     static final BitVector EMPTY_VECTOR = new BitVector();
 
     static final Builder EMPTY = Composition.all();
@@ -77,8 +75,6 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
     @BeforeEach
     void setup() {
-        MASK_ID.set(0);
-
         this.compositionManager = world.getSingleton(CompositionManager.class);
 
         this.component1Id = componentManager.getComponent(component(C1.class)).id();
@@ -1163,16 +1159,16 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
         @Test
         void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
-            var componentMask = storageEngine.getComponentMask(component(C1.class));
-            var event = BeforeEntityUpdateEvent.get(42, null, componentMask);
+            var archetype = storageEngine.getArchetype(component(C1.class));
+            var event = BeforeEntityUpdateEvent.get(42, null, archetype);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
         }
 
         @Test
         void testUpdatedEntities_WhenNullNewComposition_Throws() {
-            var componentMask = storageEngine.getComponentMask(component(C1.class));
-            var event = EntityUpdatedEvent.get(42, componentMask, null);
+            var archetype = storageEngine.getArchetype(component(C1.class));
+            var event = EntityUpdatedEvent.get(42, archetype, null);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
         }
@@ -1182,24 +1178,24 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             // Setup
             bagManager.ensureEntitySize(10000);
 
-            var componentMask1 = storageEngine.getComponentMask(component(C1.class));
-            var componentMask12 = storageEngine.getComponentMask(component(C1.class), component(C2.class));
-            var componentMask2 = storageEngine.getComponentMask(component(C2.class));
-            var componentMask3 = storageEngine.getComponentMask(component(C3.class));
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
+            var archetype12 = storageEngine.getArchetype(component(C1.class), component(C2.class));
+            var archetype2 = storageEngine.getArchetype(component(C2.class));
+            var archetype3 = storageEngine.getArchetype(component(C3.class));
 
             var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
             var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
             var composition3 = compositionManager.create(Composition.all(C3.class), spec -> bagManager.createEntityIntBag());
 
-            var mask7 = componentMask2;
-            var mask42 = componentMask1;
-            var mask1337 = componentMask2;
-            var mask9001 = componentMask12;
+            var entity7Archetype = archetype2;
+            var entity42Archetype = archetype1;
+            var entity1337Archetype = archetype2;
+            var entity9001Archetype = archetype12;
 
-            eventManager.dispatchEvent(EntityInsertedEvent.get(7, mask7));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, mask42));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, mask1337));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, mask9001));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(7, entity7Archetype));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(42, entity42Archetype));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, entity1337Archetype));
+            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, entity9001Archetype));
 
             var removed1 = new HashSet<Integer>();
             composition1.removed(removed1::add);
@@ -1211,17 +1207,17 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             composition3.removed(removed3::add);
 
             // Update entity
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(7, mask7, componentMask1));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(7, mask7, componentMask1));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(7, entity7Archetype, archetype1));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(7, entity7Archetype, archetype1));
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(42, mask42, componentMask12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(42, mask42, componentMask12));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(42, entity42Archetype, archetype12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(42, entity42Archetype, archetype12));
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(1337, mask1337, componentMask12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, mask1337, componentMask12));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(1337, entity1337Archetype, archetype12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, entity1337Archetype, archetype12));
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(9001, mask9001, componentMask3));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, mask9001, componentMask3));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(9001, entity9001Archetype, archetype3));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, entity9001Archetype, archetype3));
 
             // Verify
             assertThat(removed1).containsExactlyInAnyOrder(9001);

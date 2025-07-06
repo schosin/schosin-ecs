@@ -5,14 +5,14 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.collections.Pool;
 
 public sealed interface EntityEvent extends Event {
 
     int entityId();
 
-    ComponentMask componentMask();
+    Archetype archetype();
 
     /**
      * This event will be dispatched when a single entity is created.
@@ -24,36 +24,36 @@ public sealed interface EntityEvent extends Event {
      */
     sealed interface EntityInsertedEvent extends EntityEvent {
 
-        static EntityInsertedEvent get(int entityId, ComponentMask componentMask) {
-            return EntityInsertedEventImpl.get(entityId, componentMask);
+        static EntityInsertedEvent get(int entityId, Archetype archetype) {
+            return EntityInsertedEventImpl.get(entityId, archetype);
         }
 
     }
 
     sealed interface BeforeEntityUpdateEvent extends EntityEvent {
 
-        static BeforeEntityUpdateEvent get(int entityId, ComponentMask componentMask, ComponentMask newComponentMask) {
-            return BeforeEntityUpdateEventImpl.get(entityId, componentMask, newComponentMask);
+        static BeforeEntityUpdateEvent get(int entityId, Archetype archetype, Archetype newArchetype) {
+            return BeforeEntityUpdateEventImpl.get(entityId, archetype, newArchetype);
         }
 
-        ComponentMask newComponentMask();
+        Archetype newArchetype();
 
     }
 
     sealed interface EntityUpdatedEvent extends EntityEvent {
 
-        static EntityUpdatedEvent get(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
-            return EntityUpdatedEventImpl.get(entityId, previousComponentMask, componentMask);
+        static EntityUpdatedEvent get(int entityId, Archetype previousArchetype, Archetype archetype) {
+            return EntityUpdatedEventImpl.get(entityId, previousArchetype, archetype);
         }
 
-        ComponentMask previousComponentMask();
+        Archetype previousArchetype();
 
     }
 
     sealed interface EntityRemovedEvent extends EntityEvent {
 
-        static EntityRemovedEvent get(int entityId, ComponentMask componentMask) {
-            return EntityRemovedEventImpl.get(entityId, componentMask);
+        static EntityRemovedEvent get(int entityId, Archetype archetype) {
+            return EntityRemovedEventImpl.get(entityId, archetype);
         }
 
     }
@@ -63,7 +63,7 @@ public sealed interface EntityEvent extends Event {
 abstract sealed class AbstractEntityEvent implements EntityEvent {
 
     protected int entityId = -1;
-    protected ComponentMask componentMask;
+    protected Archetype archetype;
 
     @Override
     public int entityId() {
@@ -71,14 +71,14 @@ abstract sealed class AbstractEntityEvent implements EntityEvent {
     }
 
     @Override
-    public ComponentMask componentMask() {
-        return componentMask;
+    public Archetype archetype() {
+        return archetype;
     }
 
     @Override
     public void reset() {
         this.entityId = -1;
-        this.componentMask = null;
+        this.archetype = null;
     }
 
 }
@@ -87,10 +87,10 @@ final class EntityInsertedEventImpl extends AbstractEntityEvent implements Entit
 
     private static final Pool<EntityInsertedEventImpl> POOL = Pool.unbounded(EntityInsertedEventImpl.class, EntityInsertedEventImpl::new);
 
-    static EntityInsertedEvent get(int entityId, ComponentMask componentMask) {
+    static EntityInsertedEvent get(int entityId, Archetype archetype) {
         var instance = POOL.getInstance();
         instance.entityId = entityId;
-        instance.componentMask = componentMask;
+        instance.archetype = archetype;
 
         return instance;
     }
@@ -106,20 +106,20 @@ final class BeforeEntityUpdateEventImpl extends AbstractEntityEvent implements B
 
     private static final Pool<BeforeEntityUpdateEventImpl> POOL = Pool.unbounded(BeforeEntityUpdateEventImpl.class, BeforeEntityUpdateEventImpl::new);
 
-    static BeforeEntityUpdateEvent get(int entityId, ComponentMask componentMask, ComponentMask newComponentMask) {
+    static BeforeEntityUpdateEvent get(int entityId, Archetype archetype, Archetype newArchetype) {
         var instance = POOL.getInstance();
         instance.entityId = entityId;
-        instance.componentMask = componentMask;
-        instance.newComponentMask = newComponentMask;
+        instance.archetype = archetype;
+        instance.newArchetype = newArchetype;
 
         return instance;
     }
 
-    private ComponentMask newComponentMask;
+    private Archetype newArchetype;
 
     @Override
-    public ComponentMask newComponentMask() {
-        return newComponentMask;
+    public Archetype newArchetype() {
+        return newArchetype;
     }
 
     @Override
@@ -131,7 +131,7 @@ final class BeforeEntityUpdateEventImpl extends AbstractEntityEvent implements B
     public void reset() {
         super.reset();
 
-        this.newComponentMask = null;
+        this.newArchetype = null;
     }
 
 }
@@ -140,20 +140,20 @@ final class EntityUpdatedEventImpl extends AbstractEntityEvent implements Entity
 
     private static final Pool<EntityUpdatedEventImpl> POOL = Pool.unbounded(EntityUpdatedEventImpl.class, EntityUpdatedEventImpl::new);
 
-    static EntityUpdatedEvent get(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
+    static EntityUpdatedEvent get(int entityId, Archetype previousArchetype, Archetype archetype) {
         var instance = POOL.getInstance();
         instance.entityId = entityId;
-        instance.previousComponentMask = previousComponentMask;
-        instance.componentMask = componentMask;
+        instance.previousArchetype = previousArchetype;
+        instance.archetype = archetype;
 
         return instance;
     }
 
-    private ComponentMask previousComponentMask;
+    private Archetype previousArchetype;
 
     @Override
-    public ComponentMask previousComponentMask() {
-        return previousComponentMask;
+    public Archetype previousArchetype() {
+        return previousArchetype;
     }
 
     @Override
@@ -165,7 +165,7 @@ final class EntityUpdatedEventImpl extends AbstractEntityEvent implements Entity
     public void reset() {
         super.reset();
 
-        this.previousComponentMask = null;
+        this.previousArchetype = null;
     }
 
 }
@@ -174,10 +174,10 @@ final class EntityRemovedEventImpl extends AbstractEntityEvent implements Entity
 
     private static final Pool<EntityRemovedEventImpl> POOL = Pool.unbounded(EntityRemovedEventImpl.class, EntityRemovedEventImpl::new);
 
-    static EntityRemovedEvent get(int entityId, ComponentMask componentMask) {
+    static EntityRemovedEvent get(int entityId, Archetype archetype) {
         var instance = POOL.getInstance();
         instance.entityId = entityId;
-        instance.componentMask = componentMask;
+        instance.archetype = archetype;
 
         return instance;
     }

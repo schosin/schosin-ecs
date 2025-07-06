@@ -125,7 +125,7 @@ class AbstractEngineTestTest {
     }
 
     @Nested
-    class ComponentMaskTest extends AbstractWorldTest {
+    class ArchetypeTest extends AbstractWorldTest {
 
         PooledComponentMapper<C1> mapper1;
         PooledComponentMapper<C2> mapper2;
@@ -137,87 +137,87 @@ class AbstractEngineTestTest {
         }
 
         @Test
-        void testComponentMaskHasComponents() {
+        void testArchetypeHasComponents() {
             var entityId = world.createEntity(new C1(), new C2());
 
-            assertThatCode(() -> verifyComponentMaskHasComponents(entityId, C1.class)).doesNotThrowAnyException();
-            assertThatCode(() -> verifyComponentMaskHasComponents(entityId, C2.class)).doesNotThrowAnyException();
-            assertThatCode(() -> verifyComponentMaskHasComponents(entityId, C1.class, C2.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeHasComponents(entityId, C1.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeHasComponents(entityId, C2.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeHasComponents(entityId, C1.class, C2.class)).doesNotThrowAnyException();
         }
 
         @Test
-        void testComponentMaskHasComponents_WhenUpdateNotProcessed() {
+        void testArchetypeHasComponents_WhenUpdateNotProcessed() {
             var entityId = world.createEntity();
 
             mapper1.add(entityId);
             mapper2.add(entityId);
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class))
+            assertThatThrownBy(() -> verifyArchetypeHasComponents(entityId, C1.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+                    .message().containsSubsequence("archetype has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C2.class))
+            assertThatThrownBy(() -> verifyArchetypeHasComponents(entityId, C2.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+                    .message().containsSubsequence("archetype has ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class, C2.class))
+            assertThatThrownBy(() -> verifyArchetypeHasComponents(entityId, C1.class, C2.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+                    .message().containsSubsequence("archetype has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
         @Test
-        void testComponentMaskHasComponents_WhenNotPresent_Throws() {
+        void testArchetypeHasComponents_WhenNotPresent_Throws() {
             var entityId = world.createEntity();
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class))
+            assertThatThrownBy(() -> verifyArchetypeHasComponents(entityId, C1.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+                    .message().containsSubsequence("archetype has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C2.class))
+            assertThatThrownBy(() -> verifyArchetypeHasComponents(entityId, C2.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+                    .message().containsSubsequence("archetype has ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
 
-            assertThatThrownBy(() -> verifyComponentMaskHasComponents(entityId, C1.class, C2.class))
+            assertThatThrownBy(() -> verifyArchetypeHasComponents(entityId, C1.class, C2.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+                    .message().containsSubsequence("archetype has ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
         @Test
-        void testComponentMaskDoesNotHaveComponents() {
+        void testArchetypeDoesNotHaveComponents() {
             var entityId = world.createEntity();
 
-            assertThatCode(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class)).doesNotThrowAnyException();
-            assertThatCode(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C2.class)).doesNotThrowAnyException();
-            assertThatCode(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeDoesNotHaveComponents(entityId, C1.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeDoesNotHaveComponents(entityId, C2.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class)).doesNotThrowAnyException();
         }
 
         @Test
-        void testComponentMaskDoesNotHaveComponents_WhenUpdateNotProcessed() {
+        void testArchetypeDoesNotHaveComponents_WhenUpdateNotProcessed() {
             var entityId = world.createEntity();
 
             mapper1.add(entityId);
             mapper2.add(entityId);
 
-            assertThatCode(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class)).doesNotThrowAnyException();
-            assertThatCode(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C2.class)).doesNotThrowAnyException();
-            assertThatCode(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeDoesNotHaveComponents(entityId, C1.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeDoesNotHaveComponents(entityId, C2.class)).doesNotThrowAnyException();
+            assertThatCode(() -> verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class)).doesNotThrowAnyException();
         }
 
         @Test
-        void testComponentMaskDoesNotHaveComponents_WhenPresent_Throws() {
+        void testArchetypeDoesNotHaveComponents_WhenPresent_Throws() {
             var entityId = world.createEntity(new C1(), new C2());
 
-            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class))
+            assertThatThrownBy(() -> verifyArchetypeDoesNotHaveComponents(entityId, C1.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+                    .message().containsSubsequence("archetype does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
 
-            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C2.class))
+            assertThatThrownBy(() -> verifyArchetypeDoesNotHaveComponents(entityId, C2.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask does not have ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
+                    .message().containsSubsequence("archetype does not have ", ClassType.class.getSimpleName(), C2.class.getSimpleName());
 
-            assertThatThrownBy(() -> verifyComponentMaskDoesNotHaveComponents(entityId, C1.class, C2.class))
+            assertThatThrownBy(() -> verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class))
                     .isInstanceOf(AssertionError.class)
-                    .message().containsSubsequence("component mask does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
+                    .message().containsSubsequence("archetype does not have ", ClassType.class.getSimpleName(), C1.class.getSimpleName());
         }
 
     }

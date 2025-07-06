@@ -39,7 +39,6 @@ import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
-import de.schosin.ecs.storage.api.entities.ComponentMask;
 import de.schosin.ecs.storage.api.entities.EntityData;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
@@ -57,8 +56,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 64);
     private final Map<EngineSpec, CompositionImpl> compositions = new ConcurrentHashMap<>();
 
-    private final Bag<Bag<CompositionImpl>> compositionsByMask = new Bag<>(Bag.class, 64);
-    private final Bag<ComponentMask> fill = new Bag<>(ComponentMask.class, 64);
+    private final Bag<Bag<CompositionImpl>> compositionsByArchetype = new Bag<>(Bag.class, 64);
 
     // DataTypePlugin used as argument to initialize the plugin
     public CompositionManager(World world, @SuppressWarnings("unused") DataTypePlugin dataTypePlugin) {
@@ -70,12 +68,14 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
+        this.archetypes.addAll(storageEngine.getArchetypes());
+
         var eventManager = world.getSingleton(EventManager.class);
-        eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.componentMask()));
-        eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.componentMask()));
-        eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> handleBeforeUpdate(event.entityId(), event.componentMask(), event.newComponentMask()));
-        eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.componentMask()));
-        eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.componentMask()));
+        eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.archetype()));
+        eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.archetype()));
+        eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> handleBeforeUpdate(event.entityId(), event.archetype(), event.newArchetype()));
+        eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.archetype()));
+        eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.archetype()));
         eventManager.registerEventHandler(ArchetypeAddedEvent.class, this::handleArchetypeAdded);
     }
 
@@ -129,42 +129,42 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             composition.offer(archetype);
         }
 
-        // Add composition to ComponentMask lookup 
-        synchronized (compositionsByMask) {
-            fill.clear();
-            storageEngine.getComponentMasks(composition::isInterested, fill);
+        // Add composition to archetype lookup 
+        synchronized (compositionsByArchetype) {
+            var archetypes = storageEngine.getArchetypes();
+            for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+                var archetype = archetypes.get(i);
+                if (!composition.isInterested(archetype)) {
+                    continue;
+                }
 
-            var data = fill.getData();
-            for (int i = 0, s = fill.getSize(); i < s; i++) {
-                var componentMask = data[i];
-
-                var maskCompositions = getCompositions(componentMask);
-                maskCompositions.add(composition);
+                var archetypeCompositions = getCompositions(archetype);
+                archetypeCompositions.add(composition);
             }
         }
 
         return composition;
     }
 
-    private void handleInserted(int entityId, ComponentMask componentMask) {
-        var maskCompositions = getCompositions(componentMask);
+    private void handleInserted(int entityId, Archetype archetype) {
+        var archetypeCompositions = getCompositions(archetype);
 
-        var data = maskCompositions.getData();
-        for (int i = 0, s = maskCompositions.getSize(); i < s; i++) {
+        var data = archetypeCompositions.getData();
+        for (int i = 0, s = archetypeCompositions.getSize(); i < s; i++) {
             var composition = data[i];
-            if (composition.isInterested(componentMask)) {
+            if (composition.isInterested(archetype)) {
                 composition.inserted(entityId);
             }
         }
     }
 
-    private void handleInserted(ImmutableIntBag entityIds, ComponentMask componentMask) {
-        var maskCompositions = getCompositions(componentMask);
+    private void handleInserted(ImmutableIntBag entityIds, Archetype archetype) {
+        var archetypeCompositions = getCompositions(archetype);
 
-        var data = maskCompositions.getData();
-        for (int i = 0, s = maskCompositions.getSize(); i < s; i++) {
+        var data = archetypeCompositions.getData();
+        for (int i = 0, s = archetypeCompositions.getSize(); i < s; i++) {
             var composition = data[i];
-            if (composition.isInterested(componentMask)) {
+            if (composition.isInterested(archetype)) {
                 for (int e = 0, es = entityIds.getSize(); e < es; e++) {
                     var entityId = entityIds.get(e);
 
@@ -174,41 +174,41 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    private void handleBeforeUpdate(int entityId, ComponentMask previousComponentMask, ComponentMask componentMask) {
+    private void handleBeforeUpdate(int entityId, Archetype previousArchetype, Archetype archetype) {
         // Remove from previous composition if no longer interested
-        var previousCompositions = getCompositions(previousComponentMask);
+        var previousCompositions = getCompositions(previousArchetype);
 
         var previousData = previousCompositions.getData();
         for (int i = 0, s = previousCompositions.getSize(); i < s; i++) {
             var composition = previousData[i];
 
             var beforeInterested = composition.containsEntity(entityId);
-            if (beforeInterested && !composition.isInterested(componentMask)) {
+            if (beforeInterested && !composition.isInterested(archetype)) {
                 composition.removed(entityId);
             }
         }
     }
 
-    private void handleUpdated(int entityId, ComponentMask componentMask) {
+    private void handleUpdated(int entityId, Archetype archetype) {
         // Add to new composition if not yet contained
-        var newCompositions = getCompositions(componentMask);
+        var newCompositions = getCompositions(archetype);
 
         var dataData = newCompositions.getData();
         for (int i = 0, s = newCompositions.getSize(); i < s; i++) {
             var composition = dataData[i];
 
             var beforeInterested = composition.containsEntity(entityId);
-            if (!beforeInterested && composition.isInterested(componentMask)) {
+            if (!beforeInterested && composition.isInterested(archetype)) {
                 composition.inserted(entityId);
             }
         }
     }
 
-    private void handleRemoved(int entityId, ComponentMask componentMask) {
-        var maskCompositions = getCompositions(componentMask);
+    private void handleRemoved(int entityId, Archetype archetype) {
+        var archetypeCompositions = getCompositions(archetype);
 
-        var data = maskCompositions.getData();
-        for (int i = 0, s = maskCompositions.getSize(); i < s; i++) {
+        var data = archetypeCompositions.getData();
+        for (int i = 0, s = archetypeCompositions.getSize(); i < s; i++) {
             var composition = data[i];
 
             if (composition.containsEntity(entityId)) {
@@ -217,16 +217,16 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    private Bag<CompositionImpl> getCompositions(ComponentMask componentMask) {
-        synchronized (compositionsByMask) {
-            var result = compositionsByMask.get(componentMask.getId());
+    private Bag<CompositionImpl> getCompositions(Archetype archetype) {
+        synchronized (compositionsByArchetype) {
+            var result = compositionsByArchetype.get(archetype.getId());
             if (result == null) {
                 result = new Bag<>(CompositionImpl.class);
-                compositionsByMask.set(componentMask.getId(), result);
+                compositionsByArchetype.set(archetype.getId(), result);
 
                 // Add interested compositions
                 for (var composition : this.compositions.values()) {
-                    if (composition.isInterested(componentMask)) {
+                    if (composition.isInterested(archetype)) {
                         result.add(composition);
                     }
                 }
@@ -239,7 +239,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private final class CompositionImpl implements Composition {
 
         private final EngineSpec spec;
-        private final IntBag maskCache;
+        private final IntBag archetypeCache;
 
         private final BitVector lookup;
 
@@ -258,7 +258,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         private CompositionImpl(EngineSpec spec, Function<ComponentsPredicate, IntBag> supplier) {
             this.spec = spec;
-            this.maskCache = new IntBag(64);
+            this.archetypeCache = new IntBag(64);
 
             var entities = supplier.apply(this::isInterested);
 
@@ -280,11 +280,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         public void offer(Archetype archetype) {
-            var componentMask = archetype.getComponentMask();
-
-            if (spec.isInterested(componentMask)) {
+            if (spec.isInterested(archetype)) {
                 archetypes.add(archetype);
-                maskCache.set(componentMask.getId(), 1);
+                archetypeCache.set(archetype.getId(), 1);
 
                 for (var data : compositionData.values()) {
                     data.addArchetype(archetype);
@@ -428,16 +426,16 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             }
         }
 
-        public boolean isInterested(@NonNull ComponentMask componentMask) {
+        public boolean isInterested(@NonNull Archetype archetype) {
             // Check cached value
-            var cached = maskCache.get(componentMask.getId());
+            var cached = archetypeCache.get(archetype.getId());
             if (cached != 0) {
                 return cached == 1;
             }
 
             // Test spec and cache result
-            var result = spec.isInterested(componentMask);
-            maskCache.set(componentMask.getId(), result ? 1 : 2);
+            var result = spec.isInterested(archetype);
+            archetypeCache.set(archetype.getId(), result ? 1 : 2);
 
             return result;
         }

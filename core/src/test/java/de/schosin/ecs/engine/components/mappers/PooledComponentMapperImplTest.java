@@ -51,7 +51,7 @@ class PooledComponentMapperImplTest extends AbstractMapperTest {
             assertThat(pooledComponent.get(entityId)).isSameAs(component);
 
             verifyHasComponents(entityId, PooledComponent.class);
-            verifyComponentMaskHasComponents(entityId, PooledComponent.class);
+            verifyArchetypeHasComponents(entityId, PooledComponent.class);
         });
     }
 
@@ -70,7 +70,7 @@ class PooledComponentMapperImplTest extends AbstractMapperTest {
 
             // Verify
             verifyHasComponents(entityId, PooledComponent.class);
-            verifyComponentMaskHasComponents(entityId, PooledComponent.class);
+            verifyArchetypeHasComponents(entityId, PooledComponent.class);
         });
     }
 
@@ -100,7 +100,7 @@ class PooledComponentMapperImplTest extends AbstractMapperTest {
 
             // Verify
             verifyDoesNotHaveComponents(entity1, PooledComponent.class);
-            verifyComponentMaskDoesNotHaveComponents(entity1, PooledComponent.class);
+            verifyArchetypeDoesNotHaveComponents(entity1, PooledComponent.class);
         });
     }
 
@@ -119,7 +119,7 @@ class PooledComponentMapperImplTest extends AbstractMapperTest {
     void testPooledIntanceReused() {
         var entityId = world.createEntity();
         verifyDoesNotHaveComponents(entityId, PooledComponent.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, PooledComponent.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, PooledComponent.class);
 
         // Add
         var instance1 = pooledComponent.add(entityId);
@@ -127,14 +127,14 @@ class PooledComponentMapperImplTest extends AbstractMapperTest {
 
         world.process();
         verifyHasComponents(entityId, PooledComponent.class);
-        verifyComponentMaskHasComponents(entityId, PooledComponent.class);
+        verifyArchetypeHasComponents(entityId, PooledComponent.class);
 
         // Remove
         pooledComponent.remove(entityId);
 
         world.process();
         verifyDoesNotHaveComponents(entityId, PooledComponent.class);
-        verifyComponentMaskDoesNotHaveComponents(entityId, PooledComponent.class);
+        verifyArchetypeDoesNotHaveComponents(entityId, PooledComponent.class);
 
         // Reuse
         var reusedInstance = pooledComponent.add(entityId);
@@ -142,7 +142,7 @@ class PooledComponentMapperImplTest extends AbstractMapperTest {
 
         world.process();
         verifyHasComponents(entityId, PooledComponent.class);
-        verifyComponentMaskHasComponents(entityId, PooledComponent.class);
+        verifyArchetypeHasComponents(entityId, PooledComponent.class);
     }
 
 }

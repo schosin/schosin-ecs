@@ -95,9 +95,9 @@ public abstract class AbstractSpecManager implements Spec.SpecCreator {
 
         @Override
         public boolean isInterested(int entityId) {
-            var componentMask = entityManager.getComponentMask(entityId);
+            var archetype = entityManager.getArchetype(entityId);
 
-            return spec.isInterested(componentMask);
+            return spec.isInterested(archetype);
         }
 
     }

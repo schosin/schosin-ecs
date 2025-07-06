@@ -23,7 +23,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         // Verify
         verifyDoesNotHaveComponents(entityId, relation(C1.class));
-        verifyComponentMaskDoesNotHaveComponents(entityId, relation(C1.class));
+        verifyArchetypeDoesNotHaveComponents(entityId, relation(C1.class));
     }
 
     @Test
@@ -37,7 +37,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         // Verify
         verifyDoesNotHaveComponents(entityId, relation(C1.class));
-        verifyComponentMaskDoesNotHaveComponents(entityId, relation(C1.class));
+        verifyArchetypeDoesNotHaveComponents(entityId, relation(C1.class));
     }
 
     @Test
@@ -58,10 +58,10 @@ class RelationMapperManagerTest extends AbstractWorldTest {
 
         // Verify
         verifyDoesNotHaveComponents(entity1, relation(C1.class));
-        verifyComponentMaskDoesNotHaveComponents(entity1, relation(C1.class));
+        verifyArchetypeDoesNotHaveComponents(entity1, relation(C1.class));
 
         verifyDoesNotHaveComponents(entity2, relation(C2.class));
-        verifyComponentMaskDoesNotHaveComponents(entity2, relation(C2.class));
+        verifyArchetypeDoesNotHaveComponents(entity2, relation(C2.class));
     }
 
     @Test
