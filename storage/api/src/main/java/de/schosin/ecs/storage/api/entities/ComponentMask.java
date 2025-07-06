@@ -8,7 +8,7 @@ public interface ComponentMask {
 
     int getId();
 
-    boolean contains(int componentId);
+    boolean containsComponent(int componentId);
 
     ImmutableBag<Component<?, ?>> getComponents();
 

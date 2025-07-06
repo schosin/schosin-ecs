@@ -136,7 +136,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public boolean contains(int entityId) {
+    public boolean containsEntity(int entityId) {
         return entityIndex.getComponentMask(entityId) == componentMask;
     }
 

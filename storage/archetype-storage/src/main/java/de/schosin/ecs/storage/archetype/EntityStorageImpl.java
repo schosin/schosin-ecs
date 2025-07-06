@@ -102,7 +102,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             var componentType = componentTypes.get(i);
             var component = componentStorage.getComponent(componentType);
 
-            if (componentMask.contains(component.id())) {
+            if (componentMask.containsComponent(component.id())) {
                 continue;
             }
 
@@ -148,7 +148,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             var componentType = componentTypes.get(i);
             var component = componentStorage.getComponent(componentType);
 
-            if (!result.contains(component.id())) {
+            if (!result.containsComponent(component.id())) {
                 continue;
             }
 

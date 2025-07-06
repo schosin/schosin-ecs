@@ -179,7 +179,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.contains(component1.id()) && mask.contains(component2.id()));
+            var entities = entityManager.getEntities(mask -> mask.containsComponent(component1.id()) && mask.containsComponent(component2.id()));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(2);
@@ -199,7 +199,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(mask -> mask.contains(component1.id()) || mask.contains(component3.id()));
+            var entities = entityManager.getEntities(mask -> mask.containsComponent(component1.id()) || mask.containsComponent(component3.id()));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(4);
@@ -220,7 +220,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(mask -> !mask.contains(component1.id()) && !mask.contains(component3.id()));
+            var entities = entityManager.getEntities(mask -> !mask.containsComponent(component1.id()) && !mask.containsComponent(component3.id()));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(1);
@@ -272,8 +272,8 @@ class EntityManagerTest extends AbstractWorldTest {
             var entityId = world.createEntity(new Component1(), new Component2());
 
             var componentMask = entityManager.getComponentMask(entityId);
-            assertThat(componentMask.contains(component1.id())).isTrue();
-            assertThat(componentMask.contains(component2.id())).isTrue();
+            assertThat(componentMask.containsComponent(component1.id())).isTrue();
+            assertThat(componentMask.containsComponent(component2.id())).isTrue();
 
             var otherComponentMask = storageEngine.getComponentMask(component(Component3.class));
             assertThat(otherComponentMask).isNotSameAs(componentMask).isNotEqualTo(componentMask);
@@ -291,8 +291,8 @@ class EntityManagerTest extends AbstractWorldTest {
             var entityId = world.createEntity(new Component1(), new Component2());
 
             var componentMask = entityManager.getComponentMask(entityId);
-            assertThat(componentMask.contains(component1.id())).isTrue();
-            assertThat(componentMask.contains(component2.id())).isTrue();
+            assertThat(componentMask.containsComponent(component1.id())).isTrue();
+            assertThat(componentMask.containsComponent(component2.id())).isTrue();
 
             var sameComponentMask = storageEngine.getComponentMask(component(Component2.class), component(Component1.class));
             assertThat(sameComponentMask).isSameAs(componentMask);
@@ -390,7 +390,7 @@ class EntityManagerTest extends AbstractWorldTest {
         void testDeletionDuringCreation() {
             // Setup listeners
             eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                if (event.componentMask().contains(id1)) {
+                if (event.componentMask().containsComponent(id1)) {
                     pooled2.add(event.entityId());
                 }
             });
@@ -399,11 +399,11 @@ class EntityManagerTest extends AbstractWorldTest {
                 var mask = event.componentMask();
                 var entityId = event.entityId();
 
-                if (mask.contains(id2)) {
+                if (mask.containsComponent(id2)) {
                     pooled3.add(entityId);
                 }
 
-                if (mask.contains(id3)) {
+                if (mask.containsComponent(id3)) {
                     world.deleteEntity(entityId);
                 }
             });
@@ -436,11 +436,11 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevMask = event.previousComponentMask();
                     var entityId = event.entityId();
 
-                    if (!prevMask.contains(id2) && mask.contains(id2)) {
+                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
                         pooled3.add(entityId);
                     }
 
-                    if (!prevMask.contains(id3) && mask.contains(id3)) {
+                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
                         pooled1.remove(entityId);
                     }
                 });
@@ -478,11 +478,11 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevMask = event.previousComponentMask();
                     var entityId = event.entityId();
 
-                    if (!prevMask.contains(id2) && mask.contains(id2)) {
+                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
                         pooled3.add(entityId);
                     }
 
-                    if (!prevMask.contains(id3) && mask.contains(id3)) {
+                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
                         pooled1.remove(entityId);
                     }
                 });
@@ -516,14 +516,14 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevMask = event.previousComponentMask();
                     var id = event.entityId();
 
-                    if (!prevMask.contains(id1) && mask.contains(id1)) {
+                    if (!prevMask.containsComponent(id1) && mask.containsComponent(id1)) {
                         pooled2.add(id);
                     }
-                    if (!prevMask.contains(id2) && mask.contains(id2)) {
+                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
                         pooled3.add(id);
                     }
 
-                    if (!prevMask.contains(id3) && mask.contains(id3)) {
+                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
                         pooled1.remove(id);
                     }
                 });
@@ -578,11 +578,11 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevMask = event.previousComponentMask();
                     var id = event.entityId();
 
-                    if (!prevMask.contains(id2) && mask.contains(id2)) {
+                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
                         pooled3.add(id);
                     }
 
-                    if (!prevMask.contains(id3) && mask.contains(id3)) {
+                    if (!prevMask.containsComponent(id3) && mask.containsComponent(id3)) {
                         pooled1.remove(id);
                     }
                 });

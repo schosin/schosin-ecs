@@ -13,7 +13,7 @@ public record MockComponentMask(ImmutableBag<RegularComponentType<?, ?>> compone
     }
 
     @Override
-    public boolean contains(int componentId) {
+    public boolean containsComponent(int componentId) {
         throw new UnsupportedOperationException();
     }
 

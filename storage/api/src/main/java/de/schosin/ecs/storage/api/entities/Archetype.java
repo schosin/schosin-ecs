@@ -14,7 +14,7 @@ public interface Archetype {
 
     int getCount();
 
-    boolean contains(int entityId);
+    boolean containsEntity(int entityId);
 
     ImmutableIntBag getEntities();
 

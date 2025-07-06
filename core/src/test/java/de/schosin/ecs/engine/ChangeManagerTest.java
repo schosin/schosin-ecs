@@ -179,7 +179,7 @@ class ChangeManagerTest extends AbstractWorldTest {
                 var updated = new IntBag(1);
 
                 eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                    if (event.componentMask().contains(id1)) {
+                    if (event.componentMask().containsComponent(id1)) {
                         component2.add(event.entityId());
                     }
                 });
@@ -189,11 +189,11 @@ class ChangeManagerTest extends AbstractWorldTest {
                     var prevMask = event.previousComponentMask();
                     var id = event.entityId();
 
-                    if (!prevMask.contains(id1) && mask.contains(id1)) {
+                    if (!prevMask.containsComponent(id1) && mask.containsComponent(id1)) {
                         component2.add(id);
                     }
 
-                    if (!prevMask.contains(id2) && mask.contains(id2)) {
+                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
                         updated.add(id);
                     }
                 });
@@ -214,7 +214,7 @@ class ChangeManagerTest extends AbstractWorldTest {
                 var updated = new IntBag(1);
 
                 eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                    if (event.componentMask().contains(id2)) {
+                    if (event.componentMask().containsComponent(id2)) {
                         component1.add(event.entityId());
                     }
                 });
@@ -224,11 +224,11 @@ class ChangeManagerTest extends AbstractWorldTest {
                     var prevMask = event.previousComponentMask();
                     var id = event.entityId();
 
-                    if (!prevMask.contains(id1) && mask.contains(id1)) {
+                    if (!prevMask.containsComponent(id1) && mask.containsComponent(id1)) {
                         updated.add(id);
                     }
 
-                    if (!prevMask.contains(id2) && mask.contains(id2)) {
+                    if (!prevMask.containsComponent(id2) && mask.containsComponent(id2)) {
                         component1.add(id);
                     }
                 });

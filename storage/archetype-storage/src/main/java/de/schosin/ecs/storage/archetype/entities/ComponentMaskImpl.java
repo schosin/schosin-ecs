@@ -61,7 +61,7 @@ public class ComponentMaskImpl implements ComponentMask {
     }
 
     @Override
-    public boolean contains(int componentId) {
+    public boolean containsComponent(int componentId) {
         return componentId < lookup.getSize() && lookup.get(componentId) == 1;
     }
 
