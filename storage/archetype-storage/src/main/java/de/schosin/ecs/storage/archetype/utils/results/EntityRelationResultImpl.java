@@ -1,4 +1,4 @@
-package de.schosin.ecs.storage.common.results;
+package de.schosin.ecs.storage.archetype.utils.results;
 
 import java.util.Iterator;
 

@@ -1,4 +1,4 @@
-package de.schosin.ecs.storage.common;
+package de.schosin.ecs.storage.archetype.entities.archetypes;
 
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
@@ -12,8 +12,8 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveCompon
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.entities.ComponentMask;
-import de.schosin.ecs.storage.common.results.ComponentRelationResultImpl;
-import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
+import de.schosin.ecs.storage.archetype.utils.results.ComponentRelationResultImpl;
+import de.schosin.ecs.storage.archetype.utils.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 

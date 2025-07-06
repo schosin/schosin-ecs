@@ -6,7 +6,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntity
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component.EntityRelationComponent.RemovedRelationTypeHandler;
-import de.schosin.ecs.storage.common.results.EntityRelationResultImpl;
+import de.schosin.ecs.storage.archetype.utils.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;

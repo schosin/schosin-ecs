@@ -1,4 +1,4 @@
-package de.schosin.ecs.storage.common.results;
+package de.schosin.ecs.storage.archetype.utils.results;
 
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.RelationComponentType;

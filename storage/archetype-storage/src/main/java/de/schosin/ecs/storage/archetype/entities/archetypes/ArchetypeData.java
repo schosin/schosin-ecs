@@ -3,7 +3,6 @@ package de.schosin.ecs.storage.archetype.entities.archetypes;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
-import de.schosin.ecs.storage.common.PendingChanges;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
