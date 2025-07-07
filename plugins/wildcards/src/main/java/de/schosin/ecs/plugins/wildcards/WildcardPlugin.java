@@ -11,9 +11,8 @@ public interface WildcardPlugin {
 
     <R, T> WildcardComponentRelationMapper<R, T> getWildcardComponentRelations(Class<R> relationshipBound, Class<T> targetBound);
 
-    /*
     <R> WildcardEntityRelationMapper<R> getWildcardEntityRelations(Class<R> relationshipBound);
 
     <R, T> WildcardEntityRelationFetchMapper<R, T> getWildcardEntityFetchRelations(Class<R> relationshipBound, ComponentType<?, T> fetch);
-*/
+
 }

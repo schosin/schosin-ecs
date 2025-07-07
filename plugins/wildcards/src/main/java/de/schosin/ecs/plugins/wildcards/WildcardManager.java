@@ -88,7 +88,7 @@ public class WildcardManager implements WildcardPlugin {
     public <R, T> WildcardComponentRelationMapper<R, T> getWildcardComponentRelations(Class<R> relationshipBound, Class<T> targetBound) {
         return componentMapperManager.getComponents(wildcardRelation(relationshipBound, targetBound));
     }
-/*
+
     @Override
     public <R> WildcardEntityRelationMapper<R> getWildcardEntityRelations(Class<R> relationshipBound) {
         return componentMapperManager.getComponents(wildcardRelation(relationshipBound));
@@ -98,7 +98,7 @@ public class WildcardManager implements WildcardPlugin {
     public <R, T> WildcardEntityRelationFetchMapper<R, T> getWildcardEntityFetchRelations(Class<R> relationshipBound, ComponentType<?, T> fetch) {
         return componentMapperManager.getComponents(wildcardRelation(relationshipBound, fetch));
     }
-*/
+
     private class ComponentEventHandler {
 
         @SuppressWarnings("rawtypes")
