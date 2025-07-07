@@ -219,7 +219,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     private Bag<CompositionImpl> getCompositions(Archetype archetype) {
         synchronized (compositionsByArchetype) {
-            var result = compositionsByArchetype.get(archetype.getId());
+            var result = compositionsByArchetype.getSafe(archetype.getId());
             if (result == null) {
                 result = new Bag<>(CompositionImpl.class);
                 compositionsByArchetype.set(archetype.getId(), result);
@@ -428,7 +428,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         public boolean isInterested(@NonNull Archetype archetype) {
             // Check cached value
-            var cached = archetypeCache.get(archetype.getId());
+            var cached = archetypeCache.getSafe(archetype.getId());
             if (cached != 0) {
                 return cached == 1;
             }

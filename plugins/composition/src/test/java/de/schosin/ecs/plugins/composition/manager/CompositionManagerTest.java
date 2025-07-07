@@ -8,6 +8,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -59,6 +60,7 @@ import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.plugins.wildcards.result.WildcardResult;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.test.AbstractEcsTest;
+import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.IntBag;
 
@@ -2935,6 +2937,41 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
                 }
             });
             assertThat(found.get()).as("process entity after process").isTrue();
+        }
+
+        @Test
+        void testLargeNumberOfArchetypes() {
+            var entities = new Integer[1 << 10];
+            var components = new Bag<>(Object.class, 10);
+
+            for (int i = 0, s = 1 << 10; i < s; i++) {
+                for (int j = 0; j < 10; j++) {
+                    if ((i & (1 << j)) > 0) {
+                        components.add(switch (j) {
+                            case 0 -> new C1();
+                            case 1 -> new C2();
+                            case 2 -> new C3();
+                            case 3 -> new C4();
+                            case 4 -> new C5();
+                            case 5 -> new C6();
+                            case 6 -> new C7();
+                            case 7 -> new C8();
+                            case 8 -> new P1();
+                            case 9 -> new P2();
+                            default -> new P3();
+                        });
+                    }
+                }
+
+                entities[i] = world.createEntity(Arrays.copyOf(components.getData(), components.getSize()));
+                components.clear();
+            }
+
+            var archetypes = storageEngine.getArchetypes();
+            assertThat(archetypes).as("test setup correct").hasSize(1 << 10);
+
+            var composition = composition(Composition.all(), component(C1.class));
+            assertThat(composition.stream()).contains(entities);
         }
 
         @Nested
