@@ -14,7 +14,7 @@ import de.schosin.ecs.storage.testsuite.entities.ArchetypeTest.C2;
 public class ArchetypeStorageTest extends AbstractStorageEngineTest {
 
     @Nested
-    class GetArcchetypesTest {
+    class GetArchetypesTest {
 
         @Test
         void testNoArchetypes() {
@@ -51,6 +51,15 @@ public class ArchetypeStorageTest extends AbstractStorageEngineTest {
             assertThat(archetypes.get(0)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1, archetype2);
             assertThat(archetypes.get(1)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1, archetype2);
             assertThat(archetypes.get(1)).as("getArchetypes must return all archetypes").isIn(emtpyArchetype, archetype1, archetype2);
+        }
+
+        @Test
+        void testNoUnnecessaryArchetypesCreated() {
+            var emtpyArchetype = engine.getArchetype();
+            var archetype = engine.getArchetype(component(C1.class), component(C2.class));
+
+            var archetypes = engine.getArchetypes();
+            assertThat(archetypes).as("getArchetype must only return known archetypes").containsExactlyInAnyOrder(emtpyArchetype, archetype);
         }
 
     }

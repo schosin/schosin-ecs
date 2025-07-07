@@ -115,6 +115,10 @@ public class BitVector {
         this.currentWord = this.currentWord > wordIndex ? currentWord : wordIndex;
     }
 
+    public void setAll(BitVector other) {
+        other.iterate(this::set);
+    }
+
     private static int wordIndex(int bitIndex) {
         return bitIndex >>> ADDRESS_BITS_PER_WORD;
     }

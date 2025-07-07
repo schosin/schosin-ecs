@@ -18,15 +18,25 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public class PendingChanges {
 
-    private final ArchetypeData archetype;
+    private final ArchetypeGraphNode archetypeNode;
+    private ArchetypeGraphNode pendingArchetypeNode;
 
     private final Bag<RegularComponentType<?, ?>> addedTypes = new Bag<>(RegularComponentType.class, 4);
     private final Bag<Object> added = new Bag<>(Object.class, 4);
 
     private final Bag<RegularComponentType<?, ?>> removedTypes = new Bag<>(RegularComponentType.class, 4);
 
-    public PendingChanges(ArchetypeData archetype) {
-        this.archetype = archetype;
+    public PendingChanges(ArchetypeGraphNode archetypeNode) {
+        this.archetypeNode = archetypeNode;
+        this.pendingArchetypeNode = archetypeNode;
+    }
+
+    public ArchetypeGraphNode getPendingArchetypeNode() {
+        if (this.pendingArchetypeNode == archetypeNode) {
+            return null;
+        }
+
+        return this.pendingArchetypeNode;
     }
 
     public boolean containsComponent(RegularComponentType<?, ?> type) {
@@ -51,8 +61,8 @@ public class PendingChanges {
         return this.addedTypes.isEmpty() && this.removedTypes.isEmpty();
     }
 
-    public ArchetypeData getArchetype() {
-        return this.archetype;
+    public ArchetypeGraphNode getArchetypeNode() {
+        return this.archetypeNode;
     }
 
     public ImmutableBag<RegularComponentType<?, ?>> getAddedTypes() {
@@ -81,12 +91,17 @@ public class PendingChanges {
         }
 
         // Undo remove
-        removedTypes.remove(type);
+        if (removedTypes.remove(type)) {
+            pendingArchetypeNode = pendingArchetypeNode.removeComponentType(type);
+        }
 
         // Don't add if type already part of current archetype (no archetype change)
-        if (archetype.getComponentTypes().contains(type)) {
+        if (archetypeNode.getComponentTypes().contains(type)) {
             return false;
         }
+
+        // Update pending archetype node
+        pendingArchetypeNode = pendingArchetypeNode.addComponentType(type);
 
         // Add component
         switch (type) {
@@ -145,7 +160,7 @@ public class PendingChanges {
 
     private void addExclusiveComponentRelation(ExclusiveComponentRelationType<?, ?> relationType, Object component) {
         // Remove matching relations from archetype
-        var componentTypes = archetype.getComponentTypes();
+        var componentTypes = archetypeNode.getComponentTypes();
 
         for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
             if (componentTypes.get(i) instanceof ExclusiveComponentRelationType<?, ?> other && other.relationship().equals(relationType.relationship())) {
@@ -230,7 +245,7 @@ public class PendingChanges {
     }
 
     public void remove(RegularComponentType<?, ?> type) {
-        var archetypeType = archetype.getComponentTypes().contains(type);
+        var archetypeType = archetypeNode.getComponentTypes().contains(type);
 
         // Skip if no-op (not part of archetype or added types)
         if (!addedTypes.contains(type) && !archetypeType) {
@@ -240,6 +255,7 @@ public class PendingChanges {
         // Add remove
         if (archetypeType && !removedTypes.contains(type)) {
             removedTypes.add(type);
+            pendingArchetypeNode = pendingArchetypeNode.removeComponentType(type);
         }
 
         // Undo adds
@@ -247,6 +263,10 @@ public class PendingChanges {
             if (addedTypes.get(i).equals(type)) {
                 addedTypes.remove(i);
                 added.remove(i);
+
+                pendingArchetypeNode = pendingArchetypeNode.removeComponentType(type);
+
+                break;
             }
         }
     }
@@ -269,12 +289,14 @@ public class PendingChanges {
         added.clear();
 
         removedTypes.clear();
+
+        this.pendingArchetypeNode = archetypeNode;
     }
 
     @Override
     public String toString() {
         return new StringBuilder()
-                .append("PendingChanges(archetype = ").append(this.archetype.getId())
+                .append("PendingChanges(archetypeNode = ").append(this.archetypeNode)
                 .append(", addedTypes = ").append(this.addedTypes)
                 .append(", removedTypes = ").append(this.removedTypes)
                 .append(")")

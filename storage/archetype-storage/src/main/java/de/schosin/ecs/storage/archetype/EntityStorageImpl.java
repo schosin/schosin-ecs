@@ -260,23 +260,11 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     @Nullable
     public ArchetypeData getPendingArchetype(int entityId) {
         var pendingChanges = entityIndex.getPendingChanges(entityId);
-        if (pendingChanges == null) {
+        if (pendingChanges == null || pendingChanges.isEmpty()) {
             return null;
         }
 
-        var archetype = pendingChanges.getArchetype();
-
-        var addedTypes = pendingChanges.getAddedTypes();
-        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
-            archetype = archetype.addComponentType(addedTypes.get(i));
-        }
-
-        var removedTypes = pendingChanges.getRemovedTypes();
-        for (int i = 0, s = removedTypes.getSize(); i < s; i++) {
-            archetype = archetype.removeComponentType(removedTypes.get(i));
-        }
-
-        return archetype;
+        return pendingChanges.getPendingArchetypeNode().getArchetype();
     }
 
     @Override
