@@ -266,6 +266,82 @@
                 <storage.impl.version>${project.version}</storage.impl.version>
             </properties>
         </profile>
+        
+        <profile>
+            <id>jdk17</id>
+            <properties>
+                <storage.impl.groupId>de.schosin.ecs.storage</storage.impl.groupId>
+                <storage.impl.artifactId>ecs-storage-archetype-storage</storage.impl.artifactId>
+                <storage.impl.version>${project.version}</storage.impl.version>
+                
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+                
+                <maven.compiler.testSource>21</maven.compiler.testSource>
+                <maven.compiler.testTarget>21</maven.compiler.testTarget>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>copy-sources</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/src17</outputDirectory>
+                                    <nonFilteredFileExtensions>*.java</nonFilteredFileExtensions>
+                                    <resources>
+                                        <resource>
+                                            <directory>${basedir}/src/main/java</directory>
+                                            <include>**/*.java</include>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.openrewrite.maven</groupId>
+                        <artifactId>rewrite-maven-plugin</artifactId>
+                        <version>6.13.0</version>
+                        <configuration>
+                            <runPerSubmodule>true</runPerSubmodule>
+                            <activeRecipes>
+                                <!-- 
+                                <recipe>de.schosin.openrewrite.recipe.DemodernizeSwitchExpression</recipe>
+                                -->
+                                <recipe>org.openrewrite.java.RemoveUnusedImports</recipe>
+                            </activeRecipes>
+                            <activeStyles>
+                                <style>org.openrewrite.java.style.Autodetect</style>
+                            </activeStyles>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>convert-sources</id>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>runNoFork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <dependencies>
+                            <dependency>
+                                <groupId>de.schosin.openrewrite.recipe</groupId>
+                                <artifactId>demodernize</artifactId>
+                                <version>0.1.0-SNAPSHOT</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>
