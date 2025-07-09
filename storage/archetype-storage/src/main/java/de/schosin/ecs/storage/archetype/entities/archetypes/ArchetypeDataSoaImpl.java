@@ -62,7 +62,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     private final ComponentAdder<?>[] adders;
     private final Bag<RegularEntityRelationType<?, ?>> entityRelationTypes;
 
-    // data.get(index)[componentId] // index tracked by EntityIndex
+    // data[componentId].get(index) // index tracked by EntityIndex
     private final Bag<Object>[] data;
     private final IntBag entities;
     private final int size;
