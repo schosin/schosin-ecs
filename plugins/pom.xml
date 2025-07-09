@@ -18,6 +18,7 @@
         <module>composition</module>
         <module>events</module>
         <module>wildcards</module>
+        <module>query</module>
         <module>experimental</module>
     </modules>
   
