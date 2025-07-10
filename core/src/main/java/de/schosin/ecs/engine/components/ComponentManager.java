@@ -1,13 +1,8 @@
 package de.schosin.ecs.engine.components;
 
-import java.util.Arrays;
-
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.components.ComponentSet;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.ClassType;
-import de.schosin.ecs.api.components.types.ComponentSetType;
-import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
@@ -19,7 +14,6 @@ import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.engine.utils.ClassUtils;
-import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
@@ -94,24 +88,6 @@ public class ComponentManager {
 
     public ImmutableBag<Component<?, ?>> getComponents() {
         return storageEngine.getComponents();
-    }
-
-    // currently unused, kept for possible optimizations when using Archetype#getEntityData(RegularComponentType<?, ?>...)
-    public RegularComponentType<?, ?>[] getRegularComponentTypes(ComponentType<?, ?> componentType) {
-        return switch (componentType) {
-            case RegularComponentType<?, ?> type -> new RegularComponentType<?, ?>[] { type };
-            case ComponentSetType<?, ?> type -> getComponentSetTypes(type);
-            default -> storageEngine.getRegularComponentTypes(componentType);
-        };
-    }
-
-    private RegularComponentType<?, ?>[] getComponentSetTypes(ComponentSetType<?, ?> type) {
-        var data = ComponentSetsHelper.getData(type.componentSet());
-
-        return data.components().stream()
-                .map(ComponentSet.ComponentData::type)
-                .flatMap(componentType -> Arrays.stream(getRegularComponentTypes(componentType)))
-                .toArray(RegularComponentType<?, ?>[]::new);
     }
 
     private static boolean validateComponent(RegularComponentType<?, ?> type, Classes classes) {

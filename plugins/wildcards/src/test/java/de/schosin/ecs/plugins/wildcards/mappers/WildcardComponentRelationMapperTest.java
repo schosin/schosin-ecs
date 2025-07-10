@@ -10,8 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
-import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
-import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 
 class WildcardComponentRelationMapperTest extends AbstractMapperTest {
@@ -284,53 +282,6 @@ class WildcardComponentRelationMapperTest extends AbstractMapperTest {
             // Verify
             assertThat(result.toString()).contains("invalidated");
             assertThat(mapper.get(entityId)).isSameAs(result);
-        }
-
-    }
-
-    @Nested
-    class GetRegularComponentTypesTest {
-
-        @Test
-        void testComponentRelationWildcards() {
-            var relation11 = componentManager.getComponent(new ComponentRelationType<>(C1.class, C1.class)).type();
-            var relation12 = componentManager.getComponent(new ComponentRelationType<>(C1.class, C2.class)).type();
-            var exclusive11 = componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class)).type();
-
-            componentManager.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
-            componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
-
-            var componentTypes = componentManager.getRegularComponentTypes(wildcardRelation(Bound.class, Bound.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation11, relation12, exclusive11);
-        }
-
-        @Test
-        void testComponentRelationRelationshipWildcard() {
-            var relation12 = componentManager.getComponent(new ComponentRelationType<>(C1.class, C2.class)).type();
-            var exclusive22 = componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class)).type();
-
-            componentManager.getComponent(new ComponentRelationType<>(C1.class, C1.class));
-            componentManager.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
-            componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
-
-            var componentTypes = componentManager.getRegularComponentTypes(wildcardRelation(Object.class, C2.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation12, exclusive22);
-        }
-
-        @Test
-        void testComponentRelationTargetWildcard() {
-            var relation11 = componentManager.getComponent(new ComponentRelationType<>(C1.class, C1.class)).type();
-            var relation12 = componentManager.getComponent(new ComponentRelationType<>(C1.class, C2.class)).type();
-
-            componentManager.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
-            componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
-            componentManager.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
-
-            var componentTypes = componentManager.getRegularComponentTypes(wildcardRelation(C1.class, Bound.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation11, relation12);
         }
 
     }

@@ -1,8 +1,5 @@
 package de.schosin.ecs.storage.archetype.entities.archetypes;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
 
@@ -25,7 +22,6 @@ import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
-import de.schosin.ecs.storage.api.entities.EntityData;
 import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
@@ -68,9 +64,8 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     private final int size;
 
     private final Bag<PendingChanges> pendingChanges;
-    private final EntityDataImpl entityData;
 
-    private final Map<ImmutableIntBag, EntityDataImpl> entityDataMap = new HashMap<>();
+    private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
     private final Pool<IntBag> intBagPool = Pool.unbounded(IntBag.class, () -> new IntBag(16), IntBag::clear);
 
     private int alive;
@@ -125,7 +120,6 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         this.entities = new IntBag(64);
 
         this.pendingChanges = new Bag<>(PendingChanges.class, 1024);
-        this.entityData = getEntityData(Arrays.copyOf(componentTypes.getData(), componentTypes.getSize()));
 
         this.data = new Bag[size];
         for (int i = 0; i < size; i++) {
@@ -147,11 +141,6 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public boolean containsEntity(int entityId) {
-        return entityIndex.getArchetypeDataForEntity(entityId) == this;
-    }
-
-    @Override
     public ImmutableIntBag getEntities() {
         return entities;
     }
@@ -159,56 +148,6 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     @Override
     public int getComponentIndex(int componentId) {
         return componentTypeIds.get(componentId);
-    }
-
-    @Override
-    public int getComponentIndex(RegularComponentType<?, ?> componentType) {
-        for (int i = 0; i < size; i++) {
-            if (componentTypes.get(i).equals(componentType)) {
-                return i;
-            }
-        }
-
-        return -1;
-    }
-
-    @Override
-    public EntityData getEntityData() {
-        return entityData;
-    }
-
-    @Override
-    public EntityDataImpl getEntityData(RegularComponentType<?, ?>... componentTypes) {
-        // Lookup key must be ordered
-        var componentIds = intBagPool.getInstance();
-        for (var type : componentTypes) {
-            componentIds.add(componentIndex.getId(type));
-        }
-
-        // Retrieve cached value
-        var result = entityDataMap.get(componentIds);
-        if (result != null) {
-            intBagPool.free(componentIds);
-            return result;
-        }
-
-        synchronized (entityDataMap) {
-            // Retrieve cached value
-            result = entityDataMap.get(componentIds);
-            if (result != null) {
-                intBagPool.free(componentIds);
-                return result;
-            }
-
-            // Create new instance
-            result = new EntityDataImpl(componentTypes);
-
-            var key = ImmutableIntBag.copyOf(componentIds);
-            entityDataMap.put(key, result);
-
-            intBagPool.free(componentIds);
-            return result;
-        }
     }
 
     @Override
@@ -222,38 +161,24 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public boolean containsComponent(int componentId) {
-        return this.componentTypeIds.get(componentId) > -1;
-    }
-
-    @Override
-    public boolean contains(int index, RegularComponentType<?, ?> type) {
-        if (componentTypes.contains(type)) {
-            return true;
-        }
-
-        var changes = getPendingChanges(index);
-        return changes != null && changes.getAddedTypes().contains(type);
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public <R> R getComponent(int index, RegularComponentType<?, R> componentType, int componentId) {
-        if (index >= alive) {
+    public ArchetypeAccessor getAccessor(int entityId) {
+        var index = entityIndex.getEntityIndex(ArchetypeDataSoaImpl.this, entityId);
+        if (index == -1) {
             return null;
         }
 
-        var componentIndex = this.componentTypeIds.get(componentId);
-        if (componentIndex == -1) {
-            return retrievePendingComponent(index, componentType);
-        }
+        var accessor = accessors.getInstance();
+        accessor.index = index;
 
-        return (R) data[componentIndex].get(index);
+        return accessor;
     }
 
     @Override
-    public ArchetypeAccessor getAccessor(int entityId) {
-        return entityData.getAccessor(entityId);
+    public IterableAccessor getAccessor() {
+        var accessor = accessors.getInstance();
+        accessor.index = -1;
+
+        return accessor;
     }
 
     @Override
@@ -558,191 +483,95 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         return obj == this;
     }
 
-    private final class EntityDataImpl implements EntityData {
+    private class AccessorImpl implements ArchetypeAccessor, IterableAccessor, Pooled {
 
-        private final RegularComponentType<?, ?>[] componentTypes;
-        private final IntBag componentIds;
-        private final IntBag componentLookup;
+        private int index = -2;
 
-        private final int[] mapping;
-        private final int size;
-
-        private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
-
-        public EntityDataImpl(RegularComponentType<?, ?>[] componentTypes) {
-            this.size = componentTypes.length;
-
-            this.componentTypes = componentTypes;
-            this.componentIds = new IntBag(componentTypes.length);
-            this.mapping = new int[componentTypes.length];
-
-            var largestComponentId = 0;
-            for (int i = 0, s = size; i < s; i++) {
-                var type = componentTypes[i];
-                var componentId = componentIndex.getId(type);
-                var id = componentTypeIds.get(componentId);
-
-                componentIds.add(componentId);
-                mapping[i] = id;
-                if (componentId > largestComponentId) {
-                    largestComponentId = componentId;
-                }
-            }
-
-            this.componentLookup = new IntBag(largestComponentId);
-            for (int i = 0; i < largestComponentId; i++) {
-                this.componentLookup.set(i, -1);
-            }
-
-            for (int i = 0; i < size; i++) {
-                this.componentLookup.set(componentIds.get(i), i);
-            }
+        @Override
+        public Archetype getArchetype() {
+            return ArchetypeDataSoaImpl.this;
         }
 
         @Override
-        public int getSize() {
-            return entities.getSize();
+        public boolean hasNext() {
+            return index < entities.getSize() - 1;
         }
 
         @Override
-        public int getId(int index) {
+        public int next() {
+            return entities.get(++index);
+        }
+
+        @Override
+        public int entityId() {
             return entities.get(index);
         }
 
         @Override
+        public boolean hasComponent(int componentId) {
+            var componentIndex = componentTypeIds.get(componentId);
+            if (componentIndex > -1) {
+                return true;
+            }
+
+            return hasPendingComponent(index, componentId);
+        }
+
+        @Override
         @SuppressWarnings("unchecked")
-        public <R> R getComponent(int index) {
-            if (size == 0) {
-                return null;
+        public <R> R getComponent(int componentId) {
+            var componentIndex = componentTypeIds.get(componentId);
+            if (componentIndex > -1) {
+                return (R) data[componentIndex].get(index);
             }
 
-            var id = mapping[0];
-            if (id > -1) {
-                return (R) data[id].get(index);
-            }
-
-            return (R) retrievePendingComponent(index, componentTypes[0]);
+            return retrievePendingComponent(index, componentId);
         }
 
         @Override
-        public IterableAccessor getAccessor() {
-            var accessor = accessors.getInstance();
-            accessor.index = -1;
+        @SuppressWarnings("unchecked")
+        public <R> R getComponent(RegularComponentType<?, R> componentType, int componentId) {
+            var componentIndex = componentTypeIds.get(componentId);
+            if (componentIndex > -1) {
+                return (R) data[componentIndex].get(index);
+            }
 
-            return accessor;
+            return retrievePendingComponent(index, componentType);
         }
 
         @Override
-        public ArchetypeAccessor getAccessor(int entityId) {
-            var index = entityIndex.getEntityIndex(ArchetypeDataSoaImpl.this, entityId);
-            if (index == -1) {
-                return null;
-            }
+        public <R> R getPendingComponent(int componentId) {
+            return retrievePendingComponent(index, componentId);
+        }
 
-            var accessor = accessors.getInstance();
-            accessor.index = index;
+        @Override
+        @SuppressWarnings("unchecked")
+        public <R> R getComponentByIndex(int componentIndex) {
+            return (R) data[componentIndex].get(index);
+        }
 
-            return accessor;
+        @Override
+        public boolean isValid() {
+            return this.index > -2;
+        }
+
+        @Override
+        public void free() {
+            accessors.free(this);
+        }
+
+        @Override
+        public void reset() {
+            this.index = -2;
         }
 
         @Override
         public String toString() {
             return new StringBuilder()
-                    .append("EntityDataImpl(archetype = ").append(ArchetypeDataSoaImpl.this).append(")")
-                    .toString();
-        }
-
-        private class AccessorImpl implements ArchetypeAccessor, IterableAccessor, Pooled {
-
-            private int index = -2;
-
-            @Override
-            public Archetype getArchetype() {
-                return ArchetypeDataSoaImpl.this;
-            }
-
-            @Override
-            public boolean hasNext() {
-                return index < entities.getSize() - 1;
-            }
-
-            @Override
-            public int next() {
-                return entities.get(++index);
-            }
-
-            @Override
-            public int entityId() {
-                return entities.get(index);
-            }
-
-            @Override
-            public boolean hasComponent(int componentId) {
-                var componentIndex = componentTypeIds.get(componentId);
-                if (componentIndex > -1) {
-                    return true;
-                }
-
-                return hasPendingComponent(index, componentId);
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public <R> R getComponent(int componentId) {
-                var componentIndex = componentTypeIds.get(componentId);
-                if (componentIndex > -1) {
-                    return (R) data[componentIndex].get(index);
-                }
-
-                return retrievePendingComponent(index, componentId);
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public <R> R getComponent(RegularComponentType<?, R> componentType, int componentId) {
-                var componentIndex = componentTypeIds.get(componentId);
-                if (componentIndex > -1) {
-                    return (R) data[componentIndex].get(index);
-                }
-
-                return retrievePendingComponent(index, componentType);
-            }
-
-            @Override
-            public <R> R getPendingComponent(int componentId) {
-                return retrievePendingComponent(index, componentId);
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public <R> R getComponentByIndex(int componentIndex) {
-                return (R) data[componentIndex].get(index);
-            }
-
-            @Override
-            public boolean isValid() {
-                return this.index > -2;
-            }
-
-            @Override
-            public void free() {
-                accessors.free(this);
-            }
-
-            @Override
-            public void reset() {
-                this.index = -2;
-            }
-
-            @Override
-            public String toString() {
-                return new StringBuilder()
-                        .append("AccessorImpl(index = ").append(index)
-                        .append(", size = ").append(size)
-                        .append(", archetype = ").append(ArchetypeDataSoaImpl.this)
-                        .append(")").toString();
-            }
-
+                    .append("AccessorImpl(index = ").append(index)
+                    .append(", size = ").append(size)
+                    .append(", archetype = ").append(ArchetypeDataSoaImpl.this)
+                    .append(")").toString();
         }
 
     }

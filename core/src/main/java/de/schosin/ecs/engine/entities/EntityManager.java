@@ -180,9 +180,11 @@ public class EntityManager {
         return result;
     }
 
-    private static void sortComponentsInPlace(Object[] components, RegularComponentType<?, ?>[] componentTypes, Archetype archetype) {
+    private void sortComponentsInPlace(Object[] components, RegularComponentType<?, ?>[] componentTypes, Archetype archetype) {
         for (int i = 0, s = components.length; i < s; i++) {
-            var index = archetype.getComponentIndex(componentTypes[i]);
+            var componentId = storageEngine.getComponent(componentTypes[i]).id();
+
+            var index = archetype.getComponentIndex(componentId);
             if (index != i) {
                 swap(components, i, index);
                 swap(componentTypes, i, index);

@@ -105,11 +105,6 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
-    public RegularComponentType<?, ?>[] getRegularComponentTypes(ComponentType<?, ?> bound) {
-        return this.componentStorage.getRegularComponentTypes(bound);
-    }
-
-    @Override
     public DataAccessor getAccessor(int entityId) {
         return this.entityStorage.getAccessor(entityId);
     }

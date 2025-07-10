@@ -12,6 +12,7 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.engine.AbstractWorldTest;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
@@ -177,7 +178,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(archetype -> archetype.containsComponent(component1.id()) && archetype.containsComponent(component2.id()));
+            var entities = entityManager.getEntities(archetype -> archetype.getComponents().contains(component1) && archetype.getComponents().contains(component2));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(2);
@@ -197,7 +198,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(archetype -> archetype.containsComponent(component1.id()) || archetype.containsComponent(component3.id()));
+            var entities = entityManager.getEntities(archetype -> archetype.getComponents().contains(component1) || archetype.getComponents().contains(component3));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(4);
@@ -218,7 +219,7 @@ class EntityManagerTest extends AbstractWorldTest {
             var entity23 = world.createEntity(new Component2(), new Component3());
 
             // Call
-            var entities = entityManager.getEntities(archetype -> !archetype.containsComponent(component1.id()) && !archetype.containsComponent(component3.id()));
+            var entities = entityManager.getEntities(archetype -> !archetype.getComponents().contains(component1) && !archetype.getComponents().contains(component3));
 
             // Verify
             assertThat(entities.getSize()).as("size").isEqualTo(1);
@@ -270,8 +271,8 @@ class EntityManagerTest extends AbstractWorldTest {
             var entityId = world.createEntity(new Component1(), new Component2());
 
             var archetype = entityManager.getArchetype(entityId);
-            assertThat(archetype.containsComponent(component1.id())).isTrue();
-            assertThat(archetype.containsComponent(component2.id())).isTrue();
+            assertThat(archetype.getComponents().contains(component1)).isTrue();
+            assertThat(archetype.getComponents().contains(component2)).isTrue();
 
             var otherArchetype = storageEngine.getArchetype(component(Component3.class));
             assertThat(otherArchetype).isNotSameAs(archetype).isNotEqualTo(archetype);
@@ -289,8 +290,8 @@ class EntityManagerTest extends AbstractWorldTest {
             var entityId = world.createEntity(new Component1(), new Component2());
 
             var archetype = entityManager.getArchetype(entityId);
-            assertThat(archetype.containsComponent(component1.id())).isTrue();
-            assertThat(archetype.containsComponent(component2.id())).isTrue();
+            assertThat(archetype.getComponents().contains(component1)).isTrue();
+            assertThat(archetype.getComponents().contains(component2)).isTrue();
 
             var sameArchetype = storageEngine.getArchetype(component(Component2.class), component(Component1.class));
             assertThat(sameArchetype).isSameAs(archetype);
@@ -365,30 +366,26 @@ class EntityManagerTest extends AbstractWorldTest {
     @Nested
     class CreateEntityMutationsTest {
 
+        final ClassType<C1> type1 = component(C1.class);
+        final ClassType<C2> type2 = component(C2.class);
+        final ClassType<C3> type3 = component(C3.class);
+
         PooledComponentMapper<C1> pooled1;
         PooledComponentMapper<C2> pooled2;
         PooledComponentMapper<C3> pooled3;
-
-        int id1;
-        int id2;
-        int id3;
 
         @BeforeEach
         void setupMappers() {
             this.pooled1 = world.getPooledComponents(C1.class);
             this.pooled2 = world.getPooledComponents(C2.class);
             this.pooled3 = world.getPooledComponents(C3.class);
-
-            this.id1 = componentManager.getComponent(component(C1.class)).id();
-            this.id2 = componentManager.getComponent(component(C2.class)).id();
-            this.id3 = componentManager.getComponent(component(C3.class)).id();
         }
 
         @Test
         void testDeletionDuringCreation() {
             // Setup listeners
             eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                if (event.archetype().containsComponent(id1)) {
+                if (event.archetype().getComponentTypes().contains(type1)) {
                     pooled2.add(event.entityId());
                 }
             });
@@ -397,11 +394,11 @@ class EntityManagerTest extends AbstractWorldTest {
                 var archetype = event.archetype();
                 var entityId = event.entityId();
 
-                if (archetype.containsComponent(id2)) {
+                if (archetype.getComponentTypes().contains(type2)) {
                     pooled3.add(entityId);
                 }
 
-                if (archetype.containsComponent(id3)) {
+                if (archetype.getComponentTypes().contains(type3)) {
                     world.deleteEntity(entityId);
                 }
             });
@@ -434,11 +431,11 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevArchetype = event.previousArchetype();
                     var entityId = event.entityId();
 
-                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
+                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
                         pooled3.add(entityId);
                     }
 
-                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
+                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
                         pooled1.remove(entityId);
                     }
                 });
@@ -476,11 +473,11 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevArchetype = event.previousArchetype();
                     var entityId = event.entityId();
 
-                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
+                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
                         pooled3.add(entityId);
                     }
 
-                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
+                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
                         pooled1.remove(entityId);
                     }
                 });
@@ -514,14 +511,14 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevArchetype = event.previousArchetype();
                     var id = event.entityId();
 
-                    if (!prevArchetype.containsComponent(id1) && archetype.containsComponent(id1)) {
+                    if (!prevArchetype.getComponentTypes().contains(type1) && archetype.getComponentTypes().contains(type1)) {
                         pooled2.add(id);
                     }
-                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
+                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
                         pooled3.add(id);
                     }
 
-                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
+                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
                         pooled1.remove(id);
                     }
                 });
@@ -576,11 +573,11 @@ class EntityManagerTest extends AbstractWorldTest {
                     var prevArchetype = event.previousArchetype();
                     var id = event.entityId();
 
-                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
+                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
                         pooled3.add(id);
                     }
 
-                    if (!prevArchetype.containsComponent(id3) && archetype.containsComponent(id3)) {
+                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
                         pooled1.remove(id);
                     }
                 });

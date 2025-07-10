@@ -184,16 +184,4 @@ public interface ComponentStorage {
      */
     <T> ImmutableBag<Component<? extends T, ?>> getComponents(ComponentType<T, ?> bound);
 
-    /**
-     * Returns an array of all known component types that match the bound.
-     * 
-     * <p>
-     * Matches the types of the result of {@link #getComponents(ComponentType)}.
-     * </p>
-     * 
-     * @param componentType component type bound
-     * @return known regular component types matching the bound.
-     */
-    RegularComponentType<?, ?>[] getRegularComponentTypes(ComponentType<?, ?> bound);
-
 }

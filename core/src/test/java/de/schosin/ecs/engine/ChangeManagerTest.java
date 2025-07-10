@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
+import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
@@ -15,19 +16,16 @@ import de.schosin.ecs.utils.collections.IntBag;
 
 class ChangeManagerTest extends AbstractWorldTest {
 
+    final ClassType<C1> type1 = component(C1.class);
+    final ClassType<C2> type2 = component(C2.class);
+
     PooledComponentMapper<C1> component1;
     PooledComponentMapper<C2> component2;
-
-    int id1;
-    int id2;
 
     @BeforeEach
     void setup() {
         this.component1 = world.getPooledComponents(C1.class);
         this.component2 = world.getPooledComponents(C2.class);
-
-        this.id1 = componentManager.getComponent(component(C1.class)).id();
-        this.id2 = componentManager.getComponent(component(C2.class)).id();
     }
 
     @Nested
@@ -43,7 +41,7 @@ class ChangeManagerTest extends AbstractWorldTest {
             // Verify
             var pendingArchetype = storageEngine.getPendingArchetype(entityId);
             assertThat(pendingArchetype).isNotNull();
-            assertThat(pendingArchetype.getComponentTypes()).containsExactly(component(C1.class));
+            assertThat(pendingArchetype.getComponentTypes()).containsExactly(type1);
         }
 
         @Test
@@ -179,7 +177,7 @@ class ChangeManagerTest extends AbstractWorldTest {
                 var updated = new IntBag(1);
 
                 eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                    if (event.archetype().containsComponent(id1)) {
+                    if (event.archetype().getComponentTypes().contains(type1)) {
                         component2.add(event.entityId());
                     }
                 });
@@ -189,11 +187,11 @@ class ChangeManagerTest extends AbstractWorldTest {
                     var prevArchetype = event.previousArchetype();
                     var id = event.entityId();
 
-                    if (!prevArchetype.containsComponent(id1) && archetype.containsComponent(id1)) {
+                    if (!prevArchetype.getComponentTypes().contains(type1) && archetype.getComponentTypes().contains(type1)) {
                         component2.add(id);
                     }
 
-                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
+                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
                         updated.add(id);
                     }
                 });
@@ -214,7 +212,7 @@ class ChangeManagerTest extends AbstractWorldTest {
                 var updated = new IntBag(1);
 
                 eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                    if (event.archetype().containsComponent(id2)) {
+                    if (event.archetype().getComponentTypes().contains(type2)) {
                         component1.add(event.entityId());
                     }
                 });
@@ -224,11 +222,11 @@ class ChangeManagerTest extends AbstractWorldTest {
                     var prevArchetype = event.previousArchetype();
                     var id = event.entityId();
 
-                    if (!prevArchetype.containsComponent(id1) && archetype.containsComponent(id1)) {
+                    if (!prevArchetype.getComponentTypes().contains(type1) && archetype.getComponentTypes().contains(type1)) {
                         updated.add(id);
                     }
 
-                    if (!prevArchetype.containsComponent(id2) && archetype.containsComponent(id2)) {
+                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
                         component1.add(id);
                     }
                 });

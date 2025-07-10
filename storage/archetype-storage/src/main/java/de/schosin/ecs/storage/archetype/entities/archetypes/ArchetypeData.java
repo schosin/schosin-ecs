@@ -8,10 +8,6 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoaImpl {
 
-    boolean contains(int index, RegularComponentType<?, ?> type);
-
-    <R> R getComponent(int index, RegularComponentType<?, R> componentType, int componentId);
-
     ArchetypeAccessor getAccessor(int entityId);
 
     int addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,

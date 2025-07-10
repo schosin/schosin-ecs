@@ -40,7 +40,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
             var archetype = engine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
-            var accessor = archetype.getEntityData().getAccessor();
+            var accessor = archetype.getAccessor();
             assertThat(accessor.isValid()).as("accessor.isValid() must return true before free()").isTrue();
 
             accessor.free();
@@ -52,7 +52,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
             var archetype = engine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
-            var accessor = archetype.getEntityData().getAccessor();
+            var accessor = archetype.getAccessor();
             assertThat(accessor.isValid()).as("accessor.isValid() must return true before close()").isTrue();
 
             accessor.close();
@@ -64,7 +64,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
             var archetype = engine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
-            var accessor = archetype.getEntityData().getAccessor();
+            var accessor = archetype.getAccessor();
             try (accessor) {
                 assertThat(accessor.isValid()).as("accessor.isValid() must return true when within try-with-resources").isTrue();
             }

@@ -4,6 +4,7 @@ import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.data.IterableAccessor;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
@@ -12,15 +13,11 @@ public interface Archetype {
 
     int getId();
 
-    boolean containsComponent(int componentId);
-
     ImmutableBag<Component<?, ?>> getComponents();
 
     ImmutableBag<RegularComponentType<?, ?>> getComponentTypes();
 
     int getCount();
-
-    boolean containsEntity(int entityId);
 
     ImmutableIntBag getEntities();
 
@@ -29,14 +26,7 @@ public interface Archetype {
      */
     int getComponentIndex(int componentId);
 
-    /**
-     * Returns the index of the component in this archetype, or -1 if not contained
-     */
-    int getComponentIndex(RegularComponentType<?, ?> componentType);
-
-    EntityData getEntityData();
-
-    EntityData getEntityData(RegularComponentType<?, ?>... componentTypes);
+    IterableAccessor getAccessor();
 
     void createEntity(int entityId, Object[] components);
 

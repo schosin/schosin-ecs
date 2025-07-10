@@ -5,22 +5,16 @@ import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcard;
 import static de.schosin.ecs.plugins.wildcards.types.WildcardType.wildcardRelation;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation.Exclusive;
 import de.schosin.ecs.api.components.types.ClassType;
-import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
-import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
 import de.schosin.ecs.plugins.wildcards.types.WildcardClassType;
 import de.schosin.ecs.storage.api.components.Component.ComponentData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
@@ -380,111 +374,6 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
                     .as("must be updated when components added afterwards").anySatisfy(component -> assertThat(component).isSameAs(relation1))
                     .as("must be updated when components added afterwards").anySatisfy(component -> assertThat(component).isSameAs(relation2))
                     .as("must be updated when components added afterwards").anySatisfy(component -> assertThat(component).isSameAs(exclusive1));
-        }
-
-    }
-
-    @Nested
-    class GetRegularComponentTypesTest {
-
-        @ParameterizedTest
-        @MethodSource("regularComponentTypes")
-        void testRegularComponentTypes(RegularComponentType<?, ?> componentType) {
-            var componentTypes = engine.getRegularComponentTypes(componentType);
-            assertThat(componentTypes).containsExactly(componentType);
-        }
-
-        @Test
-        void testEntityRelationFetchType() {
-            var relation1 = componentManager.getComponent(new EntityRelationType<>(C1.class)).type();
-            componentManager.getComponent(new EntityRelationType<>(C2.class)).type();
-
-            var componentTypes = engine.getRegularComponentTypes(new EntityRelationFetchType<>(C1.class, component(C2.class)));
-            assertThat(componentTypes).containsExactly(relation1);
-        }
-
-        @Test
-        void testWildcard() {
-            var class1 = engine.getComponent(new ClassType<>(C1.class)).type();
-            var class2 = engine.getComponent(new ClassType<>(C2.class)).type();
-            engine.getComponent(new ClassType<>(C3.class)).type();
-
-            var componentTypes = engine.getRegularComponentTypes(wildcard(Bound.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(class1, class2);
-        }
-
-        @Test
-        void testComponentRelationWildcards() {
-            var relation11 = engine.getComponent(new ComponentRelationType<>(C1.class, C1.class)).type();
-            var relation12 = engine.getComponent(new ComponentRelationType<>(C1.class, C2.class)).type();
-            var exclusive11 = engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class)).type();
-
-            engine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
-
-            var componentTypes = engine.getRegularComponentTypes(wildcardRelation(Bound.class, Bound.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation11, relation12, exclusive11);
-        }
-
-        @Test
-        void testComponentRelationRelationshipWildcard() {
-            var relation12 = engine.getComponent(new ComponentRelationType<>(C1.class, C2.class)).type();
-            var exclusive22 = engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class)).type();
-
-            engine.getComponent(new ComponentRelationType<>(C1.class, C1.class));
-            engine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
-
-            var componentTypes = engine.getRegularComponentTypes(wildcardRelation(Object.class, C2.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation12, exclusive22);
-        }
-
-        @Test
-        void testComponentRelationTargetWildcard() {
-            var relation11 = engine.getComponent(new ComponentRelationType<>(C1.class, C1.class)).type();
-            var relation12 = engine.getComponent(new ComponentRelationType<>(C1.class, C2.class)).type();
-
-            engine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
-
-            var componentTypes = engine.getRegularComponentTypes(wildcardRelation(C1.class, Bound.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation11, relation12);
-        }
-
-        @Test
-        void testEntityRelationWildcard() {
-            var relation1 = engine.getComponent(new EntityRelationType<>(C1.class)).type();
-            var relation2 = engine.getComponent(new EntityRelationType<>(C2.class)).type();
-            var exclusive1 = engine.getComponent(new ExclusiveEntityRelationType<>(Exclusive1.class)).type();
-
-            engine.getComponent(new EntityRelationType<>(C3.class));
-            engine.getComponent(new ExclusiveEntityRelationType<>(Exclusive2.class));
-
-            var componentTypes = engine.getRegularComponentTypes(wildcardRelation(Bound.class));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation1, relation2, exclusive1);
-        }
-
-        @Test
-        void testWildcardEntityRelationFetchType() {
-            var relation1 = engine.getComponent(new EntityRelationType<>(C1.class)).type();
-            var relation2 = engine.getComponent(new EntityRelationType<>(C2.class)).type();
-            engine.getComponent(new EntityRelationType<>(C3.class)).type();
-
-            var componentTypes = engine.getRegularComponentTypes(wildcardRelation(Bound.class, component(C2.class)));
-            assertThat(componentTypes).containsExactlyInAnyOrder(relation1, relation2);
-        }
-
-        private static Stream<RegularComponentType<?, ?>> regularComponentTypes() {
-            return Stream.of(
-                    component(C1.class),
-                    relation(C1.class, C2.class),
-                    exclusiveRelation(Exclusive1.class, C2.class),
-                    relation(C1.class),
-                    exclusiveRelation(Exclusive1.class));
         }
 
     }

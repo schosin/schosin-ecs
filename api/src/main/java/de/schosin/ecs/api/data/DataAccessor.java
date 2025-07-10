@@ -35,7 +35,7 @@ public interface DataAccessor extends AutoCloseable {
      * Returns true if this accessor is valid and can be used. Accessors will be invalidated by calling {@link #free()}.
      */
     boolean isValid();
-    
+
     /**
      * Frees this accessor instance. Must be called after it is not needed anymore 
      * by the code that retrieved this instance.

@@ -39,7 +39,6 @@ import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
-import de.schosin.ecs.storage.api.entities.EntityData;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
@@ -337,7 +336,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 }
 
                 var compositionData = switch (component) {
-                    case RegularComponentType<?, R> regular -> new RegularComposition1<>(this, regular);
+                    case RegularComponentType<?, R> regular -> new RegularComposition1<>(this, regular, storageEngine.getComponent(regular).id());
                     default -> new Composition1<>(this, component);
                 };
 
@@ -537,29 +536,51 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     private static final class RegularComposition1<R> extends AbstractComposition<R, DataProcessor<R>> implements CompositionData1<R> {
 
-        private final RegularComponentType<?, R> componentType;
+        private final int componentId;
 
-        private final Bag<EntityData> entityData = new Bag<>(EntityData.class, 4);
+        private final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 4);
+        private final Bag<Archetype> pendingArchetypes = new Bag<>(Archetype.class, 4);
+        private final IntBag componentIndices = new IntBag(4);
 
-        protected RegularComposition1(Composition composition, RegularComponentType<?, R> componentType) {
+        protected RegularComposition1(Composition composition, RegularComponentType<?, R> componentType, int componentId) {
             super(composition, componentType);
 
-            this.componentType = componentType;
+            this.componentId = componentId;
         }
 
         @Override
         protected final void addArchetype(Archetype archetype) {
-            this.entityData.add(archetype.getEntityData(componentType));
+            var index = archetype.getComponentIndex(componentId);
+            if (index != -1) {
+                this.componentIndices.add(index);
+                this.archetypes.add(archetype);
+            } else {
+                this.pendingArchetypes.add(archetype);
+            }
         }
 
         @Override
         public final void process(DataProcessor<R> processor) {
-            for (int i = 0, s = entityData.getSize(); i < s; i++) {
-                var data = entityData.get(i);
+            for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+                var accessor = archetypes.get(i).getAccessor();
+                var index = componentIndices.get(i);
 
-                for (int e = 0, es = data.getSize(); e < es; e++) {
-                    processor.process(data.getId(e), data.getComponent(e));
+                while (accessor.hasNext()) {
+                    processor.process(accessor.next(), accessor.getComponentByIndex(index));
                 }
+
+                accessor.free();
+            }
+
+            var componentId = this.componentId;
+            for (int i = 0, s = pendingArchetypes.getSize(); i < s; i++) {
+                var accessor = pendingArchetypes.get(i).getAccessor();
+
+                while (accessor.hasNext()) {
+                    processor.process(accessor.next(), accessor.getPendingComponent(componentId));
+                }
+
+                accessor.free();
             }
         }
 
@@ -577,9 +598,8 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         @Override
         public final void process(DataProcessor<R> processor) {
-            for (int i = 0, s = entityData.getSize(); i < s; i++) {
-                var data = entityData.get(i);
-                var accessor = data.getAccessor();
+            for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+                var accessor = archetypes.get(i).getAccessor();
                 var components = mapper.getComponentAccessor(accessor);
 
                 while (accessor.hasNext()) {
@@ -607,9 +627,8 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         @Override
         @SuppressWarnings("unchecked")
         public final void process(P processor) {
-            for (int i = 0, s = entityData.getSize(); i < s; i++) {
-                var data = entityData.get(i);
-                var accessor = data.getAccessor();
+            for (int i = 0, s = archetypes.getSize(); i < s; i++) {
+                var accessor = archetypes.get(i).getAccessor();
 
                 var componentAccessor = (IterableComponentAccessor<R, P>) mapper.getComponentAccessor(accessor);
                 componentAccessor.process(accessor, processor);
@@ -624,7 +643,6 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private abstract static class AbstractAccessorComposition<R, P extends DataProcessor<R>> extends AbstractComposition<R, P> {
 
         protected final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 4);
-        protected final Bag<EntityData> entityData = new Bag<>(EntityData.class, 4);
 
         protected AbstractAccessorComposition(Composition composition, ComponentType<?, R> type) {
             super(composition, type);
@@ -633,7 +651,6 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         @Override
         protected final void addArchetype(Archetype archetype) {
             this.archetypes.add(archetype);
-            this.entityData.add(archetype.getEntityData());
         }
 
     }
