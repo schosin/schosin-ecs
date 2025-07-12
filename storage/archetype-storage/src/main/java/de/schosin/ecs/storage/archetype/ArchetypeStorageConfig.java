@@ -26,33 +26,23 @@ import de.schosin.ecs.storage.api.StorageEngineException;
  *      relationship component is assigned to more than 3 target components.
  *      </td>
  *  </tr>
- *  <tr valign="top">
- *      <td>variant</td>
- *      <td>
- *      Actual memory layout of components. <br/>
- *      <br/>
- *      See {@link #DEFAULT_VARIANT} for suggestion on which to start with
- *      </td>
- *  </tr>
  * </table>
  * </p>
  */
-public record ArchetypeStorageConfig(int classIdCount, int relationCount, int creationBatchSize, Variant variant) {
+public record ArchetypeStorageConfig(int classIdCount, int relationCount, int creationBatchSize) {
 
     public static ArchetypeStorageConfig getConfig() {
         // System variable
         var classIdCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
         var relationCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT);
         var creationBatchSizeProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE);
-        var variantProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_VARIANT);
 
-        if (classIdCountProp != null || relationCountProp != null || creationBatchSizeProp != null || variantProp != null) {
+        if (classIdCountProp != null || relationCountProp != null || creationBatchSizeProp != null) {
             var classIdCount = classIdCountProp != null ? Integer.parseInt(classIdCountProp) : ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT;
             var relationCount = relationCountProp != null ? Integer.parseInt(relationCountProp) : ArchetypeStorageConfig.DEFAULT_RELATION_COUNT;
             var creationBatchSize = creationBatchSizeProp != null ? Integer.parseInt(creationBatchSizeProp) : ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE;
-            var variant = variantProp != null ? Variant.valueOf(variantProp) : ArchetypeStorageConfig.DEFAULT_VARIANT;
 
-            return new ArchetypeStorageConfig(classIdCount, relationCount, creationBatchSize, variant);
+            return new ArchetypeStorageConfig(classIdCount, relationCount, creationBatchSize);
         }
 
         // Default config
@@ -69,27 +59,16 @@ public record ArchetypeStorageConfig(int classIdCount, int relationCount, int cr
         if (creationBatchSize < 1) {
             throw new StorageEngineException("creationBatchSize must be positive, but was: " + creationBatchSize);
         }
-        if (variant == null) {
-            throw new StorageEngineException("variant must not be null");
-        }
-    }
-
-    public enum Variant {
-        StructOfArrays
     }
 
     public static final String PROPERTY_CLASS_ID_COUNT = "storage.archetype.classIdCount";
     public static final String PROPERTY_RELATION_COUNT = "storage.archetype.relationCount";
     public static final String PROPERTY_CREATION_BATCH_SIZE = "storage.archetype.creationBatchSize";
-    public static final String PROPERTY_VARIANT = "storage.archetype.variant";
 
     public static final int DEFAULT_CLASS_ID_COUNT = 50;
     public static final int DEFAULT_RELATION_COUNT = 10;
     public static final int DEFAULT_CREATION_BATCH_SIZE = 100;
-    public static final Variant DEFAULT_VARIANT = Variant.StructOfArrays;
 
-    public static final ArchetypeStorageConfig STRUCT_OF_ARRAYS = new ArchetypeStorageConfig(DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT, DEFAULT_CREATION_BATCH_SIZE, Variant.StructOfArrays);
-
-    public static final ArchetypeStorageConfig DEFAULT = new ArchetypeStorageConfig(DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT, DEFAULT_CREATION_BATCH_SIZE, DEFAULT_VARIANT);
+    public static final ArchetypeStorageConfig DEFAULT = new ArchetypeStorageConfig(DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT, DEFAULT_CREATION_BATCH_SIZE);
 
 }

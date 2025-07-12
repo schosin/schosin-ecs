@@ -322,9 +322,7 @@ public class EntityIndex {
     }
 
     private ArchetypeData createArchetype(int id, ArchetypeGraphNode node) {
-        return switch (config.variant()) {
-            case StructOfArrays -> new ArchetypeDataSoaImpl(id, node, componentIndex, relationIndex, this, config, world);
-        };
+        return new ArchetypeDataSoaImpl(id, node, componentIndex, relationIndex, this, config, world);
     }
 
     public ArchetypeData deleteEntity(int entityId) {
