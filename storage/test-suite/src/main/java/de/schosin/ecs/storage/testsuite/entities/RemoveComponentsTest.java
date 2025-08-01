@@ -22,6 +22,8 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
+import de.schosin.ecs.storage.testsuite.entities.AddComponentsTest.Zero1;
+import de.schosin.ecs.storage.testsuite.entities.AddComponentsTest.Zero2;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public class RemoveComponentsTest extends AbstractStorageEngineTest {
@@ -537,6 +539,44 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
             assertThat(world.getComponents(exclusiveRelation(E1.class, C2.class)).get(entityId)).as("does not remove component relation type component from storage").isNotNull();
         }
 
+    }
+
+    @Test
+    void testRemoveZeroSizedComponent() {
+        var entity1 = world.createEntity(Zero2.INSTANCE);
+        var entity2 = world.createEntity(new C1(), Zero2.INSTANCE);
+        var entity3 = world.createEntity(new C1(), Zero1.INSTANCE, Zero2.INSTANCE);
+        var entity4 = world.createEntity(Zero1.INSTANCE, Zero2.INSTANCE);
+
+        removeComponents(entity1, ImmutableBag.of(component(Zero2.class)));
+        storageEngine.flushChanges(entity1);
+
+        removeComponents(entity2, ImmutableBag.of(component(Zero2.class)));
+        storageEngine.flushChanges(entity2);
+
+        removeComponents(entity3, ImmutableBag.of(component(Zero2.class)));
+        storageEngine.flushChanges(entity3);
+
+        removeComponents(entity4, ImmutableBag.of(component(Zero2.class)));
+        storageEngine.flushChanges(entity4);
+        
+        verifyDoesNotHaveComponents(entity1, Zero2.class);
+        verifyArchetypeDoesNotHaveComponents(entity1, Zero2.class);
+
+        verifyHasComponents(entity2, C1.class);
+        verifyArchetypeHasComponents(entity2, C1.class);
+        verifyDoesNotHaveComponents(entity2, Zero2.class);
+        verifyArchetypeDoesNotHaveComponents(entity2, Zero2.class);
+
+        verifyHasComponents(entity3, C1.class, Zero1.class);
+        verifyArchetypeHasComponents(entity3, C1.class, Zero1.class);
+        verifyDoesNotHaveComponents(entity3, Zero2.class);
+        verifyArchetypeDoesNotHaveComponents(entity3, Zero2.class);
+
+        verifyHasComponents(entity4, Zero1.class);
+        verifyArchetypeHasComponents(entity4, Zero1.class);
+        verifyDoesNotHaveComponents(entity4, Zero2.class);
+        verifyArchetypeDoesNotHaveComponents(entity4, Zero2.class);
     }
 
     static Stream<Arguments> components() {

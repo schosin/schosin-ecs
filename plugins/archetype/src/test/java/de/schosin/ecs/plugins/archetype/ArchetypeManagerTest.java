@@ -940,6 +940,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
         static Stream<IntFunction<Object>> components() {
             return Stream.of(
                     i -> new C1(i),
+                    i -> E3.INSTANCE,
 
                     i -> Relation.create(new C1(i), new C1(i)),
                     i -> Relations.create(new C1(i), new C1(i)),
@@ -1067,6 +1068,9 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
     }
 
     public enum E2 {
+        INSTANCE
+    }
+    public enum E3 {
         INSTANCE
     }
 

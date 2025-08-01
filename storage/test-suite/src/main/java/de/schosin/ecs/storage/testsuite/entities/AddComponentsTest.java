@@ -281,6 +281,38 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             assertThat(Relations.of(Relation.create(new C1(14), 4))).as("must return relations back to the pool").isSameAs(relations);
         }
 
+        @Test
+        void testAddZeroSizedComponent() {
+            var entity1 = world.createEntity();
+            var entity2 = world.createEntity(new C1(1));
+            var entity3 = world.createEntity(new C1(1), Zero1.INSTANCE);
+            var entity4 = world.createEntity(Zero1.INSTANCE);
+
+            addComponents(entity1, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
+            storageEngine.flushChanges(entity1);
+            
+            addComponents(entity2, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
+            storageEngine.flushChanges(entity2);
+            
+            addComponents(entity3, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
+            storageEngine.flushChanges(entity3);
+
+            addComponents(entity4, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
+            storageEngine.flushChanges(entity4);
+
+            verifyHasComponents(entity1, Zero2.class);
+            verifyArchetypeHasComponents(entity1, Zero2.class);
+
+            verifyHasComponents(entity2, C1.class, Zero2.class);
+            verifyArchetypeHasComponents(entity2, C1.class, Zero2.class);
+
+            verifyHasComponents(entity3, C1.class, Zero1.class, Zero2.class);
+            verifyArchetypeHasComponents(entity3, C1.class, Zero1.class, Zero2.class);
+
+            verifyHasComponents(entity4, Zero1.class, Zero2.class);
+            verifyArchetypeHasComponents(entity4, Zero1.class, Zero2.class);
+        }
+
     }
 
     static Stream<Arguments> components() {
@@ -312,6 +344,14 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
     }
 
     enum E1 implements Exclusive {
+        INSTANCE
+    }
+
+    enum Zero1 {
+        INSTANCE
+    }
+
+    enum Zero2 {
         INSTANCE
     }
 

@@ -207,6 +207,20 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                         .as("Archetype must throw when size of components does not match").hasMessage("Expected %d components, but got %d".formatted(expected, components.length));
             }
 
+            @Test
+            void testZeroSizedComponent() {
+                var archetype = getArchetype(component(Zero1.class));
+                var components = createComponents(archetype, Zero1.INSTANCE);
+
+                archetype.createEntity(42, components);
+                assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return true after creation").isTrue();
+
+                assertThatCode(() -> engine.delete(42)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return false after deletion").isFalse();
+
+                assertThat(engine.getArchetypeForEntity(42)).as("retrieving archetype after deletion must return null").isNull();
+            }
+
             @ParameterizedTest(name = "{0} != {1}")
             @MethodSource("mismatchingTypes")
             void testMismatchingTypes(RegularComponentType<?, ?> componentType, Object component) {
@@ -313,6 +327,21 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @Override
             protected Object[] createComponents(Archetype archetype, int i, Object component) {
                 return new Object[] { new C3(i), component };
+            }
+
+        }
+
+        @Nested
+        class ZeroSizedComponentArchetypeTest extends AbstractTest {
+
+            @Override
+            protected Archetype getArchetype(RegularComponentType<?, ?> componentType) {
+                return engine.getArchetype(component(Zero2.class), componentType);
+            }
+
+            @Override
+            protected Object[] createComponents(Archetype archetype, int i, Object component) {
+                return new Object[] { Zero2.INSTANCE, component };
             }
 
         }
@@ -455,6 +484,30 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 var provider = new ComponentProvider(componentArrays);
 
                 assertThatThrownBy(() -> archetype.createEntities(count, ids::getAndIncrement, provider), "Archetype must throw when size of components lower than expected");
+            }
+
+            @Test
+            void testZeroSizedComponent() {
+                var archetype = getArchetype(component(Zero1.class));
+
+                var count = 5;
+                var componentArrays = IntStream.range(1, count + 1)
+                        .mapToObj(i -> createComponents(archetype, i, Zero1.INSTANCE))
+                        .toArray(Object[][]::new);
+
+                var ids = new AtomicInteger(1);
+                var provider = new ComponentProvider(componentArrays);
+                
+                archetype.createEntities(count, ids::getAndIncrement, provider);
+                
+                for (int i = 1; i <= count; i++) {
+                    var entityId = i;
+
+                    assertThat(archetype.getEntities().contains(entityId)).as("archetype.contains must return false after creation").isTrue();
+
+                    assertThatCode(() -> engine.delete(entityId)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                    assertThat(archetype.getEntities().contains(entityId)).as("archetype.contains must return false after deletion").isFalse();
+                }
             }
 
             @ParameterizedTest(name = "{0} != {1}")
@@ -1452,6 +1505,14 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
     }
 
     enum E2 implements Exclusive {
+        INSTANCE
+    }
+
+    enum Zero1 {
+        INSTANCE
+    }
+
+    enum Zero2 {
         INSTANCE
     }
 

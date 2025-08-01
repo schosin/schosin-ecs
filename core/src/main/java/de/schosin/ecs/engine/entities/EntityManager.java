@@ -182,9 +182,7 @@ public class EntityManager {
 
     private void sortComponentsInPlace(Object[] components, RegularComponentType<?, ?>[] componentTypes, Archetype archetype) {
         for (int i = 0, s = components.length; i < s; i++) {
-            var componentId = storageEngine.getComponent(componentTypes[i]).id();
-
-            var index = archetype.getComponentIndex(componentId);
+            var index = archetype.getComponentTypes().indexOf(componentTypes[i]);
             if (index != i) {
                 swap(components, i, index);
                 swap(componentTypes, i, index);

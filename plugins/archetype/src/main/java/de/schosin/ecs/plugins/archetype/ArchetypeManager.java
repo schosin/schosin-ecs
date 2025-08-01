@@ -85,8 +85,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             this.mapping = new int[size];
             for (int i = 0; i < size; i++) {
-                var componentId = this.manager.storageEngine.getComponent(componentTypesArray[i]).id();
-                this.mapping[i] = archetype.getComponentIndex(componentId);
+                this.mapping[i] = archetype.getComponentTypes().indexOf(componentTypesArray[i]);
             }
 
             this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
@@ -119,8 +118,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             this.mapping = new int[size];
             for (int i = 0; i < size; i++) {
-                var componentId = this.manager.storageEngine.getComponent(components[i]).id();
-                this.mapping[i] = archetype.getComponentIndex(componentId);
+                this.mapping[i] = archetype.getComponentTypes().indexOf(components[i]);
             }
 
             this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));

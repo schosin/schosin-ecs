@@ -135,12 +135,13 @@ public abstract class AbstractEngineTest {
         }
     }
 
-    protected void verifyArchetypeHasComponents(int entityId, Class<?>... classes) {
+    protected final void verifyArchetypeHasComponents(int entityId, Class<?>... classes) {
         verifyArchetypeHasComponents(entityId, convert(classes));
     }
 
     protected void verifyArchetypeHasComponents(int entityId, RegularComponentType<?, ?>... types) {
         var archetype = entityManager.getArchetype(entityId);
+        assertThat(archetype).as("archetype exists").isNotNull();
 
         for (var type : types) {
             var component = componentManager.getComponent(type);
@@ -148,12 +149,13 @@ public abstract class AbstractEngineTest {
         }
     }
 
-    protected void verifyArchetypeDoesNotHaveComponents(int entityId, Class<?>... classes) {
+    protected final void verifyArchetypeDoesNotHaveComponents(int entityId, Class<?>... classes) {
         verifyArchetypeDoesNotHaveComponents(entityId, convert(classes));
     }
 
     protected void verifyArchetypeDoesNotHaveComponents(int entityId, RegularComponentType<?, ?>... types) {
         var archetype = entityManager.getArchetype(entityId);
+        assertThat(archetype).as("archetype exists").isNotNull();
 
         for (var type : types) {
             var component = componentManager.getComponent(type);

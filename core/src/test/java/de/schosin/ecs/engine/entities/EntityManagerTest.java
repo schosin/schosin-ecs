@@ -144,6 +144,29 @@ class EntityManagerTest extends AbstractWorldTest {
             assertThat(components).containsExactlyInAnyOrder(relation1, relation2);
         }
 
+        @Test
+        void testZeroSizedComponents() {
+            var archetype = storageEngine.getArchetype(component(C1.class), component(Zero1.class), component(Zero2.class));
+
+            var entityId = world.createEntity(new C1(1), Zero1.INSTANCE, Zero2.INSTANCE);
+            assertThat(storageEngine.getArchetypeForEntity(entityId)).isSameAs(archetype);
+
+            entityId = world.createEntity(new C1(2), Zero2.INSTANCE, Zero1.INSTANCE);
+            assertThat(storageEngine.getArchetypeForEntity(entityId)).isSameAs(archetype);
+
+            entityId = world.createEntity(Zero2.INSTANCE, new C1(2), Zero1.INSTANCE);
+            assertThat(storageEngine.getArchetypeForEntity(entityId)).isSameAs(archetype);
+
+            entityId = world.createEntity(Zero1.INSTANCE, new C1(2), Zero2.INSTANCE);
+            assertThat(storageEngine.getArchetypeForEntity(entityId)).isSameAs(archetype);
+
+            entityId = world.createEntity(Zero1.INSTANCE, Zero2.INSTANCE, new C1(1));
+            assertThat(storageEngine.getArchetypeForEntity(entityId)).isSameAs(archetype);
+
+            entityId = world.createEntity(Zero2.INSTANCE, Zero1.INSTANCE, new C1(1));
+            assertThat(storageEngine.getArchetypeForEntity(entityId)).isSameAs(archetype);
+        }
+
     }
 
     @Nested
@@ -617,6 +640,14 @@ class EntityManagerTest extends AbstractWorldTest {
     }
 
     public record C3() implements Pooled {
+    }
+
+    private enum Zero1 {
+        INSTANCE
+    }
+
+    private enum Zero2 {
+        INSTANCE
     }
 
 }

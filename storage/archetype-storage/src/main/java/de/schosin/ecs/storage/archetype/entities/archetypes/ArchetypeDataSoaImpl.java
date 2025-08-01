@@ -55,13 +55,15 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     private final ImmutableBag<Component<?, ?>> components;
     private final ImmutableBag<RegularComponentType<?, ?>> immutableComponentTypes;
 
-    private final ComponentAdder<?>[] adders;
+    private final ComponentAdder[] adders;
     private final Bag<RegularEntityRelationType<?, ?>> entityRelationTypes;
 
     // data[componentId].get(index) // index tracked by EntityIndex
     private final Bag<Object>[] data;
     private final IntBag entities;
     private final int size;
+
+    private final Object[] zeroSizedTypes;
 
     private final Bag<PendingChanges> pendingChanges;
 
@@ -88,18 +90,33 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         this.componentTypes = new Bag<>(RegularComponentType.class, this.size);
 
-        this.adders = new ComponentAdder<?>[size];
+        this.adders = new ComponentAdder[size];
         this.entityRelationTypes = new Bag<>(RegularEntityRelationType.class, size);
 
         this.componentTypeIds = componentIndex.createIntBag();
 
+        this.zeroSizedTypes = new Object[size];
+
         for (int i = 0; i < size; i++) {
             var component = components.get(i);
+            var componentId = component.id();
 
             var componentType = component.type();
             this.componentTypes.add(componentType);
 
-            var componentId = component.id();
+            // Handle zero-sized components (marker components)
+            if (componentType instanceof ClassType<?> classType && Enum.class.isAssignableFrom(classType.clazz())) {
+                var enumConstants = classType.clazz().getEnumConstants();
+                if (enumConstants != null && enumConstants.length == 1) {
+                    this.zeroSizedTypes[i] = enumConstants[0];
+
+                    this.componentTypeIds.set(componentId, -2 - i);
+                    this.adders[i] = NoOpAdder.INSTANCE;
+
+                    continue;
+                }
+            }
+
             this.componentTypeIds.set(componentId, i);
 
             if (componentType instanceof RegularEntityRelationType<?, ?> relationType) {
@@ -123,6 +140,11 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         this.data = new Bag[size];
         for (int i = 0; i < size; i++) {
+            // skip zero-sized components
+            if (this.adders[i] == NoOpAdder.INSTANCE) {
+                continue;
+            }
+
             var clazz = switch (componentTypes.get(i)) {
                 case ClassType<?> type -> type.clazz();
                 case ComponentRelationType<?, ?> type -> ComponentRelationResultImpl.class;
@@ -286,30 +308,36 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         // Fill data array (components 1)
         for (int i = 0, s = components.getSize(); i < s; i++) {
-            // Add component to data
             var componentId = componentIds.get(i);
-
             var componentIndex = this.componentTypeIds.get(componentId);
+
+            // Free removed components
             if (componentIndex == -1) {
                 entityIndex.freeComponent(components.get(i));
                 continue; // removed comonent
             }
 
-            adders[componentIndex].add(entityId, index, components.get(i));
+            // Add non-zero-sized components
+            if (componentIndex > -1) {
+                adders[componentIndex].add(entityId, index, components.get(i));
+            }
         }
 
         // Fill data array (components 2)
         for (int i = 0, s = components2.getSize(); i < s; i++) {
-            // Add component to data
             var componentId = componentIds2.get(i);
-
             var componentIndex = this.componentTypeIds.get(componentId);
+
+            // Free removed components
             if (componentIndex == -1) {
                 entityIndex.freeComponent(components2.get(i));
                 continue; // removed comonent
             }
 
-            adders[componentIndex].add(entityId, index, components2.get(i));
+            // Add non-zero-sized components
+            if (componentIndex > -1) {
+                adders[componentIndex].add(entityId, index, components2.get(i));
+            }
         }
 
         intBagPool.free(componentIds);
@@ -369,7 +397,8 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Process components
             for (int i = 0; i < size; i++) {
-                var component = data[i].get(index);
+                var componentData = this.data[i];
+                var component = componentData != null ? componentData.get(index) : this.zeroSizedTypes[i];
 
                 if (fill != null) {
                     // Put component into fill bag, required from caller
@@ -385,8 +414,10 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 // Move components of last row to removed entity's row
                 for (int i = 0; i < size; i++) {
                     var components = data[i];
-                    components.set(index, components.get(lastIndex));
-                    components.set(lastIndex, null);
+                    if (components != null) {
+                        components.set(index, components.get(lastIndex));
+                        components.set(lastIndex, null);
+                    }
                 }
 
                 // Swap entity lookup
@@ -405,7 +436,10 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Last element removed, no swap required
             for (int i = 0; i < size; i++) {
-                data[i].set(lastIndex, null);
+                var componentData = this.data[i];
+                if (componentData != null) {
+                    componentData.set(lastIndex, null);
+                }
             }
 
             this.entities.removeLast();
@@ -483,7 +517,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         return obj == this;
     }
 
-    private class AccessorImpl implements ArchetypeAccessor, IterableAccessor, Pooled {
+    private final class AccessorImpl implements ArchetypeAccessor, IterableAccessor, Pooled {
 
         private int index = -2;
 
@@ -510,7 +544,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         @Override
         public boolean hasComponent(int componentId) {
             var componentIndex = componentTypeIds.get(componentId);
-            if (componentIndex > -1) {
+            if (componentIndex != -1) {
                 return true;
             }
 
@@ -524,6 +558,9 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             if (componentIndex > -1) {
                 return (R) data[componentIndex].get(index);
             }
+            if (componentIndex < -1) {
+                return (R) zeroSizedTypes[-componentIndex - 2];
+            }
 
             return retrievePendingComponent(index, componentId);
         }
@@ -534,6 +571,9 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             var componentIndex = componentTypeIds.get(componentId);
             if (componentIndex > -1) {
                 return (R) data[componentIndex].get(index);
+            }
+            if (componentIndex < -1) {
+                return (R) zeroSizedTypes[-componentIndex - 2];
             }
 
             return retrievePendingComponent(index, componentType);
@@ -547,7 +587,9 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         @Override
         @SuppressWarnings("unchecked")
         public <R> R getComponentByIndex(int componentIndex) {
-            return (R) data[componentIndex].get(index);
+            return (R) (componentIndex > -1
+                    ? data[componentIndex].get(index)
+                    : zeroSizedTypes[-componentIndex - 2]);
         }
 
         @Override
@@ -576,16 +618,34 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     }
 
-    private sealed abstract class ComponentAdder<T extends RegularComponentType<?, ?>> {
+    private sealed interface ComponentAdder {
+
+        void add(int entityId, int index, Object component);
+
+    }
+
+    private enum NoOpAdder implements ComponentAdder {
+
+        INSTANCE;
+
+        @Override
+        public final void add(int entityId, int index, Object component) {
+            // nothing to do
+        }
+
+    }
+
+    private sealed abstract class AbstractComponentAdder<T extends RegularComponentType<?, ?>> implements ComponentAdder {
 
         protected final T componentType;
         protected final int componentIndex;
 
-        protected ComponentAdder(T componentType, int componentIndex) {
+        protected AbstractComponentAdder(T componentType, int componentIndex) {
             this.componentType = componentType;
             this.componentIndex = componentIndex;
         }
 
+        @Override
         public final void add(int entityId, int index, Object component) {
             if (!componentType.isInstance(component)) {
                 throw new StorageEngineException("Expected component type '%s' at index %d, but was '%s'".formatted(componentType, componentIndex, component));
@@ -597,7 +657,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         protected abstract void store(int entityId, int index, Object component);
     }
 
-    private final class ClassTypeAdder extends ComponentAdder<RegularComponentType<?, ?>> {
+    private final class ClassTypeAdder extends AbstractComponentAdder<RegularComponentType<?, ?>> {
 
         protected ClassTypeAdder(RegularComponentType<?, ?> componentType, int componentIndex) {
             super(componentType, componentIndex);
@@ -610,7 +670,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     }
 
-    private final class RelationAdder extends ComponentAdder<RelationComponentType<?, ?, ?>> {
+    private final class RelationAdder extends AbstractComponentAdder<RelationComponentType<?, ?, ?>> {
 
         private final boolean entityType;
 
@@ -632,7 +692,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private final class RelationsAdder extends ComponentAdder<RelationComponentType<?, ?, ?>> {
+    private final class RelationsAdder extends AbstractComponentAdder<RelationComponentType<?, ?, ?>> {
 
         private final boolean entityType;
 
