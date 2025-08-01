@@ -34,14 +34,9 @@ public class BaseDataTypeGenerator {
     }
 
     public static final ClassName DATA_PROCESSOR = ClassName.get("de.schosin.ecs.api.data", "DataProcessor");
-    public static final ClassName DATA_PROVIDER = ClassName.get("de.schosin.ecs.api.data", "DataProvider");
 
     public static ParameterizedTypeName dataProcessor(TypeName name) {
         return ParameterizedTypeName.get(DATA_PROCESSOR, name);
-    }
-
-    public static ParameterizedTypeName dataProvider(TypeName name) {
-        return ParameterizedTypeName.get(DATA_PROVIDER, name);
     }
 
     public static ParameterizedTypeName dataTypeN(int n, List<? extends TypeName> typeVariables) {
@@ -57,11 +52,6 @@ public class BaseDataTypeGenerator {
     public static ParameterizedTypeName dataFactory(int n, List<TypeVariableName> typeVariables) {
         var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
         return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n).nestedClass("Factory" + n), typeVariablesArray);
-    }
-
-    public static ParameterizedTypeName dataProviderN(int n, List<TypeVariableName> typeVariables) {
-        var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
-        return ParameterizedTypeName.get(ClassName.get("de.schosin.ecs.plugins.data.types", "DataType" + n).nestedClass("Provider" + n), typeVariablesArray);
     }
 
     public static ParameterizedTypeName dataProcessorN(int n, List<TypeVariableName> typeVariables) {
@@ -99,12 +89,11 @@ public class BaseDataTypeGenerator {
                     .toList();
 
             var dataT = TypeVariableName.get("T", ClassName.get("", "Data"));
-            var providerS = TypeVariableName.get("S", ParameterizedTypeName.get(DATA_PROVIDER, dataT));
             var dataR = TypeVariableName.get("R", ClassName.get("", "Data"));
             var processorP = TypeVariableName.get("P", ParameterizedTypeName.get(DATA_PROCESSOR, dataR));
 
             var parameterizedSuperinterface = ParameterizedTypeName.get(ClassName.get("", "BaseDataType"),
-                    TypeVariableName.get("T"), TypeVariableName.get("S"), TypeVariableName.get("R"), TypeVariableName.get("P"));
+                    TypeVariableName.get("T"), TypeVariableName.get("R"), TypeVariableName.get("P"));
 
             var permittedSubclasses = IntStream.range(2, maxParams + 1)
                     .mapToObj(i -> ClassName.get("", "DataType" + i))
@@ -112,7 +101,7 @@ public class BaseDataTypeGenerator {
 
             var type = TypeSpec.interfaceBuilder("DataType")
                     .addModifiers(Modifier.PUBLIC, Modifier.SEALED)
-                    .addTypeVariables(List.of(dataT, providerS, dataR, processorP))
+                    .addTypeVariables(List.of(dataT, dataR, processorP))
                     .addSuperinterface(parameterizedSuperinterface)
                     .addPermittedSubclasses(permittedSubclasses)
                     .addMethods(methods)
@@ -161,12 +150,11 @@ public class BaseDataTypeGenerator {
             var variables = getTypeVariables(n);
 
             var dataT = dataN(n, variables.typeVariablesT);
-            var provider = ParameterizedTypeName.get(className.nestedClass("Provider" + n), variables.typeVariablesT.toArray(TypeVariableName[]::new));
             var dataR = dataN(n, variables.typeVariablesR);
             var processor = ParameterizedTypeName.get(className.nestedClass("Processor" + n), variables.typeVariablesR.toArray(TypeVariableName[]::new));
 
             var superinterface = ClassName.get("", "DataType");
-            var parameterizedSuperinterface = ParameterizedTypeName.get(superinterface, dataT, provider, dataR, processor);
+            var parameterizedSuperinterface = ParameterizedTypeName.get(superinterface, dataT,  dataR, processor);
 
             var recordConstructor = MethodSpec.constructorBuilder();
             var constructor = MethodSpec.compactConstructorBuilder().addModifiers(Modifier.PUBLIC);
@@ -186,7 +174,6 @@ public class BaseDataTypeGenerator {
                     .addMethod(getComponentTypes(n))
                     .addType(processorType(n, variables.typeVariablesR))
                     .addType(factoryType(n, variables.typeVariablesT))
-                    .addType(providerType(n, variables.typeVariablesT))
                     .build();
 
             return JavaFile.builder(packageName, type)
@@ -277,37 +264,6 @@ public class BaseDataTypeGenerator {
                     .addModifiers(Modifier.PUBLIC)
                     .addTypeVariables(typeVariables)
                     .addMethod(create.build())
-                    .build();
-        }
-
-        static TypeSpec providerType(int n, List<TypeVariableName> typeVariables) {
-            var typeVariablesArray = typeVariables.toArray(TypeVariableName[]::new);
-            var dataN = dataN(n, typeVariables);
-
-            var superinterface = dataProvider(dataN);
-
-            var factoryType = ParameterizedTypeName.get(ClassName.get("", "Factory" + n), typeVariablesArray);
-
-            var getData = MethodSpec.methodBuilder("getData")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
-                    .returns(dataN)
-                    .addStatement("return $1T.requireNonNull(provide($2T::getInstance), \"return value cannot be null\")", Objects.class, ClassName.get("", "Data" + n))
-                    .build();
-
-            var provide = MethodSpec.methodBuilder("provide")
-                    .addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
-                    .returns(dataN)
-                    .addParameter(factoryType, "factory")
-                    .build();
-
-            return TypeSpec.interfaceBuilder("Provider" + n)
-                    .addAnnotation(FunctionalInterface.class)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addTypeVariables(typeVariables)
-                    .addSuperinterface(superinterface)
-                    .addMethod(getData)
-                    .addMethod(provide)
                     .build();
         }
 

@@ -25,12 +25,12 @@ public class DataTypeManager implements DataTypePlugin {
         }
     }
 
-    private DataTypeMapper<?, ?> createDataTypeMapper(DataType<?, ?, ?, ?> dataType) {
+    private DataTypeMapper<?, ?> createDataTypeMapper(DataType<?, ?, ?> dataType) {
         return new DataTypeMapper<>(dataType, componentMapperManager, entityManager::getAccessor);
     }
 
     @Override
-    public <R extends Data> IntFunction<R> getData(DataType<?, ?, R, ?> type) {
+    public <R extends Data> IntFunction<R> getData(DataType<?, R, ?> type) {
         var mapper = componentMapperManager.getComponents(type);
 
         return mapper::get;

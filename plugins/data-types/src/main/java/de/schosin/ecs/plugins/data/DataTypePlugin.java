@@ -9,6 +9,6 @@ import de.schosin.ecs.plugins.data.types.DataType;
 @Plugin(DataTypeManager.class)
 public interface DataTypePlugin {
 
-    <R extends Data> IntFunction<R> getData(DataType<?, ?, R, ?> type);
+    <R extends Data> IntFunction<R> getData(DataType<?, R, ?> type);
 
 }

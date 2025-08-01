@@ -107,7 +107,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     }
 
     @Override
-    public <T extends Data, P extends DataProcessor<T>, D extends CompositionData<P>> D createComposition(Builder builder, DataType<?, ?, T, P> dataType) {
+    public <T extends Data, P extends DataProcessor<T>, D extends CompositionData<P>> D createComposition(Builder builder, DataType<?, T, P> dataType) {
         var composition = (CompositionImpl) createComposition(builder);
 
         return composition.createCompositionData(dataType);
@@ -291,7 +291,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         @SuppressWarnings("unchecked")
         private <R, P extends DataProcessor<R>> CompositionData<P> createCompositionData(DataProcessorType<?, R, P> componentType) {
-            if (componentType instanceof DataType<?, ?, ?, ?> dataType) {
+            if (componentType instanceof DataType<?, ?, ?> dataType) {
                 return (CompositionData<P>) createCompositionData(dataType);
             }
 
@@ -317,7 +317,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         @SuppressWarnings("unchecked")
         private <R> CompositionData1<R> createCompositionData(ComponentType<?, R> component) {
-            if (component instanceof DataType<?, ?, ?, ?>) {
+            if (component instanceof DataType<?, ?, ?>) {
                 throw new IllegalArgumentException("Cannot pass DataType to createComposition(Builder, ComponentType). Use createComposition(Builder, DataType) instead.");
             }
             if (component instanceof ComponentSetType<?, ?>) {
@@ -349,7 +349,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         @SuppressWarnings("unchecked")
-        private <R extends Data, P extends DataProcessor<R>, D extends CompositionData<P>> D createCompositionData(DataType<?, ?, R, P> dataType) {
+        private <R extends Data, P extends DataProcessor<R>, D extends CompositionData<P>> D createCompositionData(DataType<?, R, P> dataType) {
             var result = (D) compositionData.get(dataType);
             if (result != null) {
                 return result;

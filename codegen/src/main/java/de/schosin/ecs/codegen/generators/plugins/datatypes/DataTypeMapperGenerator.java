@@ -39,7 +39,7 @@ public class DataTypeMapperGenerator {
 
     private static MethodSpec getComponentAccessor(int maxParams) {
         var dataR = TypeVariableName.get("R", DATA);
-        var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataR, Utils.WILDCARD);
+        var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, dataR, Utils.WILDCARD);
 
         var componentAccessor = ParameterizedTypeName.get(Utils.COMPONENT_ACCESSOR, dataR);
         var mappers = ArrayTypeName.of(Utils.components(Utils.WILDCARD, Utils.WILDCARD));

@@ -62,7 +62,7 @@ public class CompositionManagerGenerator {
             var processorP = TypeVariableName.get("P", BaseDataTypeGenerator.dataProcessor(Utils.R));
             var compositionDataImpl = ParameterizedTypeName.get(COMPOSITION_DATA_IMPL, dataR, processorP);
 
-            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataR, processorP);
+            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, dataR, processorP);
 
             var constructor = MethodSpec.constructorBuilder()
                     .addParameter(COMPOSITION, "composition")
@@ -88,7 +88,7 @@ public class CompositionManagerGenerator {
             var compositionData = ParameterizedTypeName.get(CompositionPluginGenerator.COMPOSITION_DATA, TypeVariableName.get("P"));
             var compositionDataD = TypeVariableName.get("D", compositionDataImpl, compositionData);
 
-            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataR, processorP);
+            var dataType = ParameterizedTypeName.get(DATA_TYPE, Utils.WILDCARD, dataR, processorP);
 
             var body = CodeBlock.builder();
             body.beginControlFlow("return (D) switch(dataType)");

@@ -70,7 +70,7 @@ public class CompositionPluginGenerator {
         var compositionData = ParameterizedTypeName.get(COMPOSITION_DATA, TypeVariableName.get("P"));
         var compositionDataD = TypeVariableName.get("D", compositionData);
 
-        var dataType = ParameterizedTypeName.get(CompositionManagerGenerator.DATA_TYPE, Utils.WILDCARD, Utils.WILDCARD, dataT, processorT);
+        var dataType = ParameterizedTypeName.get(CompositionManagerGenerator.DATA_TYPE, Utils.WILDCARD, dataT, processorT);
 
         return MethodSpec.methodBuilder("createComposition")
                 .addJavadoc(Javadoc.CREATE_COMPOSITION)

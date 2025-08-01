@@ -22,13 +22,13 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
 
     private final IntFunction<DataAccessor> accessor;
 
-    private final DataType<T, ?, R, ?> dataType;
+    private final DataType<T, R, ?> dataType;
     private final Components<?, ?>[] mappers;
     private final int size;
 
     private final Bag<ComponentAccessor<R>> lent = new Bag<>(ComponentAccessor.class, 8);
 
-    public DataTypeMapper(DataType<T, ?, R, ?> dataType, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
+    public DataTypeMapper(DataType<T, R, ?> dataType, ComponentMapperManager componentMapperManager, IntFunction<DataAccessor> accessor) {
         this.accessor = accessor;
         this.dataType = dataType;
 
