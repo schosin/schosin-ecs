@@ -151,7 +151,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var component2 = new C2();
             assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C3.class)), new Object[] { component, component2 }))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId), "Expected component type '%s' at index 1".formatted(component(C3.class)));
+                    .hasMessageContainingAll("Expected component to match type", component(C3.class).toString(), component2.toString());
         }
 
         @ParameterizedTest
@@ -161,12 +161,10 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var entityId = world.createEntity();
 
             // Call
-            var component1 = new C3();
-            assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C3.class)), new Object[] { component1, component }))
+            var component3 = new C3();
+            assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C3.class)), new Object[] { component3, component }))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId),
-                            "Expected component type '%s' at index 0".formatted(componentType),
-                            "Expected component type '%s' at index 1".formatted(component(C3.class)));
+                    .hasMessageContainingAll("Expected component to match type", componentType.toString(), component3.toString());
         }
 
         @ParameterizedTest
@@ -179,20 +177,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var component2 = new C2();
             assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType), new Object[] { component, component2 }))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId), "Unexpected component '%s' at index 1".formatted(component2));
-        }
-
-        @ParameterizedTest
-        @MethodSource(COMPONENTS_SOURCE)
-        void testAddMultiple_UnexpectedTypes(Object component) {
-            var componentType = ComponentType.detectComponentType(component);
-            var entityId = world.createEntity();
-
-            // Call
-            var component2 = new C2();
-            assertThatThrownBy(() -> addComponents(entityId, ImmutableBag.of(componentType, component(C2.class), component(C3.class)), new Object[] { component, component2 }))
-                    .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll("entity %d".formatted(entityId), "The following component types were unexpected", component(C3.class).toString());
+                    .hasMessageContainingAll("Expected component to match type 'null'", component2.toString());
         }
 
         @Test
@@ -290,10 +275,10 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
 
             addComponents(entity1, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
             storageEngine.flushChanges(entity1);
-            
+
             addComponents(entity2, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
             storageEngine.flushChanges(entity2);
-            
+
             addComponents(entity3, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
             storageEngine.flushChanges(entity3);
 

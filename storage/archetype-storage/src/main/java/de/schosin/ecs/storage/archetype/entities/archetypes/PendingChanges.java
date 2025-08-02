@@ -99,7 +99,8 @@ public class PendingChanges {
     public boolean add(RegularComponentType<?, ?> type, Object component) {
         // Validate
         if (type == null || component == null || !type.isInstance(component)) {
-            throw new StorageEngineException("Expected component of type '%s', but got: %s".formatted(type, component));
+            reset(); // invalidate state
+            throw new StorageEngineException("Expected component to match type '%s' but got: %s".formatted(type, component));
         }
 
         // Undo remove

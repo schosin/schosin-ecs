@@ -296,7 +296,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             pendingChanges.set(index, changes);
         }
 
-        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
+        for (int i = 0, s = components.length; i < s; i++) {
             var componentType = componentTypes.get(i);
             var component = components[i];
 

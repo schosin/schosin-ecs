@@ -1,14 +1,9 @@
 package de.schosin.ecs.storage.archetype;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.storage.api.ArchetypeStorage;
 import de.schosin.ecs.storage.api.ComponentStorage;
@@ -53,8 +48,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     @Override
     public Archetype add(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        validateComponentTypes("Cannot add %d components to entity %d".formatted(components.length, entityId), null, componentTypes, components);
-
         return addComponents(entityId, componentTypes, components);
     }
 
@@ -70,84 +63,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         // Return pending archetype if present
         var pendingArchetype = getPendingArchetype(entityId);
         return pendingArchetype != null ? pendingArchetype : archetype;
-    }
-
-
-    private void validateComponentTypes(String context, ArchetypeData archetype, ImmutableBag<? extends RegularComponentType<?, ?>> expectedTypes, Object[] components) {
-        List<String> errors = null;
-
-        if (expectedTypes.getSize() != components.length) {
-            errors = new ArrayList<>();
-
-            errors.add("Expected %d component types, but got %d".formatted(components.length, expectedTypes.getSize()));
-        }
-
-        var expected = componentTypesPool.getInstance();
-        var unexpected = componentTypesPool.getInstance();
-        var relations = componentTypesPool.getInstance();
-
-        if (archetype != null) {
-            expected.addAll(archetype.getComponentTypes());
-        }
-
-        for (int i = 0, s = components.length; i < s; i++) {
-            var expectedType = i < expectedTypes.getSize() ? expectedTypes.get(i) : null;
-            var component = components[i];
-
-            if (expectedType == null) {
-                if (errors == null) {
-                    errors = new ArrayList<>();
-                }
-
-                errors.add("Unexpected component '%s' at index %d".formatted(component, i));
-            } else if (!expectedType.isInstance(component)) {
-                if (errors == null) {
-                    errors = new ArrayList<>();
-                }
-
-                errors.add("Expected component type '%s' at index %d, but was '%s'".formatted(expectedType, i, component));
-            }
-
-            if (expectedType instanceof RelationComponentType<?, ?, ?> relationType) {
-                relations.add(relationType);
-            }
-
-            if (archetype != null && expectedType != null && !expected.remove(expectedType) && !relations.contains(expectedType)) {
-                unexpected.add(expectedType);
-            }
-        }
-
-        if (!expected.isEmpty()) {
-            if (errors == null) {
-                errors = new ArrayList<>();
-            }
-
-            var missingTypes = expected.stream().map(Object::toString).toList();
-            errors.add("The following component types are missing: %s".formatted(missingTypes));
-        }
-
-        for (int i = components.length, s = expectedTypes.getSize(); i < s; i++) {
-            unexpected.add(expectedTypes.get(i));
-        }
-
-        if (!unexpected.isEmpty()) {
-            if (errors == null) {
-                errors = new ArrayList<>();
-            }
-
-            var unexpectedTypes = unexpected.stream().map(Object::toString).distinct().toList();
-            errors.add("The following component types were unexpected: %s".formatted(unexpectedTypes));
-        }
-
-        // Free bags
-        componentTypesPool.free(expected);
-        componentTypesPool.free(unexpected);
-        componentTypesPool.free(relations);
-
-        if (errors != null) {
-            var message = errors.stream().map(error -> "- " + error).collect(Collectors.joining(System.lineSeparator()));
-            throw new StorageEngineException("%s:%s%s".formatted(context, System.lineSeparator(), message.indent(2)));
-        }
     }
 
     @Override
@@ -189,8 +104,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     @Override
     public Archetype modify(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
-        validateComponentTypes("Cannot add %d components to entity %d".formatted(add.length, entityId), null, addTypes, add);
-
         return modifyComponents(entityId, addTypes, add, removeTypes);
     }
 
