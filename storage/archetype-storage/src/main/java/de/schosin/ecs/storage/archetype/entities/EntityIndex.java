@@ -58,7 +58,6 @@ public class EntityIndex {
     private final ArchetypeGraphNode emptyArchetypeNode;
     private final ArchetypeData emptyArchetype;
 
-    private final Pool<Bag<Object>> componentsPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class), Bag::clear);
     private final Pool<BitVector> bitVectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
 
     public EntityIndex(StorageWorld world, ArchetypeStorageConfig config, ArchetypeStorageEngine storage, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
@@ -339,14 +338,14 @@ public class EntityIndex {
         }
 
         // Delete entity from archetype
-        removeEntity(pointer, null);
+        removeEntity(pointer);
 
         return pointer.getArchetype();
     }
 
-    public void removeEntity(ArchetypePointer pointer, Bag<Object> fill) {
+    public void removeEntity(ArchetypePointer pointer) {
         // Remove entity
-        var swappedEntityId = pointer.removeEntity(fill);
+        var swappedEntityId = pointer.removeEntity();
         if (swappedEntityId > -1) {
             // Update pointer of swapped entity
             var swappedPointer = lookup.get(swappedEntityId);
@@ -372,21 +371,21 @@ public class EntityIndex {
         var pointer = lookup.get(entityId);
         var previousArchetype = pointer.getArchetype();
 
-        // Retrieve changes, return early if none
-        var changes = pointer.getPendingChanges();
+        // Get new index for entity (appended to the end)
+        var index = archetype.getCount();
 
-        // Remove entity from current archetype
-        var data = componentsPool.getInstance();
-        removeEntity(pointer, data);
+        // Move entity to new archetype
+        var swappedEntityId = previousArchetype.moveEntity(entityId, pointer.getIndex());
 
-        // Add to archetype
-        var index = archetype.addEntity(entityId, previousArchetype.getComponentTypes(), data, changes.getAddedTypes(), changes.getAdded());
+        // Update pointer of swapped entity
+        if (swappedEntityId > -1) {
+            // Update pointer of swapped entity
+            var swappedPointer = lookup.get(swappedEntityId);
+            swappedPointer.setIndex(pointer.getIndex());
+        }
 
+        // Update pointer of entity
         pointer.setPointer(archetype, index);
-
-        // Reset changes, free data
-        changes.reset();
-        componentsPool.free(data);
 
         return archetype;
     }
@@ -438,8 +437,8 @@ final class ArchetypePointer implements ArchetypeAccessor {
         return archetype.getPendingChanges(index);
     }
 
-    int removeEntity(Bag<Object> fill) {
-        return archetype.removeEntity(entityId, index, fill);
+    int removeEntity() {
+        return archetype.removeEntity(entityId, index);
     }
 
     void setPointer(ArchetypeData archetype, int index) {

@@ -50,6 +50,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
             assertThat(component.hasComponent(42)).as("hasComponent returns false after delete").isFalse();
             assertThat(component.getComponent(42)).as("getComponent returns null after delete").isNull();
         }
+        
+        assertThat(archetype.getEntities().iterator()).toIterable().as("getEntities returns empty bag after delete").isEmpty();
     }
 
     @Test

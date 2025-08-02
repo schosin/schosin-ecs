@@ -497,9 +497,9 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
                 var ids = new AtomicInteger(1);
                 var provider = new ComponentProvider(componentArrays);
-                
+
                 archetype.createEntities(count, ids::getAndIncrement, provider);
-                
+
                 for (int i = 1; i <= count; i++) {
                     var entityId = i;
 
@@ -735,6 +735,34 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
         }
 
         @Test
+        void testRemoveComponent_RemoveLastEntityFromArchetype() {
+            var archetype = engine.getArchetype();
+            var archetype1 = engine.getArchetype(component(C1.class));
+
+            var entity1 = world.createEntity(new C1());
+
+            assertThat(archetype.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
+            assertThat(archetype.getCount()).as("getCount returns number of matching entities").isEqualTo(0);
+            assertThat(archetype.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").isEmpty();
+
+            assertThat(archetype1.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
+            assertThat(archetype1.getCount()).as("getCount returns number of matching entities").isEqualTo(1);
+            assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1);
+
+            // Call
+            engine.remove(entity1, ImmutableBag.of(component(C1.class)));
+
+            // Verify
+            assertThat(archetype.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
+            assertThat(archetype.getCount()).as("getCount returns number of matching entities").isEqualTo(0);
+            assertThat(archetype.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").isEmpty();
+
+            assertThat(archetype1.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
+            assertThat(archetype1.getCount()).as("getCount returns number of matching entities").isEqualTo(1);
+            assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1);
+        }
+
+        @Test
         void testFlushedRemoveComponent() {
             var archetype = engine.getArchetype();
             var archetype1 = engine.getArchetype(component(C1.class));
@@ -766,6 +794,35 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getEntities().contains(entity2)).as("archetype contains entity with matching components").isTrue();
             assertThat(archetype1.getCount()).as("getCount returns number of matching entities").isEqualTo(1);
             assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactly(entity2);
+        }
+
+        @Test
+        void testFlushedRemoveComponent_RemoveLastEntityFromArchetype() {
+            var archetype = engine.getArchetype();
+            var archetype1 = engine.getArchetype(component(C1.class));
+
+            var entity1 = world.createEntity(new C1());
+
+            assertThat(archetype.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
+            assertThat(archetype.getCount()).as("getCount returns number of matching entities").isEqualTo(0);
+            assertThat(archetype.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").isEmpty();
+
+            assertThat(archetype1.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
+            assertThat(archetype1.getCount()).as("getCount returns number of matching entities").isEqualTo(1);
+            assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1);
+
+            // Call
+            engine.remove(entity1, ImmutableBag.of(component(C1.class)));
+            engine.flushChanges(entity1);
+
+            // Verify
+            assertThat(archetype.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
+            assertThat(archetype.getCount()).as("getCount returns number of matching entities").isEqualTo(1);
+            assertThat(archetype.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1);
+
+            assertThat(archetype1.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
+            assertThat(archetype1.getCount()).as("getCount returns number of matching entities").isEqualTo(0);
+            assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains no entities after last entity removed").isEmpty();
         }
 
         @Test

@@ -11,22 +11,30 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.storage.api.StorageEngineException;
+import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.utils.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.archetype.utils.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
+import de.schosin.ecs.utils.collections.IntBag;
 
 public class PendingChanges {
+
+    private final ComponentIndex componentIndex;
 
     private final ArchetypeGraphNode archetypeNode;
     private ArchetypeGraphNode pendingArchetypeNode;
 
+    private final IntBag addedIds = new IntBag(4);
     private final Bag<RegularComponentType<?, ?>> addedTypes = new Bag<>(RegularComponentType.class, 4);
     private final Bag<Object> added = new Bag<>(Object.class, 4);
 
     private final Bag<RegularComponentType<?, ?>> removedTypes = new Bag<>(RegularComponentType.class, 4);
 
-    public PendingChanges(ArchetypeGraphNode archetypeNode) {
+    public PendingChanges(ComponentIndex componentIndex, ArchetypeGraphNode archetypeNode) {
+        this.componentIndex = componentIndex;
+
         this.archetypeNode = archetypeNode;
         this.pendingArchetypeNode = archetypeNode;
     }
@@ -63,6 +71,10 @@ public class PendingChanges {
 
     public ArchetypeGraphNode getArchetypeNode() {
         return this.archetypeNode;
+    }
+
+    public ImmutableIntBag getAddedIds() {
+        return this.addedIds;
     }
 
     public ImmutableBag<RegularComponentType<?, ?>> getAddedTypes() {
@@ -150,6 +162,7 @@ public class PendingChanges {
         if (result == null) {
             result = ComponentRelationResultImpl.getInstance();
 
+            addedIds.add(componentIndex.getId(relationType));
             addedTypes.add(relationType);
             added.add(result);
         }
@@ -171,12 +184,14 @@ public class PendingChanges {
         // Remove matching relations in addedTypes
         for (int i = addedTypes.getSize() - 1; i >= 0; i--) {
             if (addedTypes.get(i) instanceof ExclusiveComponentRelationType<?, ?> other && other.relationship().equals(relationType.relationship())) {
+                addedIds.removeIndex(i);
                 addedTypes.remove(i);
                 added.remove(i);
             }
         }
 
         // Add relation component
+        addedIds.add(componentIndex.getId(relationType));
         addedTypes.add(relationType);
         added.add(component);
     }
@@ -194,6 +209,7 @@ public class PendingChanges {
         if (result == null) {
             result = EntityRelationResultImpl.getInstance();
 
+            addedIds.add(componentIndex.getId(relationType));
             addedTypes.add(relationType);
             added.add(result);
         }
@@ -206,12 +222,14 @@ public class PendingChanges {
         // Remove matching relations in addedTypes
         for (int i = addedTypes.getSize() - 1; i >= 0; i--) {
             if (addedTypes.get(i) instanceof ExclusiveEntityRelationType<?> other && other.relationship().equals(relationType.relationship())) {
+                addedIds.removeIndex(i);
                 addedTypes.remove(i);
                 added.remove(i);
             }
         }
 
         // Add relation component
+        addedIds.add(componentIndex.getId(relationType));
         addedTypes.add(relationType);
         added.add(component);
     }
@@ -240,6 +258,7 @@ public class PendingChanges {
         }
 
         // Add component
+        addedIds.add(componentIndex.getId(type));
         addedTypes.add(type);
         added.add(component);
     }
@@ -261,6 +280,7 @@ public class PendingChanges {
         // Undo adds
         for (int i = addedTypes.getSize() - 1; i >= 0; i--) {
             if (addedTypes.get(i).equals(type)) {
+                addedIds.removeIndex(i);
                 addedTypes.remove(i);
                 added.remove(i);
 
@@ -272,19 +292,7 @@ public class PendingChanges {
     }
 
     public void reset() {
-        for (int i = 0, s = added.getSize(); i < s; i++) {
-            var component = added.get(i);
-
-            if (component instanceof ComponentRelationResultImpl result) {
-                result.free();
-                continue;
-            }
-
-            if (component instanceof EntityRelationResultImpl result) {
-                result.free();
-            }
-        }
-
+        addedIds.clear();
         addedTypes.clear();
         added.clear();
 

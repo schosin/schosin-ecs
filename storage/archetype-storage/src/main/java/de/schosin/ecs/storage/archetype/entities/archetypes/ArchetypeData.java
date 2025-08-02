@@ -3,15 +3,12 @@ package de.schosin.ecs.storage.archetype.entities.archetypes;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
-import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoaImpl {
 
     ArchetypeAccessor getAccessor(int entityId);
 
-    int addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,
-            ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes2, ImmutableBag<Object> components2);
 
     void addComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components);
 
@@ -22,10 +19,18 @@ public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoa
      * 
      * @param entityId id of entity
      * @param index index of entity
-     * @param fill bag that will contain components of deleted entity
      * @return id of entity swapped to index position, or -1 if no swap
      */
-    int removeEntity(int entityId, int index, Bag<Object> fill);
+    int removeEntity(int entityId, int index);
+
+    /**
+     * Moves the entity according to its pending changes.
+     * 
+     * @param entityId id of entity
+     * @param index index of entity in this archetype
+     * @return id of entity moved to index, or -1 if none moved
+     */
+    int moveEntity(int entityId, int index);
 
     /**
      * Returns pending changes.

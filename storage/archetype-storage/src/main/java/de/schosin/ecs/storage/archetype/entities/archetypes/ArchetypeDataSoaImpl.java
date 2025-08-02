@@ -67,8 +67,8 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     private final Bag<PendingChanges> pendingChanges;
 
+    private final Bag<ArchetypeMover> movers = new Bag<>(ArchetypeMover.class, 4);
     private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
-    private final Pool<IntBag> intBagPool = Pool.unbounded(IntBag.class, () -> new IntBag(16), IntBag::clear);
 
     private int alive;
 
@@ -289,69 +289,10 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public int addEntity(int entityId, ImmutableBag<RegularComponentType<?, ?>> componentTypes, Bag<Object> components,
-            ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes2, ImmutableBag<Object> components2) {
-
-        // Track entity index
-        var index = alive++;
-        this.entities.add(entityId);
-
-        var componentIds = intBagPool.getInstance();
-        for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
-            componentIds.set(i, componentIndex.getId(componentTypes.get(i)));
-        }
-
-        var componentIds2 = intBagPool.getInstance();
-        for (int i = 0, s = componentTypes2.getSize(); i < s; i++) {
-            componentIds2.set(i, componentIndex.getId(componentTypes2.get(i)));
-        }
-
-        // Fill data array (components 1)
-        for (int i = 0, s = components.getSize(); i < s; i++) {
-            var componentId = componentIds.get(i);
-            var componentIndex = this.componentTypeIds.get(componentId);
-
-            // Free removed components
-            if (componentIndex == -1) {
-                entityIndex.freeComponent(components.get(i));
-                continue; // removed comonent
-            }
-
-            // Add non-zero-sized components
-            if (componentIndex > -1) {
-                adders[componentIndex].add(entityId, index, components.get(i));
-            }
-        }
-
-        // Fill data array (components 2)
-        for (int i = 0, s = components2.getSize(); i < s; i++) {
-            var componentId = componentIds2.get(i);
-            var componentIndex = this.componentTypeIds.get(componentId);
-
-            // Free removed components
-            if (componentIndex == -1) {
-                entityIndex.freeComponent(components2.get(i));
-                continue; // removed comonent
-            }
-
-            // Add non-zero-sized components
-            if (componentIndex > -1) {
-                adders[componentIndex].add(entityId, index, components2.get(i));
-            }
-        }
-
-        intBagPool.free(componentIds);
-        intBagPool.free(componentIds2);
-
-        return index;
-
-    }
-
-    @Override
     public void addComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
         var changes = pendingChanges.getSafe(index);
         if (changes == null) {
-            changes = new PendingChanges(node);
+            changes = new PendingChanges(componentIndex, node);
             pendingChanges.set(index, changes);
         }
 
@@ -374,7 +315,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     public void removeComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
         var changes = pendingChanges.getSafe(index);
         if (changes == null) {
-            changes = new PendingChanges(this.node);
+            changes = new PendingChanges(componentIndex, node);
             pendingChanges.set(index, changes);
         }
 
@@ -385,7 +326,44 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public int removeEntity(int entityId, int index, Bag<Object> fill) {
+    public int moveEntity(int entityId, int index) {
+        // Get pending changes (must not be null if this is called)
+        var changes = pendingChanges.get(index);
+
+        // Handle archetype implementations
+        return switch (changes.getPendingArchetypeNode().getArchetype()) {
+            case ArchetypeDataSoaImpl archetype -> moveEntity(entityId, index, changes, archetype);
+        };
+    }
+
+    private int moveEntity(int entityId, int index, PendingChanges changes, ArchetypeDataSoaImpl targetArchetype) {
+        // Resolve archetype mover
+        var mover = this.movers.getSafe(targetArchetype.id);
+        if (mover == null) {
+            // Initialize mover
+            mover = createMover(targetArchetype);
+            this.movers.set(targetArchetype.id, mover);
+        }
+
+        // Move entity data
+        return mover.moveComponent(entityId, index, changes);
+    }
+
+    private ArchetypeMover createMover(ArchetypeDataSoaImpl targetArchetype) {
+        // Generate mapping for component indices
+        var mapping = new int[size];
+        for (int i = 0; i < size; i++) {
+            var componentId = this.components.get(i).id();
+            var componentIndex = targetArchetype.getComponentIndex(componentId);
+
+            mapping[i] = componentIndex > -1 ? componentIndex : -1; // convert zero-sized (-2 and lower) to -1
+        }
+
+        return new ArchetypeMover(entityIndex, this, targetArchetype, mapping);
+    }
+
+    @Override
+    public int removeEntity(int entityId, int index) {
         if (entities.get(index) != entityId) {
             return -1;
         }
@@ -398,13 +376,10 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             // Process components
             for (int i = 0; i < size; i++) {
                 var componentData = this.data[i];
-                var component = componentData != null ? componentData.get(index) : this.zeroSizedTypes[i];
 
-                if (fill != null) {
-                    // Put component into fill bag, required from caller
-                    fill.add(component);
-                } else {
-                    entityIndex.freeComponent(component);
+                // Free component
+                if (componentData != null) {
+                    entityIndex.freeComponent(componentData.get(index));
                 }
             }
 
@@ -515,6 +490,110 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     @Override
     public boolean equals(Object obj) {
         return obj == this;
+    }
+
+    /**
+     * Helper class for moving entities between {@link ArchetypeDataSoaImpl ArchetypeDataSoaImpl archetypes}. 
+     */
+    private final record ArchetypeMover(EntityIndex entityIndex, ArchetypeDataSoaImpl source, ArchetypeDataSoaImpl target, int[] mapping) {
+
+        /**
+         * Moves the entity at "sourceIndex" to the end of the target archetype.
+         * 
+         * Moves the components of the source archetype according to the mapping (index in target archetype)
+         * to the target archetype and overwrites the source data. 
+         * Any components not moved to the new archetype will be freed.  
+         * Afterwards it adds the pending (added) components.
+         * 
+         * When "sourceIndex" does not point to the last entity of the archetype, the component data of
+         * the last entity will be moved to "sourceIndex" after its data has been moved. This ensures a
+         * dense packing of entities. In that case the return value of this function will be the id
+         * of the source entity that had its component data moved to "sourceIndex". 
+         * 
+         * @param entityId id of entity
+         * @param sourceIndex index of entity in source archetype
+         * @param changes pending changes
+         * @return -1 or id of source entity moved to sourceIndex
+         */
+        private int moveComponent(int entityId, int sourceIndex, PendingChanges changes) {
+            var sourceData = source.data;
+            var targetData = target.data;
+
+            // Update alive (entity count) fields of source and target
+            var previouslyLastIndex = --source.alive;
+            var targetIndex = target.alive++;
+
+            // Resolve index of source entity moved to freed up slot
+            var movedIndex = sourceIndex == source.alive ? -1 : source.alive;
+
+            // Move components of this archetype over
+            for (int i = 0, s = source.size; i < s; i++) {
+                var sourceComponents = sourceData[i];
+
+                // Skip zero-sized components
+                if (sourceComponents == null) {
+                    continue;
+                }
+
+                var targetComponentIndex = mapping[i];
+
+                // Free removed components (not in target archetype) 
+                if (targetComponentIndex == -1) {
+                    entityIndex.freeComponent(sourceComponents.get(sourceIndex));
+                    continue;
+                }
+
+                // Move component to new archetype 
+                targetData[targetComponentIndex].set(targetIndex, sourceComponents.get(sourceIndex));
+
+                if (movedIndex != -1) {
+                    // Move component data from moved entity to source index
+                    sourceComponents.set(sourceIndex, sourceComponents.get(movedIndex));
+                }
+
+                // Clear previously last index data
+                sourceComponents.set(previouslyLastIndex, null);
+            }
+
+            // Add pending components
+            var added = changes.getAdded();
+            var addedIds = changes.getAddedIds();
+
+            for (int i = 0, s = added.getSize(); i < s; i++) {
+                // Retrieve target component index
+                var targetComponentIndex = target.getComponentIndex(addedIds.get(i));
+
+                // Only skip zero-sized components (-1 at this point is an error somewhere -> AIOOBE is correct) 
+                if (targetComponentIndex > -2) {
+                    // Set component data (no index check, must be valid at this point)
+                    targetData[targetComponentIndex].set(targetIndex, added.get(i));
+                }
+            }
+
+            // Add entity to target
+            target.entities.add(entityId);
+
+            // Reset pending changes
+            changes.reset();
+
+            // Return -1 if no source entity was moved
+            if (movedIndex == -1) {
+                source.entities.removeLast();
+                return -1;
+            }
+
+            // Update source tracking tracking
+            var movedEntityId = source.entities.removeLast();
+            source.entities.set(sourceIndex, movedEntityId);
+
+            var movedPending = source.pendingChanges.get(movedIndex);
+            source.pendingChanges.set(movedIndex, source.pendingChanges.get(sourceIndex));
+            source.pendingChanges.set(sourceIndex, movedPending);
+
+            // Return id of moved source entity  
+            return movedEntityId;
+        }
+
     }
 
     private final class AccessorImpl implements ArchetypeAccessor, IterableAccessor, Pooled {
