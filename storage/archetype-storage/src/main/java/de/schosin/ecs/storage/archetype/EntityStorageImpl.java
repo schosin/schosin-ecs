@@ -28,7 +28,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     private final ComponentStorage componentStorage;
 
     private final Pool<Bag<RegularComponentType<?, ?>>> componentTypesPool = Pool.unbounded(Bag.class, () -> new Bag<>(RegularComponentType.class, 8), Bag::clear);
-    private final Pool<Bag<Object>> componentPool = Pool.unbounded(Bag.class, () -> new Bag<>(Object.class, 8), Bag::clear);
 
     public EntityStorageImpl(EntityIndex entityIndex, ComponentStorage componentStorage) {
         this.entityIndex = entityIndex;
@@ -73,25 +72,14 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         return pendingArchetype != null ? pendingArchetype : archetype;
     }
 
+
     private void validateComponentTypes(String context, ArchetypeData archetype, ImmutableBag<? extends RegularComponentType<?, ?>> expectedTypes, Object[] components) {
-        var bag = componentPool.getInstance();
-
-        for (int i = 0, s = components.length; i < s; i++) {
-            bag.add(components[i]);
-        }
-
-        validateComponentTypes(context, archetype, expectedTypes, bag);
-
-        componentPool.free(bag);
-    }
-
-    private void validateComponentTypes(String context, ArchetypeData archetype, ImmutableBag<? extends RegularComponentType<?, ?>> expectedTypes, ImmutableBag<Object> components) {
         List<String> errors = null;
 
-        if (expectedTypes.getSize() != components.getSize()) {
+        if (expectedTypes.getSize() != components.length) {
             errors = new ArrayList<>();
 
-            errors.add("Expected %d component types, but got %d".formatted(components.getSize(), expectedTypes.getSize()));
+            errors.add("Expected %d component types, but got %d".formatted(components.length, expectedTypes.getSize()));
         }
 
         var expected = componentTypesPool.getInstance();
@@ -102,9 +90,9 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             expected.addAll(archetype.getComponentTypes());
         }
 
-        for (int i = 0, s = components.getSize(); i < s; i++) {
+        for (int i = 0, s = components.length; i < s; i++) {
             var expectedType = i < expectedTypes.getSize() ? expectedTypes.get(i) : null;
-            var component = components.get(i);
+            var component = components[i];
 
             if (expectedType == null) {
                 if (errors == null) {
@@ -138,7 +126,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
             errors.add("The following component types are missing: %s".formatted(missingTypes));
         }
 
-        for (int i = components.getSize(), s = expectedTypes.getSize(); i < s; i++) {
+        for (int i = components.length, s = expectedTypes.getSize(); i < s; i++) {
             unexpected.add(expectedTypes.get(i));
         }
 
