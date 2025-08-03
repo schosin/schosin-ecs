@@ -20,6 +20,36 @@ public class EventManager {
     private final Map<Class<?>, Bag<EventHandler<?>>> handlers = new HashMap<>();
 
     /**
+     * Dispatch the storage event.
+     * 
+     * @param event event to dispatch
+     * @return true if handlers invoked for event
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public boolean dispatchEvent(StorageEvent event) {
+        // Resolve handlers
+        var handlers = getHandlers(event.getClass());
+        if (handlers == null || handlers.isEmpty()) {
+            // Free storage events
+            event.free();
+
+            return false;
+        }
+
+        // Dispatch event
+        var data = handlers.getData();
+        for (int i = 0, s = handlers.getSize(); i < s; i++) {
+            EventHandler handler = data[i];
+            handler.handle(event);
+        }
+
+        // Free storage event
+        event.free();
+
+        return true;
+    }
+
+    /**
      * Dispatch the event.
      * 
      * @param event event to dispatch
@@ -27,22 +57,20 @@ public class EventManager {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public boolean dispatchEvent(Object event) {
-        // Dispatch event
+        // Resolve handlers
         var handlers = getHandlers(event.getClass());
-        if (handlers != null) {
-            var data = handlers.getData();
-            for (int i = 0, s = handlers.getSize(); i < s; i++) {
-                EventHandler handler = data[i];
-                handler.handle(event);
-            }
+        if (handlers == null || handlers.isEmpty()) {
+            return false;
         }
 
-        // Free builtin and storage events
-        if (event instanceof StorageEvent storageEvent) {
-            storageEvent.free();
+        // Dispatch event
+        var data = handlers.getData();
+        for (int i = 0, s = handlers.getSize(); i < s; i++) {
+            EventHandler handler = data[i];
+            handler.handle(event);
         }
 
-        return handlers != null && !handlers.isEmpty();
+        return true;
     }
 
     private Bag<EventHandler<?>> getHandlers(Class<?> clazz) {
