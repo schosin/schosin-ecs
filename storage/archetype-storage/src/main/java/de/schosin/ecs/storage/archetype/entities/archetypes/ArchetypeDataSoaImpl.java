@@ -227,7 +227,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Track entity
             this.entities.add(entityId);
-            
+
             this.pendingChanges.ensureCapacity(alive);
         }
 
@@ -287,7 +287,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 // Clear first component to cause error if user does not fill array
                 entityComponents[0] = null;
             }
-            
+
             this.pendingChanges.ensureCapacity(alive);
         }
     }
@@ -429,8 +429,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     @Override
     public PendingChanges getPendingChanges(int index) {
-        var changes = pendingChanges.get(index);
-        return changes == null || changes.isEmpty() ? null : changes;
+        return pendingChanges.get(index);
     }
 
     private boolean hasPendingComponent(int index, int componentId) {

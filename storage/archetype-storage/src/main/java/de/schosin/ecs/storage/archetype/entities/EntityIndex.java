@@ -333,7 +333,7 @@ public class EntityIndex {
 
         // Remove pending changes
         var changes = getPendingChanges(entityId);
-        if (changes != null) {
+        if (changes != null && !changes.isEmpty()) {
             changes.reset();
         }
 
