@@ -189,12 +189,12 @@ public class BitVector {
                 consumer.accept(index);
 
                 // Clear the least significant set bit
-                word ^= Long.lowestOneBit(word);
+                word &= word - 1;
             }
 
             // Move to the next word
             wordIndex++;
-            fromIndex = wordIndex * BITS_PER_WORD;
+            fromIndex += BITS_PER_WORD;
         }
     }
 
