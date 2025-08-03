@@ -108,9 +108,18 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     private Archetype modifyComponents(int entityId, ImmutableBag<? extends RegularComponentType<?, ?>> addTypes, Object[] add, ImmutableBag<? extends ComponentType<?, ?>> removeTypes) {
+        // Get current archetype, throw if null (entity not active)
         var archetype = entityIndex.getArchetypeDataForEntity(entityId);
         if (archetype == null) {
             throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId));
+        }
+        
+        // Handle addition only
+        if (removeTypes.isEmpty()) {
+            entityIndex.addComponents(entityId, addTypes, add);
+
+            var pendingArchetype = getPendingArchetype(entityId);
+            return pendingArchetype != null ? pendingArchetype : archetype;
         }
 
         // Discover new component types so that fillRegularComponentTypes will take them into account
