@@ -218,13 +218,14 @@ public class ChangeManager {
         var previousArchetype = entityManager.getArchetype(entityId);
         var archetype = storageEngine.modify(entityId, addTypes, add, removeTypes);
 
-        // Track changed entity
-        var changed = previousArchetype.getId() != archetype.getId();
-        if (changed) {
-            this.updatedEntities.set(entityId);
+        if (archetype == previousArchetype) {
+            return false;
         }
 
-        return changed;
+        // Track changed entity
+        this.updatedEntities.set(entityId);
+
+        return true;
     }
 
 }
