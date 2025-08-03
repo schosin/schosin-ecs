@@ -1162,7 +1162,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Test
         void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
             var archetype = storageEngine.getArchetype(component(C1.class));
-            var event = BeforeEntityUpdateEvent.get(42, null, archetype);
+            var event = BeforeEntityUpdateEvent.get().with(42, null, archetype);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
         }
@@ -1170,7 +1170,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Test
         void testUpdatedEntities_WhenNullNewComposition_Throws() {
             var archetype = storageEngine.getArchetype(component(C1.class));
-            var event = EntityUpdatedEvent.get(42, archetype, null);
+            var event = EntityUpdatedEvent.get().with(42, archetype, null);
 
             assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
         }
@@ -1194,10 +1194,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var entity1337Archetype = archetype2;
             var entity9001Archetype = archetype12;
 
-            eventManager.dispatchEvent(EntityInsertedEvent.get(7, entity7Archetype));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(42, entity42Archetype));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(1337, entity1337Archetype));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(9001, entity9001Archetype));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(7, entity7Archetype));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(42, entity42Archetype));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(1337, entity1337Archetype));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(9001, entity9001Archetype));
 
             var removed1 = new HashSet<Integer>();
             composition1.removed(removed1::add);
@@ -1209,17 +1209,17 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             composition3.removed(removed3::add);
 
             // Update entity
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(7, entity7Archetype, archetype1));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(7, entity7Archetype, archetype1));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(7, entity7Archetype, archetype1));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(7, entity7Archetype, archetype1));
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(42, entity42Archetype, archetype12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(42, entity42Archetype, archetype12));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(42, entity42Archetype, archetype12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(42, entity42Archetype, archetype12));
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(1337, entity1337Archetype, archetype12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(1337, entity1337Archetype, archetype12));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(1337, entity1337Archetype, archetype12));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(1337, entity1337Archetype, archetype12));
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(9001, entity9001Archetype, archetype3));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(9001, entity9001Archetype, archetype3));
+            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(9001, entity9001Archetype, archetype3));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(9001, entity9001Archetype, archetype3));
 
             // Verify
             assertThat(removed1).containsExactlyInAnyOrder(9001);

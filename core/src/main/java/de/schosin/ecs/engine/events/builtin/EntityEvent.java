@@ -6,7 +6,6 @@ import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.entities.Archetype;
-import de.schosin.ecs.utils.collections.Pool;
 
 public sealed interface EntityEvent extends Event {
 
@@ -24,37 +23,45 @@ public sealed interface EntityEvent extends Event {
      */
     sealed interface EntityInsertedEvent extends EntityEvent {
 
-        static EntityInsertedEvent get(int entityId, Archetype archetype) {
-            return EntityInsertedEventImpl.get(entityId, archetype);
+        static EntityInsertedEvent get() {
+            return new EntityInsertedEventImpl();
         }
+
+        EntityInsertedEvent with(int entityId, Archetype archetype);
 
     }
 
     sealed interface BeforeEntityUpdateEvent extends EntityEvent {
 
-        static BeforeEntityUpdateEvent get(int entityId, Archetype archetype, Archetype newArchetype) {
-            return BeforeEntityUpdateEventImpl.get(entityId, archetype, newArchetype);
+        static BeforeEntityUpdateEvent get() {
+            return new BeforeEntityUpdateEventImpl();
         }
 
         Archetype newArchetype();
+
+        BeforeEntityUpdateEvent with(int entityId, Archetype archetype, Archetype newArchetype);
 
     }
 
     sealed interface EntityUpdatedEvent extends EntityEvent {
 
-        static EntityUpdatedEvent get(int entityId, Archetype previousArchetype, Archetype archetype) {
-            return EntityUpdatedEventImpl.get(entityId, previousArchetype, archetype);
+        static EntityUpdatedEvent get() {
+            return new EntityUpdatedEventImpl();
         }
 
         Archetype previousArchetype();
+
+        EntityUpdatedEvent with(int entityId, Archetype previousArchetype, Archetype archetype);
 
     }
 
     sealed interface EntityRemovedEvent extends EntityEvent {
 
-        static EntityRemovedEvent get(int entityId, Archetype archetype) {
-            return EntityRemovedEventImpl.get(entityId, archetype);
+        static EntityRemovedEvent get() {
+            return new EntityRemovedEventImpl();
         }
+
+        EntityRemovedEvent with(int entityId, Archetype archetype);
 
     }
 
@@ -75,45 +82,21 @@ abstract sealed class AbstractEntityEvent implements EntityEvent {
         return archetype;
     }
 
-    @Override
-    public void reset() {
-        this.entityId = -1;
-        this.archetype = null;
-    }
-
 }
 
 final class EntityInsertedEventImpl extends AbstractEntityEvent implements EntityInsertedEvent {
 
-    private static final Pool<EntityInsertedEventImpl> POOL = Pool.unbounded(EntityInsertedEventImpl.class, EntityInsertedEventImpl::new);
-
-    static EntityInsertedEvent get(int entityId, Archetype archetype) {
-        var instance = POOL.getInstance();
-        instance.entityId = entityId;
-        instance.archetype = archetype;
-
-        return instance;
-    }
-
     @Override
-    public void free() {
-        POOL.free(this);
+    public EntityInsertedEvent with(int entityId, Archetype archetype) {
+        this.entityId = entityId;
+        this.archetype = archetype;
+
+        return this;
     }
 
 }
 
 final class BeforeEntityUpdateEventImpl extends AbstractEntityEvent implements BeforeEntityUpdateEvent {
-
-    private static final Pool<BeforeEntityUpdateEventImpl> POOL = Pool.unbounded(BeforeEntityUpdateEventImpl.class, BeforeEntityUpdateEventImpl::new);
-
-    static BeforeEntityUpdateEvent get(int entityId, Archetype archetype, Archetype newArchetype) {
-        var instance = POOL.getInstance();
-        instance.entityId = entityId;
-        instance.archetype = archetype;
-        instance.newArchetype = newArchetype;
-
-        return instance;
-    }
 
     private Archetype newArchetype;
 
@@ -123,31 +106,17 @@ final class BeforeEntityUpdateEventImpl extends AbstractEntityEvent implements B
     }
 
     @Override
-    public void free() {
-        POOL.free(this);
-    }
+    public BeforeEntityUpdateEvent with(int entityId, Archetype archetype, Archetype newArchetype) {
+        this.entityId = entityId;
+        this.archetype = archetype;
+        this.newArchetype = newArchetype;
 
-    @Override
-    public void reset() {
-        super.reset();
-
-        this.newArchetype = null;
+        return this;
     }
 
 }
 
 final class EntityUpdatedEventImpl extends AbstractEntityEvent implements EntityUpdatedEvent {
-
-    private static final Pool<EntityUpdatedEventImpl> POOL = Pool.unbounded(EntityUpdatedEventImpl.class, EntityUpdatedEventImpl::new);
-
-    static EntityUpdatedEvent get(int entityId, Archetype previousArchetype, Archetype archetype) {
-        var instance = POOL.getInstance();
-        instance.entityId = entityId;
-        instance.previousArchetype = previousArchetype;
-        instance.archetype = archetype;
-
-        return instance;
-    }
 
     private Archetype previousArchetype;
 
@@ -157,34 +126,24 @@ final class EntityUpdatedEventImpl extends AbstractEntityEvent implements Entity
     }
 
     @Override
-    public void free() {
-        POOL.free(this);
-    }
+    public EntityUpdatedEvent with(int entityId, Archetype previousArchetype, Archetype archetype) {
+        this.entityId = entityId;
+        this.previousArchetype = previousArchetype;
+        this.archetype = archetype;
 
-    @Override
-    public void reset() {
-        super.reset();
-
-        this.previousArchetype = null;
+        return this;
     }
 
 }
 
 final class EntityRemovedEventImpl extends AbstractEntityEvent implements EntityRemovedEvent {
 
-    private static final Pool<EntityRemovedEventImpl> POOL = Pool.unbounded(EntityRemovedEventImpl.class, EntityRemovedEventImpl::new);
-
-    static EntityRemovedEvent get(int entityId, Archetype archetype) {
-        var instance = POOL.getInstance();
-        instance.entityId = entityId;
-        instance.archetype = archetype;
-
-        return instance;
-    }
-
     @Override
-    public void free() {
-        POOL.free(this);
+    public EntityRemovedEvent with(int entityId, Archetype archetype) {
+        this.entityId = entityId;
+        this.archetype = archetype;
+
+        return this;
     }
 
 }

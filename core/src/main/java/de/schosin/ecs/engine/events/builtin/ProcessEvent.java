@@ -13,8 +13,4 @@ public sealed interface ProcessEvent extends Event {
         PROCESS_STEP;
     }
 
-    @Override
-    default void free() {
-    }
-
 }

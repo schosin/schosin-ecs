@@ -4,7 +4,6 @@ import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
 import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
-import de.schosin.ecs.utils.collections.Pool;
 
 public sealed interface EntitiesEvent extends Event {
 
@@ -22,18 +21,20 @@ public sealed interface EntitiesEvent extends Event {
      */
     sealed interface EntitiesInsertedEvent extends EntitiesEvent {
 
-        static EntitiesInsertedEvent get(ImmutableIntBag entityIds, Archetype archetype) {
-            return EntitiesInsertedEventImpl.get(entityIds, archetype);
+        static EntitiesInsertedEvent get() {
+            return new EntitiesInsertedEventImpl();
         }
+
+        EntitiesInsertedEvent with(ImmutableIntBag entityIds, Archetype archetype);
 
     }
 
 }
 
-abstract sealed class AbstractEntitiesEvent implements EntitiesEvent {
+final class EntitiesInsertedEventImpl implements EntitiesInsertedEvent {
 
-    protected ImmutableIntBag entityIds;
-    protected Archetype archetype;
+    private ImmutableIntBag entityIds;
+    private Archetype archetype;
 
     @Override
     public ImmutableIntBag entityIds() {
@@ -46,28 +47,11 @@ abstract sealed class AbstractEntitiesEvent implements EntitiesEvent {
     }
 
     @Override
-    public void reset() {
-        this.entityIds = null;
-        this.archetype = null;
-    }
+    public EntitiesInsertedEvent with(ImmutableIntBag entityIds, Archetype archetype) {
+        this.entityIds = entityIds;
+        this.archetype = archetype;
 
-}
-
-final class EntitiesInsertedEventImpl extends AbstractEntitiesEvent implements EntitiesInsertedEvent {
-
-    private static final Pool<EntitiesInsertedEventImpl> POOL = Pool.unbounded(EntitiesInsertedEventImpl.class, EntitiesInsertedEventImpl::new);
-
-    static EntitiesInsertedEvent get(ImmutableIntBag entityIds, Archetype archetype) {
-        var instance = POOL.getInstance();
-        instance.entityIds = entityIds;
-        instance.archetype = archetype;
-
-        return instance;
-    }
-
-    @Override
-    public void free() {
-        POOL.free(this);
+        return this;
     }
 
 }

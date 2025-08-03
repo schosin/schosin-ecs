@@ -8,7 +8,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import de.schosin.ecs.engine.events.builtin.Event;
 import de.schosin.ecs.engine.utils.exceptions.EcsEventHandlerException;
 import de.schosin.ecs.storage.api.events.StorageEvent;
 import de.schosin.ecs.utils.collections.Bag;
@@ -39,10 +38,6 @@ public class EventManager {
         }
 
         // Free builtin and storage events
-        if (event instanceof Event builtin) {
-            builtin.free();
-        }
-
         if (event instanceof StorageEvent storageEvent) {
             storageEvent.free();
         }

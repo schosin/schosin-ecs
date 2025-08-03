@@ -24,6 +24,12 @@ public class ChangeManager {
     private final EventManager eventManager;
     private final EntityManager entityManager;
 
+    private final EntityInsertedEvent insertedEvent = EntityInsertedEvent.get();
+    private final EntitiesInsertedEvent entitiesInsertedEvent = EntitiesInsertedEvent.get();
+    private final BeforeEntityUpdateEvent beforeEvent = BeforeEntityUpdateEvent.get();
+    private final EntityUpdatedEvent afterEvent = EntityUpdatedEvent.get();
+    private final EntityRemovedEvent removedEvent = EntityRemovedEvent.get();
+
     private BitVector deletedEntities;
     private BitVector deletedEntitiesOverflow;
 
@@ -45,7 +51,7 @@ public class ChangeManager {
 
     public void inserted(int entityId, Archetype archetype) {
         // Dispatch event, return early if no handlers
-        if (!eventManager.dispatchEvent(EntityInsertedEvent.get(entityId, archetype))) {
+        if (!eventManager.dispatchEvent(insertedEvent.with(entityId, archetype))) {
             return;
         }
 
@@ -55,7 +61,7 @@ public class ChangeManager {
 
     public void inserted(ImmutableIntBag entityIds, Archetype archetype) {
         // Dispatch event, skip if no handlers
-        if (!eventManager.dispatchEvent(EntitiesInsertedEvent.get(entityIds, archetype))) {
+        if (!eventManager.dispatchEvent(entitiesInsertedEvent.with(entityIds, archetype))) {
             return;
         }
 
@@ -169,7 +175,7 @@ public class ChangeManager {
         }
 
         // Notify handlers
-        eventManager.dispatchEvent(EntityRemovedEvent.get(entityId, archetype));
+        eventManager.dispatchEvent(removedEvent.with(entityId, archetype));
 
         // Delete entity
         entityManager.deleteEntity(entityId);
@@ -187,14 +193,14 @@ public class ChangeManager {
 
         // Dispatch before event
         var previousArchetype = entityManager.getArchetype(entityId);
-        eventManager.dispatchEvent(BeforeEntityUpdateEvent.get(entityId, previousArchetype, pendingArchetype));
+        eventManager.dispatchEvent(beforeEvent.with(entityId, previousArchetype, pendingArchetype));
 
         // Apply changes
         storageEngine.flushChanges(entityId);
         entityManager.updateArchetype(entityId, pendingArchetype);
 
         // Dispatch after event
-        eventManager.dispatchEvent(EntityUpdatedEvent.get(entityId, previousArchetype, pendingArchetype));
+        eventManager.dispatchEvent(afterEvent.with(entityId, previousArchetype, pendingArchetype));
     }
 
     public void deleteEntity(int entityId) {

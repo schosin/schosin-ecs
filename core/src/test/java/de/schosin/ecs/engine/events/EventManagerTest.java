@@ -246,9 +246,9 @@ class EventManagerTest extends AbstractWorldTest {
             eventManager.registerEventHandler((Class) eventType, handler);
 
             // Call
-            eventManager.dispatchEvent(EntityInsertedEvent.get(0, null));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(0, null, null));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(0, null));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
+            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
 
             // Verify
             assertThat(this.events).hasSameSizeAs(expectedEvents);
@@ -260,21 +260,21 @@ class EventManagerTest extends AbstractWorldTest {
         @SuppressWarnings({ "unchecked", "rawtypes" })
         void testEntityEventHandlers_WhenRegisteredAfterFirstDispatch(Class<?> eventType, EventHandler<?> handler, Set<Class<?>> expectedEvents) {
             // Setup
-            eventManager.dispatchEvent(EntityInsertedEvent.get(0, null));
-            eventManager.dispatchEvent(EntityInsertedEvent.get(0, null));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
 
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(0, null, null));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(0, null, null));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
 
-            eventManager.dispatchEvent(EntityRemovedEvent.get(0, null));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(0, null));
+            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
+            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
 
             eventManager.registerEventHandler((Class) eventType, handler);
 
             // Call
-            eventManager.dispatchEvent(EntityInsertedEvent.get(0, null));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get(0, null, null));
-            eventManager.dispatchEvent(EntityRemovedEvent.get(0, null));
+            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
+            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
+            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
 
             // Verify
             assertThat(this.events).hasSameSizeAs(expectedEvents);
