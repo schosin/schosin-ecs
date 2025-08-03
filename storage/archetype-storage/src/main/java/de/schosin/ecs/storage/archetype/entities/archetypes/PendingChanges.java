@@ -5,6 +5,7 @@ import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.Relations.ComponentRelations;
 import de.schosin.ecs.api.components.Relations.EntityRelations;
+import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationType;
@@ -105,7 +106,7 @@ public class PendingChanges {
 
         // Undo remove
         if (removedTypes.remove(type)) {
-            pendingArchetypeNode = pendingArchetypeNode.removeComponentType(type);
+            pendingArchetypeNode = pendingArchetypeNode.addComponentType(type);
         }
 
         // Don't add if type already part of current archetype (no archetype change)
@@ -118,6 +119,7 @@ public class PendingChanges {
 
         // Add component
         switch (type) {
+            case ClassType<?> classType -> addClassComponent(classType, component);
             case ComponentRelationType<?, ?> relationType -> {
                 if (!(component instanceof ComponentRelations<?, ?> relations)) {
                     addComponentRelation(relationType, (ComponentRelation<?, ?>) component);
@@ -144,10 +146,28 @@ public class PendingChanges {
                 Relations.free(relations);
             }
             case ExclusiveEntityRelationType<?> relationType -> addExclusiveEntityRelation(relationType, (EntityRelation<?>) component);
-            default -> addRegularComponent(type, component);
         }
 
         return true;
+    }
+
+    private void addClassComponent(ClassType<?> type, Object component) {
+        // Replace already added (same component added multiple times)
+        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
+            var addedType = addedTypes.get(i);
+            if (!addedType.equals(type)) {
+                continue;
+            }
+
+            // Replace added component with same type
+            added.set(i, component);
+            return;
+        }
+
+        // Add component
+        addedIds.add(componentIndex.getId(type));
+        addedTypes.add(type);
+        added.add(component);
     }
 
     private void addComponentRelation(ComponentRelationType<?, ?> relationType, ComponentRelation<?, ?> relation) {
@@ -232,35 +252,6 @@ public class PendingChanges {
         // Add relation component
         addedIds.add(componentIndex.getId(relationType));
         addedTypes.add(relationType);
-        added.add(component);
-    }
-
-    private void addRegularComponent(RegularComponentType<?, ?> type, Object component) {
-        // Replace already added (same component added multiple times)
-        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
-            var addedType = addedTypes.get(i);
-            if (!addedType.equals(type)) {
-                continue;
-            }
-
-            // Don't replace non-exclusive component relation if different target
-            if (component instanceof ComponentRelation<?, ?> relation && !((ComponentRelation<?, ?>) added.get(i)).target().equals(relation.target())) {
-                continue;
-            }
-
-            // Don't replace non-exclusive entity relation if different target
-            if (component instanceof EntityRelation<?> relation && ((EntityRelation<?>) added.get(i)).target() != relation.target()) {
-                continue;
-            }
-
-            // Replace added component with same type
-            added.set(i, component);
-            return;
-        }
-
-        // Add component
-        addedIds.add(componentIndex.getId(type));
-        addedTypes.add(type);
         added.add(component);
     }
 
