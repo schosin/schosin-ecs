@@ -235,13 +235,16 @@ class IntBagTest {
         @Test
         void testIncreasedCapacity() {
             var bag = new IntBag(64);
+            var capacity = bag.getCapacity();
 
-            bag.ensureCapacity(64);
-            assertThat(bag.getCapacity()).isEqualTo(65);
+            bag.ensureCapacity(capacity - 1);
+            assertThat(bag.getCapacity()).isEqualTo(capacity);
 
-            bag.ensureCapacity(65);
-            assertThat(bag.getCapacity()).isEqualTo(66);
+            bag.ensureCapacity(capacity);
+            assertThat(bag.getCapacity()).isEqualTo(2 * capacity);
 
+            bag.ensureCapacity(4 * capacity + 5);
+            assertThat(bag.getCapacity()).isGreaterThanOrEqualTo(4 * capacity + 6);
         }
 
     }

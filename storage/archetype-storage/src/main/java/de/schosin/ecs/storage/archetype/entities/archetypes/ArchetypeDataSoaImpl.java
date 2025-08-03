@@ -227,6 +227,8 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Track entity
             this.entities.add(entityId);
+            
+            this.pendingChanges.ensureCapacity(alive);
         }
 
         // Add to EntityIndex
@@ -285,12 +287,14 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 // Clear first component to cause error if user does not fill array
                 entityComponents[0] = null;
             }
+            
+            this.pendingChanges.ensureCapacity(alive);
         }
     }
 
     @Override
     public void addComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
-        var changes = pendingChanges.getSafe(index);
+        var changes = pendingChanges.get(index);
         if (changes == null) {
             changes = new PendingChanges(componentIndex, node);
             pendingChanges.set(index, changes);
@@ -313,7 +317,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     @Override
     public void removeComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
-        var changes = pendingChanges.getSafe(index);
+        var changes = pendingChanges.get(index);
         if (changes == null) {
             changes = new PendingChanges(componentIndex, node);
             pendingChanges.set(index, changes);
@@ -401,8 +405,8 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 this.entities.set(index, swappedEntityId);
                 this.entities.removeLast();
 
-                var pending = this.pendingChanges.getSafe(lastIndex);
-                this.pendingChanges.set(lastIndex, this.pendingChanges.getSafe(index));
+                var pending = this.pendingChanges.get(lastIndex);
+                this.pendingChanges.set(lastIndex, this.pendingChanges.get(index));
                 this.pendingChanges.set(index, pending);
 
                 // Return id of swapped entity
@@ -425,12 +429,12 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     @Override
     public PendingChanges getPendingChanges(int index) {
-        var changes = pendingChanges.getSafe(index);
+        var changes = pendingChanges.get(index);
         return changes == null || changes.isEmpty() ? null : changes;
     }
 
     private boolean hasPendingComponent(int index, int componentId) {
-        var changes = pendingChanges.getSafe(index);
+        var changes = pendingChanges.get(index);
         if (changes == null || changes.isNoAdded()) {
             return false;
         }
@@ -445,7 +449,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     private <R> R retrievePendingComponent(int index, int componentId) {
-        var changes = pendingChanges.getSafe(index);
+        var changes = pendingChanges.get(index);
         if (changes == null || changes.isNoAdded()) {
             return null;
         }
@@ -459,7 +463,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     private <R> R retrievePendingComponent(int index, RegularComponentType<?, R> componentType) {
-        var changes = pendingChanges.getSafe(index);
+        var changes = pendingChanges.get(index);
         if (changes == null || changes.isNoAdded()) {
             return null;
         }
@@ -572,6 +576,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Add entity to target
             target.entities.add(entityId);
+            target.pendingChanges.ensureCapacity(target.alive);
 
             // Reset pending changes
             changes.reset();

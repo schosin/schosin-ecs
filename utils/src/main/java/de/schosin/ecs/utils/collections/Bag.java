@@ -106,7 +106,7 @@ public final class Bag<T> implements ImmutableBag<T> {
     }
 
     public void addAll(ImmutableBag<? extends T> other) {
-        ensureCapacity(getCapacity() + other.getSize());
+        ensureCapacity(size + other.getSize());
 
         for (int i = 0, s = other.getSize(); i < s; i++) {
             add(other.get(i));
@@ -121,7 +121,7 @@ public final class Bag<T> implements ImmutableBag<T> {
 
     public void add(@NonNull T item) {
         if (data.length == size) {
-            setCapacity(data.length * 2);
+            ensureCapacity(size);
         }
 
         this.data[size++] = item;
@@ -129,8 +129,7 @@ public final class Bag<T> implements ImmutableBag<T> {
 
     public void set(int index, @Nullable T item) {
         if (index >= data.length) {
-            var newSize = Math.max(data.length * 2, index + 1);
-            setCapacity(newSize);
+            ensureCapacity(index);
         }
 
         this.data[index] = item;
@@ -225,7 +224,8 @@ public final class Bag<T> implements ImmutableBag<T> {
 
     public void ensureCapacity(int index) {
         if (index >= data.length) {
-            setCapacity(index + 1);
+            var newSize = Math.max(data.length * 2, index + 1);
+            setCapacity(newSize);
         }
     }
 

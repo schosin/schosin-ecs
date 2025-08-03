@@ -62,13 +62,10 @@ class BagTest {
             assertThat(bag.getCapacity()).isEqualTo(capacity);
 
             bag.ensureCapacity(capacity);
-            assertThat(bag.getCapacity()).isEqualTo(capacity + 1);
+            assertThat(bag.getCapacity()).isEqualTo(2 * capacity);
 
-            bag.ensureCapacity(capacity + 5);
-            assertThat(bag.getCapacity()).isGreaterThanOrEqualTo(capacity + 6);
-
-            bag.ensureCapacity(capacity + 2);
-            assertThat(bag.getCapacity()).isGreaterThanOrEqualTo(capacity + 6);
+            bag.ensureCapacity(4 * capacity + 5);
+            assertThat(bag.getCapacity()).isGreaterThanOrEqualTo(4 * capacity + 6);
         }
 
     }
