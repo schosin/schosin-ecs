@@ -9,11 +9,12 @@ import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.engine.EngineWorld.Classes;
-import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
 import de.schosin.ecs.plugins.state.State.PooledState;
+import de.schosin.ecs.storage.api.StorageEngine;
+import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.ReflectionUtils;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 public class StateManager implements StatePlugin {
@@ -32,14 +33,17 @@ public class StateManager implements StatePlugin {
         this.bagManager = world.getSingleton(BagManager.class);
         this.classes = world.getSingleton(Classes.class);
 
-        var eventManager = world.getSingleton(EventManager.class);
-        eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId()));
+        var storageEngine = world.getSingleton(StorageEngine.class);
+        storageEngine.registerDeleted(this::handleRemoved);
     }
 
-    private void handleRemoved(int entityId) {
+    @SuppressWarnings("unused")
+    private void handleRemoved(Archetype archetype, ImmutableIntBag entities) {
         var data = this.states.getData();
         for (int i = 0, s = this.states.getSize(); i < s; i++) {
-            data[i].remove(entityId);
+            for (int e = 0, es = entities.getSize(); e < es; e++) {
+                data[i].remove(entities.get(e));
+            }
         }
     }
 

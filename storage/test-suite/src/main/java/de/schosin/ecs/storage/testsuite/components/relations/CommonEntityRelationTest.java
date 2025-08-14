@@ -69,7 +69,7 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
     }
 
     @Nested
-    class ComponentRelationComponentTest extends AbstractTypeTest {
+    class EntityRelationComponentTest extends AbstractTypeTest {
 
         @ParameterizedTest
         @MethodSource(TYPES)
@@ -125,10 +125,10 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
             var entityId = world.createEntity(relation);
 
             var componentType = ComponentType.detectComponentType(relation);
-            
+
             // Call
             storageEngine.remove(entityId, ImmutableBag.of(componentType));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
@@ -139,7 +139,7 @@ public abstract class CommonEntityRelationTest<R1, X1, R2, X2, R3, X3>
     }
 
     protected <R, X> EntityRelationComponent<R, X> getComponent(RegularEntityRelationType<R, X> type) {
-        return engine.getComponent(type);
+        return storageEngine.getComponent(type);
     }
 
     record RegularComponent() {

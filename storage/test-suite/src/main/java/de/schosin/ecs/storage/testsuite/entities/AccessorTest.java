@@ -18,17 +18,17 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
     @Test
     void testGetAccessorOfUnknownEntity() {
-        assertThatThrownBy(() -> engine.getAccessor(42))
+        assertThatThrownBy(() -> storageEngine.getAccessor(42))
                 .isInstanceOf(StorageEngineException.class)
                 .hasMessageContainingAll("entity 42", "not present in storage");
     }
 
     @Test
     void testEntityId() {
-        var archetype = engine.getArchetype();
+        var archetype = storageEngine.getArchetype();
         archetype.createEntity(42, new Object[0]);
 
-        var accessor = engine.getAccessor(42);
+        var accessor = storageEngine.getAccessor(42);
         assertThat(accessor.entityId()).as("accessor.entityId() must return id when creating for entity").isEqualTo(42);
     }
 
@@ -37,7 +37,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testFree() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
             var accessor = archetype.getAccessor();
@@ -49,7 +49,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testClose() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
             var accessor = archetype.getAccessor();
@@ -61,7 +61,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testTryWithResources() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
             var accessor = archetype.getAccessor();
@@ -79,17 +79,17 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testHasComponent_NoComponentsAssigned() {
-            var type1 = engine.getComponent(component(C1.class)).id();
-            var type2 = engine.getComponent(component(C2.class)).id();
-            var relation12 = engine.getComponent(relation(C1.class, C2.class)).id();
-            var exclusive12 = engine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
-            var relation1 = engine.getComponent(relation(C1.class)).id();
-            var exclusive1 = engine.getComponent(exclusiveRelation(E1.class)).id();
+            var type1 = storageEngine.getComponent(component(C1.class)).id();
+            var type2 = storageEngine.getComponent(component(C2.class)).id();
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class)).id();
+            var exclusive12 = storageEngine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
+            var relation1 = storageEngine.getComponent(relation(C1.class)).id();
+            var exclusive1 = storageEngine.getComponent(exclusiveRelation(E1.class)).id();
 
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
-            var accessor = engine.getAccessor(42);
+            var accessor = storageEngine.getAccessor(42);
 
             // Verify
             assertThat(accessor.hasComponent(type1)).as("hasComponent must return false if not assigned to entity").isFalse();
@@ -102,21 +102,21 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testHasComponent() {
-            var type1 = engine.getComponent(component(C1.class));
-            var type2 = engine.getComponent(component(C2.class));
-            var relation12 = engine.getComponent(relation(C1.class, C2.class));
-            var exclusive12 = engine.getComponent(exclusiveRelation(E1.class, C2.class));
-            var relation1 = engine.getComponent(relation(C1.class));
-            var exclusive1 = engine.getComponent(exclusiveRelation(E1.class));
+            var type1 = storageEngine.getComponent(component(C1.class));
+            var type2 = storageEngine.getComponent(component(C2.class));
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class));
+            var exclusive12 = storageEngine.getComponent(exclusiveRelation(E1.class, C2.class));
+            var relation1 = storageEngine.getComponent(relation(C1.class));
+            var exclusive1 = storageEngine.getComponent(exclusiveRelation(E1.class));
 
-            var archetype = engine.getArchetype(type1.type(), type2.type(), relation12.type(), exclusive12.type(), relation1.type(), exclusive1.type());
+            var archetype = storageEngine.getArchetype(type1.type(), type2.type(), relation12.type(), exclusive12.type(), relation1.type(), exclusive1.type());
             archetype.createEntity(42, new Object[] {
                     new C1(), new C2(),
                     Relation.create(new C1(), new C2()), Relation.create(E1.INSTANCE, new C2()),
                     Relation.create(new C1(), 7), Relation.create(E1.INSTANCE, 7)
             });
 
-            var accessor = engine.getAccessor(42);
+            var accessor = storageEngine.getAccessor(42);
 
             // Verify
             assertThat(accessor.hasComponent(type1.id())).as("hasComponent must return true if assigned to entity").isTrue();
@@ -129,23 +129,23 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testHasPendingComponent() {
-            var type1 = engine.getComponent(component(C1.class)).id();
-            var type2 = engine.getComponent(component(C2.class)).id();
-            var relation12 = engine.getComponent(relation(C1.class, C2.class)).id();
-            var exclusive12 = engine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
-            var relation1 = engine.getComponent(relation(C1.class)).id();
-            var exclusive1 = engine.getComponent(exclusiveRelation(E1.class)).id();
+            var type1 = storageEngine.getComponent(component(C1.class)).id();
+            var type2 = storageEngine.getComponent(component(C2.class)).id();
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class)).id();
+            var exclusive12 = storageEngine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
+            var relation1 = storageEngine.getComponent(relation(C1.class)).id();
+            var exclusive1 = storageEngine.getComponent(exclusiveRelation(E1.class)).id();
 
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
-            engine.add(42, new Object[] {
+            storageEngine.add(42, new Object[] {
                     new C1(), new C2(),
                     Relation.create(new C1(), new C2()), Relation.create(E1.INSTANCE, new C2()),
                     Relation.create(new C1(), 7), Relation.create(E1.INSTANCE, 7)
             });
 
-            var accessor = engine.getAccessor(42);
+            var accessor = storageEngine.getAccessor(42);
 
             // Verify
             assertThat(accessor.hasComponent(type1)).as("hasComponent must return true if added to entity").isTrue();
@@ -172,7 +172,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Override
         protected Object getComponent(int entityId, int componentId, DataAccessor accessor) {
-            var archetype = engine.getArchetypeForEntity(entityId);
+            var archetype = storageEngine.getArchetypeForEntity(entityId);
 
             var componentIndex = archetype.getComponentIndex(componentId);
             assumeThat(componentIndex).as("can only get component by index if present in archetype").isGreaterThan(-1);
@@ -187,7 +187,7 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Override
         protected Object getComponent(int entityId, int componentId, DataAccessor accessor) {
-            var archetype = engine.getArchetypeForEntity(entityId);
+            var archetype = storageEngine.getArchetypeForEntity(entityId);
 
             var componentIndex = archetype.getComponentIndex(componentId);
             assumeThat(componentIndex).as("can only get pending component if not present in archetype").isEqualTo(-1);
@@ -203,17 +203,17 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testGetComponent_NoComponentsAssigned() {
-            var type1 = engine.getComponent(component(C1.class)).id();
-            var type2 = engine.getComponent(component(C2.class)).id();
-            var relation12 = engine.getComponent(relation(C1.class, C2.class)).id();
-            var exclusive12 = engine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
-            var relation1 = engine.getComponent(relation(C1.class)).id();
-            var exclusive1 = engine.getComponent(exclusiveRelation(E1.class)).id();
+            var type1 = storageEngine.getComponent(component(C1.class)).id();
+            var type2 = storageEngine.getComponent(component(C2.class)).id();
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class)).id();
+            var exclusive12 = storageEngine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
+            var relation1 = storageEngine.getComponent(relation(C1.class)).id();
+            var exclusive1 = storageEngine.getComponent(exclusiveRelation(E1.class)).id();
 
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
-            var accessor = engine.getAccessor(42);
+            var accessor = storageEngine.getAccessor(42);
 
             // Verify
             assertThat(getComponent(42, type1, accessor)).as("getComponent must return null if not assigned to entity").isNull();
@@ -226,12 +226,12 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testGetComponent() {
-            var type1 = engine.getComponent(component(C1.class));
-            var type2 = engine.getComponent(component(C2.class));
-            var relation12 = engine.getComponent(relation(C1.class, C2.class));
-            var exclusive12 = engine.getComponent(exclusiveRelation(E1.class, C2.class));
-            var relation1 = engine.getComponent(relation(C1.class));
-            var exclusive1 = engine.getComponent(exclusiveRelation(E1.class));
+            var type1 = storageEngine.getComponent(component(C1.class));
+            var type2 = storageEngine.getComponent(component(C2.class));
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class));
+            var exclusive12 = storageEngine.getComponent(exclusiveRelation(E1.class, C2.class));
+            var relation1 = storageEngine.getComponent(relation(C1.class));
+            var exclusive1 = storageEngine.getComponent(exclusiveRelation(E1.class));
 
             var c1 = new C1();
             var c2 = new C2();
@@ -240,14 +240,14 @@ public class AccessorTest extends AbstractStorageEngineTest {
             var entityRelation1 = Relation.create(new C1(), 7);
             var exclusiveEntity1 = Relation.create(E1.INSTANCE, 7);
 
-            var archetype = engine.getArchetype(type1.type(), type2.type(), relation12.type(), exclusive12.type(), relation1.type(), exclusive1.type());
+            var archetype = storageEngine.getArchetype(type1.type(), type2.type(), relation12.type(), exclusive12.type(), relation1.type(), exclusive1.type());
             archetype.createEntity(42, new Object[] {
                     c1, c2,
                     componentRelation12, exclusiveComponent12,
                     entityRelation1, exclusiveEntity1
             });
 
-            var accessor = engine.getAccessor(42);
+            var accessor = storageEngine.getAccessor(42);
 
             // Verify
             assertThat(getComponent(42, type1.id(), accessor)).as("getComponent must return instance if assigned to entity").isSameAs(c1);
@@ -266,12 +266,12 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testGetPendingComponent() {
-            var type1 = engine.getComponent(component(C1.class)).id();
-            var type2 = engine.getComponent(component(C2.class)).id();
-            var relation12 = engine.getComponent(relation(C1.class, C2.class)).id();
-            var exclusive12 = engine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
-            var relation1 = engine.getComponent(relation(C1.class)).id();
-            var exclusive1 = engine.getComponent(exclusiveRelation(E1.class)).id();
+            var type1 = storageEngine.getComponent(component(C1.class)).id();
+            var type2 = storageEngine.getComponent(component(C2.class)).id();
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class)).id();
+            var exclusive12 = storageEngine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
+            var relation1 = storageEngine.getComponent(relation(C1.class)).id();
+            var exclusive1 = storageEngine.getComponent(exclusiveRelation(E1.class)).id();
 
             var c1 = new C1();
             var c2 = new C2();
@@ -280,16 +280,16 @@ public class AccessorTest extends AbstractStorageEngineTest {
             var entityRelation1 = Relation.create(new C1(), 7);
             var exclusiveEntity1 = Relation.create(E1.INSTANCE, 7);
 
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             archetype.createEntity(42, new Object[0]);
 
-            engine.add(42, new Object[] {
+            storageEngine.add(42, new Object[] {
                     c1, c2,
                     componentRelation12, exclusiveComponent12,
                     entityRelation1, exclusiveEntity1
             });
 
-            var accessor = engine.getAccessor(42);
+            var accessor = storageEngine.getAccessor(42);
 
             // Verify
             assertThat(getComponent(42, type1, accessor)).as("getComponent must return instance if added to entity").isSameAs(c1);
@@ -308,24 +308,24 @@ public class AccessorTest extends AbstractStorageEngineTest {
 
         @Test
         void testNonExclusiveRelationComponents_MergesIfAlreadyExisting() {
-            var relation12 = engine.getComponent(relation(C1.class, C2.class));
-            var relation1 = engine.getComponent(relation(C1.class));
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class));
+            var relation1 = storageEngine.getComponent(relation(C1.class));
 
             var componentRelation1 = Relation.create(new C1(), new C2(42));
             var componentRelation2 = Relation.create(new C1(), new C2(9001));
             var entityRelation1 = Relation.create(new C1(), 10);
             var entityRelation2 = Relation.create(new C1(), 20);
 
-            var archetype = engine.getArchetype(relation12.type(), relation1.type());
+            var archetype = storageEngine.getArchetype(relation12.type(), relation1.type());
             archetype.createEntity(42, new Object[] {
                     componentRelation1, entityRelation1
             });
 
-            engine.add(42, new Object[] {
+            storageEngine.add(42, new Object[] {
                     componentRelation2, entityRelation2
             });
 
-            var accessor = engine.getAccessor(42);
+            var accessor = storageEngine.getAccessor(42);
 
             // Verify
             assertThat(getComponent(42, relation12.id(), accessor))

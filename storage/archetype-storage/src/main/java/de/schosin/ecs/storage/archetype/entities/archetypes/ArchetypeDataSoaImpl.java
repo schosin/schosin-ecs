@@ -1,5 +1,6 @@
 package de.schosin.ecs.storage.archetype.entities.archetypes;
 
+import java.util.Arrays;
 import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
 
@@ -26,10 +27,12 @@ import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
+import de.schosin.ecs.storage.archetype.entities.Observers;
 import de.schosin.ecs.storage.archetype.utils.results.ComponentRelationResultImpl;
 import de.schosin.ecs.storage.archetype.utils.results.EntityRelationResultImpl;
 import de.schosin.ecs.storage.archetype.utils.results.StorageRelationResult;
 import de.schosin.ecs.utils.collections.Bag;
+import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -45,9 +48,11 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     private final int id;
     private final ArchetypeGraphNode node;
 
+    private final StorageWorld world;
     private final ComponentIndex componentIndex;
     private final EntityRelationIndex relationIndex;
     private final EntityIndex entityIndex;
+    private final Observers observers;
 
     private final Bag<RegularComponentType<?, ?>> componentTypes;
     private final IntBag componentTypeIds;
@@ -64,26 +69,35 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     private final int size;
 
     private final Object[] zeroSizedTypes;
-
     private final Bag<PendingChanges> pendingChanges;
+
+    private final Bag<PendingArchetypeTransition> archetypeTransitionLookup = new Bag<>(PendingArchetypeTransition.class, 4);
+
+    private final ProcessBuffer buffer = new ProcessBuffer();
 
     private final Bag<ArchetypeMover> movers = new Bag<>(ArchetypeMover.class, 4);
     private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
 
+    private final Pool<IntBag> intBagPool = Pool.unbounded(IntBag.class, () -> new IntBag(1024), IntBag::clear);
+    private final Pool<Object[][]> componentsPool;
+
     private int alive;
+    private boolean dirty;
 
     @SuppressWarnings("unchecked")
-    public ArchetypeDataSoaImpl(int id, ArchetypeGraphNode node, ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, ArchetypeStorageConfig config,
-            StorageWorld world) {
+    public ArchetypeDataSoaImpl(int id, ArchetypeGraphNode node, ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, Observers observers,
+            ArchetypeStorageConfig config, StorageWorld world) {
 
         this.creationBatchSize = config.creationBatchSize();
 
         this.id = id;
         this.node = node;
 
+        this.world = world;
         this.componentIndex = componentIndex;
         this.relationIndex = relationIndex;
         this.entityIndex = entityIndex;
+        this.observers = observers;
 
         this.components = node.getComponents();
         this.size = components.getSize();
@@ -155,6 +169,14 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             data[i] = world.createEntityBag((Class<Object>) clazz);
         }
+
+        this.componentsPool = Pool.unbounded(Object[][].class, () -> new Object[creationBatchSize][size], this::resetPooledComponents);
+    }
+
+    private void resetPooledComponents(Object[][] components) {
+        for (int i = 0; i < creationBatchSize; i++) {
+            Arrays.fill(components[i], 0, size, null);
+        }
     }
 
     @Override
@@ -183,16 +205,20 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public ArchetypeAccessor getAccessor(int entityId) {
-        var index = entityIndex.getEntityIndex(ArchetypeDataSoaImpl.this, entityId);
-        if (index == -1) {
-            return null;
-        }
-
+    public ArchetypeAccessor getAccessor(int index) {
         var accessor = accessors.getInstance();
         accessor.index = index;
 
         return accessor;
+    }
+
+    @Override
+    public void updateAccessor(int index, ArchetypeAccessor previousAccessor) {
+        if (!(previousAccessor instanceof AccessorImpl accessor)) {
+            throw new StorageEngineException("Cannot update index accessor of unexpected type '%s': %s".formatted(previousAccessor.getClass(), previousAccessor));
+        }
+
+        accessor.index = index;
     }
 
     @Override
@@ -233,37 +259,59 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         // Add to EntityIndex
         entityIndex.add(this, entityId, index);
+
+        // Invoke observers
+        observers.triggerEntityCreated(this, entityId);
+
+        // Process changes by observers
+        entityIndex.processCreatedEntity(entityId);
     }
 
     @Override
     public void createEntities(int count, IntSupplier entityIdSupplier, ObjIntConsumer<Object[]> componentsConsumer) {
         var batchSize = creationBatchSize < count ? creationBatchSize : count;
 
-        var entityIds = new int[batchSize];
-        var components = new Object[batchSize][size];
+        var entityIds = this.intBagPool.getInstance();
+        var indices = this.intBagPool.getInstance();
+        var components = this.componentsPool.getInstance();
 
+        // Create entities in batches
         var idx = 0;
         while (count > 0) {
+            var start = idx;
+
             var batch = batchSize < count ? batchSize : count;
             count -= batch;
 
             // Fill batch
             for (int i = 0; i < batch; i++) {
-                entityIds[i] = entityIdSupplier.getAsInt();
+                entityIds.add(entityIdSupplier.getAsInt());
                 componentsConsumer.accept(components[i], idx++);
             }
 
             // Process batch
-            createEntities(entityIds, components, batch);
+            createEntities(entityIds, indices, components, start, batch);
         }
+
+        // Invoke observers
+        observers.triggerEntitiesCreated(this, entityIds);
+
+        // Process changes by observers
+        entityIndex.processCreatedEntities(entityIds);
+
+        // Free pooled items
+        this.intBagPool.free(entityIds);
+        this.intBagPool.free(indices);
+        this.componentsPool.free(components);
     }
 
-    private void createEntities(int[] entityIds, Object[][] components, int count) {
+    private void createEntities(ImmutableIntBag entityIds, IntBag indices, Object[][] components, int start, int count) {
         synchronized (entities) {
-            for (int i = 0, s = count; i < s; i++) {
+            for (int i = 0; i < count; i++) {
                 var index = alive++;
 
-                var entityId = entityIds[i];
+                var entityId = entityIds.get(start + i);
+                indices.add(index);
 
                 // Validate entity not already in storage
                 var existing = entityIndex.getArchetypeDataForEntity(entityId);
@@ -294,11 +342,23 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     @Override
     public void addComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components) {
+        // Skip if entity marked for deletion
+        if (buffer.deletedEntitiesLookup.get(entityId)) {
+            return;
+        }
+
+        // Changes in removed callbacks on deleted entities not allowed
+        if (buffer.deletedEntitiesLookupOverflow.get(entityId)) {
+            throw new StorageEngineException("Cannot add component to entity %d: Entity marked for deletion".formatted(entityId));
+        }
+
         var changes = pendingChanges.get(index);
         if (changes == null) {
             changes = new PendingChanges(componentIndex, node);
             pendingChanges.set(index, changes);
         }
+
+        var previousNode = changes.getPendingArchetypeNode();
 
         for (int i = 0, s = components.length; i < s; i++) {
             var componentType = componentTypes.get(i);
@@ -313,34 +373,121 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 adders[componentIndex].add(entityId, index, component);
             }
         }
+
+        // Track archetype changes
+        handlePendingArchetypes(entityId, previousNode, changes.getPendingArchetypeNode());
+
+        // Mark archetype as dirty
+        markDirty();
     }
 
     @Override
     public void removeComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes) {
+        // Skip if entity marked for deletion
+        if (buffer.deletedEntitiesLookup.get(entityId)) {
+            return;
+        }
+
+        // Changes in removed callbacks on deleted entities not allowed
+        if (buffer.deletedEntitiesLookupOverflow.get(entityId)) {
+            throw new StorageEngineException("Cannot remove component from entity %d: Entity marked for deletion".formatted(entityId));
+        }
+
         var changes = pendingChanges.get(index);
         if (changes == null) {
             changes = new PendingChanges(componentIndex, node);
             pendingChanges.set(index, changes);
         }
 
+        var previousNode = changes.getPendingArchetypeNode();
+
         for (int i = 0, s = componentTypes.getSize(); i < s; i++) {
             var componentType = componentTypes.get(i);
             changes.remove(componentType);
         }
+
+        // Track archetype changes
+        handlePendingArchetypes(entityId, previousNode, changes.getPendingArchetypeNode());
+
+        // Mark archetype as dirty
+        markDirty();
+    }
+
+    private void handlePendingArchetypes(int entityId, ArchetypeGraphNode previousTargetNode, ArchetypeGraphNode currentTargetNode) {
+        // Pending archetype node unchanged -> return early
+        if (previousTargetNode == currentTargetNode) {
+            return;
+        }
+
+        // Remove entity from previous target node
+        if (previousTargetNode != null) {
+            var transition = getPendingArchetypeTransition(previousTargetNode);
+            if (transition.removeEntity(entityId) && transition.entities.isEmpty()) {
+                synchronized (buffer.archetypeTransitions) {
+                    // no need for double-checked locking here
+                    buffer.archetypeTransitions.remove(transition);
+                }
+            }
+        }
+
+        // Add to pending changes if entities empty
+        if (currentTargetNode != null) {
+            var change = getPendingArchetypeTransition(currentTargetNode);
+
+            if (change.entities.isEmpty()) {
+                synchronized (buffer.archetypeTransitions) {
+                    // double-checked locking to avoid duplicates
+                    if (change.entities.isEmpty()) {
+                        buffer.archetypeTransitions.add(change);
+                    }
+                }
+            }
+
+            // Add entity to current target node
+            change.addEntity(entityId);
+        }
+    }
+
+    private PendingArchetypeTransition getPendingArchetypeTransition(ArchetypeGraphNode target) {
+        var change = this.archetypeTransitionLookup.getSafe(target.getId());
+        if (change != null) {
+            return change;
+        }
+
+        synchronized (this.archetypeTransitionLookup) {
+            change = this.archetypeTransitionLookup.getSafe(target.getId());
+            if (change != null) {
+                return change;
+            }
+
+            change = new PendingArchetypeTransition(this.observers, this.entityIndex, this.node, target);
+            this.archetypeTransitionLookup.set(target.getId(), change);
+
+            return change;
+        }
     }
 
     @Override
-    public int moveEntity(int entityId, int index) {
+    public void moveEntity(int entityId, ArchetypeGraphNode newArchetypeNode, int index) {
         // Get pending changes (must not be null if this is called)
         var changes = pendingChanges.get(index);
 
+        // Remove entity from pending archetype change
+        var transition = getPendingArchetypeTransition(newArchetypeNode);
+        if (transition.removeEntity(entityId) && transition.entities.isEmpty()) {
+            synchronized (buffer.archetypeTransitions) {
+                // no need for double-checked locking here
+                buffer.archetypeTransitions.remove(transition);
+            }
+        }
+
         // Handle archetype implementations
-        return switch (changes.getPendingArchetypeNode().getArchetype()) {
+        switch (newArchetypeNode.getArchetype()) {
             case ArchetypeDataSoaImpl archetype -> moveEntity(entityId, index, changes, archetype);
-        };
+        }
     }
 
-    private int moveEntity(int entityId, int index, PendingChanges changes, ArchetypeDataSoaImpl targetArchetype) {
+    private void moveEntity(int entityId, int index, PendingChanges changes, ArchetypeDataSoaImpl targetArchetype) {
         // Resolve archetype mover
         var mover = this.movers.getSafe(targetArchetype.id);
         if (mover == null) {
@@ -350,7 +497,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         }
 
         // Move entity data
-        return mover.moveComponent(entityId, index, changes);
+        mover.moveComponent(entityId, index, changes);
     }
 
     private ArchetypeMover createMover(ArchetypeDataSoaImpl targetArchetype) {
@@ -364,67 +511,6 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         }
 
         return new ArchetypeMover(entityIndex, this, targetArchetype, mapping);
-    }
-
-    @Override
-    public int removeEntity(int entityId, int index) {
-        if (entities.get(index) != entityId) {
-            return -1;
-        }
-
-        synchronized (this.data) {
-            if (entities.get(index) != entityId) {
-                return -1;
-            }
-
-            // Process components
-            for (int i = 0; i < size; i++) {
-                var componentData = this.data[i];
-
-                // Free component
-                if (componentData != null) {
-                    entityIndex.freeComponent(componentData.get(index));
-                }
-            }
-
-            // Remove row (decrement alive, move last row to removed index if needed)
-            var lastIndex = --alive;
-            if (index < lastIndex) {
-                // Move components of last row to removed entity's row
-                for (int i = 0; i < size; i++) {
-                    var components = data[i];
-                    if (components != null) {
-                        components.set(index, components.get(lastIndex));
-                        components.set(lastIndex, null);
-                    }
-                }
-
-                // Swap entity lookup
-                var swappedEntityId = this.entities.get(lastIndex);
-
-                this.entities.set(index, swappedEntityId);
-                this.entities.removeLast();
-
-                var pending = this.pendingChanges.get(lastIndex);
-                this.pendingChanges.set(lastIndex, this.pendingChanges.get(index));
-                this.pendingChanges.set(index, pending);
-
-                // Return id of swapped entity
-                return swappedEntityId;
-            }
-
-            // Last element removed, no swap required
-            for (int i = 0; i < size; i++) {
-                var componentData = this.data[i];
-                if (componentData != null) {
-                    componentData.set(lastIndex, null);
-                }
-            }
-
-            this.entities.removeLast();
-
-            return -1;
-        }
     }
 
     @Override
@@ -471,6 +557,163 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
+    public void markDeleted(int entityId, int index) {
+        var deletedEntitiesLookup = buffer.deletedEntitiesLookup;
+        if (deletedEntitiesLookup.setAndReturn(entityId)) {
+            buffer.deletedEntities.add(entityId);
+
+            // Mark archetype as dirty
+            markDirty();
+
+            var changes = getPendingChanges(index);
+            if (changes == null || changes.isEmpty()) {
+                return;
+            }
+
+            // Discard pending changes
+            var targetNode = changes.getPendingArchetypeNode();
+            changes.reset();
+
+            // Remove from archetype transition
+            var transition = this.archetypeTransitionLookup.get(targetNode.getId());
+            if (transition.removeEntity(entityId) && transition.entities.isEmpty()) {
+                synchronized (buffer.archetypeTransitions) {
+                    // no need for double-checked locking here
+                    buffer.archetypeTransitions.remove(transition);
+                }
+            }
+        }
+    }
+
+    private void markDirty() {
+        if (dirty) {
+            return;
+        }
+
+        this.dirty = true;
+        this.entityIndex.markDirty(this);
+    }
+
+    @Override
+    public void process() {
+        // Clear dirty flag
+        this.dirty = false;
+
+        // Swap double buffer to avoid losing updates
+        buffer.swap();
+
+        // Process deleted and updated entities
+        processDeletedEntities(buffer.deletedEntitiesOverflow);
+        processUpdatedArchetypes(buffer.archetypeTransitionsOverflow);
+
+        // Clear deleted lookup
+        buffer.deletedEntitiesLookupOverflow.clear();
+    }
+
+    private void processDeletedEntities(IntBag removedEntities) {
+        if (removedEntities.isEmpty()) {
+            return;
+        }
+
+        // Call observers
+        this.observers.triggerEntitiesDeleted(this, removedEntities);
+
+        // Iterate indices in reverse order to reduce housekeeping (deleted entity moved in bag would change index)
+        var data = removedEntities.getData();
+        for (int i = 0, s = removedEntities.getSize(); i < s; i++) {
+            var entityId = data[i];
+            var index = this.entityIndex.removeEntityIndex(entityId);
+
+            // Decrement alive count, only remove if last entity removed
+            if (index == --alive) {
+                // Remove entity
+                this.entities.removeLast();
+
+                // Remove component data
+                for (int c = 0, cs = size; c < cs; c++) {
+                    var components = this.data[c];
+
+                    // Skip for zero-sized components
+                    if (components == null) {
+                        continue;
+                    }
+
+                    // Free component of removed entity
+                    var component = components.get(index);
+                    this.entityIndex.freeComponent(component);
+
+                    // Remove reference
+                    components.set(alive, null);
+                }
+
+                // Reset pending changes
+                var changes = this.pendingChanges.get(index);
+                if (changes != null) {
+                    changes.reset();
+                }
+
+                continue;
+            }
+
+            // Remove entity by moving last entity to removed slot
+            var movedEntityId = this.entities.removeLast();
+            this.entities.set(index, movedEntityId);
+
+            // Update swapped entity reference 
+            this.entityIndex.setEntityIndex(movedEntityId, index);
+
+            // Move last component data to removed index, clear reference to last slot 
+            for (int c = 0, cs = size; c < cs; c++) {
+                var components = this.data[c];
+
+                // Skip for zero-sized components
+                if (components == null) {
+                    continue;
+                }
+
+                // Free component of removed entity
+                var component = components.get(index);
+                this.entityIndex.freeComponent(component);
+
+                // Move last data to removed slot, clear reference at last index
+                components.set(index, components.get(alive));
+                components.set(alive, null);
+            }
+
+            // Swap pending changes
+            var changes = pendingChanges.get(index);
+            this.pendingChanges.set(index, pendingChanges.get(alive));
+
+            if (changes != null) {
+                changes.reset();
+                this.pendingChanges.set(alive, changes);
+            }
+        }
+
+        // Free entity ids
+        world.freeEntityIds(removedEntities);
+
+        // Clear deleted indices
+        removedEntities.clear();
+    }
+
+    private void processUpdatedArchetypes(Bag<PendingArchetypeTransition> archetypeTransitions) {
+        var s = archetypeTransitions.getSize();
+        if (s == 0) {
+            return;
+        }
+
+        // Process updated entities
+        var data = archetypeTransitions.getData();
+        for (int i = 0; i < s; i++) {
+            data[i].process();
+        }
+
+        // Clear updated archetypes
+        archetypeTransitions.clear();
+    }
+
+    @Override
     public int getId() {
         return id;
     }
@@ -495,6 +738,167 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         return obj == this;
     }
 
+    private static final class ProcessBuffer {
+
+        private BitVector deletedEntitiesLookup = new BitVector(512);
+        private BitVector deletedEntitiesLookupOverflow = new BitVector(512);
+
+        private IntBag deletedEntities = new IntBag(512);
+        private IntBag deletedEntitiesOverflow = new IntBag(512);
+
+        private Bag<PendingArchetypeTransition> archetypeTransitions = new Bag<>(PendingArchetypeTransition.class, 4);
+        private Bag<PendingArchetypeTransition> archetypeTransitionsOverflow = new Bag<>(PendingArchetypeTransition.class, 4);
+
+        private void swap() {
+            var deletedEntitiesLookup = this.deletedEntitiesLookup;
+            this.deletedEntitiesLookup = this.deletedEntitiesLookupOverflow;
+            this.deletedEntitiesLookupOverflow = deletedEntitiesLookup;
+
+            var deletedEntities = this.deletedEntities;
+            this.deletedEntities = this.deletedEntitiesOverflow;
+            this.deletedEntitiesOverflow = deletedEntities;
+
+            var archetypeTransitions = this.archetypeTransitions;
+            this.archetypeTransitions = this.archetypeTransitionsOverflow;
+            this.archetypeTransitionsOverflow = archetypeTransitions;
+        }
+
+    }
+
+    private static final class PendingArchetypeTransition {
+
+        private final Observers observers;
+        private final EntityIndex entityIndex;
+
+        private final ArchetypeGraphNode sourceNode;
+        private final ArchetypeGraphNode targetNode;
+
+        private IntBag entities = new IntBag(64);
+        private IntBag entitiesOverflow = new IntBag(64);
+
+        private IntBag entitiesLookup = new IntBag(64);
+        private IntBag entitiesLookupOverflow = new IntBag(64);
+
+        private ArchetypeUpdater updater;
+
+        public PendingArchetypeTransition(Observers observers, EntityIndex entityIndex, ArchetypeGraphNode sourceNode, ArchetypeGraphNode targetNode) {
+            this.observers = observers;
+            this.entityIndex = entityIndex;
+
+            this.sourceNode = sourceNode;
+            this.targetNode = targetNode;
+        }
+
+        public void addEntity(int entityId) {
+            this.entitiesLookup.set(entityId, this.entities.getSize());
+            this.entities.add(entityId);
+        }
+
+        public boolean removeEntity(int entityId) {
+            var index = this.entitiesLookup.get(entityId);
+            if (index == 0 && this.entities.get(index) != entityId) {
+                return false;
+            }
+
+            // Remove last index
+            var lastIndex = this.entities.getSize() - 1;
+            if (index == lastIndex) {
+                this.entitiesLookup.set(entityId, 0);
+                this.entities.removeLast();
+
+                return true;
+            }
+
+            // Swap last index to removed index
+            var moved = this.entities.get(lastIndex);
+
+            this.entitiesLookup.set(moved, index);
+            this.entities.set(index, moved);
+            this.entities.removeLast();
+
+            return true;
+        }
+
+        public void process() {
+            // Double buffering
+            var entities = this.entities;
+            this.entities = this.entitiesOverflow;
+            this.entitiesOverflow = entities;
+
+            var entitiesLookup = this.entitiesLookup;
+            this.entitiesLookup = this.entitiesLookupOverflow;
+            this.entitiesLookupOverflow = entitiesLookup;
+
+            // Instantiate updater lazily to avoid intermediate archetypes that will never contain entities
+            var updater = this.updater;
+            if (updater == null) {
+                this.updater = updater = new ArchetypeUpdater(observers, entityIndex, sourceNode, targetNode);
+            }
+
+            // Run updater, moving entities to target archetype
+            updater.process(entities);
+
+            // Clear entities
+            entitiesLookup.clear();
+            entities.clear();
+        }
+
+    }
+
+    private static final class ArchetypeUpdater {
+
+        private final Observers observers;
+        private final EntityIndex entityIndex;
+
+        private final ArchetypeDataSoaImpl source;
+        private final ArchetypeDataSoaImpl target;
+        private final ArchetypeMover mover;
+
+        private final int[] mapping;
+
+        private ArchetypeUpdater(Observers observers, EntityIndex entityIndex, ArchetypeGraphNode sourceNode, ArchetypeGraphNode targetNode) {
+            this.observers = observers;
+            this.entityIndex = entityIndex;
+
+            this.source = switch (sourceNode.getArchetype()) {
+                case ArchetypeDataSoaImpl archetype -> archetype; // switch expression to force compilation error instead of unchecked cast
+            };
+
+            this.target = switch (targetNode.getArchetype()) {
+                case ArchetypeDataSoaImpl archetype -> archetype; // switch expression to force compilation error instead of unchecked cast
+            };
+
+            this.mover = source.createMover(target);
+
+            var components = sourceNode.getComponents();
+            this.mapping = new int[components.getSize()];
+
+            for (int i = 0, s = components.getSize(); i < s; i++) {
+                this.mapping[i] = target.getComponentIndex(components.get(i).id());
+            }
+        }
+
+        public void process(IntBag entities) {
+            // Dispatch before update event
+            observers.triggerEntitiesBeforeUpdate(source, target, entities);
+
+            // Move entities and component data to new archetype
+            var data = entities.getData();
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                var entityId = data[i];
+
+                var index = entityIndex.getEntityIndex(source, entityId);
+                var changes = source.pendingChanges.get(index);
+
+                mover.moveComponent(entityId, index, changes);
+            }
+
+            // Dispatch updated event
+            observers.triggerEntitiesUpdated(target, source, entities);
+        }
+
+    }
+
     /**
      * Helper class for moving entities between {@link ArchetypeDataSoaImpl ArchetypeDataSoaImpl archetypes}. 
      */
@@ -516,9 +920,8 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
          * @param entityId id of entity
          * @param sourceIndex index of entity in source archetype
          * @param changes pending changes
-         * @return -1 or id of source entity moved to sourceIndex
          */
-        private int moveComponent(int entityId, int sourceIndex, PendingChanges changes) {
+        private void moveComponent(int entityId, int sourceIndex, PendingChanges changes) {
             var sourceData = source.data;
             var targetData = target.data;
 
@@ -575,7 +978,10 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Add entity to target
             target.entities.add(entityId);
-            target.pendingChanges.ensureCapacity(target.alive);
+            target.pendingChanges.ensureCapacity(targetIndex);
+
+            // Update entity index
+            entityIndex.setEntityIndex(entityId, target, targetIndex);
 
             // Reset pending changes
             changes.reset();
@@ -583,7 +989,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             // Return -1 if no source entity was moved
             if (movedIndex == -1) {
                 source.entities.removeLast();
-                return -1;
+                return;
             }
 
             // Update source tracking tracking
@@ -594,8 +1000,8 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             source.pendingChanges.set(movedIndex, source.pendingChanges.get(sourceIndex));
             source.pendingChanges.set(sourceIndex, movedPending);
 
-            // Return id of moved source entity  
-            return movedEntityId;
+            // Update entity index for moved entity
+            entityIndex.setEntityIndex(movedEntityId, sourceIndex);
         }
 
     }
@@ -611,7 +1017,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         @Override
         public boolean hasNext() {
-            return index < entities.getSize() - 1;
+            return index < alive - 1;
         }
 
         @Override
@@ -795,18 +1201,14 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             }
 
             switch (component) {
-                case StorageRelationResult<?> other -> store(entityId, relations, other);
+                case StorageRelationResult<?> other -> throw new IllegalArgumentException("""
+                        Cannot add relations obtained from storage. \
+                        Use Relations.copyOf to obtain a copy of an existing Relations object.
+                        """);
                 case Relations<?> other -> store(entityId, relations, other);
                 case Relation<?> relation -> store(entityId, relations, relation);
                 case null -> throw new IllegalArgumentException("Cannot add null component to relations");
                 default -> throw new IllegalArgumentException("Cannot add component of type '%s' to relations: %s".formatted(component.getClass().getName(), component));
-            }
-        }
-
-        private void store(int entityId, StorageRelationResult relations, StorageRelationResult<?> other) {
-            // Move relations over
-            while (!other.isEmpty()) {
-                store(entityId, relations, other.removeLast());
             }
         }
 

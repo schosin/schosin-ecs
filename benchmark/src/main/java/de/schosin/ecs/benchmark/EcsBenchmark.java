@@ -6,7 +6,6 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.benchmark.utils.collections.BitVectorBenchmark;
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
@@ -23,7 +22,6 @@ public abstract class EcsBenchmark extends BaseBenchmark {
     protected CompositionManager compositionManager;
     protected EntityManager entityManager;
     protected ArchetypeManager archetypeManager;
-    protected ChangeManager changeManager;
     protected TransmutationManager transmutationManager;
     protected ComponentMapperManager componentMapperManager;
 
@@ -36,7 +34,6 @@ public abstract class EcsBenchmark extends BaseBenchmark {
             this.compositionManager = world.getSingleton(CompositionManager.class);
             this.entityManager = world.getSingleton(EntityManager.class);
             this.archetypeManager = world.getSingleton(ArchetypeManager.class);
-            this.changeManager = world.getSingleton(ChangeManager.class);
             this.transmutationManager = world.getSingleton(TransmutationManager.class);
             this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
         } catch (Exception ex) {

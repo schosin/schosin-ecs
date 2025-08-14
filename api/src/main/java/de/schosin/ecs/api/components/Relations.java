@@ -53,6 +53,7 @@ public interface Relations<T extends Relation<?>> extends Result<T> {
      * This factory method is intended to be used for creating or modifying entities.
      * An instance can only be used once. For every entity a new instance has to
      * be created.
+     * Use {@link #copyOf(ComponentRelations)} to create a copy of an existing relation.
      * </p>
      * 
      * <p>
@@ -77,6 +78,7 @@ public interface Relations<T extends Relation<?>> extends Result<T> {
      * This factory method is intended to be used for creating or modifying entities.
      * An instance can only be used once. For every entity a new instance has to
      * be created.
+     * Use {@link #copyOf(EntityRelations)} to create a copy of an existing relation.
      * </p>
      * 
      * <p>
@@ -88,6 +90,28 @@ public interface Relations<T extends Relation<?>> extends Result<T> {
     @SafeVarargs
     static <R> EntityRelations<R> of(EntityRelation<R>... relations) {
         if (relations == null || relations.length == 0) {
+            throw new IllegalArgumentException("Relations must not be empty");
+        }
+
+        return RelationsHelper.create(relations);
+    }
+
+    /**
+     * Creates a copy of the passed relations.
+     */
+    static <R, T> ComponentRelations<R, T> copyOf(ComponentRelations<R, T> relations) {
+        if (relations == null || relations.size() == 0) {
+            throw new IllegalArgumentException("Relations must not be null or empty");
+        }
+
+        return RelationsHelper.create(relations);
+    }
+
+    /**
+     * Creates a copy of the passed relations.
+     */
+    static <R> EntityRelations<R> copyOf(EntityRelations<R> relations) {
+        if (relations == null || relations.size() == 0) {
             throw new IllegalArgumentException("Relations must not be empty");
         }
 
@@ -215,10 +239,45 @@ class RelationsHelper {
     }
 
     @SuppressWarnings("unchecked")
+    static synchronized <R, T> ComponentRelations<R, T> create(ComponentRelations<R, T> relations) {
+        var result = COMPONENT_RELATIONS.isEmpty() ? new ComponentRelationsImpl() : COMPONENT_RELATIONS.removeLast();
+
+        for (int i = 0, s = relations.size(); i < s; i++) {
+            var relation = relations.get(i);
+
+            if (relation.relationship() instanceof Exclusive) {
+                throw new IllegalArgumentException("Cannot create ComponentRelations with exclusive relationship: %s".formatted(relation.relationship().getClass().getSimpleName()));
+            }
+
+            result.relations.add(relation);
+        }
+
+        return result;
+
+    }
+
+    @SuppressWarnings("unchecked")
     static synchronized <R> EntityRelations<R> create(EntityRelation<R>... relations) {
         var result = ENTITY_RELATIONS.isEmpty() ? new EntityRelationsImpl() : ENTITY_RELATIONS.removeLast();
 
         for (var relation : relations) {
+            if (relation.relationship() instanceof Exclusive) {
+                throw new IllegalArgumentException("Cannot create EntityRelations with exclusive relationship: %s".formatted(relation.relationship().getClass().getSimpleName()));
+            }
+
+            result.relations.add(relation);
+        }
+
+        return result;
+    }
+
+    @SuppressWarnings("unchecked")
+    static synchronized <R> EntityRelations<R> create(EntityRelations<R> relations) {
+        var result = ENTITY_RELATIONS.isEmpty() ? new EntityRelationsImpl() : ENTITY_RELATIONS.removeLast();
+
+        for (int i = 0, s = relations.size(); i < s; i++) {
+            var relation = relations.get(i);
+
             if (relation.relationship() instanceof Exclusive) {
                 throw new IllegalArgumentException("Cannot create EntityRelations with exclusive relationship: %s".formatted(relation.relationship().getClass().getSimpleName()));
             }

@@ -73,7 +73,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(WILDCARD));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("object wildcard removes all class type components").isSameAs(emptyArchetype);
@@ -108,7 +108,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(wildcard(C12.class)));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("interface wildcard removes matching class type components").isSameAs(expectedArchetype);
@@ -185,7 +185,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(wildcardRelation(Object.class, C2.class)));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("object wildcard removes all matching component relations").isSameAs(expectedArchetype);
@@ -241,7 +241,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C12.class, C2.class)));
-            engine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("interface wildcard removes all matching component relations").isSameAs(expectedArchetype);
@@ -297,7 +297,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C1.class, Object.class)));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("object wildcard removes all matching component relations").isSameAs(expectedArchetype);
@@ -353,7 +353,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C1.class, C12.class)));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("interface wildcard removes all matching component relations").isSameAs(expectedArchetype);
@@ -447,7 +447,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(wildcardRelation(Object.class)));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("object wildcard removes all class type components").isSameAs(expectedArchetype);
@@ -488,7 +488,7 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
 
             // Call
             var archetype = removeComponents(entityId, ImmutableBag.of(wildcardRelation(C12.class)));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype).as("interface wildcard removes all class type components").isSameAs(expectedArchetype);
@@ -549,17 +549,12 @@ public class RemoveComponentsTest extends AbstractStorageEngineTest {
         var entity4 = world.createEntity(Zero1.INSTANCE, Zero2.INSTANCE);
 
         removeComponents(entity1, ImmutableBag.of(component(Zero2.class)));
-        storageEngine.flushChanges(entity1);
-
         removeComponents(entity2, ImmutableBag.of(component(Zero2.class)));
-        storageEngine.flushChanges(entity2);
-
         removeComponents(entity3, ImmutableBag.of(component(Zero2.class)));
-        storageEngine.flushChanges(entity3);
-
         removeComponents(entity4, ImmutableBag.of(component(Zero2.class)));
-        storageEngine.flushChanges(entity4);
-        
+
+        storageEngine.process();
+
         verifyDoesNotHaveComponents(entity1, Zero2.class);
         verifyArchetypeDoesNotHaveComponents(entity1, Zero2.class);
 

@@ -23,13 +23,23 @@ import de.schosin.ecs.storage.api.components.Component.ExclusiveComponentRelatio
 import de.schosin.ecs.storage.api.components.Component.ExclusiveEntityRelationData;
 import de.schosin.ecs.storage.api.components.Component.PooledComponentData;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesBeforeUpdateObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesCreatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesDeletedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesUpdatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityBeforeUpdateObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityCreatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityUpdatedObserver;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
+import de.schosin.ecs.storage.archetype.entities.Observers;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 @AutoService(StorageEngine.class)
 public class ArchetypeStorageEngine implements StorageEngine {
+
+    private final Observers observers = new Observers();
 
     private ComponentStorageImpl componentStorage;
     private EntityStorageImpl entityStorage;
@@ -40,7 +50,7 @@ public class ArchetypeStorageEngine implements StorageEngine {
 
         var componentIndex = new ComponentIndex(storageConfig.classIdCount(), storageConfig.relationCount());
         var relationIndex = new EntityRelationIndex(world);
-        var entityIndex = new EntityIndex(world, storageConfig, this, componentIndex, relationIndex);
+        var entityIndex = new EntityIndex(world, storageConfig, this, observers, componentIndex, relationIndex);
 
         this.componentStorage = new ComponentStorageImpl(world, componentIndex, entityIndex, relationIndex);
         this.entityStorage = new EntityStorageImpl(entityIndex, componentStorage);
@@ -57,6 +67,11 @@ public class ArchetypeStorageEngine implements StorageEngine {
         }
 
         return ArchetypeStorageConfig.getConfig();
+    }
+
+    @Override
+    public void process() {
+        this.entityStorage.process();
     }
 
     @Override
@@ -135,8 +150,8 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
-    public Archetype delete(int entityId) {
-        return this.entityStorage.delete(entityId);
+    public void markDeleted(int entityId) {
+        this.entityStorage.markDeleted(entityId);
     }
 
     @Override
@@ -145,8 +160,38 @@ public class ArchetypeStorageEngine implements StorageEngine {
     }
 
     @Override
-    public Archetype flushChanges(int entityId) {
-        return this.entityStorage.flushChanges(entityId);
+    public void registerCreated(EntityCreatedObserver observer) {
+        this.observers.register(observer);
+    }
+
+    @Override
+    public void registerBatchCreated(EntitiesCreatedObserver observer) {
+        this.observers.register(observer);
+    }
+
+    @Override
+    public void registerBeforeUpdate(EntityBeforeUpdateObserver observer) {
+        this.observers.register(observer);
+    }
+
+    @Override
+    public void registerUpdated(EntityUpdatedObserver observer) {
+        this.observers.register(observer);
+    }
+
+    @Override
+    public void registerBatchBeforeUpdate(EntitiesBeforeUpdateObserver observer) {
+        this.observers.register(observer);
+    }
+
+    @Override
+    public void registerBatchUpdated(EntitiesUpdatedObserver observer) {
+        this.observers.register(observer);
+    }
+
+    @Override
+    public void registerDeleted(EntitiesDeletedObserver observer) {
+        this.observers.register(observer);
     }
 
     @Override

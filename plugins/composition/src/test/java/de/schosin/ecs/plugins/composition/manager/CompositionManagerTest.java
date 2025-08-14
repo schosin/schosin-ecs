@@ -41,9 +41,6 @@ import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionData;
@@ -1160,22 +1157,6 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
     class UpdatedTest {
 
         @Test
-        void testUpdatedEntities_WhenNullPreviousComposition_Throws() {
-            var archetype = storageEngine.getArchetype(component(C1.class));
-            var event = BeforeEntityUpdateEvent.get().with(42, null, archetype);
-
-            assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
-        void testUpdatedEntities_WhenNullNewComposition_Throws() {
-            var archetype = storageEngine.getArchetype(component(C1.class));
-            var event = EntityUpdatedEvent.get().with(42, archetype, null);
-
-            assertThatThrownBy(() -> eventManager.dispatchEvent(event)).isInstanceOf(NullPointerException.class);
-        }
-
-        @Test
         void testUpdatedEntities_WhenPreviousComposition_CallsRemoved() {
             // Setup
             bagManager.ensureEntitySize(10000);
@@ -1194,10 +1175,10 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var entity1337Archetype = archetype2;
             var entity9001Archetype = archetype12;
 
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(7, entity7Archetype));
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(42, entity42Archetype));
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(1337, entity1337Archetype));
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(9001, entity9001Archetype));
+            compositionManager.handleEntityCreated(entity7Archetype, 7);
+            compositionManager.handleEntityCreated(entity42Archetype, 42);
+            compositionManager.handleEntityCreated(entity1337Archetype, 1337);
+            compositionManager.handleEntityCreated(entity9001Archetype, 9001);
 
             var removed1 = new HashSet<Integer>();
             composition1.removed(removed1::add);
@@ -1209,17 +1190,17 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             composition3.removed(removed3::add);
 
             // Update entity
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(7, entity7Archetype, archetype1));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(7, entity7Archetype, archetype1));
+            compositionManager.handleEntityBeforeUpdate(entity7Archetype, archetype1, 7);
+            compositionManager.handleEntityUpdated(archetype1, entity7Archetype, 7);
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(42, entity42Archetype, archetype12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(42, entity42Archetype, archetype12));
+            compositionManager.handleEntityBeforeUpdate(entity42Archetype, archetype12, 42);
+            compositionManager.handleEntityUpdated(archetype12, entity42Archetype, 42);
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(1337, entity1337Archetype, archetype12));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(1337, entity1337Archetype, archetype12));
+            compositionManager.handleEntityBeforeUpdate(entity1337Archetype, archetype12, 1337);
+            compositionManager.handleEntityUpdated(archetype12, entity1337Archetype, 1337);
 
-            eventManager.dispatchEvent(BeforeEntityUpdateEvent.get().with(9001, entity9001Archetype, archetype3));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(9001, entity9001Archetype, archetype3));
+            compositionManager.handleEntityBeforeUpdate(entity9001Archetype, archetype3, 9001);
+            compositionManager.handleEntityUpdated(archetype3, entity9001Archetype, 9001);
 
             // Verify
             assertThat(removed1).containsExactlyInAnyOrder(9001);
@@ -1250,7 +1231,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             } catch (StorageEngineException ex) {
                 assertThat(ex)
                         .isInstanceOf(StorageEngineException.class)
-                        .hasMessageContainingAll("entity %d".formatted(entityId), "not present in storage");
+                        .hasMessageContainingAll("entity %d".formatted(entityId), "marked for deletion");
             }
         }
 
@@ -1272,7 +1253,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             } catch (StorageEngineException ex) {
                 assertThat(ex)
                         .isInstanceOf(StorageEngineException.class)
-                        .hasMessageContainingAll("entity %d".formatted(entityId), "not present in storage");
+                        .hasMessageContainingAll("entity %d".formatted(entityId), "marked for deletion");
             }
         }
 
@@ -4786,7 +4767,6 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             // Verify
             assertThat(inserted).containsExactly(entityId);
-
         }
 
         @Test
@@ -5105,34 +5085,13 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
             // Call
             var c1 = pooled1.getInstance();
-
-            assertThatThrownBy(() -> world.createEntity(c1))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("deleted during creation");
-        }
-
-        @Test
-        void testMutationDuringCreation_WhenListenersModifyComponents_WorksIfWorldIsProcessed() {
-            // Setup composition listeners
-            var composition1 = world.createComposition(Composition.all(P1.class));
-            composition1.inserted(pooled2::add);
-
-            var composition2 = world.createComposition(Composition.all(P2.class));
-            composition2.inserted(pooled3::add);
-
-            var composition3 = world.createComposition(Composition.all(P3.class));
-            composition3.inserted(pooled1::remove);
-
-            // Call
-            var entityId = world.createEntity(pooled1.getInstance());
-
-            assertThat(world.process(1)).isTrue();
+            var entityId = world.createEntity(c1);
 
             // Verify
-            verifyHasComposition(entityId, Composition.all(P2.class, P3.class).none(P1.class));
+            assertThat(world.isActive(entityId)).isTrue();
 
-            verifyDoesNotHaveComponents(entityId, P1.class);
-            verifyHasComponents(entityId, P2.class, P3.class);
+            world.process();
+            assertThat(world.isActive(entityId)).isFalse();
         }
 
         @Test
@@ -5161,50 +5120,42 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         void testMutationAfterCreation_WhenListenersModifyComponents_WorksIfWorldIsProcessed() {
             // Setup composition listeners
             var composition1 = world.createComposition(Composition.all(P1.class));
-            composition1.inserted(pooled2::add);
+            composition1.inserted(entityId -> {
+                pooled2.add(entityId);
+
+                verifyHasComposition(entityId, Composition.all(P1.class).none(P2.class, P3.class));
+
+                verifyHasComponents(entityId, P1.class, P2.class);
+                verifyDoesNotHaveComponents(entityId, P3.class);
+            });
 
             var composition2 = world.createComposition(Composition.all(P2.class));
-            composition2.inserted(pooled3::add);
+            composition2.inserted(entityId -> {
+                pooled3.add(entityId);
+
+                verifyHasComposition(entityId, Composition.all(P1.class, P2.class).none(P3.class));
+                verifyHasComponents(entityId, P1.class, P2.class, P3.class);
+            });
 
             var composition3 = world.createComposition(Composition.all(P3.class));
-            composition3.inserted(pooled1::remove);
+            composition3.inserted(entityId -> {
+                pooled1.remove(entityId);
+
+                verifyHasComposition(entityId, Composition.all(P1.class, P2.class, P3.class));
+                verifyHasComponents(entityId, P1.class, P2.class, P3.class);
+            });
 
             var entityId = world.createEntity();
 
             // Call
             pooled1.add(entityId);
+            world.process();
 
-            // Verify first process
-            assertThat(world.process(1)).isFalse();
-            verifyHasComposition(entityId, Composition.all(P1.class).none(P2.class, P3.class));
-
-            verifyHasComponents(entityId, P1.class);
-            verifyHasComponents(entityId, P2.class);
-            verifyDoesNotHaveComponents(entityId, P3.class);
-
-            // Verify second process
-            assertThat(world.process(1)).isFalse();
-            verifyHasComposition(entityId, Composition.all(P1.class, P2.class).none(P3.class));
-
-            verifyHasComponents(entityId, P1.class);
-            verifyHasComponents(entityId, P2.class);
-            verifyHasComponents(entityId, P3.class);
-
-            // Verify third process
-            assertThat(world.process(1)).isFalse();
-            verifyHasComposition(entityId, Composition.all(P1.class, P2.class, P3.class));
-
-            verifyHasComponents(entityId, P1.class);
-            verifyHasComponents(entityId, P2.class);
-            verifyHasComponents(entityId, P3.class);
-
-            // Verify last process
-            assertThat(world.process(1)).isTrue();
+            // Verify
             verifyHasComposition(entityId, Composition.all(P2.class, P3.class).none(P1.class));
 
+            verifyHasComponents(entityId, P2.class, P3.class);
             verifyDoesNotHaveComponents(entityId, P1.class);
-            verifyHasComponents(entityId, P2.class);
-            verifyHasComponents(entityId, P3.class);
         }
 
         @Test

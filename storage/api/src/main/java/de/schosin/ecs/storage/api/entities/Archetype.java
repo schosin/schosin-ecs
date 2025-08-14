@@ -30,6 +30,14 @@ public interface Archetype {
 
     void createEntity(int entityId, Object[] components);
 
+    /**
+     * Create a batch of entities in this archetype. Will create {@code count} entities and call
+     * {@code entityIdSupplier} and {@code componentsConsumer} that many times.
+     * 
+     * @param count number of entities to create
+     * @param entityIdSupplier supplier of entity ids
+     * @param componentsConsumer consumer for filling component data for the entity by its index
+     */
     void createEntities(int count, IntSupplier entityIdSupplier, ObjIntConsumer<Object[]> componentsConsumer);
 
 }

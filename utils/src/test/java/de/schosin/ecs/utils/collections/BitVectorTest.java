@@ -456,6 +456,23 @@ class BitVectorTest {
             assertThat(vector.get(9001)).isTrue();
         }
 
+        @Test
+        void testSetAndReturn() {
+            var vector = new BitVector();
+            
+            assertThat(vector.setAndReturn(1)).isTrue();
+            assertThat(vector.setAndReturn(1)).isFalse();
+            
+            assertThat(vector.setAndReturn(2)).isTrue();
+            
+            vector.clear(2);
+            assertThat(vector.setAndReturn(2)).isTrue();
+            
+            vector.clear();
+            assertThat(vector.setAndReturn(1)).isTrue();
+            assertThat(vector.setAndReturn(2)).isTrue();
+        }
+        
     }
 
     @Nested

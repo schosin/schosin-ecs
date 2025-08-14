@@ -31,10 +31,10 @@ public class ComponentDataTest extends CommonClassTypeTest<C1, C2, C3> {
             void testZeroSizedComponents() {
                 var entityId = world.createEntity(ZeroSizedTest.INSTANCE);
 
-                var archetype = engine.getArchetype(component(ZeroSizedTest.class));
-                var component = engine.getComponent(component(ZeroSizedTest.class));
+                var archetype = storageEngine.getArchetype(component(ZeroSizedTest.class));
+                var component = storageEngine.getComponent(component(ZeroSizedTest.class));
 
-                assertThat(engine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity returns expected archetype with zero-sized components").isSameAs(archetype);
+                assertThat(storageEngine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity returns expected archetype with zero-sized components").isSameAs(archetype);
                 assertThat(component.getComponent(entityId)).as("Component.getComponent returns component instance").isSameAs(ZeroSizedTest.INSTANCE);
             }
 
@@ -42,9 +42,9 @@ public class ComponentDataTest extends CommonClassTypeTest<C1, C2, C3> {
             void testIterableAccessor() {
                 var entityId = world.createEntity(ZeroSizedTest.INSTANCE);
 
-                var archetype = engine.getArchetypeForEntity(entityId);
+                var archetype = storageEngine.getArchetypeForEntity(entityId);
 
-                var componentId = engine.getComponent(component(ZeroSizedTest.class)).id();
+                var componentId = storageEngine.getComponent(component(ZeroSizedTest.class)).id();
                 var componentIndex = archetype.getComponentIndex(componentId);
 
                 var accessor = archetype.getAccessor();
@@ -59,12 +59,12 @@ public class ComponentDataTest extends CommonClassTypeTest<C1, C2, C3> {
             void testDataAccessor() {
                 var entityId = world.createEntity(ZeroSizedTest.INSTANCE);
 
-                var archetype = engine.getArchetypeForEntity(entityId);
+                var archetype = storageEngine.getArchetypeForEntity(entityId);
 
-                var componentId = engine.getComponent(component(ZeroSizedTest.class)).id();
+                var componentId = storageEngine.getComponent(component(ZeroSizedTest.class)).id();
                 var componentIndex = archetype.getComponentIndex(componentId);
 
-                var accessor = engine.getAccessor(entityId);
+                var accessor = storageEngine.getAccessor(entityId);
                 assertThat(accessor.<ZeroSizedTest>getComponent(componentId)).as("DataAccessor returns component instance by componentId").isSameAs(ZeroSizedTest.INSTANCE);
                 assertThat(accessor.<ZeroSizedTest>getComponentByIndex(componentIndex)).as("DataAccessor returns component instance by index").isSameAs(ZeroSizedTest.INSTANCE);
             }
@@ -89,7 +89,7 @@ public class ComponentDataTest extends CommonClassTypeTest<C1, C2, C3> {
     }
 
     protected <TT> ComponentData<TT> getComponent(ClassType<TT> classType) {
-        return (ComponentData<TT>) engine.getComponent(classType);
+        return (ComponentData<TT>) storageEngine.getComponent(classType);
     }
 
     record C1() {

@@ -20,7 +20,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testNoVarargs() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
             assertThat(archetype).as("empty var args must not return null").isNotNull();
 
             assertThat(archetype.getId()).as("id must not be negative").isNotNegative();
@@ -30,7 +30,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testEmptyArray() {
-            var archetype = engine.getArchetype(new RegularComponentType<?, ?>[0]);
+            var archetype = storageEngine.getArchetype(new RegularComponentType<?, ?>[0]);
             assertThat(archetype).as("empty array must not return null").isNotNull();
 
             assertThat(archetype.getId()).as("id must not be negative").isNotNegative();
@@ -40,28 +40,28 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testSameInstanceReturned() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
 
-            assertThat(engine.getArchetype()).as("must return same archetype if queried again").isSameAs(archetype);
-            assertThat(engine.getArchetype(new RegularComponentType<?, ?>[0])).as("must return same archetype if queried again").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype()).as("must return same archetype if queried again").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype(new RegularComponentType<?, ?>[0])).as("must return same archetype if queried again").isSameAs(archetype);
         }
 
         @Test
         void testNullArray() {
-            assertThatThrownBy(() -> engine.getArchetype((RegularComponentType<?, ?>[]) null), "null array should throw an exception");
+            assertThatThrownBy(() -> storageEngine.getArchetype((RegularComponentType<?, ?>[]) null), "null array should throw an exception");
         }
 
         @Test
         void testNullTypes() {
-            assertThatThrownBy(() -> engine.getArchetype(new RegularComponentType<?, ?>[] { null }), "null types should throw an exception");
-            assertThatThrownBy(() -> engine.getArchetype(new RegularComponentType<?, ?>[] { component(C1.class), null }), "null types should throw an exception");
+            assertThatThrownBy(() -> storageEngine.getArchetype(new RegularComponentType<?, ?>[] { null }), "null types should throw an exception");
+            assertThatThrownBy(() -> storageEngine.getArchetype(new RegularComponentType<?, ?>[] { component(C1.class), null }), "null types should throw an exception");
         }
 
         @Test
         void testGetByComponentId() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
     }
@@ -71,68 +71,68 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testClassType() {
-            var archetype = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype(component(C1.class));
 
             // Verify
             assertThat(archetype.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(component(C1.class));
             assertThat(archetype.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(component(C1.class));
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testPooledClassType() {
-            var archetype = engine.getArchetype(component(P1.class));
+            var archetype = storageEngine.getArchetype(component(P1.class));
 
             // Verify
             assertThat(archetype.getComponentTypes()).as("getComponentTypes must contain only passed component type by equality").containsExactly(component(P1.class));
             assertThat(archetype.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(component(P1.class));
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testComponentRelation() {
-            var archetype = engine.getArchetype(relation(C1.class, C2.class));
+            var archetype = storageEngine.getArchetype(relation(C1.class, C2.class));
 
             // Verify
             assertThat(archetype.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(relation(C1.class, C2.class));
             assertThat(archetype.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(relation(C1.class, C2.class));
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testExclusiveComponentRelation() {
-            var archetype = engine.getArchetype(exclusiveRelation(E1.class, C2.class));
+            var archetype = storageEngine.getArchetype(exclusiveRelation(E1.class, C2.class));
 
             // Verify
             assertThat(archetype.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(exclusiveRelation(E1.class, C2.class));
             assertThat(archetype.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(exclusiveRelation(E1.class, C2.class));
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testEntityRelation() {
-            var archetype = engine.getArchetype(relation(C1.class));
+            var archetype = storageEngine.getArchetype(relation(C1.class));
 
             // Verify
             assertThat(archetype.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(relation(C1.class));
             assertThat(archetype.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(relation(C1.class));
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testExclusiveEntityRelation() {
-            var archetype = engine.getArchetype(exclusiveRelation(E1.class));
+            var archetype = storageEngine.getArchetype(exclusiveRelation(E1.class));
 
             // Verify
             assertThat(archetype.getComponentTypes()).as("getComponentTypes must contain only passed type by equality").containsExactly(exclusiveRelation(E1.class));
             assertThat(archetype.getComponents()).extracting("type").as("getComponents must match getComponentTypes").containsExactly(exclusiveRelation(E1.class));
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
     }
@@ -142,7 +142,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testClassTypes() {
-            var archetype = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype = storageEngine.getArchetype(component(C1.class), component(C2.class));
 
             // Verify
             assertThat(archetype.getComponentTypes())
@@ -151,14 +151,14 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype.getComponents()).extracting("type")
                     .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(component(C1.class), component(C2.class));
 
-            assertThat(engine.getArchetype(component(C2.class), component(C1.class))).as("order of types does not matter").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype(component(C2.class), component(C1.class))).as("order of types does not matter").isSameAs(archetype);
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testPooledClassTypes() {
-            var archetype = engine.getArchetype(component(P1.class), component(P2.class));
+            var archetype = storageEngine.getArchetype(component(P1.class), component(P2.class));
 
             // Verify
             assertThat(archetype.getComponentTypes())
@@ -167,14 +167,14 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype.getComponents()).extracting("type")
                     .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(component(P1.class), component(P2.class));
 
-            assertThat(engine.getArchetype(component(P2.class), component(P1.class))).as("order of types does not matter").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype(component(P2.class), component(P1.class))).as("order of types does not matter").isSameAs(archetype);
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testComponentRelations() {
-            var archetype = engine.getArchetype(relation(C1.class, C2.class), relation(C2.class, C1.class));
+            var archetype = storageEngine.getArchetype(relation(C1.class, C2.class), relation(C2.class, C1.class));
 
             // Verify
             assertThat(archetype.getComponentTypes())
@@ -183,14 +183,14 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype.getComponents()).extracting("type")
                     .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(relation(C1.class, C2.class), relation(C2.class, C1.class));
 
-            assertThat(engine.getArchetype(relation(C2.class, C1.class), relation(C1.class, C2.class))).as("order of types does not matter").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype(relation(C2.class, C1.class), relation(C1.class, C2.class))).as("order of types does not matter").isSameAs(archetype);
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testExclusiveComponentRelations() {
-            var archetype = engine.getArchetype(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
+            var archetype = storageEngine.getArchetype(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
 
             // Verify
             assertThat(archetype.getComponentTypes())
@@ -199,14 +199,14 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype.getComponents()).extracting("type")
                     .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(exclusiveRelation(E1.class, C2.class), exclusiveRelation(E2.class, C2.class));
 
-            assertThat(engine.getArchetype(exclusiveRelation(E2.class, C2.class), exclusiveRelation(E1.class, C2.class))).as("order of types does not matter").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype(exclusiveRelation(E2.class, C2.class), exclusiveRelation(E1.class, C2.class))).as("order of types does not matter").isSameAs(archetype);
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testEntityRelations() {
-            var archetype = engine.getArchetype(relation(C1.class), relation(C2.class));
+            var archetype = storageEngine.getArchetype(relation(C1.class), relation(C2.class));
 
             // Verify
             assertThat(archetype.getComponentTypes())
@@ -215,14 +215,14 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype.getComponents()).extracting("type")
                     .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(relation(C1.class), relation(C2.class));
 
-            assertThat(engine.getArchetype(relation(C2.class), relation(C1.class))).as("order of types does not matter").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype(relation(C2.class), relation(C1.class))).as("order of types does not matter").isSameAs(archetype);
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testExclusiveEntityRelations() {
-            var archetype = engine.getArchetype(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
+            var archetype = storageEngine.getArchetype(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
 
             // Verify
             assertThat(archetype.getComponentTypes())
@@ -231,14 +231,14 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype.getComponents()).extracting("type")
                     .as("getComponents must match getComponentTypes").containsExactlyInAnyOrder(exclusiveRelation(E1.class), exclusiveRelation(E2.class));
 
-            assertThat(engine.getArchetype(exclusiveRelation(E2.class), exclusiveRelation(E1.class))).as("order of types does not matter").isSameAs(archetype);
+            assertThat(storageEngine.getArchetype(exclusiveRelation(E2.class), exclusiveRelation(E1.class))).as("order of types does not matter").isSameAs(archetype);
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testMixedTypes() {
-            var archetype = engine.getArchetype(
+            var archetype = storageEngine.getArchetype(
                     component(C1.class),
                     component(P1.class),
                     relation(C1.class, C2.class),
@@ -264,7 +264,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
                             relation(C1.class),
                             exclusiveRelation(E1.class));
 
-            var differentOrder = engine.getArchetype(
+            var differentOrder = storageEngine.getArchetype(
                     component(P1.class),
                     component(C1.class),
                     relation(C1.class, C2.class),
@@ -274,12 +274,12 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
 
             assertThat(differentOrder).as("order of types does not matter").isSameAs(archetype);
 
-            assertThat(engine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeById(archetype.getId())).as("getArchetypeById must return same instance").isSameAs(archetype);
         }
 
         @Test
         void testDuplicateClassTypes() {
-            assertThatThrownBy(() -> engine.getArchetype(component(C1.class), component(C1.class)))
+            assertThatThrownBy(() -> storageEngine.getArchetype(component(C1.class), component(C1.class)))
                     .isInstanceOf(StorageEngineException.class)
                     .hasMessageContainingAll("duplicate component type", C1.class.getSimpleName());
         }
@@ -295,28 +295,28 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
         var type5 = relation(C1.class);
         var type6 = exclusiveRelation(E1.class);
 
-        assertThat(engine.getArchetypes()).as("only contains empty archetype if no types known").hasSize(1);
+        assertThat(storageEngine.getArchetypes()).as("only contains empty archetype if no types known").hasSize(1);
 
-        var emptyArchetype = engine.getArchetype();
-        assertThat(engine.getArchetypes()).as("only contains empty archetype if no types known").containsExactly(emptyArchetype);
+        var emptyArchetype = storageEngine.getArchetype();
+        assertThat(storageEngine.getArchetypes()).as("only contains empty archetype if no types known").containsExactly(emptyArchetype);
 
-        engine.getArchetype(type1);
-        assertThat(engine.getArchetypes()).as("returns all known types").hasSize(2);
+        storageEngine.getArchetype(type1);
+        assertThat(storageEngine.getArchetypes()).as("returns all known types").hasSize(2);
 
-        engine.getArchetype(type2);
-        assertThat(engine.getArchetypes()).as("returns all known types").hasSize(3);
+        storageEngine.getArchetype(type2);
+        assertThat(storageEngine.getArchetypes()).as("returns all known types").hasSize(3);
 
-        engine.getArchetype(type3);
-        assertThat(engine.getArchetypes()).as("returns all known types").hasSize(4);
+        storageEngine.getArchetype(type3);
+        assertThat(storageEngine.getArchetypes()).as("returns all known types").hasSize(4);
 
-        engine.getArchetype(type4);
-        assertThat(engine.getArchetypes()).as("returns all known types").hasSize(5);
+        storageEngine.getArchetype(type4);
+        assertThat(storageEngine.getArchetypes()).as("returns all known types").hasSize(5);
 
-        engine.getArchetype(type5);
-        assertThat(engine.getArchetypes()).as("returns all known types").hasSize(6);
+        storageEngine.getArchetype(type5);
+        assertThat(storageEngine.getArchetypes()).as("returns all known types").hasSize(6);
 
-        engine.getArchetype(type6);
-        assertThat(engine.getArchetypes()).as("returns all known types").hasSize(7);
+        storageEngine.getArchetype(type6);
+        assertThat(storageEngine.getArchetypes()).as("returns all known types").hasSize(7);
     }
 
     @Test
@@ -348,7 +348,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
         var updatedArchetype = storageEngine.add(entityId, new Object[] { new C1() });
         assertThat(updatedArchetype).as("add returns updated archetype").isSameAs(archetype1);
 
-        assertThat(storageEngine.flushChanges(entityId)).as("flushChanges returns updated archetype").isSameAs(archetype1);
+        storageEngine.process();
 
         // Verify
         assertThat(storageEngine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity returns old archetype after flushed add").isSameAs(archetype1);
@@ -384,7 +384,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
         var updatedArchetype = storageEngine.remove(entityId, ImmutableBag.of(component(C1.class)));
         assertThat(updatedArchetype).as("add returns updated archetype").isSameAs(emptyArchetype);
 
-        assertThat(storageEngine.flushChanges(entityId)).as("flushChanges returns updated archetype").isSameAs(emptyArchetype);
+        storageEngine.process();
 
         // Verify
         assertThat(storageEngine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity returns old archetype after flushed remove").isSameAs(updatedArchetype);
@@ -420,7 +420,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
         var updatedArchetype = storageEngine.modify(entityId, new Object[] { new C2() }, ImmutableBag.of(component(C1.class)));
         assertThat(updatedArchetype).as("add returns updated archetype").isSameAs(archetype2);
 
-        assertThat(storageEngine.flushChanges(entityId)).as("flushChanges returns updated archetype").isSameAs(archetype2);
+        storageEngine.process();
 
         // Verify
         assertThat(storageEngine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity returns updated archetype after flushed modify").isSameAs(archetype2);
@@ -439,7 +439,7 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
         var entityId = world.createEntity();
 
         storageEngine.add(entityId, new Object[] { new C1() });
-        storageEngine.flushChanges(entityId);
+        storageEngine.process();
 
         assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null if no changes").isNull();
     }
@@ -448,7 +448,8 @@ public class GetArchetypeTest extends AbstractStorageEngineTest {
     void testGetPendingArchetype_DeletedEntity() {
         var entityId = world.createEntity();
 
-        storageEngine.delete(entityId);
+        storageEngine.markDeleted(entityId);
+        storageEngine.process();
 
         assertThatThrownBy(() -> storageEngine.getPendingArchetype(entityId), "getPendingArchetype throws for deleted entities")
                 .as("getPendingArchetype throws for deleted entities").isInstanceOf(StorageEngineException.class)

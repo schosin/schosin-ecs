@@ -53,7 +53,7 @@ public class ContinuousCreationDeletionIT extends AbstractEcsIT {
 
         @Override
         public void process() {
-            var missing = 100 - composition.getCount();
+            var missing = 10 - composition.getCount();
             if (missing <= 0) {
                 return;
             }

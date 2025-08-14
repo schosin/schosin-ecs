@@ -109,7 +109,7 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
             var entityId = world.createEntity(instance);
 
             storageEngine.remove(entityId, ImmutableBag.of(classType));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(component.getInstance()).as("getInstance reuses removed instances").isSameAs(instance);
         }
@@ -136,7 +136,7 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
             var entityId = world.createEntity(instance);
 
             storageEngine.remove(entityId, ImmutableBag.of(type));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(instance.data).as("component must be reset when removed from entity").isEqualTo(-1);
         }
@@ -149,7 +149,8 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
             var instance = component.getInstance().init(42);
             var entityId = world.createEntity(instance);
 
-            storageEngine.delete(entityId);
+            storageEngine.markDeleted(entityId);
+            storageEngine.process();
 
             assertThat(instance.data).as("component must be reset when removed from entity").isEqualTo(-1);
         }
@@ -172,7 +173,7 @@ public class PooledComponentDataTest extends CommonClassTypeTest<P1, P2, P3> {
     }
 
     protected <TT extends Pooled> PooledComponentData<TT> getComponent(ClassType<TT> classType) {
-        return engine.getPooledComponent(classType);
+        return storageEngine.getPooledComponent(classType);
     }
 
     public record P1() implements Pooled {

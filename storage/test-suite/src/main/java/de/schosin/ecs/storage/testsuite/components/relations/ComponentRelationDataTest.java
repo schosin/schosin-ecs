@@ -1,6 +1,7 @@
 package de.schosin.ecs.storage.testsuite.components.relations;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assumptions.assumeThat;
 
@@ -55,6 +56,39 @@ public class ComponentRelationDataTest extends
                 .as("returns result with both relations").containsExactlyInAnyOrder(instance1, instance2);
 
         assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null if add caused no archetype change").isNull();
+    }
+
+    @Test
+    void testAddWithExistionDifferentRelation() {
+        var type1 = type1();
+        var type2 = type2();
+
+        var instance1 = Relation.create(Relationship1.A, Target1.FIRST);
+        var instance2 = Relation.create(Relationship2.FOO, Target2.TWO);
+
+        assertThat(instance2).as("must be different instances (test suite broken if this fails)").isNotSameAs(instance1);
+
+        var entityId = world.createEntity(instance1);
+        assertThat(getComponent(entityId, type1)).as("returns instance passed at creation")
+                .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with relation").containsExactlyInAnyOrder(instance1);
+
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after creation").isNull();
+
+        // Call
+        storageEngine.add(entityId, ImmutableBag.of(type2), new Object[] { instance2 });
+        storageEngine.process();
+
+        // Verify
+        assertThat(getComponent(entityId, type1)).as("returns instance passed at creation")
+                .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with relation").containsExactlyInAnyOrder(instance1);
+
+        assertThat(getComponent(entityId, type2)).as("returns added instance")
+                .as("returns result with relation").asInstanceOf(InstanceOfAssertFactories.iterable(ComponentRelation.class))
+                .as("returns result with relation").containsExactlyInAnyOrder(instance2);
+
+        assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns null after process of changes").isNull();
     }
 
     @Test
@@ -130,7 +164,7 @@ public class ComponentRelationDataTest extends
         assertThat(instance2.target()).as("relation not reset after add").isEqualTo(Target1.SECOND);
 
         // Flush add
-        storageEngine.flushChanges(entityId);
+        storageEngine.process();
 
         assertThat(instance1.target()).as("relation not reset after flush of add").isEqualTo(Target1.FIRST);
         assertThat(instance2.target()).as("relation not reset after flush of add").isEqualTo(Target1.SECOND);
@@ -142,7 +176,7 @@ public class ComponentRelationDataTest extends
         assertThat(instance2.target()).as("relation not reset before flush of removal").isEqualTo(Target1.SECOND);
 
         // Flush removal
-        storageEngine.flushChanges(entityId);
+        storageEngine.process();
 
         assertThat(instance1.target()).as("relation reset after removal flushed").isNull();
         assertThat(instance2.target()).as("relation reset after removal flushed").isNull();
@@ -202,6 +236,30 @@ public class ComponentRelationDataTest extends
                     .containsExactlyInAnyOrder(
                             tuple(relation2.relationship(), relation2.target()),
                             tuple(relation3.relationship(), relation3.target()));
+        }
+
+    }
+
+    @Nested
+    class RelationsReuseTest {
+
+        @Test
+        void testCreateEntity_UsedRelationsInstance_ThrowsIllegalArgumentException() {
+            var type = type1();
+            var component = getComponent(type);
+
+            var instance1 = Relation.create(Relationship1.A, Target1.FIRST);
+            var instance2 = Relation.create(Relationship1.A, Target1.SECOND);
+
+            var entity1 = world.createEntity(instance1, instance2);
+
+            var relations = component.getComponent(entity1);
+            assertThat(relations).as("returns relations at creation").containsExactlyInAnyOrder(instance1, instance2);
+
+            // Call
+            assertThatThrownBy(() -> world.createEntity(relations))
+                    .as("must throw an exception if relations obtained from entity added to another").isInstanceOf(IllegalArgumentException.class)
+                    .as("must throw an exception if relations obtained from entity added to another").hasMessageContainingAll("Cannot add relations", "Relations.copyOf");
         }
 
     }
@@ -392,7 +450,7 @@ public class ComponentRelationDataTest extends
     }
 
     private <R, T> ComponentRelationData<R, T> getComponent(ComponentRelationType<R, T> type) {
-        return engine.getComponent(type);
+        return storageEngine.getComponent(type);
     }
 
     @Override

@@ -29,6 +29,7 @@ import de.schosin.ecs.storage.archetype.utils.results.EntityRelationResultImpl;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableBag;
+import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.Pool;
 
 /**
@@ -44,6 +45,7 @@ public class EntityIndex {
     private final ArchetypeStorageConfig config;
 
     private final ArchetypeStorageEngine storage;
+    private final Observers observers;
 
     private final ComponentIndex componentIndex;
     private final EntityRelationIndex relationIndex;
@@ -51,29 +53,75 @@ public class EntityIndex {
     private final Bag<ArchetypePointer> lookup;
 
     private final Bag<ArchetypeData> archetypes = new Bag<>(ArchetypeData.class, 8);
+    private final ImmutableBag<Archetype> immutableArchetypes = ImmutableBag.create(archetypes);
+
+    private Bag<ArchetypeData> dirtyArchetypes = new Bag<>(ArchetypeData.class, 8);
+    private Bag<ArchetypeData> dirtyArchetypesOverflow = new Bag<>(ArchetypeData.class, 8);
+
     private final Map<BitVector, ArchetypeData> archetypesLookup = new HashMap<>();
     private final Map<BitVector, ArchetypeGraphNode> graphLookup = new HashMap<>();
-    private final ImmutableBag<Archetype> immutableArchetypes = ImmutableBag.create(archetypes);
 
     private final ArchetypeGraphNode emptyArchetypeNode;
     private final ArchetypeData emptyArchetype;
 
     private final Pool<BitVector> bitVectorPool = Pool.unbounded(BitVector.class, BitVector::new, BitVector::clear);
 
-    public EntityIndex(StorageWorld world, ArchetypeStorageConfig config, ArchetypeStorageEngine storage, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
+    public EntityIndex(StorageWorld world, ArchetypeStorageConfig config, ArchetypeStorageEngine storage, Observers observers, ComponentIndex componentIndex, EntityRelationIndex relationIndex) {
         this.world = world;
         this.config = config;
 
         this.storage = storage;
+        this.observers = observers;
         this.componentIndex = componentIndex;
         this.relationIndex = relationIndex;
 
         this.lookup = world.createEntityBag(ArchetypePointer.class);
 
-        this.emptyArchetypeNode = new ArchetypeGraphNode(componentIndex, this, new BitVector(), ImmutableBag.emptyBag());
+        this.emptyArchetypeNode = new ArchetypeGraphNode(this.graphLookup.size(), componentIndex, this, new BitVector(), ImmutableBag.emptyBag());
         this.graphLookup.put(emptyArchetypeNode.getComponentIds(), emptyArchetypeNode);
 
         this.emptyArchetype = this.emptyArchetypeNode.getArchetype();
+    }
+
+    public void process() {
+        if (this.dirtyArchetypes.isEmpty()) {
+            return;
+        }
+
+        var attempts = config.processAttempts();
+
+        while (attempts-- > 0) {
+            // Double buffering
+            var dirtyArchetypes = this.dirtyArchetypes;
+            this.dirtyArchetypes = this.dirtyArchetypesOverflow;
+            this.dirtyArchetypesOverflow = dirtyArchetypes;
+
+            // Process dirty archetypes
+            var data = dirtyArchetypes.getData();
+            for (int i = 0, s = dirtyArchetypes.getSize(); i < s; i++) {
+                data[i].process();
+            }
+
+            // Clear bag
+            dirtyArchetypes.clear();
+
+            // Return if no more changes
+            if (this.dirtyArchetypes.isEmpty()) {
+                return;
+            }
+        }
+
+        // Throw error if changes remain after configured number of attempts
+        throw new StorageEngineException("""
+                Processing changes did not finish after %d attemtps. \
+                Set propery '%s' to increase this value.
+
+                If this error persists, make sure there are no endless loops caused by inserted/removed callbacks.
+                """.formatted(config.processAttempts(), ArchetypeStorageConfig.PROPERTY_PROCESS_ATTEMPTS));
+    }
+
+    public void markDirty(ArchetypeData archetype) {
+        this.dirtyArchetypes.add(archetype);
     }
 
     public ArchetypeData getArchetypeDataById(int archetypeId) {
@@ -203,13 +251,16 @@ public class EntityIndex {
     public ArchetypeData getArchetype(RegularComponentType<?, ?>... componentTypes) {
         return switch (componentTypes.length) {
             case 0 -> emptyArchetype;
-            case 1 -> emptyArchetypeNode.addComponentType(componentTypes[0]).getArchetype();
+            case 1 -> {
+                var componentType = componentTypes[0];
+                yield emptyArchetypeNode.addComponentType(componentType, componentIndex.getId(componentType)).getArchetype();
+            }
             default -> {
                 var result = emptyArchetypeNode;
                 for (int i = 0, s = componentTypes.length; i < s; i++) {
                     var componentType = componentTypes[i];
 
-                    var next = result.addComponentType(componentType);
+                    var next = result.addComponentType(componentType, componentIndex.getId(componentType));
                     if (next == result) {
                         throw new StorageEngineException("Cannot create archetype, detected duplicate component type: %s".formatted(componentType));
                     }
@@ -252,7 +303,7 @@ public class EntityIndex {
                 throw new IllegalArgumentException("Cannot add '%s' to archetype '%s': Component type already contained".formatted(componentType, base));
             }
 
-            result = new ArchetypeGraphNode(componentIndex, this, componentIds, components);
+            result = new ArchetypeGraphNode(this.graphLookup.size(), componentIndex, this, componentIds, components);
             this.graphLookup.put(componentIds, result);
 
             bitVectorPool.free(key);
@@ -312,7 +363,7 @@ public class EntityIndex {
 
             var componentIds = new BitVector(key);
 
-            result = new ArchetypeGraphNode(componentIndex, this, componentIds, components);
+            result = new ArchetypeGraphNode(this.graphLookup.size(), componentIndex, this, componentIds, components);
             this.graphLookup.put(componentIds, result);
 
             bitVectorPool.free(key);
@@ -321,39 +372,18 @@ public class EntityIndex {
     }
 
     private ArchetypeData createArchetype(int id, ArchetypeGraphNode node) {
-        return new ArchetypeDataSoaImpl(id, node, componentIndex, relationIndex, this, config, world);
+        return new ArchetypeDataSoaImpl(id, node, componentIndex, relationIndex, this, observers, config, world);
     }
 
-    public ArchetypeData deleteEntity(int entityId) {
+    public void markDeleted(int entityId) {
         // Lookup pointer
         var pointer = lookup.get(entityId);
         if (pointer == null || !pointer.isValid()) {
             throw new StorageEngineException("Cannot delete entity %d: Entity not present in storage".formatted(entityId));
         }
 
-        // Remove pending changes
-        var changes = getPendingChanges(entityId);
-        if (changes != null && !changes.isEmpty()) {
-            changes.reset();
-        }
-
-        // Delete entity from archetype
-        removeEntity(pointer);
-
-        return pointer.getArchetype();
-    }
-
-    public void removeEntity(ArchetypePointer pointer) {
-        // Remove entity
-        var swappedEntityId = pointer.removeEntity();
-        if (swappedEntityId > -1) {
-            // Update pointer of swapped entity
-            var swappedPointer = lookup.get(swappedEntityId);
-            swappedPointer.setIndex(pointer.getIndex());
-        }
-
-        // Clear pointer data
-        pointer.invalidate();
+        // Mark entity as deleted
+        pointer.markDeleted();
     }
 
     public PendingChanges getPendingChanges(int entityId) {
@@ -366,28 +396,20 @@ public class EntityIndex {
         return pointer.getPendingChanges();
     }
 
-    public ArchetypeData flushChanges(int entityId, ArchetypeData archetype) {
-        // Lookup pointer
-        var pointer = lookup.get(entityId);
-        var previousArchetype = pointer.getArchetype();
+    private ArchetypeData flushChanges(int entityId, ArchetypeData archetype, ArchetypePointer pointer) {
+        var newArchetypeNode = pointer.getPendingChanges().getPendingArchetypeNode();
+        var newArchetype = newArchetypeNode.getArchetype();
 
-        // Get new index for entity (appended to the end)
-        var index = archetype.getCount();
+        // Call observers
+        observers.triggerEntityBeforeUpdate(archetype, newArchetype, entityId);
 
         // Move entity to new archetype
-        var swappedEntityId = previousArchetype.moveEntity(entityId, pointer.getIndex());
+        archetype.moveEntity(entityId, newArchetypeNode, pointer.getIndex());
 
-        // Update pointer of swapped entity
-        if (swappedEntityId > -1) {
-            // Update pointer of swapped entity
-            var swappedPointer = lookup.get(swappedEntityId);
-            swappedPointer.setIndex(pointer.getIndex());
-        }
+        // Call observers
+        observers.triggerEntityUpdated(newArchetype, archetype, entityId);
 
-        // Update pointer of entity
-        pointer.setPointer(archetype, index);
-
-        return archetype;
+        return newArchetype;
     }
 
     public int getEntityIndex(ArchetypeData archetypeData, int entityId) {
@@ -399,6 +421,31 @@ public class EntityIndex {
         return pointer.getIndex();
     }
 
+    public void setEntityIndex(int entityId, int index) {
+        var pointer = lookup.get(entityId);
+        pointer.setIndex(index);
+    }
+
+    public void setEntityIndex(int entityId, ArchetypeData archetype, int index) {
+        var pointer = lookup.get(entityId);
+        pointer.updatePointer(archetype, index);
+    }
+
+    /**
+     * Removes the reference to the entity and returns the index before the removal.
+     * 
+     * @param entityId id of entity
+     * @return index before removal
+     */
+    public int removeEntityIndex(int entityId) {
+        var pointer = lookup.get(entityId);
+        var index = pointer.getIndex();
+
+        pointer.invalidate();
+
+        return index;
+    }
+
     public void freeComponent(Object component) {
         switch (component) {
             case ComponentRelationResultImpl result -> result.free();
@@ -408,6 +455,37 @@ public class EntityIndex {
             default -> {
             }
         }
+    }
+
+    public void processCreatedEntities(ImmutableIntBag entities) {
+        for (int i = 0, s = entities.getSize(); i < s; i++) {
+            processCreatedEntity(entities.get(i));
+        }
+    }
+
+    public void processCreatedEntity(int entityId) {
+        var pointer = lookup.get(entityId);
+
+        var attempts = config.creationFlushAttempts();
+
+        while (attempts-- > 0) {
+            // Retrieve changes, skip if none
+            var changes = pointer.getPendingChanges();
+            if (changes == null || changes.isEmpty()) {
+                return;
+            }
+
+            // Flush changes
+            flushChanges(entityId, pointer.getArchetype(), pointer);
+        }
+
+        // Throw error if changes remain after configured number of attempts
+        throw new StorageEngineException("""
+                Processing changes for created entity did not finish after %d attemtps. \
+                Set propery '%s' to increase this value.
+
+                If this error persists, make sure there are no endless loops caused by inserted/removed callbacks.
+                """.formatted(config.creationFlushAttempts(), ArchetypeStorageConfig.PROPERTY_CREATION_FLUSH_ATTEMPTS));
     }
 
 }
@@ -437,22 +515,28 @@ final class ArchetypePointer implements ArchetypeAccessor {
         return archetype.getPendingChanges(index);
     }
 
-    int removeEntity() {
-        return archetype.removeEntity(entityId, index);
+    public void markDeleted() {
+        archetype.markDeleted(entityId, index);
     }
 
     void setPointer(ArchetypeData archetype, int index) {
         this.archetype = archetype;
         this.index = index;
 
-        this.accessor = archetype.getAccessor(entityId);
+        this.accessor = archetype.getAccessor(index);
+    }
+
+    void updatePointer(ArchetypeData archetype, int index) {
+        this.archetype = archetype;
+        this.index = index;
+
+        this.accessor.free();
+        this.accessor = archetype.getAccessor(index);
     }
 
     void setIndex(int index) {
         this.index = index;
-
-        this.accessor.free();
-        this.accessor = archetype.getAccessor(entityId);
+        this.archetype.updateAccessor(index, this.accessor);
     }
 
     void invalidate() {

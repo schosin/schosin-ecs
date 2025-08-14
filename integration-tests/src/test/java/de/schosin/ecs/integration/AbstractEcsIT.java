@@ -6,6 +6,8 @@ import static org.awaitility.Awaitility.await;
 import java.time.Duration;
 import java.util.Random;
 
+import org.assertj.core.api.Assertions;
+
 import de.schosin.ecs.plugins.experimental.system.SystemPlugin;
 import de.schosin.ecs.test.AbstractEcsTest;
 
@@ -31,6 +33,8 @@ public abstract class AbstractEcsIT extends AbstractEcsTest<SimulationWorld> {
     }
 
     protected Simulation runSimulation(SystemPlugin systems, Duration duration) {
+        Assertions.setMaxStackTraceElementsDisplayed(100);
+        
         return runSimulation(systems, duration, getSimultationSleep());
     }
 

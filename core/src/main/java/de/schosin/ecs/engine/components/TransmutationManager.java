@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.engine.ChangeManager;
+import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.Pool;
@@ -25,15 +25,15 @@ public class TransmutationManager {
 
     }
 
-    private final ChangeManager changeManager;
+    private final StorageEngine storageEngine;
 
     private final Map<BuilderKey, AbstractTransmuter> transmuters = new ConcurrentHashMap<>();
 
     private final Pool<BuilderKey> internalKeyPool = Pool.unbounded(BuilderKey.class, () -> new BuilderKey(true));
     private final Pool<BuilderKey> keyPool = Pool.unbounded(BuilderKey.class, () -> new BuilderKey(false));
 
-    public TransmutationManager(ChangeManager changeManager) {
-        this.changeManager = changeManager;
+    public TransmutationManager(StorageEngine storageEngine) {
+        this.storageEngine = storageEngine;
     }
 
     public <T> Add<T> getAddTransmuter(RegularComponentType<T, ?> component) {
@@ -145,7 +145,8 @@ public class TransmutationManager {
                 throw new IllegalArgumentException("Expected %d added components, but got %d".formatted(addTypes.getSize(), added.length));
             }
 
-            return manager.changeManager.updateEntity(entityId, addTypes, added, removeTypes);
+            var updatedArchetype = manager.storageEngine.modify(entityId, addTypes, added, removeTypes);
+            return updatedArchetype != manager.storageEngine.getArchetypeForEntity(entityId);
         }
 
     }

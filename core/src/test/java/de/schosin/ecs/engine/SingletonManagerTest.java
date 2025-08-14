@@ -54,10 +54,9 @@ class SingletonManagerTest extends AbstractWorldTest {
             var singletonManager = new SingletonManager(null);
             var bagManager = new BagManager(1);
             var componentManager = new ComponentManager(storageEngine, eventManager, bagManager, null);
-            var entityManager = new EntityManager(null, storageEngine, bagManager);
-            var changeManager = new ChangeManager(storageEngine, eventManager, entityManager);
-            var transmutationManager = new TransmutationManager(changeManager);
-            var relationMapperManager = new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager);
+            var entityManager = new EntityManager(storageEngine, bagManager);
+            var transmutationManager = new TransmutationManager(storageEngine);
+            var relationMapperManager = new RelationMapperManager(storageEngine, bagManager, componentManager, transmutationManager);
             var componentMapperManager = new ComponentMapperManager(bagManager, componentManager, entityManager, transmutationManager, relationMapperManager);
 
             return Stream.of(
@@ -66,7 +65,6 @@ class SingletonManagerTest extends AbstractWorldTest {
                     Arguments.of(Named.of("bagManager", bagManager)),
                     Arguments.of(Named.of("componentManager", componentManager)),
                     Arguments.of(Named.of("entityManager", entityManager)),
-                    Arguments.of(Named.of("changeManager", changeManager)),
                     Arguments.of(Named.of("transmutationManager", transmutationManager)),
                     Arguments.of(Named.of("relationMapperManager", relationMapperManager)),
                     Arguments.of(Named.of("componentMapperManager", componentMapperManager)));

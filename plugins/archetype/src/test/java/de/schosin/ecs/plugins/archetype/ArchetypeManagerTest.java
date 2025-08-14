@@ -25,8 +25,6 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.test.AbstractEcsTest;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
@@ -645,8 +643,8 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
             var archetype = getArchetype(componentType);
 
             var called = new AtomicBoolean(false);
-            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                assertThat(event.archetype().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+            onEntityInserted((insertedArchetype, id) -> {
+                assertThat(insertedArchetype.getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
                 called.set(true);
             });
 
@@ -812,12 +810,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             var provider = new ComponentProvider(componentArrays);
 
-            var called = new AtomicBoolean(false);
-            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> {
-                assertThat(event.archetype().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
-                assertThat(event.entityIds().getSize()).isEqualTo(count);
-
-                called.set(true);
+            var called = new AtomicInteger(count);
+            onEntityInserted((insertedArchetype, id) -> {
+                assertThat(insertedArchetype.getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                called.decrementAndGet();
             });
 
             // Verify
@@ -834,7 +830,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 createEntities(archetype, provider);
             });
 
-            assertThat(called.get()).isTrue();
+            assertThat(called.get()).isZero();
         }
 
         @ParameterizedTest
@@ -855,12 +851,10 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             var provider = new ComponentProvider(componentArrays);
 
-            var called = new AtomicBoolean(false);
-            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> {
-                assertThat(event.archetype().getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
-                assertThat(event.entityIds().getSize()).isEqualTo(count);
-
-                called.set(true);
+            var called = new AtomicInteger(count);
+            onEntityInserted((insertedArchetype, id) -> {
+                assertThat(insertedArchetype.getComponentTypes()).containsExactlyInAnyOrder(componentTypes);
+                called.decrementAndGet();
             });
 
             // Verify
@@ -877,7 +871,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
                 createEntities(archetype, provider);
             });
 
-            assertThat(called.get()).isTrue();
+            assertThat(called.get()).isZero();
         }
 
         @Test
@@ -1070,6 +1064,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
     public enum E2 {
         INSTANCE
     }
+
     public enum E3 {
         INSTANCE
     }

@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.function.Consumer;
 
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
-import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.test.AbstractEcsTest;
 
 public abstract class AbstractStorageEngineTest extends AbstractEcsTest<TestWorld> {
@@ -16,19 +15,9 @@ public abstract class AbstractStorageEngineTest extends AbstractEcsTest<TestWorl
     protected static void noOp(RegularComponentType<?, ?> type) {
     }
 
-    protected StorageEngine engine;
-
-    @Override
-    protected TestWorld createWorld() {
-        var world = super.createWorld();
-        this.engine = world.getSingleton(StorageEngine.class);
-
-        return world;
-    }
-
     @Override
     protected void verifyArchetypeHasComponents(int entityId, RegularComponentType<?, ?>... types) {
-        var archetype = engine.getArchetypeForEntity(entityId);
+        var archetype = storageEngine.getArchetypeForEntity(entityId);
         assertThat(archetype).as("archetype exists").isNotNull();
 
         for (var type : types) {
@@ -39,7 +28,7 @@ public abstract class AbstractStorageEngineTest extends AbstractEcsTest<TestWorl
 
     @Override
     protected void verifyArchetypeDoesNotHaveComponents(int entityId, RegularComponentType<?, ?>... types) {
-        var archetype = engine.getArchetypeForEntity(entityId);
+        var archetype = storageEngine.getArchetypeForEntity(entityId);
         assertThat(archetype).as("archetype exists").isNotNull();
 
         for (var type : types) {

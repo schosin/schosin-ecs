@@ -22,7 +22,6 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
     protected BagManager bagManager;
     protected ComponentManager componentManager;
     protected EntityManager entityManager;
-    protected ChangeManager changeManager;
     protected TransmutationManager transmutationManager;
     protected ComponentMapperManager componentMapperManager;
 
@@ -37,11 +36,10 @@ public abstract class AbstractWorldTest extends AbstractEngineTest {
         this.bagManager = world.getSingleton(BagManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
-        this.changeManager = world.getSingleton(ChangeManager.class);
         this.transmutationManager = world.getSingleton(TransmutationManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
-        initializeEngineTest(componentManager, entityManager, eventManager);
+        initializeEngineTest(storageEngine, componentManager, entityManager, eventManager);
     }
 
     @SuppressWarnings("unchecked")

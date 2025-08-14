@@ -19,15 +19,17 @@ import de.schosin.ecs.utils.collections.Pool;
 public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
 
     private final EntityIndex entityIndex;
-
     private final ComponentStorage componentStorage;
 
     private final Pool<Bag<RegularComponentType<?, ?>>> componentTypesPool = Pool.unbounded(Bag.class, () -> new Bag<>(RegularComponentType.class, 8), Bag::clear);
 
     public EntityStorageImpl(EntityIndex entityIndex, ComponentStorage componentStorage) {
         this.entityIndex = entityIndex;
-
         this.componentStorage = componentStorage;
+    }
+
+    public void process() {
+        this.entityIndex.process();
     }
 
     @Override
@@ -87,8 +89,8 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
     }
 
     @Override
-    public Archetype delete(int entityId) {
-        return entityIndex.deleteEntity(entityId);
+    public void markDeleted(int entityId) {
+        entityIndex.markDeleted(entityId);
     }
 
     @Override
@@ -113,7 +115,7 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         if (archetype == null) {
             throw new StorageEngineException("Cannot add components to entity %d: Entity not present in storage".formatted(entityId));
         }
-        
+
         // Handle addition only
         if (removeTypes.isEmpty()) {
             entityIndex.addComponents(entityId, addTypes, add);
@@ -180,16 +182,6 @@ public class EntityStorageImpl implements EntityStorage, ArchetypeStorage {
         }
 
         return node.getArchetype();
-    }
-
-    @Override
-    public Archetype flushChanges(int entityId) {
-        var pendingArchetype = getPendingArchetype(entityId);
-        if (pendingArchetype == null) {
-            throw new StorageEngineException("Cannot flush changes: Entity %d has no pending changes".formatted(entityId));
-        }
-
-        return entityIndex.flushChanges(entityId, pendingArchetype);
     }
 
     @Override

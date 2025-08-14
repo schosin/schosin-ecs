@@ -29,4 +29,11 @@ public interface StorageWorld extends World {
 
     void dispatchEvent(StorageEvent event);
 
+    /**
+     * Frees the entity ids to be reused.
+     * 
+     * @param entities bag of entity ids
+     */
+    void freeEntityIds(IntBag entities);
+
 }

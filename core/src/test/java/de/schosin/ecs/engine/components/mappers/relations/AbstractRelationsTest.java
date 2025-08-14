@@ -14,7 +14,6 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 
 public abstract class AbstractRelationsTest extends AbstractWorldTest {
 
@@ -119,7 +118,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
             var entityId = world.createEntity();
 
             var updated = new ArrayList<Integer>();
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
+            onEntityUpdated((archetype, oldArchetype, id) -> updated.add(id));
 
             // Call
             add1(mapper1, entityId, relationship1);
@@ -134,7 +133,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
             var entityId = world.createEntity(getInstance1(relationship1));
 
             var updated = new ArrayList<Integer>();
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
+            onEntityUpdated((archetype, oldArchetype, id) -> updated.add(id));
 
             // Call
             add1(mapper1, entityId, relationship1);
@@ -149,7 +148,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
             var entityId = world.createEntity(getInstance1(relationship1));
 
             var updated = new ArrayList<Integer>();
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
+            onEntityUpdated((archetype, oldArchetype, id) -> updated.add(id));
 
             // Call
             mapper1.remove(entityId);
@@ -164,7 +163,7 @@ public abstract class AbstractRelationsTest extends AbstractWorldTest {
             var entityId = world.createEntity();
 
             var updated = new ArrayList<Integer>();
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
+            onEntityUpdated((archetype, oldArchetype, id) -> updated.add(id));
 
             // Call
             mapper1.remove(entityId);

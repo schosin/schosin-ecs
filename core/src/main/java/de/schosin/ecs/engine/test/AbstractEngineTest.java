@@ -29,12 +29,14 @@ import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRela
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
+import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesCreatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesDeletedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesUpdatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityCreatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityUpdatedObserver;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
@@ -47,13 +49,35 @@ import de.schosin.ecs.utils.collections.ImmutableIntBag;
  */
 public abstract class AbstractEngineTest {
 
+    @FunctionalInterface
+    public interface EntityInsertedHandler {
+        void handle(Archetype archetype, int entityId);
+    }
+
+    @FunctionalInterface
+    public interface EntityBeforeUpdateHandler {
+        void handle(Archetype archetype, Archetype newArchetype, int entityId);
+    }
+
+    @FunctionalInterface
+    public interface EntityUpdatedHandler {
+        void handle(Archetype archetype, Archetype oldArchetype, int entityId);
+    }
+
+    @FunctionalInterface
+    public interface EntityDeletedHandler {
+        void handle(Archetype archetype, int entityId);
+    }
+
     protected static final RegularComponentType<?, ?>[] NO_COMPONENTS = {};
 
+    protected StorageEngine storageEngine;
     protected ComponentManager componentManager;
     protected EntityManager entityManager;
     protected EventManager eventManager;
 
-    protected final void initializeEngineTest(ComponentManager componentManager, EntityManager entityManager, EventManager eventManager) {
+    protected final void initializeEngineTest(StorageEngine storageEngine, ComponentManager componentManager, EntityManager entityManager, EventManager eventManager) {
+        this.storageEngine = storageEngine;
         this.componentManager = componentManager;
         this.entityManager = entityManager;
         this.eventManager = eventManager;
@@ -171,7 +195,14 @@ public abstract class AbstractEngineTest {
     }
 
     protected Verify createVerify() {
-        return new VerifyImpl(componentManager, eventManager);
+        var verify = new VerifyImpl(componentManager);
+        storageEngine.registerCreated(verify);
+        storageEngine.registerBatchCreated(verify);
+        storageEngine.registerUpdated(verify);
+        storageEngine.registerBatchUpdated(verify);
+        storageEngine.registerDeleted(verify);
+
+        return verify;
     }
 
     public interface Verify extends AutoCloseable {
@@ -210,18 +241,13 @@ public abstract class AbstractEngineTest {
             List<Inserted> inserted, AtomicBoolean noMoreInserted, List<Updated> unexpectedInserted,
             List<Updated> updated, AtomicBoolean noMoreUpdated, List<Updated> unexpectedUpdated,
             List<Removed> removed, AtomicBoolean noMoreRemoved, List<Updated> unexpectedRemoved)
-            implements Verify {
+            implements Verify, EntityCreatedObserver, EntitiesCreatedObserver, EntityUpdatedObserver, EntitiesUpdatedObserver, EntitiesDeletedObserver {
 
-        private VerifyImpl(ComponentManager componentManager, EventManager eventManager) {
+        private VerifyImpl(ComponentManager componentManager) {
             this(new SoftAssertions(), componentManager,
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>(),
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>(),
                     new ArrayList<>(), new AtomicBoolean(false), new ArrayList<>());
-
-            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.archetype()));
-            eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.archetype()));
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.archetype()));
-            eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.archetype()));
         }
 
         @Override
@@ -285,11 +311,34 @@ public abstract class AbstractEngineTest {
             return this;
         }
 
-        private void handleInserted(ImmutableIntBag entityIds, Archetype archetype) {
-            for (var iter = entityIds.iterator(); iter.hasNext();) {
-                var entityId = iter.nextInt();
+        @Override
+        public void handleEntityCreated(Archetype archetype, int entityId) {
+            handleInserted(entityId, archetype);
+        }
 
-                handleInserted(entityId, archetype);
+        @Override
+        public void handleEntitiesCreated(Archetype archetype, ImmutableIntBag entities) {
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                handleInserted(entities.get(i), archetype);
+            }
+        }
+
+        @Override
+        public void handleEntityUpdated(Archetype archetype, Archetype previousArchetype, int entityId) {
+            handleUpdated(entityId, archetype);
+        }
+
+        @Override
+        public void handleEntitiesUpdated(Archetype archetype, Archetype previousArchetype, ImmutableIntBag entities) {
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                handleUpdated(entities.get(i), archetype);
+            }
+        }
+
+        @Override
+        public void handleEntitiesDeleted(Archetype archetype, ImmutableIntBag entities) {
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                handleRemoved(entities.get(i), archetype);
             }
         }
 
@@ -436,6 +485,45 @@ public abstract class AbstractEngineTest {
 
     private static ClassType<?>[] convert(Class<?>... classes) {
         return Arrays.stream(classes).map(ComponentType::component).toArray(ClassType<?>[]::new);
+    }
+
+    protected void onEntityInserted(EntityInsertedHandler handler) {
+        storageEngine.registerCreated(handler::handle);
+        storageEngine.registerBatchCreated((archetype, entities) -> {
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                handler.handle(archetype, entities.get(i));
+            }
+        });
+    }
+
+    protected void onBeforeEntityUpdate(EntityBeforeUpdateHandler handler) {
+        storageEngine.registerBatchBeforeUpdate((archetype, newArchetype, entities) -> {
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                handler.handle(archetype, newArchetype, entities.get(i));
+            }
+        });
+        storageEngine.registerBeforeUpdate((archetype, oldArchetype, entityId) -> {
+            handler.handle(archetype, oldArchetype, entityId);
+        });
+    }
+
+    protected void onEntityUpdated(EntityUpdatedHandler handler) {
+        storageEngine.registerBatchUpdated((archetype, oldArchetype, entities) -> {
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                handler.handle(archetype, oldArchetype, entities.get(i));
+            }
+        });
+        storageEngine.registerUpdated((archetype, oldArchetype, entityId) -> {
+            handler.handle(archetype, oldArchetype, entityId);
+        });
+    }
+
+    protected void onEntityDeleted(EntityDeletedHandler handler) {
+        storageEngine.registerDeleted((archetype, entities) -> {
+            for (int i = 0, s = entities.getSize(); i < s; i++) {
+                handler.handle(archetype, entities.get(i));
+            }
+        });
     }
 
 }

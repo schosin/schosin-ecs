@@ -39,19 +39,19 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testEmptyArchetype() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
 
             // Call
             archetype.createEntity(42, new Object[0]);
 
             // Verify
             assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return true after creation").isTrue();
-            assertThat(engine.getArchetypeForEntity(42)).as("getArchetypeForEntity must return same archetype after creation").isSameAs(archetype);
+            assertThat(storageEngine.getArchetypeForEntity(42)).as("getArchetypeForEntity must return same archetype after creation").isSameAs(archetype);
         }
 
         @Test
         void testEmptyArchetype_NonMatchingComponents() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
 
             assertThatThrownBy(() -> archetype.createEntity(42, new Object[] { new C1() }))
                     .as("Empty archetype must throw when components not empty").isInstanceOf(StorageEngineException.class)
@@ -60,7 +60,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testExistingEntity() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
 
             archetype.createEntity(42, new Object[0]);
 
@@ -74,7 +74,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
             @Override
             protected Archetype getArchetype(RegularComponentType<?, ?> componentType) {
-                return engine.getArchetype(componentType);
+                return storageEngine.getArchetype(componentType);
             }
 
             @Override
@@ -89,7 +89,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
             @Override
             protected Archetype getArchetype(RegularComponentType<?, ?> componentType) {
-                return engine.getArchetype(component(C3.class), componentType);
+                return storageEngine.getArchetype(component(C3.class), componentType);
             }
 
             @Override
@@ -99,7 +99,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
             @Test
             void testMismatchingOrder() {
-                var archetype = engine.getArchetype(component(C1.class), component(C2.class));
+                var archetype = storageEngine.getArchetype(component(C1.class), component(C2.class));
                 var components = new Object[] { new C2(2), new C1(1) };
 
                 assertThatThrownBy(() -> archetype.createEntity(42, components))
@@ -133,10 +133,10 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
                 // Verify
                 assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return true after creation").isTrue();
-                assertThat(engine.getArchetypeForEntity(42)).as("getArchetypeForEntity must return same archetype after creation").isSameAs(archetype);
+                assertThat(storageEngine.getArchetypeForEntity(42)).as("getArchetypeForEntity must return same archetype after creation").isSameAs(archetype);
 
-                var accessor = engine.getAccessor(42);
-                var componentId = engine.getComponent(componentType).id();
+                var accessor = storageEngine.getAccessor(42);
+                var componentId = storageEngine.getComponent(componentType).id();
 
                 var result = accessor.getComponent(componentId);
                 if (result instanceof Relations<?>) {
@@ -181,7 +181,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 archetype.createEntity(42, components);
                 assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return true after creation").isTrue();
 
-                assertThatCode(() -> engine.delete(42)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                assertThatCode(() -> storageEngine.markDeleted(42)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                assertThatCode(() -> storageEngine.process()).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
                 assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return false after deletion").isFalse();
             }
 
@@ -215,10 +216,11 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 archetype.createEntity(42, components);
                 assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return true after creation").isTrue();
 
-                assertThatCode(() -> engine.delete(42)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                assertThatCode(() -> storageEngine.markDeleted(42)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                assertThatCode(() -> storageEngine.process()).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
                 assertThat(archetype.getEntities().contains(42)).as("archetype.contains must return false after deletion").isFalse();
 
-                assertThat(engine.getArchetypeForEntity(42)).as("retrieving archetype after deletion must return null").isNull();
+                assertThat(storageEngine.getArchetypeForEntity(42)).as("retrieving archetype after deletion must return null").isNull();
             }
 
             @ParameterizedTest(name = "{0} != {1}")
@@ -306,7 +308,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
             @Override
             protected Archetype getArchetype(RegularComponentType<?, ?> componentType) {
-                return engine.getArchetype(componentType);
+                return storageEngine.getArchetype(componentType);
             }
 
             @Override
@@ -321,7 +323,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
             @Override
             protected Archetype getArchetype(RegularComponentType<?, ?> componentType) {
-                return engine.getArchetype(component(C3.class), componentType);
+                return storageEngine.getArchetype(component(C3.class), componentType);
             }
 
             @Override
@@ -336,7 +338,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
             @Override
             protected Archetype getArchetype(RegularComponentType<?, ?> componentType) {
-                return engine.getArchetype(component(Zero2.class), componentType);
+                return storageEngine.getArchetype(component(Zero2.class), componentType);
             }
 
             @Override
@@ -382,11 +384,11 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                             : null;
 
                     assertThat(archetype.getEntities().contains(entityId)).as("archetype.contains must return true after creation").isTrue();
-                    assertThat(engine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity must return same archetype after creation").isSameAs(archetype);
+                    assertThat(storageEngine.getArchetypeForEntity(entityId)).as("getArchetypeForEntity must return same archetype after creation").isSameAs(archetype);
 
-                    var accessor = engine.getAccessor(entityId);
+                    var accessor = storageEngine.getAccessor(entityId);
 
-                    var componentId = engine.getComponent(componentType).id();
+                    var componentId = storageEngine.getComponent(componentType).id();
 
                     var result = accessor.getComponent(componentId);
                     if (result instanceof Relations<?>) {
@@ -444,7 +446,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
                     assertThat(archetype.getEntities().contains(entityId)).as("archetype.contains must return false after creation").isTrue();
 
-                    assertThatCode(() -> engine.delete(entityId)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                    assertThatCode(() -> storageEngine.markDeleted(entityId)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                    assertThatCode(() -> storageEngine.process()).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
                     assertThat(archetype.getEntities().contains(entityId)).as("archetype.contains must return false after deletion").isFalse();
                 }
             }
@@ -505,7 +508,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
                     assertThat(archetype.getEntities().contains(entityId)).as("archetype.contains must return false after creation").isTrue();
 
-                    assertThatCode(() -> engine.delete(entityId)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                    assertThatCode(() -> storageEngine.markDeleted(entityId)).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
+                    assertThatCode(() -> storageEngine.process()).as("Deleting an entity created via Archetype must work").doesNotThrowAnyException();
                     assertThat(archetype.getEntities().contains(entityId)).as("archetype.contains must return false after deletion").isFalse();
                 }
             }
@@ -564,7 +568,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testEmptyArchetype() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
 
             var entity = world.createEntity();
             var entity1 = world.createEntity(new C1());
@@ -578,7 +582,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testArchetype() {
-            var archetype = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype(component(C1.class));
 
             var entity = world.createEntity();
             var entity1 = world.createEntity(new C1());
@@ -596,7 +600,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testEntityComponentOrder() {
-            var archetype = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype = storageEngine.getArchetype(component(C1.class), component(C2.class));
 
             var entity12 = world.createEntity(new C1(), new C2());
             var entity21 = world.createEntity(new C2(), new C1());
@@ -614,30 +618,9 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
     class EntityUpdatesTest {
 
         @Test
-        void testFlushUnknownEntity() {
-            assertThatThrownBy(() -> engine.flushChanges(42), "must throw when flushing an unknown entity")
-                    .as("must throw when flushing an unknown entity").isInstanceOf(StorageEngineException.class)
-                    .message()
-                    .as("must throw when flushing an unchanged entity").containsIgnoringCase("entity 42")
-                    .as("must throw when flushing an unknown entity").containsIgnoringCase("not present in storage");
-        }
-
-        @Test
-        void testFlushUnchangedEntity() {
-            var archetype = engine.getArchetype();
-            archetype.createEntity(42, new Object[0]);
-
-            assertThatThrownBy(() -> engine.flushChanges(42), "must throw when flushing an unchanged entity")
-                    .as("must throw when flushing an unchanged entity").isInstanceOf(StorageEngineException.class)
-                    .message()
-                    .as("must throw when flushing an unchanged entity").containsIgnoringCase("entity 42")
-                    .as("must throw when flushing an unchanged entity").containsIgnoringCase("no pending changes");
-        }
-
-        @Test
         void testAddComponent() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
 
             var entity1 = world.createEntity();
             var entity2 = world.createEntity();
@@ -653,7 +636,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").isEmpty();
 
             // Call
-            engine.add(entity1, new Object[] { new C1() });
+            storageEngine.add(entity1, new Object[] { new C1() });
 
             // Verify
             assertThat(archetype.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
@@ -669,8 +652,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testAddComponent_FlushedChanges() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
 
             var entity1 = world.createEntity();
             var entity2 = world.createEntity();
@@ -686,8 +669,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").isEmpty();
 
             // Call
-            engine.add(entity1, new Object[] { new C1() });
-            engine.flushChanges(entity1);
+            storageEngine.add(entity1, new Object[] { new C1() });
+            storageEngine.process();
 
             // Verify
             assertThat(archetype.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
@@ -703,8 +686,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testRemoveComponent() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
 
             var entity1 = world.createEntity(new C1());
             var entity2 = world.createEntity(new C1());
@@ -720,7 +703,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1, entity2);
 
             // Call
-            engine.remove(entity1, ImmutableBag.of(component(C1.class)));
+            storageEngine.remove(entity1, ImmutableBag.of(component(C1.class)));
 
             // Verify
             assertThat(archetype.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
@@ -736,8 +719,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testRemoveComponent_RemoveLastEntityFromArchetype() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
 
             var entity1 = world.createEntity(new C1());
 
@@ -750,7 +733,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1);
 
             // Call
-            engine.remove(entity1, ImmutableBag.of(component(C1.class)));
+            storageEngine.remove(entity1, ImmutableBag.of(component(C1.class)));
 
             // Verify
             assertThat(archetype.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
@@ -764,8 +747,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testFlushedRemoveComponent() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
 
             var entity1 = world.createEntity(new C1());
             var entity2 = world.createEntity(new C1());
@@ -781,8 +764,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1, entity2);
 
             // Call
-            engine.remove(entity1, ImmutableBag.of(component(C1.class)));
-            engine.flushChanges(entity1);
+            storageEngine.remove(entity1, ImmutableBag.of(component(C1.class)));
+            storageEngine.process();
 
             // Verify
             assertThat(archetype.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
@@ -798,8 +781,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testFlushedRemoveComponent_RemoveLastEntityFromArchetype() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
 
             var entity1 = world.createEntity(new C1());
 
@@ -812,8 +795,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1);
 
             // Call
-            engine.remove(entity1, ImmutableBag.of(component(C1.class)));
-            engine.flushChanges(entity1);
+            storageEngine.remove(entity1, ImmutableBag.of(component(C1.class)));
+            storageEngine.process();
 
             // Verify
             assertThat(archetype.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
@@ -827,10 +810,10 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testModifyComponents() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
-            var archetype2 = engine.getArchetype(component(C2.class));
-            var archetype12 = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
+            var archetype2 = storageEngine.getArchetype(component(C2.class));
+            var archetype12 = storageEngine.getArchetype(component(C1.class), component(C2.class));
 
             var entity1 = world.createEntity(new C1());
             var entity2 = world.createEntity(new C1());
@@ -849,7 +832,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype12.getCount()).as("archetype with C1 and C2 does not contain any of these entities").isZero();
 
             // Call
-            engine.modify(entity1, new Object[] { new C2() }, ImmutableBag.of(component(C1.class)));
+            storageEngine.modify(entity1, new Object[] { new C2() }, ImmutableBag.of(component(C1.class)));
 
             // Verify
             assertThat(archetype1.getEntities().contains(entity1)).as("archetype contains entity with matching components").isTrue();
@@ -868,10 +851,10 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testFlushedModifyComponents() {
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
-            var archetype2 = engine.getArchetype(component(C2.class));
-            var archetype12 = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
+            var archetype2 = storageEngine.getArchetype(component(C2.class));
+            var archetype12 = storageEngine.getArchetype(component(C1.class), component(C2.class));
 
             var entity1 = world.createEntity(new C1());
             var entity2 = world.createEntity(new C1());
@@ -890,8 +873,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype12.getCount()).as("archetype with C1 and C2 does not contain any of these entities").isZero();
 
             // Call
-            engine.modify(entity1, new Object[] { new C2() }, ImmutableBag.of(component(C1.class)));
-            engine.flushChanges(entity1);
+            storageEngine.modify(entity1, new Object[] { new C2() }, ImmutableBag.of(component(C1.class)));
+            storageEngine.process();
 
             // Verify
             assertThat(archetype1.getEntities().contains(entity1)).as("archetype does not contain entity with non-matching components").isFalse();
@@ -915,7 +898,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testDeleteEntity() {
-            var archetype = engine.getArchetype();
+            var archetype = storageEngine.getArchetype();
 
             var entity1 = world.createEntity();
             var entity2 = world.createEntity();
@@ -926,7 +909,8 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype.getEntities().iterator()).toIterable().as("getEntities contains only matching entities").containsExactlyInAnyOrder(entity1, entity2);
 
             // Call
-            engine.delete(entity1);
+            storageEngine.markDeleted(entity1);
+            storageEngine.process();
 
             // Verify
             assertThat(archetype.getEntities().contains(entity1)).as("archetype does not contain deleted entity").isFalse();
@@ -942,15 +926,15 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testGetComponentIndexById() {
-            var type1 = engine.getComponent(component(C1.class)).id();
-            var type2 = engine.getComponent(component(C2.class)).id();
-            var relation12 = engine.getComponent(relation(C1.class, C2.class)).id();
-            var exclusive12 = engine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
-            var relation1 = engine.getComponent(relation(C1.class)).id();
-            var exclusive1 = engine.getComponent(exclusiveRelation(E1.class)).id();
+            var type1 = storageEngine.getComponent(component(C1.class)).id();
+            var type2 = storageEngine.getComponent(component(C2.class)).id();
+            var relation12 = storageEngine.getComponent(relation(C1.class, C2.class)).id();
+            var exclusive12 = storageEngine.getComponent(exclusiveRelation(E1.class, C2.class)).id();
+            var relation1 = storageEngine.getComponent(relation(C1.class)).id();
+            var exclusive1 = storageEngine.getComponent(exclusiveRelation(E1.class)).id();
 
             // Verify
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
             assertThat(archetype1.getComponentIndex(type1)).as("getComponentIndex returns the index for componentIds part of the archetype").isEqualTo(0);
             assertThat(archetype1.getComponentIndex(type2)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
             assertThat(archetype1.getComponentIndex(relation12)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
@@ -958,7 +942,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype1.getComponentIndex(relation1)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
             assertThat(archetype1.getComponentIndex(exclusive1)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
 
-            var archetype2 = engine.getArchetype(component(C2.class));
+            var archetype2 = storageEngine.getArchetype(component(C2.class));
             assertThat(archetype2.getComponentIndex(type1)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
             assertThat(archetype2.getComponentIndex(type2)).as("getComponentIndex returns the index for contained componentIds").isGreaterThan(-1);
             assertThat(archetype2.getComponentIndex(relation12)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
@@ -967,7 +951,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype2.getComponentIndex(exclusive1)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
 
             // refactor to isEqualTo(0) if default storage is removed 
-            var archetype12 = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype12 = storageEngine.getArchetype(component(C1.class), component(C2.class));
             var i1 = assertThat(archetype12.getComponentIndex(type1)).as("getComponentIndex returns the index for contained componentIds").isGreaterThan(-1).actual();
             assertThat(archetype12.getComponentIndex(type2)).as("getComponentIndex returns the index for contained componentIds").isGreaterThan(i1);
             assertThat(archetype12.getComponentIndex(relation12)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
@@ -976,7 +960,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             assertThat(archetype12.getComponentIndex(exclusive1)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
 
             // refactor to isEqualTo(0), isEqualTo(1), ... if default storage is removed
-            var archetype = engine.getArchetype(component(C2.class), relation(C1.class, C2.class), exclusiveRelation(E1.class, C2.class), relation(C1.class), exclusiveRelation(E1.class));
+            var archetype = storageEngine.getArchetype(component(C2.class), relation(C1.class, C2.class), exclusiveRelation(E1.class, C2.class), relation(C1.class), exclusiveRelation(E1.class));
             assertThat(archetype.getComponentIndex(type1)).as("getComponentIndex returns -1 for componentIds not part of the archetype").isEqualTo(-1);
             i1 = assertThat(archetype.getComponentIndex(type2)).as("getComponentIndex returns the index for contained componentIds").isGreaterThan(-1).actual();
             var i2 = assertThat(archetype.getComponentIndex(relation12)).as("getComponentIndex returns the index for contained componentIds").isGreaterThan(i1).actual();
@@ -992,9 +976,9 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testSingleComponent() {
-            var componentId1 = engine.getComponent(component(C1.class)).id();
+            var componentId1 = storageEngine.getComponent(component(C1.class)).id();
 
-            var archetype = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype(component(C1.class));
 
             var component1 = new C1(1);
             var entity1 = world.createEntity(component1);
@@ -1020,10 +1004,10 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testMultipleComponents() {
-            var componentId1 = engine.getComponent(component(C1.class)).id();
-            var componentId2 = engine.getComponent(component(C2.class)).id();
+            var componentId1 = storageEngine.getComponent(component(C1.class)).id();
+            var componentId2 = storageEngine.getComponent(component(C2.class)).id();
 
-            var archetype = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype = storageEngine.getArchetype(component(C1.class), component(C2.class));
 
             var component11 = new C1(11);
             var component12 = new C2(12);
@@ -1053,9 +1037,9 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testMultipleComponents_AccessFewerComponents() {
-            var componentId1 = engine.getComponent(component(C1.class)).id();
+            var componentId1 = storageEngine.getComponent(component(C1.class)).id();
 
-            var archetype = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype = storageEngine.getArchetype(component(C1.class), component(C2.class));
 
             var component11 = new C1(11);
             var component12 = new C2(12);
@@ -1083,10 +1067,10 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testMultipleComponents_AccessMoreComponents() {
-            var componentId1 = engine.getComponent(component(C1.class)).id();
-            var componentId3 = engine.getComponent(component(C3.class)).id();
+            var componentId1 = storageEngine.getComponent(component(C1.class)).id();
+            var componentId3 = storageEngine.getComponent(component(C3.class)).id();
 
-            var archetype = engine.getArchetype(component(C1.class), component(C2.class));
+            var archetype = storageEngine.getArchetype(component(C1.class), component(C2.class));
 
             var component11 = new C1(11);
             var component12 = new C2(12);
@@ -1116,17 +1100,17 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testGetPendingComponents() {
-            var componentId1 = engine.getComponent(component(C1.class)).id();
-            var componentId2 = engine.getComponent(component(C2.class)).id();
+            var componentId1 = storageEngine.getComponent(component(C1.class)).id();
+            var componentId2 = storageEngine.getComponent(component(C2.class)).id();
 
-            var archetype = engine.getArchetype();
-            var archetype1 = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype();
+            var archetype1 = storageEngine.getArchetype(component(C1.class));
 
             var entity = world.createEntity();
             var entity1 = world.createEntity(new C1(11));
 
-            engine.add(entity, new Object[] { new C2(20) });
-            engine.add(entity1, new Object[] { new C2(21) });
+            storageEngine.add(entity, new Object[] { new C2(20) });
+            storageEngine.add(entity1, new Object[] { new C2(21) });
 
             // Test empty archetype
             var accessor = archetype.getAccessor();
@@ -1145,9 +1129,9 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
         @Test
         void testReset() {
-            var componentId1 = engine.getComponent(component(C1.class)).id();
+            var componentId1 = storageEngine.getComponent(component(C1.class)).id();
 
-            var archetype = engine.getArchetype(component(C1.class));
+            var archetype = storageEngine.getArchetype(component(C1.class));
 
             var component1 = new C1(1);
             var entity1 = world.createEntity(component1);
@@ -1192,22 +1176,22 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 var entity2 = world.createEntity(new C2());
 
                 // Verify
-                assertThat(engine.getAccessor(entity1)).as("engine.getAccessor(int) must return instance for entity").isNotNull();
-                assertThat(engine.getAccessor(entity2)).as("engine.getAccessor(int) must return instance for entity").isNotNull();
+                assertThat(storageEngine.getAccessor(entity1)).as("storageEngine.getAccessor(int) must return instance for entity").isNotNull();
+                assertThat(storageEngine.getAccessor(entity2)).as("storageEngine.getAccessor(int) must return instance for entity").isNotNull();
             }
 
             @Test
             void testAccessor() {
-                var componentId1 = engine.getComponent(component(C1.class)).id();
-                var componentId2 = engine.getComponent(component(C2.class)).id();
+                var componentId1 = storageEngine.getComponent(component(C1.class)).id();
+                var componentId2 = storageEngine.getComponent(component(C2.class)).id();
 
                 var component = new C1(42);
                 var entityId = world.createEntity(component);
 
-                var accessor = engine.getAccessor(entityId);
+                var accessor = storageEngine.getAccessor(entityId);
 
                 // Verify
-                assertThat(accessor).as("engine.getAccessor(int) must return instance for entity").isNotNull();
+                assertThat(accessor).as("storageEngine.getAccessor(int) must return instance for entity").isNotNull();
 
                 assertThat(accessor.hasComponent(componentId1)).as("hasComponent returns true for contained components").isTrue();
                 assertThat(accessor.hasComponent(componentId2)).as("hasComponent returns false for other components if not pending").isFalse();
@@ -1223,18 +1207,18 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
 
             @Test
             void testAccessor_PendingComponents() {
-                var componentId2 = engine.getComponent(component(C2.class)).id();
+                var componentId2 = storageEngine.getComponent(component(C2.class)).id();
 
                 var entityId = world.createEntity(new C1(42));
 
-                var accessor = engine.getAccessor(entityId);
+                var accessor = storageEngine.getAccessor(entityId);
 
                 // Add component
                 var component2 = new C2(9001);
                 world.getComponents(C2.class).add(entityId, component2);
 
                 // Verify
-                assertThat(accessor).as("engine.getAccessor(int) must return instance for entity").isNotNull();
+                assertThat(accessor).as("storageEngine.getAccessor(int) must return instance for entity").isNotNull();
 
                 assertThat(accessor.hasComponent(componentId2)).as("hasComponent returns true for other components if pending").isTrue();
                 assertThat(accessor.<C2>getComponent(componentId2)).as("getComponent returns instance for other components if pending").isSameAs(component2);
@@ -1249,13 +1233,13 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @Test
             void testGetComponent() {
                 // Introduce components, generate ids
-                var id1 = engine.getComponent(component(C1.class)).id();
-                var id2 = engine.getComponent(component(C2.class)).id();
-                var id3 = engine.getComponent(component(C3.class)).id();
+                var id1 = storageEngine.getComponent(component(C1.class)).id();
+                var id2 = storageEngine.getComponent(component(C2.class)).id();
+                var id3 = storageEngine.getComponent(component(C3.class)).id();
 
-                var archetype1 = engine.getArchetype(component(C1.class));
-                var archetype2 = engine.getArchetype(component(C2.class));
-                var archetype12 = engine.getArchetype(component(C3.class));
+                var archetype1 = storageEngine.getArchetype(component(C1.class));
+                var archetype2 = storageEngine.getArchetype(component(C2.class));
+                var archetype12 = storageEngine.getArchetype(component(C3.class));
 
                 // Create entities
                 var entity1 = world.createEntity(new C1(1));
@@ -1263,7 +1247,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 var entity12 = world.createEntity(new C1(10), new C2(20));
 
                 var pending12 = world.createEntity(new C1(100));
-                engine.add(pending12, new Object[] { new C2(200) });
+                storageEngine.add(pending12, new Object[] { new C2(200) });
 
                 // Verify C1 accessor 
                 var accessor1 = archetype1.getAccessor();
@@ -1314,12 +1298,12 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @MethodSource("simpleComponents")
             void testSimpleComponents(Object component) {
                 var componentType = ComponentType.detectComponentType(component);
-                var archetype = engine.getArchetype(componentType);
+                var archetype = storageEngine.getArchetype(componentType);
 
                 archetype.createEntity(7, new Object[] { component });
 
                 // Verify
-                var result = engine.getAccessor(7).getComponentByIndex(0);
+                var result = storageEngine.getAccessor(7).getComponentByIndex(0);
                 assertThat(result).as("getComponentByIndex must return component").isSameAs(component);
             }
 
@@ -1327,12 +1311,12 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @MethodSource("nonExclusiveRelations")
             void testNonExclusiveRelations(Relation<?> component) {
                 var componentType = ComponentType.detectComponentType(component);
-                var archetype = engine.getArchetype(componentType);
+                var archetype = storageEngine.getArchetype(componentType);
 
                 archetype.createEntity(7, new Object[] { component });
 
                 // Verify
-                var result = engine.getAccessor(7).getComponentByIndex(0);
+                var result = storageEngine.getAccessor(7).getComponentByIndex(0);
                 assertThat(result)
                         .as("getComponentByIndex must return relations with relation").asInstanceOf(InstanceOfAssertFactories.ITERABLE)
                         .as("getComponentByIndex must return relations with relation").containsExactly(component);
@@ -1344,10 +1328,10 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 var otherComponent = new C3();
 
                 var componentType = ComponentType.detectComponentType(component);
-                var archetype = engine.getArchetype(component(C3.class), componentType);
+                var archetype = storageEngine.getArchetype(component(C3.class), componentType);
 
-                var componentIndex = archetype.getComponentIndex(engine.getComponent(componentType).id());
-                var otherIndex = archetype.getComponentIndex(engine.getComponent(component(C3.class)).id());
+                var componentIndex = archetype.getComponentIndex(storageEngine.getComponent(componentType).id());
+                var otherIndex = archetype.getComponentIndex(storageEngine.getComponent(component(C3.class)).id());
 
                 assertThat(componentIndex).isIn(0, 1);
                 assertThat(otherIndex).isIn(0, 1).isNotEqualTo(componentIndex);
@@ -1355,7 +1339,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 archetype.createEntity(7, new Object[] { otherComponent, component });
 
                 // Verify
-                var accessor = engine.getAccessor(7);
+                var accessor = storageEngine.getAccessor(7);
 
                 var result = accessor.getComponentByIndex(componentIndex);
                 assertThat(result).as("getComponentByIndex must return component").isSameAs(component);
@@ -1370,10 +1354,10 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 var otherComponent = new C3();
 
                 var componentType = ComponentType.detectComponentType(component);
-                var archetype = engine.getArchetype(component(C3.class), componentType);
+                var archetype = storageEngine.getArchetype(component(C3.class), componentType);
 
-                var relationIndex = archetype.getComponentIndex(engine.getComponent(componentType).id());
-                var otherIndex = archetype.getComponentIndex(engine.getComponent(component(C3.class)).id());
+                var relationIndex = archetype.getComponentIndex(storageEngine.getComponent(componentType).id());
+                var otherIndex = archetype.getComponentIndex(storageEngine.getComponent(component(C3.class)).id());
 
                 assertThat(relationIndex).isIn(0, 1);
                 assertThat(otherIndex).isIn(0, 1).isNotEqualTo(relationIndex);
@@ -1381,7 +1365,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 archetype.createEntity(7, new Object[] { otherComponent, component });
 
                 // Verify
-                var accessor = engine.getAccessor(7);
+                var accessor = storageEngine.getAccessor(7);
 
                 var result = accessor.getComponentByIndex(relationIndex);
                 assertThat(result)
@@ -1413,16 +1397,16 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @ParameterizedTest
             @MethodSource("simpleComponents")
             void testSimpleComponents_EmptyArchetype(Object component) {
-                var archetype = engine.getArchetype();
+                var archetype = storageEngine.getArchetype();
 
                 var componentType = ComponentType.detectComponentType(component);
-                var componentId = engine.getComponent(componentType).id();
-                var type2 = engine.getComponent(component(C2.class)).id();
-                var type3 = engine.getComponent(component(C3.class)).id();
+                var componentId = storageEngine.getComponent(componentType).id();
+                var type2 = storageEngine.getComponent(component(C2.class)).id();
+                var type3 = storageEngine.getComponent(component(C3.class)).id();
 
                 archetype.createEntity(42, new Object[0]);
 
-                var accessor = engine.getAccessor(42);
+                var accessor = storageEngine.getAccessor(42);
 
                 // Verify before add
                 assertThat(accessor.<Object>getPendingComponent(componentId)).as("getPendingComponent must return null if no pending components").isNull();
@@ -1430,7 +1414,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 assertThat(accessor.<C3>getPendingComponent(type3)).as("getPendingComponent must return null if no pending components").isNull();
 
                 // Call
-                engine.add(42, new Object[] { component });
+                storageEngine.add(42, new Object[] { component });
 
                 // Verify
                 assertThat(accessor.<Object>getPendingComponent(componentId)).as("getPendingComponent must return pending component").isSameAs(component);
@@ -1441,22 +1425,22 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @ParameterizedTest
             @MethodSource("nonExclusiveRelations")
             void testNonExclusiveRelations_EmptyArchetype(Relation<?> component) {
-                var archetype = engine.getArchetype();
+                var archetype = storageEngine.getArchetype();
 
                 var componentType = ComponentType.detectComponentType(component);
-                var componentId = engine.getComponent(componentType).id();
-                var type1 = engine.getComponent(relation(C1.class, C3.class)).id();
+                var componentId = storageEngine.getComponent(componentType).id();
+                var type1 = storageEngine.getComponent(relation(C1.class, C3.class)).id();
 
                 archetype.createEntity(42, new Object[0]);
 
-                var accessor = engine.getAccessor(42);
+                var accessor = storageEngine.getAccessor(42);
 
                 // Verify before add
                 assertThat(accessor.<Object>getPendingComponent(componentId)).as("getPendingComponent must return null if no pending components").isNull();
                 assertThat(accessor.<C1>getPendingComponent(type1)).as("getPendingComponent must return null if no pending components").isNull();
 
                 // Call
-                engine.add(42, new Object[] { component });
+                storageEngine.add(42, new Object[] { component });
 
                 // Verify
                 assertThat(accessor.<Object>getPendingComponent(componentId))
@@ -1469,16 +1453,16 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @ParameterizedTest
             @MethodSource("simpleComponents")
             void testSimpleComponents_OneComponentArchtype(Object component) {
-                var archetype = engine.getArchetype(component(C3.class));
+                var archetype = storageEngine.getArchetype(component(C3.class));
 
                 var componentType = ComponentType.detectComponentType(component);
-                var componentId = engine.getComponent(componentType).id();
-                var type2 = engine.getComponent(component(C2.class)).id();
-                var type3 = engine.getComponent(component(C3.class)).id();
+                var componentId = storageEngine.getComponent(componentType).id();
+                var type2 = storageEngine.getComponent(component(C2.class)).id();
+                var type3 = storageEngine.getComponent(component(C3.class)).id();
 
                 archetype.createEntity(42, new Object[] { new C3() });
 
-                var accessor = engine.getAccessor(42);
+                var accessor = storageEngine.getAccessor(42);
 
                 // Verify before add
                 assertThat(accessor.<Object>getPendingComponent(componentId)).as("getPendingComponent must return null if no pending components").isNull();
@@ -1486,7 +1470,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 assertThat(accessor.<C3>getPendingComponent(type3)).as("getPendingComponent must return null if component part of archetype").isNull();
 
                 // Call
-                engine.add(42, new Object[] { component });
+                storageEngine.add(42, new Object[] { component });
 
                 // Verify
                 assertThat(accessor.<Object>getPendingComponent(componentId)).as("getPendingComponent must return pending component").isSameAs(component);
@@ -1497,22 +1481,22 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
             @ParameterizedTest
             @MethodSource("nonExclusiveRelations")
             void testNonExclusiveRelations_OneComponentArchetype(Relation<?> component) {
-                var archetype = engine.getArchetype(relation(C3.class, C3.class));
+                var archetype = storageEngine.getArchetype(relation(C3.class, C3.class));
 
                 var componentType = ComponentType.detectComponentType(component);
-                var componentId = engine.getComponent(componentType).id();
-                var componentRelationType = engine.getComponent(relation(C3.class, C3.class)).id();
+                var componentId = storageEngine.getComponent(componentType).id();
+                var componentRelationType = storageEngine.getComponent(relation(C3.class, C3.class)).id();
 
                 archetype.createEntity(42, new Object[] { Relation.create(new C3(), new C3()) });
 
-                var accessor = engine.getAccessor(42);
+                var accessor = storageEngine.getAccessor(42);
 
                 // Verify before add
                 assertThat(accessor.<Object>getPendingComponent(componentId)).as("getPendingComponent must return null if no pending components").isNull();
                 assertThat(accessor.<Object>getPendingComponent(componentRelationType)).as("getPendingComponent must return null if relation part of archetype").isNull();
 
                 // Call
-                engine.add(42, new Object[] { component, new C3() });
+                storageEngine.add(42, new Object[] { component, new C3() });
 
                 // Verify
                 assertThat(accessor.<Object>getPendingComponent(componentId))

@@ -26,23 +26,61 @@ import de.schosin.ecs.storage.api.StorageEngineException;
  *      relationship component is assigned to more than 3 target components.
  *      </td>
  *  </tr>
+ *  <tr valign="top">
+ *      <td>creationBatchSize</td>
+ *      <td>
+ *      Maximum batch size when creating entities in batches. <br/>
+ *      If a larger amount of entities is created, they will be split in batches according to this size. <br/>
+ *      <br/>
+ *      Tweaking this value can potentially improve performance if very large number of entities are created regularly.
+ *      </td>
+ *  </tr>
+ *  <tr valign="top">
+ *      <td>processAttempts</td>
+ *      <td>
+ *      Number of process attempts when the storage is processed. <br/>
+ *      If deletions of entities or addition/removal of components cause further changes, these will be performed
+ *      in another step. If after {@code processAttempts} steps there are additional changes left, 
+ *      an error will be thrown to avoid infinite loops. <br /> 
+ *      <br/>
+ *      If user code requires more attempts, this value can be increased to accommodate that need.<br />
+ *      See {@link #PROPERTY_PROCESS_ATTEMPTS}.
+ *      </td>
+ *  </tr>
+ *  <tr valign="top">
+ *      <td>creationFlushAttempts</td>
+ *      <td>
+ *      Number of flushes of changes to an entity being created.
+ *      Relates to {@code processAttempts}, but limited to whenever an entity is created and only the changes
+ *      to that created entity. <br/>
+ *      If after {@code creationFlushAttempts} steps a created entity still has additional changes left,
+ *      an error will be thrown to avoid infinite loops. <br /> 
+ *      <br/>
+ *      If user code requires more attempts, this value can be increased to accommodate that need.<br />
+ *      See {@link #PROPERTY_PROCESS_ATTEMPTS}.
+ *      </td>
+ *  </tr>
  * </table>
  * </p>
  */
-public record ArchetypeStorageConfig(int classIdCount, int relationCount, int creationBatchSize) {
+public record ArchetypeStorageConfig(int classIdCount, int relationCount, int creationBatchSize, int creationFlushAttempts, int processAttempts) {
 
     public static ArchetypeStorageConfig getConfig() {
         // System variable
         var classIdCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
         var relationCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT);
         var creationBatchSizeProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE);
+        var creationFlushAttemptsProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CREATION_FLUSH_ATTEMPTS);
+        var processAttemptsProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_PROCESS_ATTEMPTS);
 
-        if (classIdCountProp != null || relationCountProp != null || creationBatchSizeProp != null) {
+        if (classIdCountProp != null || relationCountProp != null || creationBatchSizeProp != null || creationFlushAttemptsProp != null || processAttemptsProp != null) {
             var classIdCount = classIdCountProp != null ? Integer.parseInt(classIdCountProp) : ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT;
             var relationCount = relationCountProp != null ? Integer.parseInt(relationCountProp) : ArchetypeStorageConfig.DEFAULT_RELATION_COUNT;
             var creationBatchSize = creationBatchSizeProp != null ? Integer.parseInt(creationBatchSizeProp) : ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE;
+            var creationFlushAttempts = creationFlushAttemptsProp != null ? Integer.parseInt(creationFlushAttemptsProp) : ArchetypeStorageConfig.DEFAULT_CREATION_FLUSH_ATTEMPTS;
+            var processAttempts = processAttemptsProp != null ? Integer.parseInt(processAttemptsProp) : ArchetypeStorageConfig.DEFAULT_PROCESS_ATTEMPTS;
 
-            return new ArchetypeStorageConfig(classIdCount, relationCount, creationBatchSize);
+            return new ArchetypeStorageConfig(classIdCount, relationCount, creationBatchSize, creationFlushAttempts, processAttempts);
         }
 
         // Default config
@@ -59,16 +97,29 @@ public record ArchetypeStorageConfig(int classIdCount, int relationCount, int cr
         if (creationBatchSize < 1) {
             throw new StorageEngineException("creationBatchSize must be positive, but was: " + creationBatchSize);
         }
+        if (creationFlushAttempts < 0) {
+            throw new StorageEngineException("creationFlushAttempts must be positive or zero, but was: " + creationFlushAttempts);
+        }
+        if (processAttempts < 1) {
+            throw new StorageEngineException("processAttempts must be positive, but was: " + processAttempts);
+        }
     }
 
     public static final String PROPERTY_CLASS_ID_COUNT = "storage.archetype.classIdCount";
     public static final String PROPERTY_RELATION_COUNT = "storage.archetype.relationCount";
     public static final String PROPERTY_CREATION_BATCH_SIZE = "storage.archetype.creationBatchSize";
+    public static final String PROPERTY_CREATION_FLUSH_ATTEMPTS = "storage.archetype.creationFlushAttempts";
+    public static final String PROPERTY_PROCESS_ATTEMPTS = "storage.archetype.processAttempts";
 
     public static final int DEFAULT_CLASS_ID_COUNT = 50;
     public static final int DEFAULT_RELATION_COUNT = 10;
     public static final int DEFAULT_CREATION_BATCH_SIZE = 100;
+    public static final int DEFAULT_CREATION_FLUSH_ATTEMPTS = 5;
+    public static final int DEFAULT_PROCESS_ATTEMPTS = 5;
 
-    public static final ArchetypeStorageConfig DEFAULT = new ArchetypeStorageConfig(DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT, DEFAULT_CREATION_BATCH_SIZE);
+    public static final ArchetypeStorageConfig DEFAULT = new ArchetypeStorageConfig(
+            DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT,
+            DEFAULT_CREATION_BATCH_SIZE, DEFAULT_CREATION_FLUSH_ATTEMPTS,
+            DEFAULT_PROCESS_ATTEMPTS);
 
 }

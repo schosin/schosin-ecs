@@ -168,7 +168,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
             var entityId = world.createEntity(getInstance(type));
 
             storageEngine.remove(entityId, ImmutableBag.of(type));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(component.hasComponent(entityId)).as("hasComponent returns false if component removed and flushed from existing entity").isFalse();
         }
@@ -241,7 +241,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
             var entityId = world.createEntity(getInstance(type));
 
             storageEngine.remove(entityId, ImmutableBag.of(type));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(component.getComponent(entityId)).as("getComponent returns null if component removed and flushed from existing entity").isNull();
         }
@@ -285,7 +285,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
             var entityId = world.createEntity(getInstance(type1()));
 
             storageEngine.remove(entityId, ImmutableBag.of(type1()));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(component.hasComponent(entityId)).as("hasComponent returns false when removed component flushed").isFalse();
             assertThat(component.getComponent(entityId)).as("getComponent returns null when removed component flushed").isNull();
@@ -300,14 +300,14 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
 
             // Add component
             storageEngine.add(entityId, new Object[] { getInstance(type) });
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(component.hasComponent(entityId)).as("hasComponent returns true after flushed add").isTrue();
             assertThat(component.getComponent(entityId)).as("getComponent returns value after flushed add").isNotNull();
 
             // Remove component
             storageEngine.remove(entityId, ImmutableBag.of(type));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(component.hasComponent(entityId)).as("hasComponent returns false after flushed remove").isFalse();
             assertThat(component.getComponent(entityId)).as("getComponent returns null after flushed remove").isNull();
@@ -412,7 +412,7 @@ public abstract class CommonComponentTest<T1, R1, T2, R2, T3, R3> extends Abstra
     }
 
     protected final <T, R> Component<T, R> getComponent(RegularComponentType<T, R> type) {
-        return engine.getComponent(type);
+        return storageEngine.getComponent(type);
     }
 
     private Stream<Arguments> types() {

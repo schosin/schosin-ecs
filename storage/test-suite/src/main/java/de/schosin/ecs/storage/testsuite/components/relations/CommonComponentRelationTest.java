@@ -140,7 +140,7 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
             var entityId = world.createEntity(relation);
 
             storageEngine.remove(entityId, ImmutableBag.of(relation(EnumComponent.class, EnumComponent.class)));
-            storageEngine.flushChanges(entityId);
+            storageEngine.process();
 
             assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
             assertThat(relation.relationship()).as("removed relation must be returned to Relation.free").isNull();
@@ -150,7 +150,7 @@ public abstract class CommonComponentRelationTest<R1, T1, X1, R2, T2, X2, R3, T3
     }
 
     protected <R, T, X> ComponentRelationComponent<R, T, X> getComponent(RegularComponentRelationType<R, T, X> type) {
-        return engine.getComponent(type);
+        return storageEngine.getComponent(type);
     }
 
     private enum EnumComponent {

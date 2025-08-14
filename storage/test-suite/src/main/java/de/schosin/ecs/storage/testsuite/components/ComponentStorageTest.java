@@ -28,7 +28,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testByClassType() {
-            var instance = engine.getComponent(new ClassType<>(C1.class));
+            var instance = storageEngine.getComponent(new ClassType<>(C1.class));
 
             assertThat(instance).as("returned instance is not null").isNotNull();
             assertThat(instance).as("non-pooled ClassType must return ComponentData").isInstanceOf(ComponentData.class);
@@ -36,7 +36,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testByClassType_PooledComponent() {
-            var instance = engine.getComponent(new ClassType<>(P1.class));
+            var instance = storageEngine.getComponent(new ClassType<>(P1.class));
 
             assertThat(instance).as("returned instance is not null").isNotNull();
             assertThat(instance).as("pooled ClassType must return PooledComponentData").isInstanceOf(PooledComponentData.class);
@@ -44,9 +44,9 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testById() {
-            var instance = engine.getComponent(new ClassType<>(C1.class));
+            var instance = storageEngine.getComponent(new ClassType<>(C1.class));
 
-            var result = engine.getComponent(instance.id());
+            var result = storageEngine.getComponent(instance.id());
             assertThat(result).as("returned instance is same as previously created instance").isSameAs(instance);
         }
 
@@ -57,16 +57,16 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testByClassType() {
-            var instance = engine.getPooledComponent(new ClassType<>(P1.class));
+            var instance = storageEngine.getPooledComponent(new ClassType<>(P1.class));
 
             assertThat(instance).as("returned instance is not null").isNotNull();
         }
 
         @Test
         void testById() {
-            var instance = engine.getPooledComponent(new ClassType<>(P1.class));
+            var instance = storageEngine.getPooledComponent(new ClassType<>(P1.class));
 
-            var result = engine.getComponent(instance.id());
+            var result = storageEngine.getComponent(instance.id());
             assertThat(result).as("returned instance is same as previously created instance").isSameAs(instance);
         }
 
@@ -78,16 +78,16 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
         @Test
         void testInstanceReused_SameComponentTypes() {
             var componentType = new ClassType<>(C1.class);
-            var instance1 = engine.getComponent(componentType);
-            var instance2 = engine.getComponent(componentType);
+            var instance1 = storageEngine.getComponent(componentType);
+            var instance2 = storageEngine.getComponent(componentType);
 
             assertThat(instance2).as("getComponent returns same instance for same componentType").isSameAs(instance1);
         }
 
         @Test
         void testInstanceReused_EqualComponentTypes() {
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            var instance2 = engine.getComponent(new ClassType<>(C1.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(C1.class));
 
             assertThat(instance2).as("getComponent returns same instance for equal componentTypes").isSameAs(instance1);
         }
@@ -95,9 +95,9 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
         @Test
         void testPooledInstanceReused_SameComponentTypes() {
             var componentType = new ClassType<>(P1.class);
-            var instance1 = engine.getComponent(componentType);
-            var instance2 = engine.getComponent(componentType);
-            var instance3 = engine.getPooledComponent(componentType);
+            var instance1 = storageEngine.getComponent(componentType);
+            var instance2 = storageEngine.getComponent(componentType);
+            var instance3 = storageEngine.getPooledComponent(componentType);
 
             assertThat(instance2).as("getComponent returns same instance for same componentType").isSameAs(instance1);
             assertThat(instance3).as("getPooledComponent returns same instance for same componentType").isSameAs(instance1);
@@ -105,9 +105,9 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testPooledInstanceReused_EqualComponentTypes() {
-            var instance1 = engine.getComponent(new ClassType<>(P1.class));
-            var instance2 = engine.getComponent(new ClassType<>(P1.class));
-            var instance3 = engine.getPooledComponent(new ClassType<>(P1.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(P1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(P1.class));
+            var instance3 = storageEngine.getPooledComponent(new ClassType<>(P1.class));
 
             assertThat(instance2).as("getComponent returns same instance for equal componentTypes").isSameAs(instance1);
             assertThat(instance3).as("getPooledComponent returns same instance for equal componentTypes").isSameAs(instance1);
@@ -120,7 +120,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testInitiallyEmpty() {
-            var components = engine.getComponents();
+            var components = storageEngine.getComponents();
 
             assertThat(components).as("result must never be null").isNotNull();
             assertThat(components.isEmpty()).as("result must be empty if no components added").isTrue();
@@ -128,10 +128,10 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testSameInstances() {
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            var instance2 = engine.getComponent(new ClassType<>(C2.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(C2.class));
 
-            var components = engine.getComponents();
+            var components = storageEngine.getComponents();
 
             assertThat(components.getSize()).as("must return all previously added components in any order").isEqualTo(2);
             assertThat(components.get(0)).as("must return all previously added components in any order").isIn(instance1, instance2);
@@ -140,10 +140,10 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testDoesNotContainDuplicates() {
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            engine.getComponent(new ClassType<>(C1.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            storageEngine.getComponent(new ClassType<>(C1.class));
 
-            var components = engine.getComponents();
+            var components = storageEngine.getComponents();
 
             assertThat(components.getSize()).as("must not return duplicates if same component retrieved multiple times").isEqualTo(1);
             assertThat(components.get(0)).as("must not return duplicates if same component retrieved multiple times").isIn(instance1);
@@ -151,10 +151,10 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testLiveCollection() {
-            var components = engine.getComponents();
+            var components = storageEngine.getComponents();
 
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            var instance2 = engine.getComponent(new ClassType<>(C2.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(C2.class));
 
             assertThat(components.getSize()).as("must be updated when components added afterwards").isEqualTo(2);
             assertThat(components.get(0)).as("must be updated when components added afterwards").isIn(instance1, instance2);
@@ -163,16 +163,16 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testImmutableBagType() {
-            engine.getComponent(new ClassType<>(C1.class));
-            engine.getComponent(new ClassType<>(C2.class));
+            storageEngine.getComponent(new ClassType<>(C1.class));
+            storageEngine.getComponent(new ClassType<>(C2.class));
 
-            var components1 = engine.getComponents();
+            var components1 = storageEngine.getComponents();
             assertThat(components1).as("must not be a regular Bag").isNotInstanceOf(Bag.class);
         }
 
         @Test
         void testImmutableBagType_WhenEmpty() {
-            var components1 = engine.getComponents();
+            var components1 = storageEngine.getComponents();
             assertThat(components1).as("must not be a regular Bag").isNotInstanceOf(Bag.class);
         }
 
@@ -185,7 +185,7 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testInitiallyEmpty() {
-            var components = engine.getComponents(bound);
+            var components = storageEngine.getComponents(bound);
 
             assertThat(components).as("result must never be null").isNotNull();
             assertThat(components.isEmpty()).as("result must be empty if no components added").isTrue();
@@ -193,39 +193,39 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testResult_WhenEqualType_ReturnsSameInstance() {
-            var components = engine.getComponents(wildcard(Bound.class));
+            var components = storageEngine.getComponents(wildcard(Bound.class));
 
-            assertThat(engine.getComponents(wildcard(Bound.class))).as("must return same instance for equal bounds").isSameAs(components);
+            assertThat(storageEngine.getComponents(wildcard(Bound.class))).as("must return same instance for equal bounds").isSameAs(components);
         }
 
         @Test
         void testResult_WhenSameType_ReturnsSameInstance() {
-            var components = engine.getComponents(bound);
+            var components = storageEngine.getComponents(bound);
 
-            assertThat(engine.getComponents(bound)).as("must return same instance for same bounds").isSameAs(components);
+            assertThat(storageEngine.getComponents(bound)).as("must return same instance for same bounds").isSameAs(components);
         }
 
         @Test
         void testResult_WhenDifferentType_ReturnsDifferentInstance() {
-            var components = engine.getComponents(bound);
+            var components = storageEngine.getComponents(bound);
 
             assertThat(WILDCARD).as("must return different instance for different bounds").isNotSameAs(components);
         }
 
         @Test
         void testMultipleCallsReturnSameImmutableBag() {
-            var components = engine.getComponents(wildcard(Bound.class));
+            var components = storageEngine.getComponents(wildcard(Bound.class));
 
-            assertThat(engine.getComponents(wildcard(Bound.class))).as("must return same instance for equal wildcards").isSameAs(components);
+            assertThat(storageEngine.getComponents(wildcard(Bound.class))).as("must return same instance for equal wildcards").isSameAs(components);
         }
 
         @Test
         void testComponentsSameInstances() {
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            var instance2 = engine.getComponent(new ClassType<>(C2.class));
-            engine.getComponent(new ClassType<>(C3.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(C2.class));
+            storageEngine.getComponent(new ClassType<>(C3.class));
 
-            var components = engine.getComponents(bound);
+            var components = storageEngine.getComponents(bound);
 
             assertThat(components.getSize()).as("must return all previously added components in any order").isEqualTo(2);
             assertThat(components.get(0)).as("must return all previously added components in any order").isIn(instance1, instance2);
@@ -234,10 +234,10 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testDoesNotContainDuplicates() {
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            engine.getComponent(new ClassType<>(C1.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            storageEngine.getComponent(new ClassType<>(C1.class));
 
-            var components = engine.getComponents(bound);
+            var components = storageEngine.getComponents(bound);
 
             assertThat(components.getSize()).as("must not return duplicates if same component retrieved multiple times").isEqualTo(1);
             assertThat(components.get(0)).as("must not return duplicates if same component retrieved multiple times").isIn(instance1);
@@ -245,11 +245,11 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testLiveCollection() {
-            var components = engine.getComponents(bound);
+            var components = storageEngine.getComponents(bound);
 
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            var instance2 = engine.getComponent(new ClassType<>(C2.class));
-            engine.getComponent(new ClassType<>(C3.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(C2.class));
+            storageEngine.getComponent(new ClassType<>(C3.class));
 
             assertThat(components)
                     .as("must be updated when components added afterwards").hasSize(2)
@@ -259,11 +259,11 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testLiveCollection_ObjectBound() {
-            var components = engine.getComponents(wildcard(Object.class));
+            var components = storageEngine.getComponents(wildcard(Object.class));
 
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            var instance2 = engine.getComponent(new ClassType<>(C2.class));
-            var instance3 = engine.getComponent(new ClassType<>(C3.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(C2.class));
+            var instance3 = storageEngine.getComponent(new ClassType<>(C3.class));
 
             assertThat(components)
                     .as("must be updated when components added afterwards").hasSize(3)
@@ -274,11 +274,11 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testLiveCollection_ObjectBound_Constant() {
-            var components = engine.getComponents(WILDCARD);
+            var components = storageEngine.getComponents(WILDCARD);
 
-            var instance1 = engine.getComponent(new ClassType<>(C1.class));
-            var instance2 = engine.getComponent(new ClassType<>(C2.class));
-            var instance3 = engine.getComponent(new ClassType<>(C3.class));
+            var instance1 = storageEngine.getComponent(new ClassType<>(C1.class));
+            var instance2 = storageEngine.getComponent(new ClassType<>(C2.class));
+            var instance3 = storageEngine.getComponent(new ClassType<>(C3.class));
 
             assertThat(components)
                     .as("must be updated when components added afterwards").hasSize(3)
@@ -289,31 +289,31 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testImmutableBagType() {
-            engine.getComponent(new ClassType<>(C1.class));
-            engine.getComponent(new ClassType<>(C2.class));
-            engine.getComponent(new ClassType<>(C3.class));
+            storageEngine.getComponent(new ClassType<>(C1.class));
+            storageEngine.getComponent(new ClassType<>(C2.class));
+            storageEngine.getComponent(new ClassType<>(C3.class));
 
-            var components1 = engine.getComponents(bound);
+            var components1 = storageEngine.getComponents(bound);
             assertThat(components1).as("must not be a regular Bag").isNotInstanceOf(Bag.class);
         }
 
         @Test
         void testImmutableBagType_WhenEmpty() {
-            var components1 = engine.getComponents(bound);
+            var components1 = storageEngine.getComponents(bound);
             assertThat(components1).as("must not be a regular Bag").isNotInstanceOf(Bag.class);
         }
 
         @Test
         void testComponentRelationWildcards() {
-            var components = engine.getComponents(wildcardRelation(Bound.class, Bound.class));
+            var components = storageEngine.getComponents(wildcardRelation(Bound.class, Bound.class));
 
-            var relation11 = engine.getComponent(new ComponentRelationType<>(C1.class, C1.class));
-            var relation12 = engine.getComponent(new ComponentRelationType<>(C1.class, C2.class));
-            var exclusive11 = engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
+            var relation11 = storageEngine.getComponent(new ComponentRelationType<>(C1.class, C1.class));
+            var relation12 = storageEngine.getComponent(new ComponentRelationType<>(C1.class, C2.class));
+            var exclusive11 = storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
 
-            engine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
+            storageEngine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
+            storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
+            storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
 
             assertThat(components)
                     .as("must be updated when components added afterwards").hasSize(3)
@@ -324,15 +324,15 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testComponentRelationRelationshipWildcard() {
-            var components = engine.getComponents(wildcardRelation(Object.class, C2.class));
+            var components = storageEngine.getComponents(wildcardRelation(Object.class, C2.class));
 
-            var relation12 = engine.getComponent(new ComponentRelationType<>(C1.class, C2.class));
-            var exclusive22 = engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
+            var relation12 = storageEngine.getComponent(new ComponentRelationType<>(C1.class, C2.class));
+            var exclusive22 = storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
 
-            engine.getComponent(new ComponentRelationType<>(C1.class, C1.class));
-            engine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
+            storageEngine.getComponent(new ComponentRelationType<>(C1.class, C1.class));
+            storageEngine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
+            storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
+            storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
 
             assertThat(components)
                     .as("must be updated when components added afterwards").hasSize(2)
@@ -342,15 +342,15 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testComponentRelationTargetWildcard() {
-            var components = engine.getComponents(wildcardRelation(C1.class, Bound.class));
+            var components = storageEngine.getComponents(wildcardRelation(C1.class, Bound.class));
 
-            var relation11 = engine.getComponent(new ComponentRelationType<>(C1.class, C1.class));
-            var relation12 = engine.getComponent(new ComponentRelationType<>(C1.class, C2.class));
+            var relation11 = storageEngine.getComponent(new ComponentRelationType<>(C1.class, C1.class));
+            var relation12 = storageEngine.getComponent(new ComponentRelationType<>(C1.class, C2.class));
 
-            engine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
-            engine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
+            storageEngine.getComponent(new ComponentRelationType<>(C1.class, C3.class));
+            storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive2.class, C2.class));
+            storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C1.class));
+            storageEngine.getComponent(new ExclusiveComponentRelationType<>(Exclusive1.class, C3.class));
 
             assertThat(components)
                     .as("must be updated when components added afterwards").hasSize(2)
@@ -360,14 +360,14 @@ public class ComponentStorageTest extends AbstractStorageEngineTest {
 
         @Test
         void testEntityRelationWildcard() {
-            var components = engine.getComponents(wildcardRelation(Bound.class));
+            var components = storageEngine.getComponents(wildcardRelation(Bound.class));
 
-            var relation1 = engine.getComponent(new EntityRelationType<>(C1.class));
-            var relation2 = engine.getComponent(new EntityRelationType<>(C2.class));
-            var exclusive1 = engine.getComponent(new ExclusiveEntityRelationType<>(Exclusive1.class));
+            var relation1 = storageEngine.getComponent(new EntityRelationType<>(C1.class));
+            var relation2 = storageEngine.getComponent(new EntityRelationType<>(C2.class));
+            var exclusive1 = storageEngine.getComponent(new ExclusiveEntityRelationType<>(Exclusive1.class));
 
-            engine.getComponent(new EntityRelationType<>(C3.class));
-            engine.getComponent(new ExclusiveEntityRelationType<>(Exclusive2.class));
+            storageEngine.getComponent(new EntityRelationType<>(C3.class));
+            storageEngine.getComponent(new ExclusiveEntityRelationType<>(Exclusive2.class));
 
             assertThat(components)
                     .as("must be updated when components added afterwards").hasSize(3)

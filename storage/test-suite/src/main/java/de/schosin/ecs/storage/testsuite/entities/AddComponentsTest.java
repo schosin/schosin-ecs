@@ -104,9 +104,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
         @SuppressWarnings("rawtypes")
         @ParameterizedTest
         @MethodSource(COMPONENTS_SOURCE)
-        void testAddToMultipleEntities_FlushChanges(Object component) {
-            var emptyArchetype = engine.getArchetype();
-
+        void testAddToMultipleEntities(Object component) {
             var componentType = ComponentType.detectComponentType(component);
             var entity1 = world.createEntity();
             var entity2 = world.createEntity();
@@ -116,7 +114,7 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             addComponents(entity1, ImmutableBag.of(componentType), new Object[] { component });
             var archetype = addComponents(entity2, ImmutableBag.of(component(C2.class)), new Object[] { component2 });
 
-            storageEngine.flushChanges(entity1);
+            storageEngine.process();
 
             // Verify
             var components = world.getComponents(componentType);
@@ -128,13 +126,6 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
                 case EntityRelationMapper mapper -> assertThat(mapper.get(entity1)).asInstanceOf(InstanceOfAssertFactories.ITERABLE).as("must store component").containsExactly(component);
                 case ExclusiveEntityRelationMapper mapper -> assertThat(mapper.get(entity1)).as("must store component").isSameAs(component);
             }
-
-            assertThat(storageEngine.getArchetypeForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(emptyArchetype);
-            assertThat(storageEngine.getPendingArchetype(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(archetype);
-            assertThat(getComponent(entity2, C2.class)).as("flushing changes must not affect pending changes for other entities").isSameAs(component2);
-
-            // Flush second entity
-            storageEngine.flushChanges(entity2);
 
             assertThat(storageEngine.getArchetypeForEntity(entity2)).as("flushing changes must not affect pending changes for other entities").isSameAs(archetype);
             assertThat(storageEngine.getPendingArchetype(entity2)).as("flushing changes must not affect pending changes for other entities").isNull();
@@ -274,16 +265,11 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
             var entity4 = world.createEntity(Zero1.INSTANCE);
 
             addComponents(entity1, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
-            storageEngine.flushChanges(entity1);
-
             addComponents(entity2, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
-            storageEngine.flushChanges(entity2);
-
             addComponents(entity3, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
-            storageEngine.flushChanges(entity3);
-
             addComponents(entity4, ImmutableBag.of(component(Zero2.class)), new Object[] { Zero2.INSTANCE });
-            storageEngine.flushChanges(entity4);
+
+            storageEngine.process();
 
             verifyHasComponents(entity1, Zero2.class);
             verifyArchetypeHasComponents(entity1, Zero2.class);
@@ -296,6 +282,31 @@ public class AddComponentsTest extends AbstractStorageEngineTest {
 
             verifyHasComponents(entity4, Zero1.class, Zero2.class);
             verifyArchetypeHasComponents(entity4, Zero1.class, Zero2.class);
+        }
+
+        @Test
+        void testAddComponentsForSameArchtypeInAddObserverCallback() {
+            var entity1 = world.createEntity();
+            var entity2 = world.createEntity();
+
+            var mapper1 = world.getComponents(C1.class);
+
+            storageEngine.registerBatchUpdated((archetype, oldArchetype, entities) -> {
+                if (entities.contains(entity1)) {
+                    mapper1.add(entity2, new C1());
+                }
+            });
+
+            // Call
+            mapper1.add(entity1, new C1());
+            world.process();
+
+            // Verify
+            verifyHasComponents(entity1, C1.class);
+            verifyArchetypeHasComponents(entity1, C1.class);
+
+            verifyHasComponents(entity2, C1.class);
+            verifyArchetypeHasComponents(entity2, C1.class);
         }
 
     }

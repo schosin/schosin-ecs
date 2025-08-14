@@ -6,7 +6,7 @@ import java.util.ServiceLoader;
 import de.schosin.ecs.api.Plugin;
 import de.schosin.ecs.api.World;
 
-public interface StorageEngine extends ComponentStorage, EntityStorage, ArchetypeStorage {
+public interface StorageEngine extends ComponentStorage, EntityStorage, ArchetypeStorage, ObservableStorage {
 
     /**
      * Sets the world this storage engine is used for. This will be an unproxied instance.
@@ -48,6 +48,11 @@ public interface StorageEngine extends ComponentStorage, EntityStorage, Archetyp
      */
     default void setProxiedWorld(StorageWorld world) {
     }
+
+    /**
+     * Processes the storage engine. Called when {@link World#process()} is called.
+     */
+    void process();
 
     static StorageEngine load() {
         var providers = ServiceLoader.load(StorageEngine.class).stream().toList();

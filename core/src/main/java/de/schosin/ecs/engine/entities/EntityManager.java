@@ -8,7 +8,6 @@ import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.Pooled;
-import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
@@ -18,7 +17,6 @@ import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.RelationComponentType;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.utils.collections.Bag;
@@ -34,7 +32,6 @@ public class EntityManager {
 
     private static final RegularComponentType<?, ?>[] EMPTY_COMPONENT_TYPES = new RegularComponentType<?, ?>[0];
 
-    private final World world;
     private final StorageEngine storageEngine;
 
     private final BagManager bagManager;
@@ -46,13 +43,24 @@ public class EntityManager {
     private final Pool<IntBag> intBagPool = Pool.unbounded(IntBag.class, () -> new IntBag(1000), IntBag::clear);
     private final Bag<IntBag> lentIntBags = new Bag<>(IntBag.class, 8);
 
-    private ChangeManager changeManager;
-
-    public EntityManager(World world, StorageEngine storageEngine, BagManager bagManager) {
-        this.world = world;
+    public EntityManager(StorageEngine storageEngine, BagManager bagManager) {
         this.storageEngine = storageEngine;
 
         this.bagManager = bagManager;
+    }
+
+    public void freeEntityIds(ImmutableIntBag entities) {
+        for (int i = 0, s = entities.getSize(); i < s; i++) {
+            var entityId = entities.get(i);
+
+            var entity = this.entities.get(entityId);
+            if (entity == null) {
+                continue;
+            }
+
+            this.pool.free(entity);
+            this.entities.set(entityId, null);
+        }
     }
 
     public void process() {
@@ -81,15 +89,11 @@ public class EntityManager {
 
         // Create entity
         var entity = createEntityInstance();
-        entity.archetype = archetype;
 
         archetype.createEntity(entity.id, components);
 
         // Add entity
         this.entities.set(entity.id, entity);
-
-        // Notify handlers
-        inserted(entity.id, archetype);
 
         return entity.id;
     }
@@ -201,15 +205,11 @@ public class EntityManager {
     public int createEntity(Archetype archetype, Object[] components) {
         // Create entity
         var entity = createEntityInstance();
-        entity.archetype = archetype;
 
         archetype.createEntity(entity.id, components);
 
         // Add entity
         this.entities.set(entity.id, entity);
-
-        // Notify handlers
-        inserted(entity.id, archetype);
 
         return entity.id;
     }
@@ -221,7 +221,6 @@ public class EntityManager {
 
         IntSupplier entityIdSupplier = () -> {
             var entity = createEntityInstance();
-            entity.archetype = archetype;
 
             entities.set(entity.id, entity);
             entityIds.add(entity.id);
@@ -232,26 +231,7 @@ public class EntityManager {
         // Create entities
         archetype.createEntities(count, entityIdSupplier, componentsConsumer);
 
-        // Notify listeners
-        inserted(entityIds, archetype);
-
         return entityIds;
-    }
-
-    private void inserted(int entityId, Archetype archetype) {
-        if (changeManager == null) {
-            this.changeManager = world.getSingleton(ChangeManager.class);
-        }
-
-        changeManager.inserted(entityId, archetype);
-    }
-
-    private void inserted(ImmutableIntBag entityIds, Archetype archetype) {
-        if (changeManager == null) {
-            this.changeManager = world.getSingleton(ChangeManager.class);
-        }
-
-        changeManager.inserted(entityIds, archetype);
     }
 
     private Entity createEntityInstance() {
@@ -290,25 +270,6 @@ public class EntityManager {
         return result;
     }
 
-    public void deleteEntity(int entityId) {
-        var entity = this.entities.get(entityId);
-        if (entity == null) {
-            return;
-        }
-
-        synchronized (this.entities) {
-            entity = this.entities.get(entityId);
-            if (entity == null) {
-                return;
-            }
-
-            this.entities.set(entityId, null);
-            this.storageEngine.delete(entityId);
-        }
-
-        // Add entity to pool for reuse
-        this.pool.free(entity);
-    }
 
     /**
      * @return archetype of the entity or null if entity does not exist
@@ -319,55 +280,15 @@ public class EntityManager {
             return null;
         }
 
-        return entity.archetype;
+        return storageEngine.getArchetypeForEntity(entityId);
     }
 
-    /**
-     * Updates the archetype for the entity.
-     * 
-     * @param entityId id of the entity
-     * @param archetype new archetype
-     * @return true if the entity exists and the archetype was changed
-     */
-    public boolean updateArchetype(int entityId, Archetype archetype) {
-        // Retrieve entity, return early if not found or no changes
-        var entity = this.entities.get(entityId);
-        if (entity == null) {
-            return false;
-        }
-
-        // Update archetype
-        return entity.setArchetype(archetype);
-    }
-
-    private class Entity implements Pooled {
+    private static class Entity implements Pooled {
 
         private final int id;
 
-        private Archetype archetype;
-
         private Entity(int entityId) {
             this.id = entityId;
-        }
-
-        /**
-         * Sets the archetype unless the entity already has that archetype. 
-         * 
-         * @param archetype archetype to set
-         * @return true if the archetype differs from the current one
-         */
-        private boolean setArchetype(Archetype archetype) {
-            if (archetype == this.archetype) {
-                return false;
-            }
-
-            this.archetype = archetype;
-            return true;
-        }
-
-        @Override
-        public void reset() {
-            this.archetype = null;
         }
 
     }

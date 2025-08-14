@@ -16,9 +16,6 @@ import de.schosin.ecs.api.components.Relation;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.codegen.EcsCodegen;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.engine.utils.ArrayUtils;
 import de.schosin.ecs.plugins.transmuter.Transmuter.Remove;
 import de.schosin.ecs.storage.api.StorageEngineException;
@@ -257,9 +254,9 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             verifyArchetypeHasComponents(entityId, C1.class);
 
             var changed = new ArrayList<Integer>();
-            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> changed.add(event.entityId()));
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> changed.add(event.entityId()));
-            eventManager.registerEventHandler(EntityRemovedEvent.class, event -> changed.add(event.entityId()));
+            onEntityInserted((archetype, id) -> changed.add(id));
+            onEntityUpdated((archetype, oldArchetype, id) -> changed.add(id));
+            onEntityDeleted((archetype, id) -> changed.add(id));
 
             remove1.apply(entityId);
 
@@ -312,16 +309,12 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             // Setup
             var entityId = world.createEntity();
 
-            try (var verify = createVerify()) {
-
-            }
-
             var updated = new IntBag(1);
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                assertThat(event.previousArchetype().getComponents()).isEmpty();
-                assertThat(event.archetype().getComponents()).containsExactly(componentManager.getComponent(component(C1.class)));
+            onEntityUpdated((archetype, oldArchetype, id) -> {
+                assertThat(oldArchetype.getComponents()).isEmpty();
+                assertThat(archetype.getComponents()).containsExactly(componentManager.getComponent(component(C1.class)));
 
-                updated.add(event.entityId());
+                updated.add(id);
             });
 
             // Call
@@ -339,7 +332,7 @@ class TransmuterManagerTest extends BaseTransmuterManagerTest {
             var entityId = world.createEntity(new C1());
 
             var updated = new IntBag(1);
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> updated.add(event.entityId()));
+            onEntityUpdated((archetype, oldArchetype, id) -> updated.add(id));
 
             // Call
             add1.apply(entityId, new C1());

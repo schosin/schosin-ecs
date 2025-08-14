@@ -108,6 +108,30 @@ public class BitVector {
         this.currentWord = this.currentWord > wordIndex ? currentWord : wordIndex;
     }
 
+    /**
+     * Sets the index and returns true if that index was not set before.
+     * 
+     * <p>
+     * Use {@link #set(int)} if the return value is not used.
+     * 
+     * @return false if already set, true otherwise 
+     */
+    public boolean setAndReturn(int index) {
+        var wordIndex = wordIndex(index);
+        checkCapacity(wordIndex);
+
+        // Return false if already set
+        if ((words[wordIndex] & (1L << index)) != 0L) {
+            return false;
+        }
+
+        // Set value and return true
+        this.words[wordIndex] |= (1L << index);
+
+        this.currentWord = this.currentWord > wordIndex ? currentWord : wordIndex;
+        return true;
+    }
+
     public void unsafeSet(int index) {
         var wordIndex = wordIndex(index);
         this.words[wordIndex] |= (1L << index);

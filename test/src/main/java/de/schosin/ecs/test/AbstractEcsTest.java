@@ -10,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.engine.BagManager;
-import de.schosin.ecs.engine.ChangeManager;
 import de.schosin.ecs.engine.SingletonManager;
 import de.schosin.ecs.engine.components.ComponentManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -32,7 +31,6 @@ public abstract class AbstractEcsTest<WORLD extends World> extends AbstractEngin
     protected BagManager bagManager;
     protected ComponentManager componentManager;
     protected EntityManager entityManager;
-    protected ChangeManager changeManager;
     protected TransmutationManager transmutationManager;
     protected RelationMapperManager relationMapperManager;
     protected ComponentMapperManager componentMapperManager;
@@ -48,12 +46,11 @@ public abstract class AbstractEcsTest<WORLD extends World> extends AbstractEngin
         this.bagManager = world.getSingleton(BagManager.class);
         this.componentManager = world.getSingleton(ComponentManager.class);
         this.entityManager = world.getSingleton(EntityManager.class);
-        this.changeManager = world.getSingleton(ChangeManager.class);
         this.transmutationManager = world.getSingleton(TransmutationManager.class);
         this.relationMapperManager = world.getSingleton(RelationMapperManager.class);
         this.componentMapperManager = world.getSingleton(ComponentMapperManager.class);
 
-        initializeEngineTest(componentManager, entityManager, eventManager);
+        initializeEngineTest(storageEngine, componentManager, entityManager, eventManager);
     }
 
     @SuppressWarnings("unchecked")

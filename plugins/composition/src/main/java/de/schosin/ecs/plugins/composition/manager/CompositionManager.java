@@ -23,11 +23,6 @@ import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.EntitiesEvent.EntitiesInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.BeforeEntityUpdateEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionData;
@@ -39,6 +34,13 @@ import de.schosin.ecs.plugins.data.types.Data;
 import de.schosin.ecs.plugins.data.types.DataType;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesBeforeUpdateObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesCreatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesDeletedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntitiesUpdatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityBeforeUpdateObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityCreatedObserver;
+import de.schosin.ecs.storage.api.entities.observer.EntityUpdatedObserver;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.BitVector;
@@ -46,7 +48,8 @@ import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
 @EcsCodegen
-public class CompositionManager extends AbstractSpecManager implements CompositionPlugin {
+public class CompositionManager extends AbstractSpecManager implements CompositionPlugin,
+        EntityCreatedObserver, EntitiesCreatedObserver, EntityBeforeUpdateObserver, EntityUpdatedObserver, EntitiesBeforeUpdateObserver, EntitiesUpdatedObserver, EntitiesDeletedObserver {
 
     private final StorageEngine storageEngine;
 
@@ -70,12 +73,15 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         this.archetypes.addAll(storageEngine.getArchetypes());
 
         var eventManager = world.getSingleton(EventManager.class);
-        eventManager.registerEventHandler(EntityInsertedEvent.class, event -> handleInserted(event.entityId(), event.archetype()));
-        eventManager.registerEventHandler(EntitiesInsertedEvent.class, event -> handleInserted(event.entityIds(), event.archetype()));
-        eventManager.registerEventHandler(BeforeEntityUpdateEvent.class, event -> handleBeforeUpdate(event.entityId(), event.archetype(), event.newArchetype()));
-        eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> handleUpdated(event.entityId(), event.archetype()));
-        eventManager.registerEventHandler(EntityRemovedEvent.class, event -> handleRemoved(event.entityId(), event.archetype()));
         eventManager.registerEventHandler(ArchetypeAddedEvent.class, this::handleArchetypeAdded);
+
+        storageEngine.registerCreated(this);
+        storageEngine.registerBatchCreated(this);
+        storageEngine.registerBeforeUpdate(this);
+        storageEngine.registerUpdated(this);
+        storageEngine.registerBatchBeforeUpdate(this);
+        storageEngine.registerBatchUpdated(this);
+        storageEngine.registerDeleted(this);
     }
 
     private void handleArchetypeAdded(ArchetypeAddedEvent event) {
@@ -145,7 +151,8 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         return composition;
     }
 
-    private void handleInserted(int entityId, Archetype archetype) {
+    @Override
+    public final void handleEntityCreated(Archetype archetype, int entityId) {
         var archetypeCompositions = getCompositions(archetype);
 
         var data = archetypeCompositions.getData();
@@ -157,38 +164,39 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
     }
 
-    private void handleInserted(ImmutableIntBag entityIds, Archetype archetype) {
+    @Override
+    public final void handleEntitiesCreated(Archetype archetype, ImmutableIntBag entities) {
         var archetypeCompositions = getCompositions(archetype);
 
         var data = archetypeCompositions.getData();
         for (int i = 0, s = archetypeCompositions.getSize(); i < s; i++) {
             var composition = data[i];
             if (composition.isInterested(archetype)) {
-                for (int e = 0, es = entityIds.getSize(); e < es; e++) {
-                    var entityId = entityIds.get(e);
-
-                    composition.inserted(entityId);
+                for (int e = 0, es = entities.getSize(); e < es; e++) {
+                    composition.inserted(entities.get(e));
                 }
             }
         }
     }
 
-    private void handleBeforeUpdate(int entityId, Archetype previousArchetype, Archetype archetype) {
+    @Override
+    public void handleEntityBeforeUpdate(Archetype archetype, Archetype newArchetype, int entityId) {
         // Remove from previous composition if no longer interested
-        var previousCompositions = getCompositions(previousArchetype);
+        var previousCompositions = getCompositions(archetype);
 
         var previousData = previousCompositions.getData();
         for (int i = 0, s = previousCompositions.getSize(); i < s; i++) {
             var composition = previousData[i];
 
-            var beforeInterested = composition.containsEntity(entityId);
-            if (beforeInterested && !composition.isInterested(archetype)) {
+            var afterInterested = composition.isInterested(newArchetype);
+            if (!afterInterested) {
                 composition.removed(entityId);
             }
         }
     }
 
-    private void handleUpdated(int entityId, Archetype archetype) {
+    @Override
+    public void handleEntityUpdated(Archetype archetype, Archetype previousArchetype, int entityId) {
         // Add to new composition if not yet contained
         var newCompositions = getCompositions(archetype);
 
@@ -196,22 +204,59 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         for (int i = 0, s = newCompositions.getSize(); i < s; i++) {
             var composition = dataData[i];
 
-            var beforeInterested = composition.containsEntity(entityId);
-            if (!beforeInterested && composition.isInterested(archetype)) {
+            var beforeInterested = composition.isInterested(previousArchetype);
+            if (!beforeInterested) {
                 composition.inserted(entityId);
             }
         }
     }
 
-    private void handleRemoved(int entityId, Archetype archetype) {
+    @Override
+    public final void handleEntitiesBeforeUpdate(Archetype archetype, Archetype newArchetype, ImmutableIntBag entities) {
+        // Remove from previous composition if no longer interested
+        var previousCompositions = getCompositions(archetype);
+
+        var previousData = previousCompositions.getData();
+        for (int i = 0, s = previousCompositions.getSize(); i < s; i++) {
+            var composition = previousData[i];
+
+            var afterInterested = composition.isInterested(newArchetype);
+            if (!afterInterested) {
+                for (int e = 0, es = entities.getSize(); e < es; e++) {
+                    composition.removed(entities.get(e));
+                }
+            }
+        }
+    }
+
+    @Override
+    public final void handleEntitiesUpdated(Archetype archetype, Archetype previousArchetype, ImmutableIntBag entities) {
+        // Add to new composition if not yet contained
+        var newCompositions = getCompositions(archetype);
+
+        var dataData = newCompositions.getData();
+        for (int i = 0, s = newCompositions.getSize(); i < s; i++) {
+            var composition = dataData[i];
+
+            var beforeInterested = composition.isInterested(previousArchetype);
+            if (!beforeInterested) {
+                for (int e = 0, es = entities.getSize(); e < es; e++) {
+                    composition.inserted(entities.get(e));
+                }
+            }
+        }
+    }
+
+    @Override
+    public final void handleEntitiesDeleted(Archetype archetype, ImmutableIntBag entities) {
         var archetypeCompositions = getCompositions(archetype);
 
         var data = archetypeCompositions.getData();
         for (int i = 0, s = archetypeCompositions.getSize(); i < s; i++) {
             var composition = data[i];
 
-            if (composition.containsEntity(entityId)) {
-                composition.removed(entityId);
+            for (int e = 0, es = entities.getSize(); e < es; e++) {
+                composition.removed(entities.get(e));
             }
         }
     }

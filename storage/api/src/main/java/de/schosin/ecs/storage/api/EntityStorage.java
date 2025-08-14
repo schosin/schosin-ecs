@@ -54,12 +54,11 @@ public interface EntityStorage {
     Archetype remove(int entityId, ImmutableBag<? extends ComponentType<?, ?>> componentTypes);
 
     /**
-     * Delete an entity, clearing all stored component data.
+     * Marks the entity for deletion during the next {@link StorageEngine#process()} call.
      * 
      * @param entityId id of entity
-     * @return previous archetype or null if entity not known
      */
-    Archetype delete(int entityId);
+    void markDeleted(int entityId);
 
     /**
      * Modify an existing entity by adding and removing components.
@@ -108,14 +107,5 @@ public interface EntityStorage {
      */
     @Nullable
     Archetype getPendingArchetype(int entityId);
-
-    /**
-     * Flushes pending changes by {@link #add(int, Object[])}, {@link #remove(int, ImmutableBag)} or
-     * {@link #modify(int, Object[], ImmutableBag)} (and overloads) for the entity.
-     * 
-     * @param entityId id of entity
-     * @return archetype after changes have been applied
-     */
-    Archetype flushChanges(int entityId);
 
 }

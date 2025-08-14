@@ -107,6 +107,7 @@ class RelationMapperManagerTest extends AbstractWorldTest {
         world.deleteEntity(target2);
 
         // Call
+        world.process();
         assertThatCode(world::process).doesNotThrowAnyException();
 
         // Verify

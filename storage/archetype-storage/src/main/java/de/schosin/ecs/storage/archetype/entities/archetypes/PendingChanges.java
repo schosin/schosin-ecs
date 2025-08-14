@@ -104,9 +104,11 @@ public class PendingChanges {
             throw new StorageEngineException("Expected component to match type '%s' but got: %s".formatted(type, component));
         }
 
+        var componentId = componentIndex.getId(type);
+
         // Undo remove
         if (removedTypes.remove(type)) {
-            pendingArchetypeNode = pendingArchetypeNode.addComponentType(type);
+            pendingArchetypeNode = pendingArchetypeNode.addComponentType(type, componentId);
         }
 
         // Don't add if type already part of current archetype (no archetype change)
@@ -115,84 +117,73 @@ public class PendingChanges {
         }
 
         // Update pending archetype node
-        pendingArchetypeNode = pendingArchetypeNode.addComponentType(type);
+        pendingArchetypeNode = pendingArchetypeNode.addComponentType(type, componentId);
 
         // Add component
         switch (type) {
-            case ClassType<?> classType -> addClassComponent(classType, component);
+            case ClassType<?> classType -> addClassComponent(classType, componentId, component);
             case ComponentRelationType<?, ?> relationType -> {
                 if (!(component instanceof ComponentRelations<?, ?> relations)) {
-                    addComponentRelation(relationType, (ComponentRelation<?, ?>) component);
+                    addComponentRelation(relationType, componentId, (ComponentRelation<?, ?>) component);
                     return true;
                 }
 
                 for (int i = 0, s = relations.size(); i < s; i++) {
-                    addComponentRelation(relationType, relations.get(i));
+                    addComponentRelation(relationType, componentId, relations.get(i));
                 }
 
                 Relations.free(relations);
             }
-            case ExclusiveComponentRelationType<?, ?> relationType -> addExclusiveComponentRelation(relationType, component);
+            case ExclusiveComponentRelationType<?, ?> relationType -> addExclusiveComponentRelation(relationType, componentId, component);
             case EntityRelationType<?> relationType -> {
                 if (!(component instanceof EntityRelations<?> relations)) {
-                    addEntityRelation(relationType, (EntityRelation<?>) component);
+                    addEntityRelation(relationType, componentId, (EntityRelation<?>) component);
                     return true;
                 }
 
                 for (int i = 0, s = relations.size(); i < s; i++) {
-                    addEntityRelation(relationType, relations.get(i));
+                    addEntityRelation(relationType, componentId, relations.get(i));
                 }
 
                 Relations.free(relations);
             }
-            case ExclusiveEntityRelationType<?> relationType -> addExclusiveEntityRelation(relationType, (EntityRelation<?>) component);
+            case ExclusiveEntityRelationType<?> relationType -> addExclusiveEntityRelation(relationType, componentId, (EntityRelation<?>) component);
         }
 
         return true;
     }
 
-    private void addClassComponent(ClassType<?> type, Object component) {
-        // Replace already added (same component added multiple times)
-        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
-            var addedType = addedTypes.get(i);
-            if (!addedType.equals(type)) {
-                continue;
-            }
-
-            // Replace added component with same type
-            added.set(i, component);
+    private void addClassComponent(ClassType<?> type, int componentId, Object component) {
+        var index = addedIds.indexOf(componentId);
+        if (index > -1) {
+            added.set(index, component);
             return;
         }
 
         // Add component
-        addedIds.add(componentIndex.getId(type));
+        addedIds.add(componentId);
         addedTypes.add(type);
         added.add(component);
     }
 
-    private void addComponentRelation(ComponentRelationType<?, ?> relationType, ComponentRelation<?, ?> relation) {
-        // Resolve result, creating if not present yet
-        ComponentRelationResultImpl result = null;
+    private void addComponentRelation(ComponentRelationType<?, ?> relationType, int componentId, ComponentRelation<?, ?> relation) {
+        var index = addedIds.indexOf(componentId);
+        if (index > -1) {
+            var result = (ComponentRelationResultImpl) added.get(index);
+            result.add(relation);
 
-        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
-            if (addedTypes.get(i).equals(relationType)) {
-                result = (ComponentRelationResultImpl) added.get(i);
-            }
+            return;
         }
 
-        if (result == null) {
-            result = ComponentRelationResultImpl.getInstance();
-
-            addedIds.add(componentIndex.getId(relationType));
-            addedTypes.add(relationType);
-            added.add(result);
-        }
-
-        // Add relation
+        var result = ComponentRelationResultImpl.getInstance();
         result.add(relation);
+
+        addedIds.add(componentId);
+        addedTypes.add(relationType);
+        added.add(result);
     }
 
-    private void addExclusiveComponentRelation(ExclusiveComponentRelationType<?, ?> relationType, Object component) {
+    private void addExclusiveComponentRelation(ExclusiveComponentRelationType<?, ?> relationType, int componentId, Object component) {
         // Remove matching relations from archetype
         var componentTypes = archetypeNode.getComponentTypes();
 
@@ -212,34 +203,30 @@ public class PendingChanges {
         }
 
         // Add relation component
-        addedIds.add(componentIndex.getId(relationType));
+        addedIds.add(componentId);
         addedTypes.add(relationType);
         added.add(component);
     }
 
-    private void addEntityRelation(EntityRelationType<?> relationType, EntityRelation<?> relation) {
-        // Resolve result, creating if not present yet
-        EntityRelationResultImpl result = null;
+    private void addEntityRelation(EntityRelationType<?> relationType, int componentId, EntityRelation<?> relation) {
 
-        for (int i = 0, s = addedTypes.getSize(); i < s; i++) {
-            if (addedTypes.get(i).equals(relationType)) {
-                result = (EntityRelationResultImpl) added.get(i);
-            }
+        var index = addedIds.indexOf(componentId);
+        if (index > -1) {
+            var result = (EntityRelationResultImpl) added.get(index);
+            result.add(relation);
+
+            return;
         }
 
-        if (result == null) {
-            result = EntityRelationResultImpl.getInstance();
-
-            addedIds.add(componentIndex.getId(relationType));
-            addedTypes.add(relationType);
-            added.add(result);
-        }
-
-        // Add relation
+        var result = EntityRelationResultImpl.getInstance();
         result.add(relation);
+
+        addedIds.add(componentId);
+        addedTypes.add(relationType);
+        added.add(result);
     }
 
-    private void addExclusiveEntityRelation(ExclusiveEntityRelationType<?> relationType, EntityRelation<?> component) {
+    private void addExclusiveEntityRelation(ExclusiveEntityRelationType<?> relationType, int componentId, EntityRelation<?> component) {
         // Remove matching relations in addedTypes
         for (int i = addedTypes.getSize() - 1; i >= 0; i--) {
             if (addedTypes.get(i) instanceof ExclusiveEntityRelationType<?> other && other.relationship().equals(relationType.relationship())) {
@@ -250,7 +237,7 @@ public class PendingChanges {
         }
 
         // Add relation component
-        addedIds.add(componentIndex.getId(relationType));
+        addedIds.add(componentId);
         addedTypes.add(relationType);
         added.add(component);
     }

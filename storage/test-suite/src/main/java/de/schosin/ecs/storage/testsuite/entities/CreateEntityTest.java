@@ -63,7 +63,8 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
 
         // Reuse entity ids, creating a new with the archetype before alteration
         for (int i = 1; i <= 11; i++) {
-            storageEngine.delete(i);
+            storageEngine.markDeleted(i);
+            storageEngine.process();
 
             var component1 = new C1();
             archetype.createEntity(i, new Object[] { component1 });
@@ -76,7 +77,8 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
             var id = i;
 
             assertThatCode(() -> {
-                storageEngine.delete(id);
+                storageEngine.markDeleted(id);
+                storageEngine.process();
 
                 var component1 = new C1();
                 archetype.createEntity(id, new Object[] { component1 });
@@ -98,12 +100,13 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
 
         // Add C2
         storageEngine.add(1, new Object[] { new C2() });
-        storageEngine.flushChanges(1);
+        storageEngine.process();
 
         verifyHasComponents(1, C1.class, C2.class);
 
         // Delete entity
-        storageEngine.delete(1);
+        storageEngine.markDeleted(1);
+        storageEngine.process();
 
         verifyDoesNotHaveComponents(1, C1.class, C2.class);
 
@@ -115,12 +118,13 @@ public class CreateEntityTest extends AbstractStorageEngineTest {
 
         // Add C2
         storageEngine.add(1, new Object[] { new C2() });
-        storageEngine.flushChanges(1);
+        storageEngine.process();
 
         verifyHasComponents(1, C1.class, C2.class);
 
         // Delete entity
-        storageEngine.delete(1);
+        storageEngine.markDeleted(1);
+        storageEngine.process();
 
         verifyDoesNotHaveComponents(1, C1.class, C2.class);
     }

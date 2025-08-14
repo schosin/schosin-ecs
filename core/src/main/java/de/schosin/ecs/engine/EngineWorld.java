@@ -40,7 +40,6 @@ import de.schosin.ecs.engine.components.RelationMapperManager;
 import de.schosin.ecs.engine.components.TransmutationManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.events.EventManager;
-import de.schosin.ecs.engine.events.builtin.ProcessEvent;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.StorageWorld;
 import de.schosin.ecs.storage.api.events.StorageEvent;
@@ -59,32 +58,32 @@ public class EngineWorld implements World, StorageWorld {
     }
 
     private final Config config;
+    private final StorageEngine storageEngine;
 
     private final EventManager eventManager;
     private final SingletonManager singletonManager;
     private final BagManager bagManager;
     private final ComponentManager componentManager;
     private final EntityManager entityManager;
-    private final ChangeManager changeManager;
     private final TransmutationManager transmutationManager;
     private final RelationMapperManager relationMapperManager;
     private final ComponentMapperManager componentMapperManager;
 
     public EngineWorld(WorldBuilder<?> builder, StorageEngine storageEngine) {
         this.config = new Config(builder);
+        this.storageEngine = storageEngine;
 
         this.singletonManager = new SingletonManager(this);
-        singletonManager.addSingleton(StorageEngine.class, storageEngine);
+        this.singletonManager.addSingleton(StorageEngine.class, storageEngine);
 
         var classes = addSingleton(new Classes(ConcurrentHashMap.newKeySet(), ConcurrentHashMap.newKeySet()));
 
         this.eventManager = addSingleton(new EventManager());
         this.bagManager = addSingleton(new BagManager(config.expectedEntities));
         this.componentManager = addSingleton(new ComponentManager(storageEngine, eventManager, bagManager, classes));
-        this.entityManager = addSingleton(new EntityManager(this, storageEngine, bagManager));
-        this.changeManager = addSingleton(new ChangeManager(storageEngine, eventManager, entityManager));
-        this.transmutationManager = addSingleton(new TransmutationManager(changeManager));
-        this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, eventManager, bagManager, componentManager, transmutationManager));
+        this.entityManager = addSingleton(new EntityManager(storageEngine, bagManager));
+        this.transmutationManager = addSingleton(new TransmutationManager(storageEngine));
+        this.relationMapperManager = addSingleton(new RelationMapperManager(storageEngine, bagManager, componentManager, transmutationManager));
         this.componentMapperManager = addSingleton(new ComponentMapperManager(bagManager, componentManager, entityManager, transmutationManager, relationMapperManager));
 
         // Initialized configured singletons
@@ -100,7 +99,7 @@ public class EngineWorld implements World, StorageWorld {
 
     @Override
     public void deleteEntity(int entityId) {
-        changeManager.deleteEntity(entityId);
+        storageEngine.markDeleted(entityId);
     }
 
     @Override
@@ -190,27 +189,11 @@ public class EngineWorld implements World, StorageWorld {
 
     @Override
     public boolean process() {
-        var result = process(config.processLoops);
+        storageEngine.process();
         entityManager.process();
-
-        eventManager.dispatchEvent(ProcessEvent.PROCESS);
-
-        return result;
-    }
-
-    @Override
-    public boolean process(int loops) {
-        var result = changeManager.process(loops);
-
-        eventManager.dispatchEvent(ProcessEvent.PROCESS_STEP);
         componentMapperManager.process();
 
-        return result;
-    }
-
-    @Override
-    public boolean flushEntityUpdates(int entityId) {
-        return changeManager.flushEntityUpdates(entityId, config.processLoops);
+        return true;
     }
 
     @Override
@@ -226,6 +209,11 @@ public class EngineWorld implements World, StorageWorld {
     @Override
     public void dispatchEvent(StorageEvent event) {
         eventManager.dispatchEvent(event);
+    }
+
+    @Override
+    public void freeEntityIds(IntBag entities) {
+        entityManager.freeEntityIds(entities);
     }
 
 }

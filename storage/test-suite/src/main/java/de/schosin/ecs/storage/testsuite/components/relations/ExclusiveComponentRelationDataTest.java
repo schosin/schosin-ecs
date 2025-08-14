@@ -67,7 +67,7 @@ public class ExclusiveComponentRelationDataTest extends
         assertThat(storageEngine.getPendingArchetype(entityId)).as("getPendingArchetype returns updated archetype").isSameAs(updatedArchetype);
         
         // Flush
-        storageEngine.flushChanges(entityId);
+        storageEngine.process();
         
         assertThat(getComponent(entityId, type1)).as("returns instance passed at creation").isNull();
         assertThat(getComponent(entityId, type2)).as("returns pending instance passed at add").isSameAs(instance2);

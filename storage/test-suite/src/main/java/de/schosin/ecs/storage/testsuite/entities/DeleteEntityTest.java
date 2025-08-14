@@ -3,6 +3,8 @@ package de.schosin.ecs.storage.testsuite.entities;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.junit.jupiter.api.Test;
 
 import de.schosin.ecs.api.Pooled;
@@ -15,14 +17,14 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
 
     @Test
     void testUnknownEntity() {
-        assertThatThrownBy(() -> storageEngine.delete(42))
+        assertThatThrownBy(() -> storageEngine.markDeleted(42))
                 .isInstanceOf(StorageEngineException.class)
                 .hasMessageContainingAll("entity 42", "not present in storage");
     }
 
     @Test
     void testDelete() {
-        var archetype = engine.getArchetype(
+        var archetype = storageEngine.getArchetype(
                 component(C1.class), component(P1.class),
                 relation(C1.class, C2.class), exclusiveRelation(E1.class, C2.class),
                 relation(C1.class), exclusiveRelation(E1.class));
@@ -41,7 +43,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         }
 
         // Call
-        storageEngine.delete(42);
+        storageEngine.markDeleted(42);
+        storageEngine.process();
 
         // Verify
         assertThat(storageEngine.getArchetypeForEntity(42)).as("getArchetypeForEntity returns null after delete").isNull();
@@ -50,7 +53,7 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
             assertThat(component.hasComponent(42)).as("hasComponent returns false after delete").isFalse();
             assertThat(component.getComponent(42)).as("getComponent returns null after delete").isNull();
         }
-        
+
         assertThat(archetype.getEntities().iterator()).toIterable().as("getEntities returns empty bag after delete").isEmpty();
     }
 
@@ -60,7 +63,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         var entityId = world.createEntity(relation);
 
         // Call
-        storageEngine.delete(entityId);
+        storageEngine.markDeleted(entityId);
+        storageEngine.process();
 
         // Verify
         assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
@@ -76,7 +80,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         var entityId = world.createEntity(relation);
 
         // Call
-        storageEngine.delete(entityId);
+        storageEngine.markDeleted(entityId);
+        storageEngine.process();
 
         // Verify
         assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
@@ -94,7 +99,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         var entityId = world.createEntity(relation);
 
         // Call
-        storageEngine.delete(entityId);
+        storageEngine.markDeleted(entityId);
+        storageEngine.process();
 
         // Verify
         assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
@@ -112,7 +118,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         var entityId = world.createEntity(relation);
 
         // Call
-        storageEngine.delete(entityId);
+        storageEngine.markDeleted(entityId);
+        storageEngine.process();
 
         // Verify
         assertThat(relation.type()).as("removed relation must be returned to Relation.free").isNull();
@@ -125,13 +132,14 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
     @Test
     void testDelete_DiscardsPendingChanges() {
         // Create empty entity, add C1, delete
-        var archetype = engine.getArchetype();
+        var archetype = storageEngine.getArchetype();
         archetype.createEntity(42, new Object[0]);
 
         storageEngine.add(42, new Object[] { new C1() });
         assertThat(storageEngine.getPendingArchetype(42)).as("getPendingArchetype must return value after add").isNotNull();
 
-        storageEngine.delete(42);
+        storageEngine.markDeleted(42);
+        storageEngine.process();
 
         assertThatThrownBy(() -> storageEngine.getPendingArchetype(42), "getPendingArchetype throws for deleted entities")
                 .as("getPendingArchetype throws for deleted entities").isInstanceOf(StorageEngineException.class)
@@ -150,7 +158,7 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         var component1 = new C1();
         var component2 = new C1();
 
-        var archetype = engine.getArchetype(component.type());
+        var archetype = storageEngine.getArchetype(component.type());
         archetype.createEntity(1, new Object[] { component1 });
         archetype.createEntity(2, new Object[] { component2 });
 
@@ -159,7 +167,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         assertThat(storageEngine.getAccessor(2).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component2);
 
         // Delete first
-        storageEngine.delete(1);
+        storageEngine.markDeleted(1);
+        storageEngine.process();
 
         assertThatThrownBy(() -> storageEngine.getAccessor(1))
                 .as("accessor not available after delete").isInstanceOf(StorageEngineException.class)
@@ -168,7 +177,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         assertThat(storageEngine.getAccessor(2).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component2);
 
         // Delete second
-        storageEngine.delete(2);
+        storageEngine.markDeleted(2);
+        storageEngine.process();
 
         assertThatThrownBy(() -> storageEngine.getAccessor(1))
                 .as("accessor not available after delete").isInstanceOf(StorageEngineException.class)
@@ -186,7 +196,7 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         var component1 = new C1();
         var component2 = new C1();
 
-        var archetype = engine.getArchetype(component.type());
+        var archetype = storageEngine.getArchetype(component.type());
         archetype.createEntity(1, new Object[] { component1 });
         archetype.createEntity(2, new Object[] { component2 });
 
@@ -195,7 +205,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         assertThat(storageEngine.getAccessor(2).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component2);
 
         // Delete first
-        storageEngine.delete(2);
+        storageEngine.markDeleted(2);
+        storageEngine.process();
 
         assertThat(storageEngine.getAccessor(1).<C1>getComponent(component.id())).as("accessor returns instance before delete").isSameAs(component1);
 
@@ -204,7 +215,8 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
                 .as("accessor not available after delete").hasMessageContainingAll("entity 2", "not present in storage");
 
         // Delete second
-        storageEngine.delete(1);
+        storageEngine.markDeleted(1);
+        storageEngine.process();
 
         assertThatThrownBy(() -> storageEngine.getAccessor(1))
                 .as("accessor not available after delete").isInstanceOf(StorageEngineException.class)
@@ -213,6 +225,68 @@ public class DeleteEntityTest extends AbstractStorageEngineTest {
         assertThatThrownBy(() -> storageEngine.getAccessor(2))
                 .as("accessor not available after delete").isInstanceOf(StorageEngineException.class)
                 .as("accessor not available after delete").hasMessageContainingAll("entity 2", "not present in storage");
+    }
+
+    @Test
+    void testDeleteEntityInRemovedObserver() {
+        var entity1 = world.createEntity();
+        var entity2 = world.createEntity();
+
+        onEntityDeleted((archetype, id) -> {
+            if (id == entity1) {
+                world.deleteEntity(entity2);
+            }
+        });
+
+        // Call
+        world.deleteEntity(entity1);
+        world.process();
+
+        // Verify
+        assertThat(world.isActive(entity1)).as("isActive must return false after delete of entity").isFalse();
+        assertThat(world.isActive(entity2)).as("isActive must return false after delete of entity in deleted observer").isFalse();
+    }
+
+    @Test
+    void testCreateEntityInRemovedObserver() {
+        var archetype = storageEngine.getArchetype(component(C1.class));
+
+        var entity1 = world.createEntity(new C1());
+
+        var entityId = new AtomicInteger(-1);
+        onEntityDeleted((__, id) -> {
+            if (id == entity1) {
+                entityId.set(world.createEntity(new C1()));
+            }
+        });
+
+        // Call
+        world.deleteEntity(entity1);
+        world.process();
+
+        // Verify
+        assertThat(world.isActive(entity1)).as("isActive must return false after delete of entity").isFalse();
+
+        assertThat(world.isActive(entityId.get())).as("isActive must return true after create in deleted observer").isTrue();
+        assertThat(storageEngine.getArchetypeForEntity(entityId.get())).as("getArchetypeForEntity must return archetype").isSameAs(archetype);
+    }
+
+    @Test
+    void testDeleteAfterMultipleModifications() {
+        var mapper1 = world.getComponents(C1.class);
+        var mapper2 = world.getComponents(C2.class);
+
+        var entityId = world.createEntity();
+
+        // Call
+        mapper1.add(entityId, new C1());
+        mapper2.add(entityId, new C2());
+        world.deleteEntity(entityId);
+
+        world.process();
+
+        // Verify
+        assertThat(world.isActive(entityId)).as("isActive must return false after deletion processed").isFalse();
     }
 
     record C1() {

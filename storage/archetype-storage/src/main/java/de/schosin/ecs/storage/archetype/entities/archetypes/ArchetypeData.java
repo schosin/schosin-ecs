@@ -7,30 +7,33 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoaImpl {
 
-    ArchetypeAccessor getAccessor(int entityId);
+    ArchetypeAccessor getAccessor(int index);
 
+    /**
+     * Updates previousAccessor with the new index.
+     * 
+     * <p>
+     * The {@code previousAccessor} must have been retrieved from the same archetype using
+     * {@link #getAccessor(int)}. Failing to do so will simply update the index, returning 
+     * the an accessor for a different entity. 
+     * 
+     * @param index new index
+     * @param previousAccessor previousAccessor
+     */
+    void updateAccessor(int index, ArchetypeAccessor previousAccessor);
 
     void addComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes, Object[] components);
 
     void removeComponents(int entityId, int index, ImmutableBag<? extends RegularComponentType<?, ?>> componentTypes);
 
     /**
-     * Remove the entity at the given index from the archetype.
-     * 
-     * @param entityId id of entity
-     * @param index index of entity
-     * @return id of entity swapped to index position, or -1 if no swap
-     */
-    int removeEntity(int entityId, int index);
-
-    /**
      * Moves the entity according to its pending changes.
      * 
      * @param entityId id of entity
+     * @param newArchetypeNode node of new archetype
      * @param index index of entity in this archetype
-     * @return id of entity moved to index, or -1 if none moved
      */
-    int moveEntity(int entityId, int index);
+    void moveEntity(int entityId, ArchetypeGraphNode newArchetypeNode, int index);
 
     /**
      * Returns pending changes.
@@ -39,5 +42,18 @@ public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoa
      * @return pending changes or null if none
      */
     PendingChanges getPendingChanges(int index);
+
+    /**
+     * Marks the entity for deletion during the next {@link #process()} call.
+     * 
+     * @param entityId id of the entity
+     * @param index current index of entity in archetype
+     */
+    void markDeleted(int entityId, int index);
+
+    /**
+     * Processes pending deletions and component composition updates of entities.
+     */
+    void process();
 
 }

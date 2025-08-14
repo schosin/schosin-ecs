@@ -466,14 +466,6 @@ public class WorldsExample {
         System.out.println("- After process #1");
 
         /*
-         * If we want a bit more control or dynamic behaviour, you can also pass the number of loops directly.
-         */
-        System.out.println();
-        System.out.println("- Before process #2");
-        world.process(7);
-        System.out.println("- After process #2");
-
-        /*
          * An important take-away from this whole excersive:
          * 
          * This example was just to showcase the configuration parameter. Nobody should ever write these kinds of

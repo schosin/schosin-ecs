@@ -21,6 +21,8 @@ import de.schosin.ecs.utils.collections.ImmutableBag;
  */
 public class ArchetypeGraphNode {
 
+    private final int id;
+
     private final ComponentIndex componentIndex;
     private final EntityIndex entityIndex;
 
@@ -33,7 +35,8 @@ public class ArchetypeGraphNode {
     private final Bag<ArchetypeGraphNode> add = new Bag<>(ArchetypeGraphNode.class, 64);
     private final Bag<ArchetypeGraphNode> remove = new Bag<>(ArchetypeGraphNode.class, 64);
 
-    public ArchetypeGraphNode(ComponentIndex componentIndex, EntityIndex entityIndex, BitVector componentIds, ImmutableBag<Component<?, ?>> components) {
+    public ArchetypeGraphNode(int id, ComponentIndex componentIndex, EntityIndex entityIndex, BitVector componentIds, ImmutableBag<Component<?, ?>> components) {
+        this.id = id;
         this.componentIndex = componentIndex;
         this.entityIndex = entityIndex;
         this.componentIds = componentIds;
@@ -43,6 +46,10 @@ public class ArchetypeGraphNode {
         for (int i = 0, s = components.getSize(); i < s; i++) {
             this.componentTypes.add(components.get(i).type());
         }
+    }
+
+    public int getId() {
+        return this.id;
     }
 
     /**
@@ -57,12 +64,10 @@ public class ArchetypeGraphNode {
      * @param componentType added component type
      * @return archetype node for all component types of this node and the passed one
      */
-    public ArchetypeGraphNode addComponentType(RegularComponentType<?, ?> componentType) {
+    public ArchetypeGraphNode addComponentType(RegularComponentType<?, ?> componentType, int componentId) {
         if (componentTypes.contains(componentType)) {
             return this;
         }
-
-        var componentId = componentIndex.getId(componentType);
 
         var result = this.add.getSafe(componentId);
         if (result == null) {

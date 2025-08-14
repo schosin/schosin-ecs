@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 
 public class EngineWorldTest extends AbstractWorldTest {
@@ -32,6 +33,12 @@ public class EngineWorldTest extends AbstractWorldTest {
                     .hasFieldOrPropertyWithValue("processLoops", 42);
         }
 
+    }
+
+    public record C1() implements Pooled {
+    }
+
+    public record C2() implements Pooled {
     }
 
 }

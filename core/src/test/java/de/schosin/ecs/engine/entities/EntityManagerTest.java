@@ -1,7 +1,6 @@
 package de.schosin.ecs.engine.entities;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -14,8 +13,6 @@ import de.schosin.ecs.api.components.Relations;
 import de.schosin.ecs.api.components.mappers.ComponentMapper.PooledComponentMapper;
 import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
 
@@ -288,62 +285,10 @@ class EntityManagerTest extends AbstractWorldTest {
             assertThat(archetype).isNull();
         }
 
-        @Test
-        void testUpdateArchetype() {
-            // Setup
-            var entityId = world.createEntity(new Component1(), new Component2());
-
-            var archetype = entityManager.getArchetype(entityId);
-            assertThat(archetype.getComponents().contains(component1)).isTrue();
-            assertThat(archetype.getComponents().contains(component2)).isTrue();
-
-            var otherArchetype = storageEngine.getArchetype(component(Component3.class));
-            assertThat(otherArchetype).isNotSameAs(archetype).isNotEqualTo(archetype);
-
-            // Call
-            assertThat(entityManager.updateArchetype(entityId, otherArchetype)).isTrue();
-
-            // Verify
-            assertThat(entityManager.getArchetype(entityId)).isSameAs(otherArchetype);
-        }
-
-        @Test
-        void testUpdateArchetype_NoChange() {
-            // Setup
-            var entityId = world.createEntity(new Component1(), new Component2());
-
-            var archetype = entityManager.getArchetype(entityId);
-            assertThat(archetype.getComponents().contains(component1)).isTrue();
-            assertThat(archetype.getComponents().contains(component2)).isTrue();
-
-            var sameArchetype = storageEngine.getArchetype(component(Component2.class), component(Component1.class));
-            assertThat(sameArchetype).isSameAs(archetype);
-
-            // Call
-            assertThat(entityManager.updateArchetype(entityId, sameArchetype)).isFalse();
-
-            // Verify
-            assertThat(entityManager.getArchetype(entityId)).isSameAs(archetype);
-        }
-
-        @Test
-        void testUpdateArchetype_UnknownEntity() {
-            var archetype = storageEngine.getArchetype(component(Component1.class));
-
-            assertThat(entityManager.updateArchetype(42, null)).isFalse();
-            assertThat(entityManager.updateArchetype(42, archetype)).isFalse();
-        }
-
     }
 
     @Nested
     class DeleteEntityTest {
-
-        @Test
-        void testDeleteUnknownEntity() {
-            assertThatCode(() -> entityManager.deleteEntity(42)).doesNotThrowAnyExceptionExcept(ArrayIndexOutOfBoundsException.class);
-            assertThatCode(() -> entityManager.deleteEntity(31337)).doesNotThrowAnyExceptionExcept(ArrayIndexOutOfBoundsException.class);
-        }
 
         @Test
         void testDeleteDelayed() {
@@ -407,31 +352,30 @@ class EntityManagerTest extends AbstractWorldTest {
         @Test
         void testDeletionDuringCreation() {
             // Setup listeners
-            eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                if (event.archetype().getComponentTypes().contains(type1)) {
-                    pooled2.add(event.entityId());
+            onEntityInserted((archetype, id) -> {
+                if (archetype.getComponentTypes().contains(type1)) {
+                    pooled2.add(id);
                 }
             });
-
-            eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                var archetype = event.archetype();
-                var entityId = event.entityId();
-
+            onEntityUpdated((archetype, oldArchetype, id) -> {
                 if (archetype.getComponentTypes().contains(type2)) {
-                    pooled3.add(entityId);
+                    pooled3.add(id);
                 }
 
                 if (archetype.getComponentTypes().contains(type3)) {
-                    world.deleteEntity(entityId);
+                    world.deleteEntity(id);
                 }
             });
 
             // Call
             var c1 = pooled1.getInstance();
+            var entityId = world.createEntity(c1);
 
-            assertThatThrownBy(() -> world.createEntity(c1))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("deleted during creation");
+            // Verify
+            assertThat(world.isActive(entityId)).isTrue();
+
+            world.process();
+            assertThat(world.isActive(entityId)).isFalse();
         }
 
         @Test
@@ -445,21 +389,15 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                    pooled2.add(event.entityId());
+                onEntityInserted((archetype, id) -> {
+                    pooled2.add(id);
                 });
-
-                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var archetype = event.archetype();
-                    var prevArchetype = event.previousArchetype();
-                    var entityId = event.entityId();
-
-                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
-                        pooled3.add(entityId);
+                onEntityUpdated((archetype, oldArchetype, id) -> {
+                    if (!oldArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
+                        pooled3.add(id);
                     }
-
-                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
-                        pooled1.remove(entityId);
+                    if (!oldArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
+                        pooled1.remove(id);
                     }
                 });
 
@@ -487,21 +425,16 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                    pooled2.add(event.entityId());
+                onEntityInserted((archetype, id) -> {
+                    pooled2.add(id);
                 });
-
-                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var archetype = event.archetype();
-                    var prevArchetype = event.previousArchetype();
-                    var entityId = event.entityId();
-
-                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
-                        pooled3.add(entityId);
+                onEntityUpdated((archetype, oldArchetype, id) -> {
+                    if (!oldArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
+                        pooled3.add(id);
                     }
 
-                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
-                        pooled1.remove(entityId);
+                    if (!oldArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
+                        pooled1.remove(id);
                     }
                 });
 
@@ -529,19 +462,30 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var archetype = event.archetype();
-                    var prevArchetype = event.previousArchetype();
-                    var id = event.entityId();
+                onEntityUpdated((archetype, oldArchetype, id) -> {
+                    if (!oldArchetype.getComponentTypes().contains(type1) && archetype.getComponentTypes().contains(type1)) {
+                        verifyHasComponents(entityId, C1.class);
+                        verifyDoesNotHaveComponents(entityId, C2.class, C3.class);
 
-                    if (!prevArchetype.getComponentTypes().contains(type1) && archetype.getComponentTypes().contains(type1)) {
+                        verifyArchetypeHasComponents(entityId, C1.class);
+                        verifyArchetypeDoesNotHaveComponents(entityId, C2.class, C3.class);
+
                         pooled2.add(id);
                     }
-                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
+                    if (!oldArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
+                        verifyHasComponents(entityId, C1.class, C2.class);
+                        verifyDoesNotHaveComponents(entityId, C3.class);
+
+                        verifyArchetypeHasComponents(entityId, C1.class, C2.class);
+                        verifyArchetypeDoesNotHaveComponents(entityId, C3.class);
+
                         pooled3.add(id);
                     }
+                    if (!oldArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
+                        verifyHasComponents(entityId, C1.class, C2.class, C3.class);
 
-                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
+                        verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
+
                         pooled1.remove(id);
                     }
                 });
@@ -549,28 +493,9 @@ class EntityManagerTest extends AbstractWorldTest {
                 // Call
                 pooled1.add(entityId);
 
-                // Process 1
-                world.process(1);
-                verifyHasComponents(entityId, C1.class, C2.class);
-                verifyDoesNotHaveComponents(entityId, C3.class);
+                // Process
+                world.process();
 
-                verifyArchetypeHasComponents(entityId, C1.class);
-                verifyArchetypeDoesNotHaveComponents(entityId, C2.class, C3.class);
-
-                // Process 2
-                world.process(1);
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-
-                verifyArchetypeHasComponents(entityId, C1.class, C2.class);
-                verifyArchetypeDoesNotHaveComponents(entityId, C3.class);
-
-                // Process 3
-                world.process(1);
-                verifyHasComponents(entityId, C1.class, C2.class, C3.class);
-                verifyArchetypeHasComponents(entityId, C1.class, C2.class, C3.class);
-
-                // Process 4
-                world.process(1);
                 verifyHasComponents(entityId, C2.class, C3.class);
                 verifyDoesNotHaveComponents(entityId, C1.class);
 
@@ -587,20 +512,17 @@ class EntityManagerTest extends AbstractWorldTest {
                 verify.expectNoMoreUpdated();
 
                 // Setup listeners
-                eventManager.registerEventHandler(EntityInsertedEvent.class, event -> {
-                    pooled2.add(event.entityId());
+                onEntityInserted((archetype, id) -> {
+                    if (archetype.getComponentTypes().contains(type1)) {
+                        pooled2.add(id);
+                    }
                 });
-
-                eventManager.registerEventHandler(EntityUpdatedEvent.class, event -> {
-                    var archetype = event.archetype();
-                    var prevArchetype = event.previousArchetype();
-                    var id = event.entityId();
-
-                    if (!prevArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
+                onEntityUpdated((archetype, oldArchetype, id) -> {
+                    if (!oldArchetype.getComponentTypes().contains(type2) && archetype.getComponentTypes().contains(type2)) {
                         pooled3.add(id);
                     }
 
-                    if (!prevArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
+                    if (!oldArchetype.getComponentTypes().contains(type3) && archetype.getComponentTypes().contains(type3)) {
                         pooled1.remove(id);
                     }
                 });

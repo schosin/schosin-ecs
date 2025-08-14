@@ -21,11 +21,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.events.builtin.EntityEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityInsertedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityRemovedEvent;
-import de.schosin.ecs.engine.events.builtin.EntityEvent.EntityUpdatedEvent;
-import de.schosin.ecs.engine.events.builtin.Event;
 import de.schosin.ecs.engine.utils.exceptions.EcsEventHandlerException;
 
 class EventManagerTest extends AbstractWorldTest {
@@ -45,17 +40,17 @@ class EventManagerTest extends AbstractWorldTest {
 
         @Test
         void testClass_WhenNonGenericInterfaceExtendsEventHandler_TypeDetectedAutomatically() {
-            assertThatCode(() -> eventManager.registerEventHandler(new EntityEventHandlerImpl())).doesNotThrowAnyException();
+            assertThatCode(() -> eventManager.registerEventHandler(new BaseEventHandlerImpl())).doesNotThrowAnyException();
         }
 
         @Test
         void testClass_WhenNonGenericAbstractSuperclassExtendsEventHandler_TypeDetectedAutomatically() {
-            assertThatCode(() -> eventManager.registerEventHandler(new AbstractEntityEventHandlerImpl())).doesNotThrowAnyException();
+            assertThatCode(() -> eventManager.registerEventHandler(new AbstractBaseEventHandlerImpl())).doesNotThrowAnyException();
         }
 
         @Test
         void testClass_WhenEventGeneric_DoesNotDetectType() {
-            assertThatThrownBy(() -> eventManager.registerEventHandler(new GenericEventHandler<EntityInsertedEvent>()))
+            assertThatThrownBy(() -> eventManager.registerEventHandler(new GenericEventHandler<Event1>()))
                     .isInstanceOf(EcsEventHandlerException.class)
                     .hasMessageContaining("Could not determine event type for handler");
         }
@@ -74,7 +69,7 @@ class EventManagerTest extends AbstractWorldTest {
 
         @Test
         void testLambda_DoesNotDetectType() {
-            assertThatThrownBy(() -> eventManager.registerEventHandler((EntityInsertedEvent event) -> System.out.println(event)))
+            assertThatThrownBy(() -> eventManager.registerEventHandler((Event1 event) -> System.out.println(event)))
                     .isInstanceOf(EcsEventHandlerException.class)
                     .hasMessageContaining("synthetic handlers");
         }
@@ -92,41 +87,41 @@ class EventManagerTest extends AbstractWorldTest {
         }
 
         @SuppressWarnings("unused")
-        private static void methodReference(EntityInsertedEvent event) {
+        private static void methodReference(Event1 event) {
         }
 
-        static class Handler implements EventHandler<EntityEvent> {
+        static class Handler implements EventHandler<BaseEvent> {
             @Override
-            public void handle(EntityEvent event) {
+            public void handle(BaseEvent event) {
             }
         }
 
         @SuppressWarnings("unused")
-        static class GenericHandler<T> implements EventHandler<EntityEvent> {
+        static class GenericHandler<T> implements EventHandler<BaseEvent> {
             @Override
-            public void handle(EntityEvent event) {
+            public void handle(BaseEvent event) {
             }
         }
 
-        static class GenericEventHandler<T extends EntityEvent> implements EventHandler<T> {
+        static class GenericEventHandler<T extends BaseEvent> implements EventHandler<T> {
             @Override
             public void handle(T event) {
             }
         }
 
-        static class ConcreteGenericEventHandler extends GenericEventHandler<EntityInsertedEvent> implements EventHandler<EntityInsertedEvent> {
+        static class ConcreteGenericEventHandler extends GenericEventHandler<Event1> implements EventHandler<Event1> {
             @Override
-            public void handle(EntityInsertedEvent event) {
+            public void handle(Event1 event) {
             }
         }
 
-        static class EntityEventHandlerImpl implements EntityEventHandler {
+        static class BaseEventHandlerImpl implements BaseEventHandler {
             @Override
-            public void handle(EntityEvent event) {
+            public void handle(BaseEvent event) {
             }
         }
 
-        interface EntityEventHandler extends EventHandler<EntityEvent> {
+        interface BaseEventHandler extends EventHandler<BaseEvent> {
         }
 
         interface UnrelatedInterface {
@@ -136,13 +131,13 @@ class EventManagerTest extends AbstractWorldTest {
         interface UnrelatedGenericInterface<T> {
         }
 
-        static class AbstractEntityEventHandlerImpl extends AbstractEntityEventHandler {
+        static class AbstractBaseEventHandlerImpl extends AbstractBaseEventHandler {
             @Override
-            public void handle(EntityEvent event) {
+            public void handle(BaseEvent event) {
             }
         }
 
-        abstract static class AbstractEntityEventHandler implements UnrelatedInterface, UnrelatedGenericInterface<String>, EventHandler<EntityEvent> {
+        abstract static class AbstractBaseEventHandler implements UnrelatedInterface, UnrelatedGenericInterface<String>, EventHandler<BaseEvent> {
         }
 
         class GenericEventTypeHandler implements EventHandler<List<String>> {
@@ -239,16 +234,15 @@ class EventManagerTest extends AbstractWorldTest {
         }
 
         @ParameterizedTest
-        @MethodSource("getEntityEventHandlers")
+        @MethodSource("getBaseEventHandlers")
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testEntityEventHandlers(Class<?> eventType, EventHandler<?> handler, Set<Class<?>> expectedEvents) {
+        void testBaseEventHandlers(Class<?> eventType, EventHandler<?> handler, Set<Class<?>> expectedEvents) {
             // Setup
             eventManager.registerEventHandler((Class) eventType, handler);
 
             // Call
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
-            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
+            eventManager.dispatchEvent(Event1.INSTANCE);
+            eventManager.dispatchEvent(Event2.INSTANCE);
 
             // Verify
             assertThat(this.events).hasSameSizeAs(expectedEvents);
@@ -256,43 +250,35 @@ class EventManagerTest extends AbstractWorldTest {
         }
 
         @ParameterizedTest
-        @MethodSource("getEntityEventHandlers")
+        @MethodSource("getBaseEventHandlers")
         @SuppressWarnings({ "unchecked", "rawtypes" })
-        void testEntityEventHandlers_WhenRegisteredAfterFirstDispatch(Class<?> eventType, EventHandler<?> handler, Set<Class<?>> expectedEvents) {
+        void testBaseEventHandlers_WhenRegisteredAfterFirstDispatch(Class<?> eventType, EventHandler<?> handler, Set<Class<?>> expectedEvents) {
             // Setup
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
+            eventManager.dispatchEvent(Event1.INSTANCE);
+            eventManager.dispatchEvent(Event1.INSTANCE);
 
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
-
-            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
-            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
+            eventManager.dispatchEvent(Event2.INSTANCE);
+            eventManager.dispatchEvent(Event2.INSTANCE);
 
             eventManager.registerEventHandler((Class) eventType, handler);
 
             // Call
-            eventManager.dispatchEvent(EntityInsertedEvent.get().with(0, null));
-            eventManager.dispatchEvent(EntityUpdatedEvent.get().with(0, null, null));
-            eventManager.dispatchEvent(EntityRemovedEvent.get().with(0, null));
+            eventManager.dispatchEvent(Event1.INSTANCE);
+            eventManager.dispatchEvent(Event2.INSTANCE);
 
             // Verify
             assertThat(this.events).hasSameSizeAs(expectedEvents);
             assertThat(this.events).as("is expected").allSatisfy(event -> assertThat(expectedEvents).anySatisfy(expected -> assertThat(expected).isAssignableFrom(event)));
         }
 
-        Stream<Arguments> getEntityEventHandlers() {
+        Stream<Arguments> getBaseEventHandlers() {
             return Stream.of(
-                    handler("AllEventHandler", Event.class, new AllEventHandler(), EntityInsertedEvent.class, EntityUpdatedEvent.class, EntityRemovedEvent.class),
-                    handler("EntityEventHandler", EntityEvent.class, new EntityEventHandler(), EntityInsertedEvent.class, EntityUpdatedEvent.class, EntityRemovedEvent.class),
-                    handler("EntityInsertedEventHandler", EntityInsertedEvent.class, new EntityInsertedEventHandler(), EntityInsertedEvent.class),
-                    handler("EntityUpdatedEventHandler", EntityUpdatedEvent.class, new EntityUpdatedEventHandler(), EntityUpdatedEvent.class),
-                    handler("EntityRemovedEventHandler", EntityRemovedEvent.class, new EntityRemovedEventHandler(), EntityRemovedEvent.class),
-                    handler("handleEvent", Event.class, this::handleEvent, EntityInsertedEvent.class, EntityUpdatedEvent.class, EntityRemovedEvent.class),
-                    handler("handleEntityEvent", EntityEvent.class, this::handleEntityEvent, EntityInsertedEvent.class, EntityUpdatedEvent.class, EntityRemovedEvent.class),
-                    handler("handleEntityInsertedEvent", EntityInsertedEvent.class, this::handleEntityInsertedEvent, EntityInsertedEvent.class),
-                    handler("handleEntityUpdatedEvent", EntityUpdatedEvent.class, this::handleEntityUpdatedEvent, EntityUpdatedEvent.class),
-                    handler("handleEntityRemovedEvent", EntityRemovedEvent.class, this::handleEntityRemovedEvent, EntityRemovedEvent.class)
+                    handler("BaseEventHandler", BaseEvent.class, new BaseEventHandler(), Event1.class, Event2.class),
+                    handler("Event1Handler", Event1.class, new Event1Handler(), Event1.class),
+                    handler("Event2Handler", Event2.class, new Event2Handler(), Event2.class),
+                    handler("handleBaseEvent", BaseEvent.class, this::handleBaseEvent, Event1.class, Event2.class),
+                    handler("handleEvent1", Event1.class, this::handleEvent1, Event1.class),
+                    handler("handleEvent2", Event2.class, this::handleEvent2, Event2.class)
 
             );
 
@@ -302,61 +288,50 @@ class EventManagerTest extends AbstractWorldTest {
             return Arguments.of(Named.of(eventType.getSimpleName(), eventType), Named.of(name, handler), Set.of(expectedEvents));
         }
 
-        private void handleEvent(Event event) {
+        private void handleBaseEvent(BaseEvent event) {
             events.add(event.getClass());
         }
 
-        private void handleEntityEvent(EntityEvent event) {
+        private void handleEvent1(Event1 event) {
             events.add(event.getClass());
         }
 
-        private void handleEntityInsertedEvent(EntityInsertedEvent event) {
+        private void handleEvent2(Event2 event) {
             events.add(event.getClass());
         }
 
-        private void handleEntityUpdatedEvent(EntityUpdatedEvent event) {
-            events.add(event.getClass());
-        }
-
-        private void handleEntityRemovedEvent(EntityRemovedEvent event) {
-            events.add(event.getClass());
-        }
-
-        class AllEventHandler implements EventHandler<Event> {
+        class BaseEventHandler implements EventHandler<BaseEvent> {
             @Override
-            public void handle(Event event) {
+            public void handle(BaseEvent event) {
                 events.add(event.getClass());
             }
         }
 
-        class EntityEventHandler implements EventHandler<EntityEvent> {
+        class Event1Handler implements EventHandler<Event1> {
             @Override
-            public void handle(EntityEvent event) {
+            public void handle(Event1 event) {
                 events.add(event.getClass());
             }
         }
 
-        class EntityInsertedEventHandler implements EventHandler<EntityInsertedEvent> {
+        class Event2Handler implements EventHandler<Event2> {
             @Override
-            public void handle(EntityInsertedEvent event) {
+            public void handle(Event2 event) {
                 events.add(event.getClass());
             }
         }
 
-        class EntityUpdatedEventHandler implements EventHandler<EntityUpdatedEvent> {
-            @Override
-            public void handle(EntityUpdatedEvent event) {
-                events.add(event.getClass());
-            }
-        }
+    }
 
-        class EntityRemovedEventHandler implements EventHandler<EntityRemovedEvent> {
-            @Override
-            public void handle(EntityRemovedEvent event) {
-                events.add(event.getClass());
-            }
-        }
+    interface BaseEvent {
+    }
 
+    enum Event1 implements BaseEvent {
+        INSTANCE
+    }
+
+    enum Event2 implements BaseEvent {
+        INSTANCE
     }
 
 }
