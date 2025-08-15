@@ -27,7 +27,7 @@ public class EntityCreationBenchmark {
     public static void main(String[] args) throws Exception {
         var options = new OptionsBuilder()
                 .include(benchmarkName(SchosinEcs.class))
-                .include(benchmarkName(Dominion.class))
+               // .include(benchmarkName(Dominion.class))
                 .build();
 
         new Runner(options).run();
@@ -93,12 +93,12 @@ public class EntityCreationBenchmark {
             world.process();
         }
 
-        @Benchmark
+       // @Benchmark
         public void createEntityWith01(Blackhole bh) {
             bh.consume(archetype1.createBatch(size, () -> new Schosin1()));
         }
 
-        @Benchmark
+       // @Benchmark
         public void createEntityWith01_Pooled(Blackhole bh) {
             bh.consume(pooled1.createBatch(size, () -> pooled1.getInstance(Pooled1.class)));
         }

@@ -165,9 +165,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         for (int i = 0, s = archetypeCompositions.getSize(); i < s; i++) {
             var composition = data[i];
             if (composition.isInterested(archetype)) {
-                for (int e = 0, es = entities.getSize(); e < es; e++) {
-                    composition.inserted(entities.get(e));
-                }
+                composition.inserted(entities);
             }
         }
     }
@@ -215,9 +213,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
             var afterInterested = composition.isInterested(newArchetype);
             if (!afterInterested) {
-                for (int e = 0, es = entities.getSize(); e < es; e++) {
-                    composition.removed(entities.get(e));
-                }
+                composition.removed(entities);
             }
         }
     }
@@ -233,9 +229,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
             var beforeInterested = composition.isInterested(previousArchetype);
             if (!beforeInterested) {
-                for (int e = 0, es = entities.getSize(); e < es; e++) {
-                    composition.inserted(entities.get(e));
-                }
+                composition.inserted(entities);
             }
         }
     }
@@ -247,10 +241,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         var data = archetypeCompositions.getData();
         for (int i = 0, s = archetypeCompositions.getSize(); i < s; i++) {
             var composition = data[i];
-
-            for (int e = 0, es = entities.getSize(); e < es; e++) {
-                composition.removed(entities.get(e));
-            }
+            composition.removed(entities);
         }
     }
 
@@ -406,6 +397,29 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             return componentMapperManager.getComponents(type);
         }
 
+        private void inserted(ImmutableIntBag entities) {
+            var size = entities.getSize();
+            this.count += size;
+
+            if (inserted == null) {
+                return;
+            }
+
+            // Process callbacks
+            for (int e = 0; e < size; e++) {
+                var entityId = entities.get(e);
+
+                inserted.accept(entityId);
+
+                if (moreInserted != null) {
+                    var data = moreInserted.getData();
+                    for (int i = 0, s = moreInserted.getSize(); i < s; i++) {
+                        data[i].accept(entityId);
+                    }
+                }
+            }
+        }
+
         private void inserted(int entityId) {
             this.count++;
 
@@ -420,6 +434,29 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                 var data = moreInserted.getData();
                 for (int i = 0, s = moreInserted.getSize(); i < s; i++) {
                     data[i].accept(entityId);
+                }
+            }
+        }
+
+        private void removed(ImmutableIntBag entities) {
+            var size = entities.getSize();
+            this.count -= size;
+
+            if (removed == null) {
+                return;
+            }
+
+            // Process callbacks
+            for (int e = 0; e < size; e++) {
+                var entityId = entities.get(e);
+
+                removed.accept(entityId);
+
+                if (moreRemoved != null) {
+                    var data = moreRemoved.getData();
+                    for (int i = 0, s = moreRemoved.getSize(); i < s; i++) {
+                        data[i].accept(entityId);
+                    }
                 }
             }
         }
