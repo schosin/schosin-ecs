@@ -139,7 +139,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             var archetypes = storageEngine.getArchetypes();
             for (int i = 0, s = archetypes.getSize(); i < s; i++) {
                 var archetype = archetypes.get(i);
-                if (!composition.isInterested(archetype)) {
+                if (!spec.isInterested(archetype)) {
                     continue;
                 }
 
@@ -304,7 +304,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             this.spec = spec;
             this.archetypeCache = new IntBag(64);
 
-            var entities = supplier.apply(this::isInterested);
+            var entities = supplier.apply(spec::isInterested);
 
             // Determine largest entityId to avoid garbage by BitVector growing
             var largestEntityId = 0;
@@ -471,17 +471,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         public boolean isInterested(@NonNull Archetype archetype) {
-            // Check cached value
-            var cached = archetypeCache.getSafe(archetype.getId());
-            if (cached != 0) {
-                return cached == 1;
-            }
-
-            // Test spec and cache result
-            var result = spec.isInterested(archetype);
-            archetypeCache.set(archetype.getId(), result ? 1 : 2);
-
-            return result;
+            return archetypeCache.getSafe(archetype.getId()) == 1;
         }
 
         @Override
