@@ -56,7 +56,7 @@ public final class IntBag implements ImmutableIntBag {
         ensureCapacity(size + other.getSize());
 
         for (int i = 0, s = other.getSize(); i < s; i++) {
-            add(other.get(i));
+            addSafe(other.get(i));
         }
     }
 
@@ -65,6 +65,10 @@ public final class IntBag implements ImmutableIntBag {
             setCapacity(data.length * 2);
         }
 
+        this.data[size++] = item;
+    }
+
+    public void addSafe(int item) {
         this.data[size++] = item;
     }
 

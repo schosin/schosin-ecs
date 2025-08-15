@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -40,7 +39,6 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
-import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionData;
@@ -82,20 +80,11 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
 
     @Test
     void testCaching() {
-        // Setup
-        var counter = new AtomicInteger(0);
-        Function<ComponentsPredicate, IntBag> supplier = spec -> {
-            counter.incrementAndGet();
-            return new IntBag(1);
-        };
-
         // First call
-        var composition = compositionManager.create(EMPTY, supplier);
-        assertThat(counter).hasValue(1);
+        var composition = compositionManager.createComposition(EMPTY);
 
         // Second call 
-        var composition2 = compositionManager.create(EMPTY, supplier);
-        assertThat(counter).hasValue(1);
+        var composition2 = compositionManager.createComposition(EMPTY);
         assertThat(composition2).isSameAs(composition);
     }
 
@@ -1081,7 +1070,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Test
         void testInserted_AllComposition() {
             // Setup
-            var composition = compositionManager.create(EMPTY, spec -> new IntBag(4));
+            var composition = compositionManager.createComposition(EMPTY);
 
             var inserted = new IntBag(3);
             composition.inserted(inserted::add);
@@ -1101,7 +1090,7 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Test
         void testInserted_InterestedOnly() {
             // Setup
-            var composition = compositionManager.create(Composition.all(C1.class), spec -> new IntBag(4));
+            var composition = compositionManager.createComposition(Composition.all(C1.class));
 
             var inserted = new IntBag(1);
             composition.inserted(inserted::add);
@@ -1118,12 +1107,11 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
         @Test
         void testMultipleInserted() {
             // Setup
-            var entities = new IntBag(4);
             var inserted1 = new IntBag(2);
             var inserted2 = new ArrayList<Integer>();
             var inserted3 = new HashSet<Integer>();
 
-            var composition = compositionManager.create(EMPTY, spec -> entities);
+            var composition = compositionManager.createComposition(EMPTY);
 
             // Add callbacks
             composition.inserted(inserted1::add);
@@ -1166,9 +1154,9 @@ public class CompositionManagerTest extends AbstractEcsTest<CompositionWorld> {
             var archetype2 = storageEngine.getArchetype(component(C2.class));
             var archetype3 = storageEngine.getArchetype(component(C3.class));
 
-            var composition1 = compositionManager.create(Composition.all(C1.class), spec -> bagManager.createEntityIntBag());
-            var composition2 = compositionManager.create(Composition.all(C2.class), spec -> bagManager.createEntityIntBag());
-            var composition3 = compositionManager.create(Composition.all(C3.class), spec -> bagManager.createEntityIntBag());
+            var composition1 = compositionManager.createComposition(Composition.all(C1.class));
+            var composition2 = compositionManager.createComposition(Composition.all(C2.class));
+            var composition3 = compositionManager.createComposition(Composition.all(C3.class));
 
             var entity7Archetype = archetype2;
             var entity42Archetype = archetype1;

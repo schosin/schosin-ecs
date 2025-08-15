@@ -272,7 +272,11 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         var batchSize = creationBatchSize < count ? creationBatchSize : count;
 
         var entityIds = this.intBagPool.getInstance();
+        entityIds.ensureCapacity(count);
+
         var indices = this.intBagPool.getInstance();
+        indices.ensureCapacity(count);
+
         var components = this.componentsPool.getInstance();
 
         // Create entities in batches
@@ -285,7 +289,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
             // Fill batch
             for (int i = 0; i < batch; i++) {
-                entityIds.add(entityIdSupplier.getAsInt());
+                entityIds.addSafe(entityIdSupplier.getAsInt());
                 componentsConsumer.accept(components[i], idx++);
             }
 
@@ -311,7 +315,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
                 var index = alive++;
 
                 var entityId = entityIds.get(start + i);
-                indices.add(index);
+                indices.addSafe(index);
 
                 // Validate entity not already in storage
                 var existing = entityIndex.getArchetypeDataForEntity(entityId);

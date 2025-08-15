@@ -217,13 +217,15 @@ public class EntityManager {
     public ImmutableIntBag createEntities(Archetype archetype, int count, ObjIntConsumer<Object[]> componentsConsumer) {
         // Build supplier of entityIds
         var entityIds = intBagPool.getInstance();
+        entityIds.ensureCapacity(count);
+
         this.lentIntBags.add(entityIds);
 
         IntSupplier entityIdSupplier = () -> {
             var entity = createEntityInstance();
 
             entities.set(entity.id, entity);
-            entityIds.add(entity.id);
+            entityIds.addSafe(entity.id);
 
             return entity.id;
         };
@@ -252,24 +254,6 @@ public class EntityManager {
     public boolean isActive(int entityId) {
         return this.entities.get(entityId) != null;
     }
-
-    public IntBag getEntities(ComponentsPredicate predicate) {
-        var result = new IntBag(1024);
-
-        var archetypes = storageEngine.getArchetypes();
-        for (int i = 0, s = archetypes.getSize(); i < s; i++) {
-            var archetype = archetypes.get(i);
-            if (!predicate.isInterested(archetype)) {
-                continue;
-            }
-
-            var entities = archetype.getEntities();
-            result.addAll(entities);
-        }
-
-        return result;
-    }
-
 
     /**
      * @return archetype of the entity or null if entity does not exist

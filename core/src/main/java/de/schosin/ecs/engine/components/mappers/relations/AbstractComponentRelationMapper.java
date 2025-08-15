@@ -20,7 +20,6 @@ abstract class AbstractComponentRelationMapper<R, T, RR, C extends Component<Com
     protected final TransmutationManager.Add<ComponentRelation<R, T>> add;
     protected final TransmutationManager.Remove remove;
 
-    private final Pool<IndexedAccessorImpl<RR>> indexedAccessors;
     private final Pool<PendingAccessorImpl<RR>> pendingAccessors;
 
     protected AbstractComponentRelationMapper(C data, TransmutationManager transmutationManager) {
@@ -30,12 +29,7 @@ abstract class AbstractComponentRelationMapper<R, T, RR, C extends Component<Com
         this.add = transmutationManager.getAddTransmuter(data.type());
         this.remove = transmutationManager.getRemoveTransmuter(data.type());
 
-        this.indexedAccessors = Pool.unbounded(IndexedAccessorImpl.class, this::createIndexedAccessor);
         this.pendingAccessors = Pool.unbounded(PendingAccessorImpl.class, this::createPendingAccessor);
-    }
-
-    private IndexedAccessorImpl<RR> createIndexedAccessor() {
-        return new IndexedAccessorImpl<>(indexedAccessors);
     }
 
     private PendingAccessorImpl<RR> createPendingAccessor() {
@@ -64,7 +58,7 @@ abstract class AbstractComponentRelationMapper<R, T, RR, C extends Component<Com
         var index = archetype.getComponentIndex(componentId);
 
         return index > -1
-                ? indexedAccessors.getInstance().init(index)
+                ? IndexedAccessorImpl.getInstance(index)
                 : pendingAccessors.getInstance();
     }
 

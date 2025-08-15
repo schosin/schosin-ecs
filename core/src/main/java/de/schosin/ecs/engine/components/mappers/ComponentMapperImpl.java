@@ -20,7 +20,6 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
     private final TransmutationManager.Add<T> add;
     private final TransmutationManager.Remove remove;
 
-    private final Pool<IndexedAccessorImpl<T>> indexedAccessors;
     private final Pool<PendingAccessorImpl<T>> pendingAccessors;
 
     public ComponentMapperImpl(ClassComponent<T> data, TransmutationManager transmutationManager) {
@@ -31,12 +30,7 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
         this.add = transmutationManager.getAddTransmuter(data.type());
         this.remove = transmutationManager.getRemoveTransmuter(data.type());
 
-        this.indexedAccessors = Pool.unbounded(IndexedAccessorImpl.class, this::createIndexedAccessor);
         this.pendingAccessors = Pool.unbounded(PendingAccessorImpl.class, this::createPendingAccessor);
-    }
-
-    private IndexedAccessorImpl<T> createIndexedAccessor() {
-        return new IndexedAccessorImpl<>(indexedAccessors);
     }
 
     private PendingAccessorImpl<T> createPendingAccessor() {
@@ -80,7 +74,7 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
         var index = archetype.getComponentIndex(componentId);
 
         return index > -1
-                ? indexedAccessors.getInstance().init(index)
+                ? IndexedAccessorImpl.getInstance(index)
                 : pendingAccessors.getInstance();
     }
 

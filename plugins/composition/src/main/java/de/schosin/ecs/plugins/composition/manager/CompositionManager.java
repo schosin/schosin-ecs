@@ -3,7 +3,6 @@ package de.schosin.ecs.plugins.composition.manager;
 import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.function.IntConsumer;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
@@ -21,7 +20,6 @@ import de.schosin.ecs.api.data.IterableComponentAccessor;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
-import de.schosin.ecs.engine.entities.EntityManager.ComponentsPredicate;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
@@ -43,7 +41,6 @@ import de.schosin.ecs.storage.api.entities.observer.EntityCreatedObserver;
 import de.schosin.ecs.storage.api.entities.observer.EntityUpdatedObserver;
 import de.schosin.ecs.storage.api.events.ArchetypeAddedEvent;
 import de.schosin.ecs.utils.collections.Bag;
-import de.schosin.ecs.utils.collections.BitVector;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
 
@@ -95,7 +92,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     @Override
     public Composition createComposition(Builder builder) {
-        return create(builder, entityManager::getEntities);
+        var spec = buildSpec(builder);
+
+        return this.compositions.computeIfAbsent(spec, this::buildComposition);
     }
 
     @Override
@@ -119,15 +118,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         return composition.createCompositionData(dataType);
     }
 
-    public Composition create(Builder builder, Function<ComponentsPredicate, IntBag> entities) {
-        var spec = buildSpec(builder);
-
-        return this.compositions.computeIfAbsent(spec, ignore -> buildComposition(spec, entities));
-    }
-
-    private CompositionImpl buildComposition(EngineSpec spec, Function<ComponentsPredicate, IntBag> entities) {
+    private CompositionImpl buildComposition(EngineSpec spec) {
         // Create composition
-        var composition = new CompositionImpl(spec, entities);
+        var composition = new CompositionImpl(spec, this.storageEngine);
 
         // Offer known archetypes to composition
         for (var archetype : archetypes) {
@@ -283,9 +276,9 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
     private final class CompositionImpl implements Composition {
 
         private final EngineSpec spec;
-        private final IntBag archetypeCache;
+        private final StorageEngine storageEngine;
 
-        private final BitVector lookup;
+        private final IntBag archetypeCache;
 
         private final Bag<Archetype> archetypes = new Bag<>(Archetype.class, 8);
 
@@ -300,31 +293,17 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         @SuppressWarnings("rawtypes")
         private final Map<ComponentType<?, ?>, AbstractComposition> compositionData = new ConcurrentHashMap<>();
 
-        private CompositionImpl(EngineSpec spec, Function<ComponentsPredicate, IntBag> supplier) {
+        private CompositionImpl(EngineSpec spec, StorageEngine storageEngine) {
             this.spec = spec;
+            this.storageEngine = storageEngine;
+
             this.archetypeCache = new IntBag(64);
-
-            var entities = supplier.apply(spec::isInterested);
-
-            // Determine largest entityId to avoid garbage by BitVector growing
-            var largestEntityId = 0;
-            for (int i = 0, s = entities.getSize(); i < s; i++) {
-                var entityId = entities.get(i);
-                if (entityId > largestEntityId) {
-                    largestEntityId = entityId;
-                }
-            }
-
-            this.lookup = new BitVector(largestEntityId);
-            for (int i = 0, s = entities.getSize(); i < s; i++) {
-                this.lookup.set(entities.get(i));
-            }
-
-            this.count = entities.getSize();
         }
 
         public void offer(Archetype archetype) {
             if (spec.isInterested(archetype)) {
+                this.count += archetype.getCount();
+
                 archetypes.add(archetype);
                 archetypeCache.set(archetype.getId(), 1);
 
@@ -427,12 +406,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             return componentMapperManager.getComponents(type);
         }
 
-        private boolean containsEntity(int entityId) {
-            return this.lookup.get(entityId);
-        }
-
         private void inserted(int entityId) {
-            this.lookup.set(entityId);
             this.count++;
 
             if (inserted == null) {
@@ -451,8 +425,6 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         }
 
         private void removed(int entityId) {
-            // Remove entity
-            this.lookup.clear(entityId);
             this.count--;
 
             if (removed == null) {
@@ -476,7 +448,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
         @Override
         public boolean isInterested(int entityId) {
-            return containsEntity(entityId);
+            return isInterested(this.storageEngine.getArchetypeForEntity(entityId));
         }
 
         @Override

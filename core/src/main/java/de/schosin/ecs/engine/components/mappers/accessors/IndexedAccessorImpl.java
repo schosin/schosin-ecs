@@ -1,39 +1,37 @@
 package de.schosin.ecs.engine.components.mappers.accessors;
 
-import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
-import de.schosin.ecs.utils.collections.Pool;
+import de.schosin.ecs.utils.collections.Bag;
 
-public class IndexedAccessorImpl<R> implements ComponentAccessor<R>, Pooled {
+@SuppressWarnings("rawtypes")
+public record IndexedAccessorImpl(int componentIndex) implements ComponentAccessor {
 
-    private final Pool<IndexedAccessorImpl<R>> pool;
+    private static final Bag<IndexedAccessorImpl> INSTANCES = new Bag<>(IndexedAccessorImpl.class, 32);
 
-    private int componentIndex = -1;
+    @SuppressWarnings("unchecked")
+    public static <R> ComponentAccessor<R> getInstance(int componentIndex) {
+        var result = INSTANCES.getSafe(componentIndex);
+        if (result != null) {
+            return result;
+        }
 
-    public IndexedAccessorImpl(Pool<IndexedAccessorImpl<R>> pool) {
-        this.pool = pool;
-    }
+        synchronized (INSTANCES) {
+            result = INSTANCES.getSafe(componentIndex);
+            if (result != null) {
+                return result;
+            }
 
-    public IndexedAccessorImpl<R> init(int componentIndex) {
-        this.componentIndex = componentIndex;
+            result = new IndexedAccessorImpl(componentIndex);
+            INSTANCES.set(componentIndex, result);
 
-        return this;
+            return result;
+        }
     }
 
     @Override
-    public R getComponent(DataAccessor accessor) {
+    public Object getComponent(DataAccessor accessor) {
         return accessor.getComponentByIndex(componentIndex);
-    }
-
-    @Override
-    public void free() {
-        pool.free(this);
-    }
-
-    @Override
-    public void reset() {
-        this.componentIndex = -1;
     }
 
 }

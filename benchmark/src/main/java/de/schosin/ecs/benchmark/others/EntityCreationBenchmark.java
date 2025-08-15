@@ -6,6 +6,7 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -16,9 +17,7 @@ import de.schosin.ecs.benchmark.others.components.SchosinComponents;
 import de.schosin.ecs.plugins.archetype.Archetype1;
 import de.schosin.ecs.plugins.archetype.Archetype3;
 import de.schosin.ecs.plugins.archetype.Archetype6;
-import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.worlds.DefaultWorld;
-
 import dev.dominion.ecs.api.Composition;
 import dev.dominion.ecs.api.Entity;
 import dev.dominion.ecs.engine.EntityRepository;
@@ -44,8 +43,8 @@ public class EntityCreationBenchmark {
             var bh = new Blackhole("Today's password is swordfish. I understand instantiating Blackholes directly is dangerous.");
 
             while (true) {
-                benchmark.initInvocation();
                 benchmark.createEntityWith03(bh);
+                benchmark.tearDownInvocation();
             }
         }
 
@@ -53,6 +52,7 @@ public class EntityCreationBenchmark {
         private int size;
 
         private DefaultWorld world;
+        private de.schosin.ecs.plugins.composition.Composition all;
 
         private Archetype1<Schosin1> archetype1;
         private Archetype3<Schosin1, Schosin2, Schosin3> archetype3;
@@ -63,11 +63,11 @@ public class EntityCreationBenchmark {
         private Archetype6<Pooled1, Pooled2, Pooled3, Pooled4, Pooled5, Pooled6> pooled6;
 
         private int[] entities;
-        private ImmutableIntBag entitiesBag;
 
         @Setup(Level.Trial)
         public void init() {
             this.world = DefaultWorld.create();
+            this.all = world.createComposition(de.schosin.ecs.plugins.composition.Composition.all());
 
             this.archetype1 = world.createArchetype(Schosin1.class);
             this.archetype3 = world.createArchetype(Schosin1.class, Schosin2.class, Schosin3.class);
@@ -77,62 +77,50 @@ public class EntityCreationBenchmark {
             this.pooled3 = world.createArchetype(Pooled1.class, Pooled2.class, Pooled3.class);
             this.pooled6 = world.createArchetype(Pooled1.class, Pooled2.class, Pooled3.class, Pooled4.class, Pooled5.class, Pooled6.class);
 
+            // Warm up data structures
             this.entities = new int[size];
             for (int i = 0; i < size; i++) {
                 this.entities[i] = world.createEntity();
             }
-        }
 
-        @Setup(Level.Invocation)
-        public void initInvocation() {
-            for (int i = 0; i < size; i++) {
-                world.deleteEntity(this.entities[i]);
-            }
-
+            all.process(world::deleteEntity);
             world.process();
         }
 
-        @Setup(Level.Iteration)
-        public void initIteration() {
-            if (entitiesBag != null) {
-                for (int i = 0, s = entitiesBag.getSize(); i < s; i++) {
-                    world.deleteEntity(entitiesBag.get(i));
-                }
-
-                entitiesBag = null;
-                world.process();
-            }
+        @TearDown(Level.Invocation)
+        public void tearDownInvocation() {
+            all.process(world::deleteEntity);
+            world.process();
         }
 
         @Benchmark
         public void createEntityWith01(Blackhole bh) {
-            bh.consume(entitiesBag = archetype1.createBatch(size, () -> new Schosin1()));
+            bh.consume(archetype1.createBatch(size, () -> new Schosin1()));
         }
 
         @Benchmark
         public void createEntityWith01_Pooled(Blackhole bh) {
-            bh.consume(entitiesBag = pooled1.createBatch(size, () -> pooled1.getInstance(Pooled1.class)));
+            bh.consume(pooled1.createBatch(size, () -> pooled1.getInstance(Pooled1.class)));
         }
 
         @Benchmark
         public void createEntityWith03(Blackhole bh) {
-            bh.consume(entitiesBag = archetype3.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3())));
+            bh.consume(archetype3.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3())));
         }
 
         @Benchmark
         public void createEntityWith03_Pooled(Blackhole bh) {
-            bh.consume(entitiesBag = pooled3.createBatch(size,
-                    (i, factory) -> factory.create(pooled3.getInstance(Pooled1.class), pooled3.getInstance(Pooled2.class), pooled3.getInstance(Pooled3.class))));
+            bh.consume(pooled3.createBatch(size, (i, factory) -> factory.create(pooled3.getInstance(Pooled1.class), pooled3.getInstance(Pooled2.class), pooled3.getInstance(Pooled3.class))));
         }
 
         @Benchmark
         public void createEntityWith06(Blackhole bh) {
-            bh.consume(entitiesBag = archetype6.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3(), new Schosin4(), new Schosin5(), new Schosin6())));
+            bh.consume(archetype6.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3(), new Schosin4(), new Schosin5(), new Schosin6())));
         }
 
         @Benchmark
         public void createEntityWith06_Pooled(Blackhole bh) {
-            bh.consume(entitiesBag = pooled6.createBatch(size, (i, factory) -> factory.create(
+            bh.consume(pooled6.createBatch(size, (i, factory) -> factory.create(
                     pooled6.getInstance(Pooled1.class), pooled6.getInstance(Pooled2.class), pooled6.getInstance(Pooled3.class),
                     pooled6.getInstance(Pooled4.class), pooled6.getInstance(Pooled5.class), pooled6.getInstance(Pooled6.class))));
         }
