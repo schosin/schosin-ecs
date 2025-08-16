@@ -27,8 +27,8 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
         this.componentId = data.id();
         this.componentType = data.type();
 
-        this.add = transmutationManager.getAddTransmuter(data.type());
-        this.remove = transmutationManager.getRemoveTransmuter(data.type());
+        this.add = transmutationManager.getAddTransmuter(data);
+        this.remove = transmutationManager.getRemoveTransmuter(componentType);
 
         this.pendingAccessors = Pool.unbounded(PendingAccessorImpl.class, this::createPendingAccessor);
     }

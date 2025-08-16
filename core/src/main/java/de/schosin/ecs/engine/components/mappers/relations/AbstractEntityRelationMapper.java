@@ -27,7 +27,7 @@ public abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelati
         this.data = data;
         this.componentId = data.id();
 
-        this.add = transmutationManager.getAddTransmuter(data.type());
+        this.add = transmutationManager.getAddTransmuter(data);
         this.remove = transmutationManager.getRemoveTransmuter(data.type());
 
         this.pendingAccessors = Pool.unbounded(PendingAccessorImpl.class, this::createPendingAccessor);

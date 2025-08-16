@@ -3,19 +3,13 @@ package de.schosin.ecs.engine.components;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.LinkedHashSet;
-import java.util.SequencedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import de.schosin.ecs.api.components.types.ComponentType;
-import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.engine.AbstractWorldTest;
-import de.schosin.ecs.engine.components.TransmutationManager.AbstractTransmuter;
-import de.schosin.ecs.engine.components.TransmutationManager.Builder;
 import de.schosin.ecs.storage.api.StorageEngineException;
 
 class TransmutationManagerTest extends AbstractWorldTest {
@@ -29,8 +23,8 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
     @BeforeEach
     void setupTransmuters() {
-        this.add1 = transmutationManager.getAddTransmuter(component(C1.class));
-        this.add2 = transmutationManager.getAddTransmuter(component(C2.class));
+        this.add1 = transmutationManager.getAddTransmuter(storageEngine.getComponent(component(C1.class)));
+        this.add2 = transmutationManager.getAddTransmuter(storageEngine.getComponent(component(C2.class)));
 
         this.remove1 = transmutationManager.getRemoveTransmuter(component(C1.class));
         this.remove2 = transmutationManager.getRemoveTransmuter(component(C2.class));
@@ -70,10 +64,10 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
     @Test
     void testCachedTransmuter() {
-        var transmuter = transmutationManager.getAddTransmuter(component(C1.class));
+        var transmuter = transmutationManager.getAddTransmuter(storageEngine.getComponent(component(C1.class)));
 
         // Call
-        assertThat(transmutationManager.getAddTransmuter(component(C1.class))).isSameAs(transmuter);
+        assertThat(transmutationManager.getAddTransmuter(storageEngine.getComponent(component(C1.class)))).isSameAs(transmuter);
     }
 
     @Nested
@@ -539,145 +533,6 @@ class TransmutationManagerTest extends AbstractWorldTest {
 
             assertThat(mapper1.get(entityId)).isNull();
             assertThat(mapper2.get(entityId)).isNotNull();
-        }
-
-    }
-
-    @Nested
-    class AbstractTransmuterTest {
-
-        @Test
-        void testApplyAdd() {
-            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
-            var transmuter = new CustomTransmuter(transmutationManager, builder);
-
-            var entityId = world.createEntity();
-            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
-
-            // Call
-            transmuter.apply(entityId, new C1(), new C2());
-
-            world.process();
-
-            // Verify
-            verifyHasComponents(entityId, C1.class, C2.class);
-            verifyArchetypeHasComponents(entityId, C1.class, C2.class);
-        }
-
-        @Test
-        void testApplyAdd_IncorrectOrder_Throws() {
-            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
-            var transmuter = new CustomTransmuter(transmutationManager, builder);
-
-            var entityId = world.createEntity();
-            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
-
-            // Call
-            assertThatThrownBy(() -> transmuter.apply(entityId, new C2(), new C1()));
-        }
-
-        @Test
-        void testApplyAdd_FewerComponentsThanExpected() {
-            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
-            var transmuter = new CustomTransmuter(transmutationManager, builder);
-
-            var entityId = world.createEntity();
-            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
-
-            // Call
-            assertThatThrownBy(() -> transmuter.apply(entityId, new C1()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContainingAll("Expected 2", "got 1");
-
-            world.process();
-
-            // Verify
-            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
-        }
-
-        @Test
-        void testApplyAdd_MoreComponentsThanExpected() {
-            var builder = new CustomBuilder().add(component(C1.class), component(C2.class));
-            var transmuter = new CustomTransmuter(transmutationManager, builder);
-
-            var entityId = world.createEntity();
-            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
-
-            // Call
-            assertThatThrownBy(() -> transmuter.apply(entityId, new C1(), new C2(), new C3()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContainingAll("Expected 2", "got 3");
-
-            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
-        }
-
-        @Test
-        void testApplyRemove() {
-            var builder = new CustomBuilder().remove(component(C1.class), component(C2.class));
-            var transmuter = new CustomTransmuter(transmutationManager, builder);
-
-            var entityId = world.createEntity(new C1(), new C2(), new C3());
-            verifyHasComponents(entityId, C1.class, C2.class);
-            verifyArchetypeHasComponents(entityId, C1.class, C2.class);
-
-            // Call
-            transmuter.apply(entityId);
-
-            world.process();
-
-            // Verify
-            verifyHasComponents(entityId, C3.class);
-            verifyDoesNotHaveComponents(entityId, C1.class, C2.class);
-
-            verifyArchetypeHasComponents(entityId, C3.class);
-            verifyArchetypeDoesNotHaveComponents(entityId, C1.class, C2.class);
-        }
-
-        private static class CustomBuilder implements Builder {
-
-            private final SequencedSet<RegularComponentType<?, ?>> add = new LinkedHashSet<>();
-            private final SequencedSet<ComponentType<?, ?>> remove = new LinkedHashSet<>();
-
-            private CustomBuilder add(RegularComponentType<?, ?>... types) {
-                for (var type : types) {
-                    this.add.add(type);
-                }
-
-                return this;
-            }
-
-            private CustomBuilder remove(ComponentType<?, ?>... types) {
-                for (var type : types) {
-                    this.remove.add(type);
-                }
-
-                return this;
-            }
-
-            @Override
-            public SequencedSet<RegularComponentType<?, ?>> getAdd() {
-                return add;
-            }
-
-            @Override
-            public SequencedSet<ComponentType<?, ?>> getRemove() {
-                return remove;
-            }
-
-        }
-
-        private static class CustomTransmuter extends AbstractTransmuter {
-
-            protected CustomTransmuter(TransmutationManager manager, Builder builder) {
-                super(manager, builder);
-            }
-
         }
 
     }
