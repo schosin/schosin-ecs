@@ -16,6 +16,10 @@ public interface BaseArchetype<C extends ArchetypeConsumer> {
     interface ArchetypeConsumer {
         void accept(Object[] components, int index, int[] mapping);
     }
+    
+    interface ArchetypeBatch {
+        ImmutableIntBag createBatch(int count);
+    }
 
     /**
      * Creates a single entity. All components passed to the factory must be non-null.
@@ -48,6 +52,18 @@ public interface BaseArchetype<C extends ArchetypeConsumer> {
      * @return bag of entity ids, instance usable until the next {@link World#process()}
      */
     ImmutableIntBag createBatch(int count, C consumer);
+
+    /**
+     * Returns a {@link ArchetypeBatch} with the bound consumer.
+     * 
+     * <p>
+     * Using this over {@link #createBatch(int, ArchetypeConsumer)} allows for further optimizations 
+     * by moving calculations from the runtime to the initialization (bind method call).
+     * 
+     * @param consumer invoked consumer when {@link ArchetypeBatch#createBatch(int)} is used
+     * @return archetype batch
+     */
+    ArchetypeBatch bind(C consumer);
 
     /**
      * Create a new archetype that extends this archetype by adding the passed components to

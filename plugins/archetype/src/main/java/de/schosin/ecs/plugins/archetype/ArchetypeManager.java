@@ -17,6 +17,7 @@ import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.entities.EntityManager;
 import de.schosin.ecs.engine.utils.ArrayUtils;
+import de.schosin.ecs.plugins.archetype.BaseArchetype.ArchetypeBatch;
 import de.schosin.ecs.plugins.archetype.BaseArchetype.ArchetypeConsumer;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
@@ -158,6 +159,11 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             return manager.entityManager.createEntities(archetype, count, createConsumer(consumer));
         }
 
+        @Override
+        public ArchetypeBatch bind(C consumer) {
+            return new ArchetypeBatchImpl(manager.entityManager, archetype, createConsumer(consumer));
+        }
+
         private ObjIntConsumer<Object[]> createConsumer(C consumer) {
             if (fixed == null) {
                 return (components, i) -> consumer.accept(components, i, mapping);
@@ -176,6 +182,15 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         @Override
         public <T extends Pooled> T getInstance(Class<T> clazz) {
             return manager.getInstance(clazz);
+        }
+
+    }
+
+    private record ArchetypeBatchImpl(EntityManager entityManager, Archetype archetype, ObjIntConsumer<Object[]> componentsConsumer) implements ArchetypeBatch {
+
+        @Override
+        public ImmutableIntBag createBatch(int count) {
+            return entityManager.createEntities(archetype, count, componentsConsumer);
         }
 
     }
