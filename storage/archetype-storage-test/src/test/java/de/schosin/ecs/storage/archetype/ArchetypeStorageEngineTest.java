@@ -21,7 +21,6 @@ class ArchetypeStorageEngineTest extends StorageEngineTestSuite {
         void clearSystemProperty() {
             System.clearProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
             System.clearProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT);
-            System.clearProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE);
         }
 
         @Test
@@ -38,7 +37,6 @@ class ArchetypeStorageEngineTest extends StorageEngineTestSuite {
             var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
             assertThat(config.classIdCount()).isEqualTo(42);
             assertThat(config.relationCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_RELATION_COUNT);
-            assertThat(config.creationBatchSize()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE);
         }
 
         @Test
@@ -50,33 +48,18 @@ class ArchetypeStorageEngineTest extends StorageEngineTestSuite {
             var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
             assertThat(config.classIdCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT);
             assertThat(config.relationCount()).isEqualTo(9001);
-            assertThat(config.creationBatchSize()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE);
-        }
-
-        @Test
-        void testCreationBatchSize() {
-            System.setProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE, "1337");
-
-            assertThatCode(() -> World.builder().storageEngine(ArchetypeStorageEngine.class, null).build()).doesNotThrowAnyException();
-
-            var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
-            assertThat(config.classIdCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT);
-            assertThat(config.relationCount()).isEqualTo(ArchetypeStorageConfig.DEFAULT_RELATION_COUNT);
-            assertThat(config.creationBatchSize()).isEqualTo(1337);
         }
 
         @Test
         void testAllSystemProperties() {
             System.setProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT, "42");
             System.setProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT, "9001");
-            System.setProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE, "1337");
 
             assertThatCode(() -> World.builder().storageEngine(ArchetypeStorageEngine.class, null).build()).doesNotThrowAnyException();
 
             var config = ArchetypeStorageEngine.retrieveStorageConfig(null);
             assertThat(config.classIdCount()).isEqualTo(42);
             assertThat(config.relationCount()).isEqualTo(9001);
-            assertThat(config.creationBatchSize()).isEqualTo(1337);
         }
 
     }

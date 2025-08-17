@@ -63,24 +63,22 @@ import de.schosin.ecs.storage.api.StorageEngineException;
  * </table>
  * </p>
  */
-public record ArchetypeStorageConfig(int classIdCount, int relationCount, int creationBatchSize, int creationFlushAttempts, int processAttempts) {
+public record ArchetypeStorageConfig(int classIdCount, int relationCount, int creationFlushAttempts, int processAttempts) {
 
     public static ArchetypeStorageConfig getConfig() {
         // System variable
         var classIdCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CLASS_ID_COUNT);
         var relationCountProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_RELATION_COUNT);
-        var creationBatchSizeProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CREATION_BATCH_SIZE);
         var creationFlushAttemptsProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_CREATION_FLUSH_ATTEMPTS);
         var processAttemptsProp = System.getProperty(ArchetypeStorageConfig.PROPERTY_PROCESS_ATTEMPTS);
 
-        if (classIdCountProp != null || relationCountProp != null || creationBatchSizeProp != null || creationFlushAttemptsProp != null || processAttemptsProp != null) {
+        if (classIdCountProp != null || relationCountProp != null || creationFlushAttemptsProp != null || processAttemptsProp != null) {
             var classIdCount = classIdCountProp != null ? Integer.parseInt(classIdCountProp) : ArchetypeStorageConfig.DEFAULT_CLASS_ID_COUNT;
             var relationCount = relationCountProp != null ? Integer.parseInt(relationCountProp) : ArchetypeStorageConfig.DEFAULT_RELATION_COUNT;
-            var creationBatchSize = creationBatchSizeProp != null ? Integer.parseInt(creationBatchSizeProp) : ArchetypeStorageConfig.DEFAULT_CREATION_BATCH_SIZE;
             var creationFlushAttempts = creationFlushAttemptsProp != null ? Integer.parseInt(creationFlushAttemptsProp) : ArchetypeStorageConfig.DEFAULT_CREATION_FLUSH_ATTEMPTS;
             var processAttempts = processAttemptsProp != null ? Integer.parseInt(processAttemptsProp) : ArchetypeStorageConfig.DEFAULT_PROCESS_ATTEMPTS;
 
-            return new ArchetypeStorageConfig(classIdCount, relationCount, creationBatchSize, creationFlushAttempts, processAttempts);
+            return new ArchetypeStorageConfig(classIdCount, relationCount, creationFlushAttempts, processAttempts);
         }
 
         // Default config
@@ -94,9 +92,6 @@ public record ArchetypeStorageConfig(int classIdCount, int relationCount, int cr
         if (relationCount < 1) {
             throw new StorageEngineException("relationCount must be positive, but was: " + relationCount);
         }
-        if (creationBatchSize < 1) {
-            throw new StorageEngineException("creationBatchSize must be positive, but was: " + creationBatchSize);
-        }
         if (creationFlushAttempts < 0) {
             throw new StorageEngineException("creationFlushAttempts must be positive or zero, but was: " + creationFlushAttempts);
         }
@@ -107,19 +102,16 @@ public record ArchetypeStorageConfig(int classIdCount, int relationCount, int cr
 
     public static final String PROPERTY_CLASS_ID_COUNT = "storage.archetype.classIdCount";
     public static final String PROPERTY_RELATION_COUNT = "storage.archetype.relationCount";
-    public static final String PROPERTY_CREATION_BATCH_SIZE = "storage.archetype.creationBatchSize";
     public static final String PROPERTY_CREATION_FLUSH_ATTEMPTS = "storage.archetype.creationFlushAttempts";
     public static final String PROPERTY_PROCESS_ATTEMPTS = "storage.archetype.processAttempts";
 
     public static final int DEFAULT_CLASS_ID_COUNT = 50;
     public static final int DEFAULT_RELATION_COUNT = 10;
-    public static final int DEFAULT_CREATION_BATCH_SIZE = 100;
     public static final int DEFAULT_CREATION_FLUSH_ATTEMPTS = 5;
     public static final int DEFAULT_PROCESS_ATTEMPTS = 5;
 
     public static final ArchetypeStorageConfig DEFAULT = new ArchetypeStorageConfig(
             DEFAULT_CLASS_ID_COUNT, DEFAULT_RELATION_COUNT,
-            DEFAULT_CREATION_BATCH_SIZE, DEFAULT_CREATION_FLUSH_ATTEMPTS,
-            DEFAULT_PROCESS_ATTEMPTS);
+            DEFAULT_CREATION_FLUSH_ATTEMPTS, DEFAULT_PROCESS_ATTEMPTS);
 
 }

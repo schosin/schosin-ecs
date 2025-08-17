@@ -21,6 +21,7 @@ import de.schosin.ecs.plugins.archetype.BaseArchetype.ArchetypeBatch;
 import de.schosin.ecs.plugins.archetype.BaseArchetype.ArchetypeConsumer;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.Archetype.ComponentsInitializer;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
@@ -62,7 +63,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
         private final int size;
         private final int[] mapping;
 
-        private final Pool<Object[]> pool;
+        private final Pool<ComponentConsumer> pool;
 
         protected AbstractBaseArchetypeImpl(BaseArchetypeManager manager, Object[] fixed, AbstractBaseArchetypeImpl<C> parent) {
             this.manager = (ArchetypeManager) manager;
@@ -89,7 +90,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 this.mapping[i] = archetype.getComponentTypes().indexOf(componentTypesArray[i]);
             }
 
-            this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
+            this.pool = Pool.unbounded(ComponentConsumer.class, () -> new ComponentConsumer(new Object[size]), consumer -> Arrays.fill(consumer.components, null));
         }
 
         private void validateNoPooledComponents(Object[] components) {
@@ -122,7 +123,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
                 this.mapping[i] = archetype.getComponentTypes().indexOf(components[i]);
             }
 
-            this.pool = Pool.unbounded(Object[].class, () -> new Object[size], array -> Arrays.fill(array, null));
+            this.pool = Pool.unbounded(ComponentConsumer.class, () -> new ComponentConsumer(new Object[size]), consumer -> Arrays.fill(consumer.components, null));
         }
 
         private void validateNoDuplicateComponents(ImmutableBag<RegularComponentType<?, ?>> components) {
@@ -138,8 +139,10 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
         @Override
         public int create(C consumer) {
-            var components = pool.getInstance();
-            consumer.accept(components, 0, mapping);
+            var componentsConsumer = pool.getInstance();
+            var components = componentsConsumer.components;
+
+            consumer.accept(componentsConsumer, 0, mapping);
 
             if (fixed != null) {
                 var start = size - fixed.length;
@@ -150,7 +153,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
             var entityId = manager.entityManager.createEntity(archetype, components);
 
-            pool.free(components);
+            pool.free(componentsConsumer);
             return entityId;
         }
 
@@ -164,7 +167,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             return new ArchetypeBatchImpl(manager.entityManager, archetype, createConsumer(consumer));
         }
 
-        private ObjIntConsumer<Object[]> createConsumer(C consumer) {
+        private ComponentsInitializer createConsumer(C consumer) {
             if (fixed == null) {
                 return (components, i) -> consumer.accept(components, i, mapping);
             }
@@ -174,7 +177,7 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
 
                 var start = size - fixed.length;
                 for (int f = 0; f < fixed.length; f++) {
-                    components[mapping[start + f]] = fixed[f];
+                    components.accept(fixed[f], mapping[start + f]);
                 }
             };
         }
@@ -184,9 +187,18 @@ public class ArchetypeManager extends BaseArchetypeManager implements ArchetypeP
             return manager.getInstance(clazz);
         }
 
+        private record ComponentConsumer(Object[] components) implements ObjIntConsumer<Object> {
+
+            @Override
+            public void accept(Object component, int index) {
+                this.components[index] = component;
+            }
+
+        }
+
     }
 
-    private record ArchetypeBatchImpl(EntityManager entityManager, Archetype archetype, ObjIntConsumer<Object[]> componentsConsumer) implements ArchetypeBatch {
+    private record ArchetypeBatchImpl(EntityManager entityManager, Archetype archetype, ComponentsInitializer componentsConsumer) implements ArchetypeBatch {
 
         @Override
         public ImmutableIntBag createBatch(int count) {

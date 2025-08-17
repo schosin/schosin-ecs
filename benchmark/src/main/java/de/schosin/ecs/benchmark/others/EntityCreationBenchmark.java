@@ -27,7 +27,7 @@ public class EntityCreationBenchmark {
     public static void main(String[] args) throws Exception {
         var options = new OptionsBuilder()
                 .include(benchmarkName(SchosinEcs.class))
-               // .include(benchmarkName(Dominion.class))
+                // .include(benchmarkName(Dominion.class))
                 .build();
 
         new Runner(options).run();
@@ -93,12 +93,12 @@ public class EntityCreationBenchmark {
             world.process();
         }
 
-       // @Benchmark
+        @Benchmark
         public void createEntityWith01(Blackhole bh) {
             bh.consume(archetype1.createBatch(size, () -> new Schosin1()));
         }
 
-       // @Benchmark
+        // @Benchmark
         public void createEntityWith01_Pooled(Blackhole bh) {
             bh.consume(pooled1.createBatch(size, () -> pooled1.getInstance(Pooled1.class)));
         }
@@ -108,7 +108,7 @@ public class EntityCreationBenchmark {
             bh.consume(archetype3.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3())));
         }
 
-        @Benchmark
+        // @Benchmark
         public void createEntityWith03_Pooled(Blackhole bh) {
             bh.consume(pooled3.createBatch(size, (i, factory) -> factory.create(pooled3.getInstance(Pooled1.class), pooled3.getInstance(Pooled2.class), pooled3.getInstance(Pooled3.class))));
         }
@@ -118,7 +118,7 @@ public class EntityCreationBenchmark {
             bh.consume(archetype6.createBatch(size, (i, factory) -> factory.create(new Schosin1(), new Schosin2(), new Schosin3(), new Schosin4(), new Schosin5(), new Schosin6())));
         }
 
-        @Benchmark
+        // @Benchmark
         public void createEntityWith06_Pooled(Blackhole bh) {
             bh.consume(pooled6.createBatch(size, (i, factory) -> factory.create(
                     pooled6.getInstance(Pooled1.class), pooled6.getInstance(Pooled2.class), pooled6.getInstance(Pooled3.class),

@@ -11,6 +11,11 @@ import de.schosin.ecs.utils.collections.ImmutableIntBag;
 
 public interface Archetype {
 
+    @FunctionalInterface
+    interface ComponentsInitializer {
+        void accept(ObjIntConsumer<Object> components, int index);
+    }
+
     int getId();
 
     ImmutableBag<Component<?, ?>> getComponents();
@@ -36,8 +41,8 @@ public interface Archetype {
      * 
      * @param count number of entities to create
      * @param entityIdSupplier supplier of entity ids
-     * @param componentsConsumer consumer for filling component data for the entity by its index
+     * @param initializer consumer for filling component data for the entity by its index
      */
-    void createEntities(int count, IntSupplier entityIdSupplier, ObjIntConsumer<Object[]> componentsConsumer);
+    void createEntities(int count, IntSupplier entityIdSupplier, ComponentsInitializer initializer);
 
 }

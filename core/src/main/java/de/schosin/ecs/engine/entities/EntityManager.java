@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntSupplier;
-import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.Relation;
@@ -19,6 +18,7 @@ import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.BagManager;
 import de.schosin.ecs.storage.api.StorageEngine;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.Archetype.ComponentsInitializer;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.ImmutableIntBag;
 import de.schosin.ecs.utils.collections.IntBag;
@@ -214,7 +214,7 @@ public class EntityManager {
         return entity.id;
     }
 
-    public ImmutableIntBag createEntities(Archetype archetype, int count, ObjIntConsumer<Object[]> componentsConsumer) {
+    public ImmutableIntBag createEntities(Archetype archetype, int count, ComponentsInitializer componentsConsumer) {
         // Build supplier of entityIds
         var entityIds = intBagPool.getInstance();
         entityIds.ensureCapacity(count);

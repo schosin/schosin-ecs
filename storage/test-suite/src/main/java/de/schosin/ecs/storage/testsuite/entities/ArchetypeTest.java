@@ -29,6 +29,7 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.Archetype.ComponentsInitializer;
 import de.schosin.ecs.storage.testsuite.AbstractStorageEngineTest;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
@@ -541,7 +542,7 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 return CreateEntityTest.AbstractTest.mismatchingTypes();
             }
 
-            private class ComponentProvider implements ObjIntConsumer<Object[]> {
+            private class ComponentProvider implements ComponentsInitializer {
 
                 private final List<Object[]> list;
 
@@ -550,11 +551,11 @@ public class ArchetypeTest extends AbstractStorageEngineTest {
                 }
 
                 @Override
-                public void accept(Object[] components, int idx) {
+                public void accept(ObjIntConsumer<Object> components, int idx) {
                     var data = list.get(idx);
 
-                    for (int i = 0, s = components.length; i < s; i++) {
-                        components[i] = data[i];
+                    for (int i = 0, s = data.length; i < s; i++) {
+                        components.accept(data[i], i);
                     }
                 }
             }

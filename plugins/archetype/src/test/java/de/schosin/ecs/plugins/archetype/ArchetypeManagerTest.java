@@ -880,7 +880,7 @@ class ArchetypeManagerTest extends AbstractEcsTest<ArchetypeWorld> {
 
             assertThatThrownBy(() -> dontCallFactory(2, archetype))
                     .isInstanceOf(StorageEngineException.class)
-                    .hasMessageContainingAll(C1.class.getSimpleName(), "index 0", "was 'null'");
+                    .hasMessageContainingAll(C1.class.getSimpleName(), "components not set for entity");
         }
 
         @Test

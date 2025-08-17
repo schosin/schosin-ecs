@@ -59,7 +59,7 @@ public class ObserverTest extends AbstractStorageEngineTest {
 
             // Call
             var ids = new AtomicInteger();
-            archetype1.createEntities(2, ids::incrementAndGet, (components, i) -> components[0] = new C1());
+            archetype1.createEntities(2, ids::incrementAndGet, (components, i) -> components.accept(new C1(), 0));
 
             // Verify
             assertThat(counter.get()).isEqualTo(1);
@@ -120,7 +120,7 @@ public class ObserverTest extends AbstractStorageEngineTest {
 
             // Call
             var ids = new AtomicInteger();
-            archetype1.createEntities(2, ids::incrementAndGet, (components, i) -> components[0] = new C1());
+            archetype1.createEntities(2, ids::incrementAndGet, (components, i) -> components.accept(new C1(), 0));
 
             // Verify
             assertThat(data)

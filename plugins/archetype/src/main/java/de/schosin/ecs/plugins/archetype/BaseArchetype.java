@@ -1,5 +1,7 @@
 package de.schosin.ecs.plugins.archetype;
 
+import java.util.function.ObjIntConsumer;
+
 import org.jspecify.annotations.NullMarked;
 
 import de.schosin.ecs.api.Pooled;
@@ -14,7 +16,7 @@ public interface BaseArchetype<C extends ArchetypeConsumer> {
 
     @FunctionalInterface
     interface ArchetypeConsumer {
-        void accept(Object[] components, int index, int[] mapping);
+        void accept(ObjIntConsumer<Object> components, int index, int[] mapping);
     }
     
     interface ArchetypeBatch {

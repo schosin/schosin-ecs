@@ -1,6 +1,6 @@
 package de.schosin.ecs.storage.archetype.entities.archetypes;
 
-import java.util.Arrays;
+import java.util.BitSet;
 import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
 
@@ -43,8 +43,6 @@ import de.schosin.ecs.utils.collections.Pool;
  */
 public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
-    private final int creationBatchSize;
-
     private final int id;
     private final ArchetypeGraphNode node;
 
@@ -78,8 +76,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     private final Bag<ArchetypeMover> movers = new Bag<>(ArchetypeMover.class, 4);
     private final Pool<AccessorImpl> accessors = Pool.unbounded(AccessorImpl.class, AccessorImpl::new);
 
-    private final Pool<IntBag> intBagPool = Pool.unbounded(IntBag.class, () -> new IntBag(1024), IntBag::clear);
-    private final Pool<Object[][]> componentsPool;
+    private final Pool<EntityCreator> creatorPool;
 
     private int alive;
     private boolean dirty;
@@ -87,8 +84,6 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     @SuppressWarnings("unchecked")
     public ArchetypeDataSoaImpl(int id, ArchetypeGraphNode node, ComponentIndex componentIndex, EntityRelationIndex relationIndex, EntityIndex entityIndex, Observers observers,
             ArchetypeStorageConfig config, StorageWorld world) {
-
-        this.creationBatchSize = config.creationBatchSize();
 
         this.id = id;
         this.node = node;
@@ -170,13 +165,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             data[i] = world.createEntityBag((Class<Object>) clazz);
         }
 
-        this.componentsPool = Pool.unbounded(Object[][].class, () -> new Object[creationBatchSize][size], this::resetPooledComponents);
-    }
-
-    private void resetPooledComponents(Object[][] components) {
-        for (int i = 0; i < creationBatchSize; i++) {
-            Arrays.fill(components[i], 0, size, null);
-        }
+        this.creatorPool = Pool.unbounded(EntityCreator.class, () -> new EntityCreator(this));
     }
 
     @Override
@@ -268,80 +257,32 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public void createEntities(int count, IntSupplier entityIdSupplier, ObjIntConsumer<Object[]> componentsConsumer) {
-        var batchSize = creationBatchSize < count ? creationBatchSize : count;
+    public void createEntities(int count, IntSupplier entityIdSupplier, ComponentsInitializer componentsConsumer) {
+        // Initialize creator
+        var creator = creatorPool.getInstance();
+        creator.entityIdSupplier = entityIdSupplier;
+        creator.i = alive - 1;
+        creator.end = alive + count;
 
-        var entityIds = this.intBagPool.getInstance();
-        entityIds.ensureCapacity(count);
+        // Update alive
+        this.alive += count;
+        this.pendingChanges.ensureCapacity(alive);
 
-        var indices = this.intBagPool.getInstance();
-        indices.ensureCapacity(count);
-
-        var components = this.componentsPool.getInstance();
-
-        // Create entities in batches
+        // Create entities
         var idx = 0;
-        while (count > 0) {
-            var start = idx;
-
-            var batch = batchSize < count ? batchSize : count;
-            count -= batch;
-
-            // Fill batch
-            for (int i = 0; i < batch; i++) {
-                entityIds.addSafe(entityIdSupplier.getAsInt());
-                componentsConsumer.accept(components[i], idx++);
-            }
-
-            // Process batch
-            createEntities(entityIds, indices, components, start, batch);
+        while (creator.next()) {
+            componentsConsumer.accept(creator, idx++);
+            creator.validate();
         }
 
         // Invoke observers
-        observers.triggerEntitiesCreated(this, entityIds);
+        this.observers.triggerEntitiesCreated(this, creator.entityIds);
 
         // Process changes by observers
-        entityIndex.processCreatedEntities(entityIds);
+        this.entityIndex.processCreatedEntities(creator.entityIds);
 
-        // Free pooled items
-        this.intBagPool.free(entityIds);
-        this.intBagPool.free(indices);
-        this.componentsPool.free(components);
-    }
-
-    private void createEntities(ImmutableIntBag entityIds, IntBag indices, Object[][] components, int start, int count) {
-        synchronized (entities) {
-            for (int i = 0; i < count; i++) {
-                var index = alive++;
-
-                var entityId = entityIds.get(start + i);
-                indices.addSafe(index);
-
-                // Validate entity not already in storage
-                var existing = entityIndex.getArchetypeDataForEntity(entityId);
-                if (existing != null) {
-                    throw new StorageEngineException("Cannot create entity %d, already present in storage: %s".formatted(entityId, existing));
-                }
-
-                var entityComponents = components[i];
-
-                // Add components
-                for (int c = 0; c < size; c++) {
-                    adders[c].add(entityId, index, entityComponents[c]);
-                }
-
-                // Track entity
-                this.entities.add(entityId);
-
-                // Add to EntityIndex
-                entityIndex.add(this, entityId, index);
-
-                // Clear first component to cause error if user does not fill array
-                entityComponents[0] = null;
-            }
-
-            this.pendingChanges.ensureCapacity(alive);
-        }
+        // Free pooled creator
+        this.creatorPool.free(creator);
     }
 
     @Override
@@ -765,6 +706,80 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             var archetypeTransitions = this.archetypeTransitions;
             this.archetypeTransitions = this.archetypeTransitionsOverflow;
             this.archetypeTransitionsOverflow = archetypeTransitions;
+        }
+
+    }
+
+    private static final class EntityCreator implements ObjIntConsumer<Object>, Pooled {
+
+        private final ArchetypeDataSoaImpl archetype;
+
+        private final EntityIndex entityIndex;
+        private final IntBag entities;
+        private final ComponentAdder[] adders;
+        private final int size;
+
+        private final IntBag entityIds = new IntBag(64);
+        private final BitSet calls;
+
+        private IntSupplier entityIdSupplier;
+        private int i = -2; // exclusive
+        private int end = -2; // exclusive
+
+        private int entityId;
+
+        public EntityCreator(ArchetypeDataSoaImpl archetype) {
+            this.archetype = archetype;
+
+            this.entityIndex = archetype.entityIndex;
+            this.entities = archetype.entities;
+            this.adders = archetype.adders;
+            this.size = archetype.size;
+
+            this.calls = new BitSet(size);
+        }
+
+        private boolean next() {
+            if (++i == end) {
+                return false;
+            }
+
+            this.entityId = entityIdSupplier.getAsInt();
+            this.entityIds.add(entityId);
+
+            this.entities.add(entityId);
+            this.entityIndex.add(archetype, entityId, i);
+
+            this.calls.set(0, size);
+
+            return true;
+        }
+
+        private void validate() {
+            if (!calls.isEmpty()) {
+                var missing = calls.stream()
+                        .mapToObj(i -> archetype.componentTypes.get(i))
+                        .toList();
+
+                throw new StorageEngineException("%d/%d components not set for entity %d. %s".formatted(missing.size(), size, entityId, missing));
+            }
+        }
+
+        @Override
+        public void accept(Object component, int index) {
+            // Add component
+            this.adders[index].add(entityId, i, component);
+            this.calls.clear(index);
+        }
+
+        @Override
+        public void reset() {
+            this.entityIdSupplier = null;
+            this.i = -2;
+            this.end = -2;
+            
+            this.entityIds.clear();
+            this.calls.clear();
         }
 
     }
