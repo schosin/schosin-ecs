@@ -1,5 +1,6 @@
 package de.schosin.ecs.storage.archetype.entities.archetypes;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
@@ -219,7 +220,11 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
     }
 
     @Override
-    public void createEntity(int entityId, Object[] components) {
+    public Archetype createEntity(int entityId, Object[] components) {
+        if (actualArchetype != null) {
+            return createEntity(entityId, components, componentProvider);
+        }
+
         // Validate entity not already in storage
         var existing = entityIndex.getArchetypeDataForEntity(entityId);
         if (existing != null) {
@@ -254,10 +259,44 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         // Process changes by observers
         entityIndex.processCreatedEntity(entityId);
+
+        return this;
     }
 
     @Override
-    public void createEntities(int count, IntSupplier entityIdSupplier, ComponentsInitializer componentsConsumer) {
+    public Archetype createEntity(int entityId, Object[] components, ArchetypeComponentProvider componentProvider) {
+        int index = -42;
+
+        // TODO get rid of lambda here
+        // TODO not validated like with "calls" for batch version
+        var removeLambda = true;
+        componentProvider.apply((component, i) -> adders[i].add(entityId, index, component));
+
+        var todo = true;
+        throw new UnsupportedOperationException("createEntity(%d, %s, %s) not implemented yet".formatted(entityId, Arrays.toString(components), componentProvider));
+    }
+
+    @Override
+    public void setComponentProvider(ArchetypeComponentProvider componentProvider, ArchetypeData actualArchetype) {
+        // TODO call from EntityIndex 
+        var todo = true;
+
+        this.componentProvider = componentProvider;
+        this.actualArchetype = actualArchetype;
+    }
+
+    // TODO move up top
+    private boolean todo;
+    // TODO non-final sucks, there has to be a better way without making the API too awkward
+    private ArchetypeComponentProvider componentProvider = null;
+    private ArchetypeData actualArchetype = null;
+
+    @Override
+    public Archetype createEntities(int count, IntSupplier entityIdSupplier, ComponentsInitializer componentsConsumer) {
+        if (actualArchetype != null) {
+            return actualArchetype.createEntities(count, entityIdSupplier, componentsConsumer, componentProvider);
+        }
+
         // Initialize creator
         var creator = creatorPool.getInstance();
         creator.entityIdSupplier = entityIdSupplier;
@@ -283,6 +322,41 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
         // Free pooled creator
         this.creatorPool.free(creator);
+
+        return this;
+    }
+
+    @Override
+    public Archetype createEntities(int count, IntSupplier entityIdSupplier, ComponentsInitializer componentsConsumer, ArchetypeComponentProvider componentProvider) {
+        // Initialize creator
+        var creator = creatorPool.getInstance();
+        creator.entityIdSupplier = entityIdSupplier;
+        creator.i = alive - 1;
+        creator.end = alive + count;
+
+        // Update alive
+        this.alive += count;
+        this.pendingChanges.ensureCapacity(alive);
+
+        // Create entities
+        var idx = 0;
+        while (creator.next()) {
+            componentProvider.apply(creator);
+            componentsConsumer.accept(creator, idx++);
+
+            creator.validate();
+        }
+
+        // Invoke observers
+        this.observers.triggerEntitiesCreated(this, creator.entityIds);
+
+        // Process changes by observers
+        this.entityIndex.processCreatedEntities(creator.entityIds);
+
+        // Free pooled creator
+        this.creatorPool.free(creator);
+
+        return this;
     }
 
     @Override
@@ -777,7 +851,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             this.entityIdSupplier = null;
             this.i = -2;
             this.end = -2;
-            
+
             this.entityIds.clear();
             this.calls.clear();
         }

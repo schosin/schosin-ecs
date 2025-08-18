@@ -1,11 +1,19 @@
 package de.schosin.ecs.storage.archetype.entities.archetypes;
 
+import java.util.function.IntSupplier;
+
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
 import de.schosin.ecs.utils.collections.ImmutableBag;
 
 public sealed interface ArchetypeData extends Archetype permits ArchetypeDataSoaImpl {
+
+    Archetype createEntity(int entityId, Object[] components, ArchetypeComponentProvider componentProvider);
+
+    Archetype createEntities(int count, IntSupplier entityIdSupplier, ComponentsInitializer componentsConsumer, ArchetypeComponentProvider componentProvider);
+
+    void setComponentProvider(ArchetypeComponentProvider componentProvider, ArchetypeData actualArchetype);
 
     ArchetypeAccessor getAccessor(int index);
 

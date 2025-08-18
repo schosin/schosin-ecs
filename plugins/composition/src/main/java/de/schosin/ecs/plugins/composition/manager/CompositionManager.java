@@ -26,6 +26,7 @@ import de.schosin.ecs.plugins.composition.Composition.Builder;
 import de.schosin.ecs.plugins.composition.CompositionData;
 import de.schosin.ecs.plugins.composition.CompositionData1;
 import de.schosin.ecs.plugins.composition.CompositionPlugin;
+import de.schosin.ecs.plugins.composition.EntityInitializer;
 import de.schosin.ecs.plugins.composition.Spec;
 import de.schosin.ecs.plugins.data.DataTypePlugin;
 import de.schosin.ecs.plugins.data.types.Data;
@@ -88,6 +89,24 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         for (var composition : compositions.values()) {
             composition.offer(archetype);
         }
+    }
+
+    @Override
+    public void initialize(Builder builder, EntityInitializer provider) {
+        // TODO ComponentProvider thoughts
+        /*
+         * TODO better method name, too generic when called on "world"
+         * TODO for prototyping okay, but this might not be the best place if a composition alternative is ever introduced
+         * TODO probably want to introduce something like a ArchetypePredicate in storage api that is implemented by Spec/EngineSpec 
+         * 
+         * TODO promote Composition.Builder to api module? what would the name even be? Composition would class, Archetype even worse, Aspect maybe?
+         * -> take 49 (entity bag) into account, might benefit from this
+         * -> World.getEntities(RegularComponentType<?, ?>... componentTypes) -> world.getEntities(Aspect aspect)
+         */
+        var thoughts = true;
+
+        // TODO pass to storageEngine
+        var todo = true;
     }
 
     @Override

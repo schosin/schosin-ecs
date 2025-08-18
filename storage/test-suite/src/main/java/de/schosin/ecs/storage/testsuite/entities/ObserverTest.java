@@ -124,13 +124,12 @@ public class ObserverTest extends AbstractStorageEngineTest {
 
             // Verify
             assertThat(data)
+                    .as("must emit events").hasSize(4)
                     .extracting("newArchetype", "entityId", "payload")
-                    .as("must call observers in order")
-                    .containsExactly(
-                            tuple(archetype12, 1, "before"), // hardcoded ids because atomic integer will return 1 and 2
-                            tuple(archetype12, 1, "after"),
-                            tuple(archetype12, 2, "before"),
-                            tuple(archetype12, 2, "after"));
+                    .as("must call observers in order for archetype")
+                    .containsSubsequence(tuple(archetype12, 1, "before"), tuple(archetype12, 1, "after"))
+                    .as("must call observers in order for archetype")
+                    .containsSubsequence(tuple(archetype12, 2, "before"), tuple(archetype12, 2, "after"));
         }
 
     }

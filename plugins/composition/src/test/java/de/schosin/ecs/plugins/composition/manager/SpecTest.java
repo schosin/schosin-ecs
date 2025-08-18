@@ -531,6 +531,7 @@ public class SpecTest extends AbstractCompositionPluginTest {
                     public boolean isInterested(int entityId) {
                         return false;
                     }
+
                 }
 
                 @Test

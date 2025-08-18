@@ -214,12 +214,22 @@ public interface Composition extends Spec {
      * Callback for whenever an entity matching this composition is created
      * or modified in such a way that it matches this composition.
      * 
-     * The callback will only be called once for an entities lifecycle unless
-     * it has been {@link #remove() removed} due to composition changes.
+     * <p>
+     * When {@code inserted} is used to initialize created entities by adding more components 
+     * (e.g. a calculated component such as BoundingBox, Hitbox or similar), consider using
+     * {@link CompositionPlugin#initialize(Builder, ComponentProvider...)} to add the components
+     * and initialize them in {@code inserted}. Adding components in {@code initialize} is more
+     * performant as it avoids movement of component data  in memory and multiple {@code inserted/removed}
+     * invocations during creation.
      * 
+     * <p>
+     * The callback will only be called once for an entities lifecycle unless
+     * it has been {@link #remove() removed} and added again due to composition changes.
+     * 
+     * <p>
      * *Attention:* Since entity ids may be reused after an entity was removed
      * from the world, any caching of entity ids (e.g. lookup maps) should be 
-     * cleaned up via {@link #removed(IntConsumer)}
+     * cleaned up via {@link #removed(IntConsumer)}.
      * 
      * @param inserted callback
      */

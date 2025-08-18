@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
-import java.util.function.ObjIntConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -30,7 +29,7 @@ public class BaseArchetypeGenerator {
     public static final ClassName ARCHETYPE = ClassName.get("de.schosin.ecs.plugins.archetype", "BaseArchetype");
     public static final ClassName IMMUTABLE_INT_BAG = ClassName.get("de.schosin.ecs.utils.collections", "ImmutableIntBag");
     private static final ClassName BASE_ARCHETYPE_MANAGER = ClassName.get("", "BaseArchetypeManager");
-    private static final ParameterizedTypeName OBJ_INT_CONSUMER = ParameterizedTypeName.get(ObjIntConsumer.class, Object.class);
+    private static final ClassName COMPONENT_DATA_STORAGE = ARCHETYPE.nestedClass("ComponentDataStorage");
 
     public static ClassName dataTypeN(int n) {
         if (n <= 1) {
@@ -203,13 +202,13 @@ public class BaseArchetypeGenerator {
                     .build();
 
             var body = CodeBlock.builder()
-                    .addStatement("accept(index, component1 -> components.accept(component1, mapping[0]))")
+                    .addStatement("accept(index, component1 -> components.set(mapping[0], component1))")
                     .build();
 
             var archetypeConsumerAccept = MethodSpec.methodBuilder("accept")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
-                    .addParameter(OBJ_INT_CONSUMER, "components")
+                    .addParameter(COMPONENT_DATA_STORAGE, "components")
                     .addParameter(TypeName.INT, "index")
                     .addParameter(int[].class, "mapping")
                     .addCode(body)
@@ -343,7 +342,7 @@ public class BaseArchetypeGenerator {
             body.add("accept(index, (%s) -> {\n".formatted(components)).indent();
 
             for (int i = 1; i <= n; i++) {
-                body.addStatement("components.accept(component%d, mapping[%d])".formatted(i, i - 1));
+                body.addStatement("components.set(mapping[%d], component%d)".formatted(i - 1, i));
             }
 
             body.unindent().add("});");
@@ -351,7 +350,7 @@ public class BaseArchetypeGenerator {
             var archetypeConsumerAccept = MethodSpec.methodBuilder("accept")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PUBLIC, Modifier.DEFAULT)
-                    .addParameter(OBJ_INT_CONSUMER, "components")
+                    .addParameter(COMPONENT_DATA_STORAGE, "components")
                     .addParameter(TypeName.INT, "index")
                     .addParameter(int[].class, "mapping")
                     .addCode(body.build())

@@ -458,7 +458,7 @@ public class EntityIndex {
     }
 
     public void processCreatedEntities(ImmutableIntBag entities) {
-        for (int i = 0, s = entities.getSize(); i < s; i++) {
+        for (int i = entities.getSize() - 1; i >= 0; i--) {
             processCreatedEntity(entities.get(i));
         }
     }

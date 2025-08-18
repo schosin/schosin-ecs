@@ -18,7 +18,7 @@ public interface BaseArchetype<C extends ArchetypeConsumer> {
     interface ArchetypeConsumer {
         void accept(ObjIntConsumer<Object> components, int index, int[] mapping);
     }
-    
+
     interface ArchetypeBatch {
         ImmutableIntBag createBatch(int count);
     }

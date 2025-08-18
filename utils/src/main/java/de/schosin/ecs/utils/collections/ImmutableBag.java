@@ -45,6 +45,10 @@ public sealed interface ImmutableBag<T> extends Iterable<T> permits Bag, Immutab
         return new ImmutableBagImpl<>((Bag) bag);
     }
 
+    static <T> ImmutableBag<T> copyOf(ImmutableBag<? extends T> other) {
+        return create(new Bag<>(other));
+    }
+
     boolean isEmpty();
 
     int getSize();

@@ -18,6 +18,7 @@ import de.schosin.ecs.plugins.archetype.Archetype1;
 import de.schosin.ecs.plugins.archetype.Archetype3;
 import de.schosin.ecs.plugins.archetype.Archetype6;
 import de.schosin.ecs.worlds.DefaultWorld;
+
 import dev.dominion.ecs.api.Composition;
 import dev.dominion.ecs.api.Entity;
 import dev.dominion.ecs.engine.EntityRepository;
@@ -62,8 +63,6 @@ public class EntityCreationBenchmark {
         private Archetype3<Pooled1, Pooled2, Pooled3> pooled3;
         private Archetype6<Pooled1, Pooled2, Pooled3, Pooled4, Pooled5, Pooled6> pooled6;
 
-        private int[] entities;
-
         @Setup(Level.Trial)
         public void init() {
             this.world = DefaultWorld.create();
@@ -76,15 +75,6 @@ public class EntityCreationBenchmark {
             this.pooled1 = world.createArchetype(Pooled1.class);
             this.pooled3 = world.createArchetype(Pooled1.class, Pooled2.class, Pooled3.class);
             this.pooled6 = world.createArchetype(Pooled1.class, Pooled2.class, Pooled3.class, Pooled4.class, Pooled5.class, Pooled6.class);
-
-            // Warm up data structures
-            this.entities = new int[size];
-            for (int i = 0; i < size; i++) {
-                this.entities[i] = world.createEntity();
-            }
-
-            all.process(world::deleteEntity);
-            world.process();
         }
 
         @TearDown(Level.Invocation)
