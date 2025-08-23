@@ -5,6 +5,7 @@ import de.schosin.ecs.api.components.types.ClassType;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.TransmutationManager;
+import de.schosin.ecs.engine.components.mappers.accessors.EnumAccessorImpl;
 import de.schosin.ecs.engine.components.mappers.accessors.IndexedAccessorImpl;
 import de.schosin.ecs.engine.components.mappers.accessors.PendingAccessorImpl;
 import de.schosin.ecs.storage.api.components.Component.ClassComponent;
@@ -16,6 +17,7 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
     protected final ClassComponent<T> data;
     protected final int componentId;
     protected final ClassType<T> componentType;
+    protected final ComponentAccessor<T> enumAccessor;
 
     private final TransmutationManager.Add<T> add;
     private final TransmutationManager.Remove remove;
@@ -26,11 +28,25 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
         this.data = data;
         this.componentId = data.id();
         this.componentType = data.type();
+        this.enumAccessor = getEnumAccessor(data.clazz());
 
         this.add = transmutationManager.getAddTransmuter(data);
         this.remove = transmutationManager.getRemoveTransmuter(componentType);
 
         this.pendingAccessors = Pool.unbounded(PendingAccessorImpl.class, this::createPendingAccessor);
+    }
+
+    private static <T> ComponentAccessor<T> getEnumAccessor(Class<T> clazz) {
+        if (!Enum.class.isAssignableFrom(clazz)) {
+            return null;
+        }
+
+        var values = clazz.getEnumConstants();
+        if (values.length != 1) {
+            return null;
+        }
+
+        return EnumAccessorImpl.getInstance((Enum<?>) values[0]);
     }
 
     private PendingAccessorImpl<T> createPendingAccessor() {
@@ -66,16 +82,22 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
 
     @Override
     public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
+        if (enumAccessor != null) {
+            return enumAccessor;
+        }
+
         if (!(accessor instanceof ArchetypeAccessor archetypeAccessor)) {
             throw new IllegalArgumentException("Unexpected IterableAccessor not implementing ArchetypeAccessor: " + accessor);
         }
 
         var archetype = archetypeAccessor.getArchetype();
-        var index = archetype.getComponentIndex(componentId);
 
-        return index > -1
-                ? IndexedAccessorImpl.getInstance(index)
-                : pendingAccessors.getInstance();
+        var index = archetype.getComponentIndex(componentId);
+        if (index == -1) {
+            return pendingAccessors.getInstance();
+        }
+
+        return IndexedAccessorImpl.getInstance(index);
     }
 
     @Override
