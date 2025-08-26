@@ -17,7 +17,6 @@ import de.schosin.ecs.api.components.ComponentSet.Component;
 import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetDataBuilder;
-import de.schosin.ecs.api.components.ComponentSet.IterableProcessor;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
 import de.schosin.ecs.api.components.Relation.Exclusive;
@@ -94,10 +93,6 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
         ComponentAccessor<S> create(DataAccessor accessor, Components<?, ?>[] mappers);
     }
 
-    interface IterableProcessor<S extends ComponentSet<?>, P extends DataProcessor<S>> {
-        void process(P processor, IterableAccessor accessor, Components<?, ?>[] mappers);
-    }
-
     /**
      * Record holding the {@link ComponentType} and getter for a component of the set.
      * 
@@ -115,8 +110,6 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
      */
     sealed interface ComponentSetData<S extends ComponentSet<?>, P extends DataProcessor<S>> {
         AccessorFactory<S> accessorFactory();
-
-        IterableProcessor<S, P> processor();
 
         List<ComponentData<S, ?, ?>> components();
     }
@@ -162,8 +155,8 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
     /**
      * Creates a {@link ComponentSetDataBuilder} instance given the factory method.
      */
-    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(AccessorFactory<S> accessorFactory, IterableProcessor<S, P> processor) {
-        return new ComponentSetDataBuilderImpl<>(accessorFactory, processor);
+    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(AccessorFactory<S> accessorFactory) {
+        return new ComponentSetDataBuilderImpl<>(accessorFactory);
     }
 
     static <T extends CustomComponentType<?, ?, ?>> void registerComponentType(Class<? extends T> componentType, Function<Type, T> converter) {
@@ -206,13 +199,11 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetDataBuilder<S, P> {
 
     private final AccessorFactory<S> accessorFactory;
-    private final IterableProcessor<S, P> processor;
 
     private final List<ComponentData<S, ?, ?>> components = new ArrayList<>();
 
-    public ComponentSetDataBuilderImpl(AccessorFactory<S> accessorFactory, IterableProcessor<S, P> processor) {
+    public ComponentSetDataBuilderImpl(AccessorFactory<S> accessorFactory) {
         this.accessorFactory = accessorFactory;
-        this.processor = processor;
     }
 
     @Override
@@ -224,7 +215,7 @@ final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends Dat
 
     @Override
     public ComponentSetData<S, P> build() {
-        return new ComponentSetDataImpl<>(accessorFactory, processor, components);
+        return new ComponentSetDataImpl<>(accessorFactory, components);
     }
 
 }
@@ -232,23 +223,16 @@ final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends Dat
 final class ComponentSetDataImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetData<S, P> {
 
     private final AccessorFactory<S> accessorFactory;
-    private final IterableProcessor<S, P> processor;
     private final List<ComponentData<S, ?, ?>> components;
 
-    ComponentSetDataImpl(AccessorFactory<S> accessorFactory, IterableProcessor<S, P> processor, List<ComponentData<S, ?, ?>> components) {
+    ComponentSetDataImpl(AccessorFactory<S> accessorFactory, List<ComponentData<S, ?, ?>> components) {
         this.accessorFactory = accessorFactory;
-        this.processor = processor;
         this.components = components;
     }
 
     @Override
     public AccessorFactory<S> accessorFactory() {
         return accessorFactory;
-    }
-
-    @Override
-    public IterableProcessor<S, P> processor() {
-        return processor;
     }
 
     @Override

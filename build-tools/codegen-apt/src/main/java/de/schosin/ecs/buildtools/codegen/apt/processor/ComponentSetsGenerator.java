@@ -46,7 +46,6 @@ public class ComponentSetsGenerator {
     static final ClassName COMPONENT_SET = ClassName.get("de.schosin.ecs.api.components", "ComponentSet");
     static final ClassName COMPONENT_SET_DATA = COMPONENT_SET.nestedClass("ComponentSetData");
     static final ClassName COMPONENT_SET_COMPONENT = COMPONENT_SET.nestedClass("Component");
-    static final ClassName COMPONENT_ACCESSOR_PROCESSOR = COMPONENT_SET.nestedClass("IterableProcessor");
     static final ClassName ITERABLE_COMPONENT_ACCESSOR = ClassName.get("de.schosin.ecs.api.data", "IterableComponentAccessor");
     static final ClassName COMPONENT_SET_TYPE = ClassName.get("de.schosin.ecs.api.components.types", "ComponentSetType");
 
@@ -249,7 +248,7 @@ public class ComponentSetsGenerator {
                     .addField(entityId);
 
             var componentSetDataInitializer = CodeBlock.builder()
-                    .add("$1T.builder($2T::getInstance, $3T.INSTANCE)", COMPONENT_SET, accessorName, implementationName.nestedClass("IterableProcessor"));
+                    .add("$1T.<$2T, $3T>builder($4T::getInstance)", COMPONENT_SET, interfaceName, interfaceName.nestedClass("Processor"), accessorName);
 
             var componentSetDataType = ParameterizedTypeName.get(COMPONENT_SET_DATA, interfaceName, interfaceName.nestedClass("Processor"));
             var componentSetData = FieldSpec.builder(componentSetDataType, "DATA", Modifier.STATIC, Modifier.FINAL);
@@ -331,54 +330,9 @@ public class ComponentSetsGenerator {
         }
 
         private static TypeSpec createIterableProcessorType(VisitorResult result) {
-            var superInterface = ParameterizedTypeName.get(COMPONENT_ACCESSOR_PROCESSOR, result.interfaceName, result.interfaceName.nestedClass("Processor"));
-
             return TypeSpec.enumBuilder("IterableProcessor")
-                    .addSuperinterface(superInterface)
                     .addEnumConstant("INSTANCE")
-                    .addMethod(iterableProcessorImpl(result))
                     .addMethod(iterableProcessorProcess(result))
-                    .build();
-        }
-
-        private static MethodSpec iterableProcessorImpl(VisitorResult result) {
-            var components = result.components;
-            var n = components.size();
-
-            var methodBody = CodeBlock.builder();
-
-            methodBody.addStatement("// get accessors");
-            for (int i = 1; i <= n; i++) {
-                var type = components.get(i - 1).typeName;
-                var mapper = ParameterizedTypeName.get(COMPONENT_ACCESSOR, type);
-
-                methodBody.addStatement("var accessor%d = ($1T) mappers[%d].getComponentAccessor(accessor)".formatted(i, i - 1), mapper);
-            }
-
-            methodBody.addStatement("// process");
-            methodBody.beginControlFlow("while(accessor.hasNext())");
-            methodBody.add("processor.process(accessor.next()");
-            for (int i = 1; i <= n; i++) {
-                methodBody.indent().add(", %saccessor%d.getComponent(accessor)".formatted(System.lineSeparator(), i)).unindent();
-            }
-            methodBody.addStatement(")");
-            methodBody.endControlFlow(); // while
-
-            methodBody.addStatement("// free accessors");
-            for (int i = 1; i <= n; i++) {
-                methodBody.addStatement("accessor%d.free()".formatted(i));
-            }
-
-            var mappers = ArrayTypeName.of(ParameterizedTypeName.get(COMPONENTS, WILDCARD, WILDCARD));
-
-            return MethodSpec.methodBuilder("process")
-                    .addAnnotation(Override.class)
-                    .addAnnotation(SUPPRESS_UNCHECKED)
-                    .addModifiers(Modifier.PUBLIC)
-                    .addParameter(result.interfaceName.nestedClass("Processor"), "processor")
-                    .addParameter(ITERABLE_ACCESSOR, "accessor")
-                    .addParameter(mappers, "mappers")
-                    .addCode(methodBody.build())
                     .build();
         }
 
