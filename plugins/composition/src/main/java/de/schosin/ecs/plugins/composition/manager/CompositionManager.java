@@ -10,16 +10,19 @@ import java.util.stream.StreamSupport;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.World;
+import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.ComponentSet.ArchetypeIterator;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.DataProcessorType;
 import de.schosin.ecs.api.data.DataProcessor;
-import de.schosin.ecs.api.data.IterableComponentAccessor;
+import de.schosin.ecs.api.data.IterableComponentProcessor;
 import de.schosin.ecs.codegen.EcsCodegen;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
+import de.schosin.ecs.engine.components.mappers.ComponentSetMapperImpl;
 import de.schosin.ecs.engine.events.EventManager;
 import de.schosin.ecs.plugins.composition.Composition;
 import de.schosin.ecs.plugins.composition.Composition.Builder;
@@ -321,12 +324,16 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
                     return result;
                 }
 
-                var compositionData = new CompositionDataImpl<>(this, componentType);
+                var compositionData = switch (componentType) {
+                    case ComponentSetType<?, ?> componentSet -> new CompositionSetImpl<>(this, componentSet);
+                    default -> new CompositionDataImpl<>(this, componentType);
+                };
+
                 initializeCompositionData(compositionData);
 
                 this.compositionData.put(componentType, compositionData);
 
-                return compositionData;
+                return (CompositionData<P>) compositionData;
             }
         }
 
@@ -657,6 +664,34 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
 
     }
 
+    // should be "R extends ComponentSet<P>", but JDK 21 javac doesn't like that
+    static final class CompositionSetImpl<R extends ComponentSet<?>, P extends DataProcessor<R>> extends AbstractComposition<R, P> implements CompositionData<P> {
+
+        private final ComponentSetMapperImpl<R> mapper;
+        private final Bag<ArchetypeIterator<P>> iterators = new Bag<>(ArchetypeIterator.class, 4);
+
+        @SuppressWarnings("unchecked")
+        protected CompositionSetImpl(Composition composition, ComponentType<?, R> componentType) {
+            super(composition, componentType);
+
+            this.mapper = (ComponentSetMapperImpl<R>) this.composition.getComponents(componentType);
+        }
+
+        @Override
+        public void process(P processor) {
+            var data = iterators.getData();
+            for (int i = 0, s = iterators.getSize(); i < s; i++) {
+                data[i].process(processor);
+            }
+        }
+
+        @Override
+        protected void addArchetype(Archetype archetype) {
+            this.iterators.add(mapper.getArchetypeIterator(archetype));
+        }
+
+    }
+
     static sealed class CompositionDataImpl<R, P extends DataProcessor<R>> extends AbstractAccessorComposition<R, P> implements CompositionData<P>
             permits CompositionManagerHelper.AbstractCompositionDataN {
 
@@ -674,7 +709,7 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
             for (int i = 0, s = archetypes.getSize(); i < s; i++) {
                 var accessor = archetypes.get(i).getAccessor();
 
-                var componentAccessor = (IterableComponentAccessor<R, P>) mapper.getComponentAccessor(accessor);
+                var componentAccessor = (IterableComponentProcessor<R, P>) mapper.getComponentAccessor(accessor);
                 componentAccessor.process(accessor, processor);
                 componentAccessor.free();
 
@@ -695,6 +730,11 @@ public class CompositionManager extends AbstractSpecManager implements Compositi
         @Override
         protected final void addArchetype(Archetype archetype) {
             this.archetypes.add(archetype);
+
+            handleArchetype(archetype);
+        }
+
+        protected void handleArchetype(Archetype archetype) {
         }
 
     }

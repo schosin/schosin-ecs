@@ -4,6 +4,7 @@ import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.components.mappers.ComponentMapper.EnumComponentMapper;
 import de.schosin.ecs.api.components.types.ClassType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 
@@ -55,6 +56,11 @@ public final class EnumComponentMapperImpl<T extends Enum<T>> implements EnumCom
     @Override
     public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
         return this.delegate.getComponentAccessor(accessor);
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<T> getArchetypeComponentAccessor(DataAccessor accessor) {
+        return this.delegate.getArchetypeComponentAccessor(accessor);
     }
 
     @Override

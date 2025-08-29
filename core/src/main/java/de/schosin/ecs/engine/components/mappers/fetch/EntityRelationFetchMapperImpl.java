@@ -14,11 +14,13 @@ import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.EntityRelationFetchMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.utils.components.EntityRelationDataImpl;
+import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
 import de.schosin.ecs.utils.collections.Bag;
 import de.schosin.ecs.utils.collections.Pool;
 
@@ -73,6 +75,14 @@ public class EntityRelationFetchMapperImpl<R, T> implements EntityRelationFetchM
     @Override
     public EntityRelationsFetchAccessor<R, T> getComponentAccessor(DataAccessor accessor) {
         return pool.getInstance().init(accessor);
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<EntityRelationsData<R, T>> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override

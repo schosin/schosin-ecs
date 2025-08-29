@@ -12,6 +12,7 @@ import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelationMapper;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
@@ -97,6 +98,14 @@ public class WildcardEntityRelationMapper<R> implements CustomComponentMapper<En
     @Override
     public WildcardEntityRelationAccessor getComponentAccessor(DataAccessor accessor) {
         return pool.getInstance();
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<WildcardEntityRelations<R>> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override

@@ -3,6 +3,7 @@ package de.schosin.ecs.engine.components.mappers.relations;
 import org.jspecify.annotations.Nullable;
 
 import de.schosin.ecs.api.components.Relation.EntityRelation;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.TransmutationManager;
@@ -61,6 +62,15 @@ public abstract class AbstractEntityRelationMapper<R, RR, C extends EntityRelati
         return index > -1
                 ? IndexedAccessorImpl.getInstance(index)
                 : pendingAccessors.getInstance();
+    }
+
+    public ArchetypeComponentAccessor<RR> getArchetypeComponentAccessor(DataAccessor accessor) {
+        if (!(accessor instanceof ArchetypeAccessor archetypeAccessor)) {
+            throw new IllegalArgumentException("Unexpected DataAccessor not implementing ArchetypeAccessor: " + accessor);
+        }
+
+        var archetype = archetypeAccessor.getArchetype();
+        return archetype.getComponentAccessor(componentId);
     }
 
     public final boolean remove(int entityId) {

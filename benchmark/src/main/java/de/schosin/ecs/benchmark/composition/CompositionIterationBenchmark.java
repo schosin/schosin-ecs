@@ -26,10 +26,10 @@ public class CompositionIterationBenchmark implements SchosinComponents {
 
     public static void main(String[] args) throws RunnerException {
         var options = new OptionsBuilder()
-                .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack01.class))
+                // .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack01.class))
                 .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack04.class))
-                .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack08.class))
-                .include(benchmarkName(WildcardIterationBenchmark.class))
+                // .include(benchmarkName(BaseCompositionIterationBenchmark.Unpack08.class))
+                // .include(benchmarkName(WildcardIterationBenchmark.class))
                 .build();
 
         new Runner(options).run();
@@ -195,7 +195,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
                 this.bh = bh;
             }
 
-            @Benchmark
+            //@Benchmark
             public void dataType() {
                 compositionData.process(this::process);
             }
@@ -215,7 +215,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
                 bh.consume(c4);
             }
 
-            @Benchmark
+            // @Benchmark
             public void wildcardLoop() {
                 compositionWildcard.process(this::processLoop);
             }
@@ -228,7 +228,7 @@ public class CompositionIterationBenchmark implements SchosinComponents {
                 }
             }
 
-            @Benchmark
+            // @Benchmark
             public void wildcardIterator() {
                 compositionWildcard.process(this::processIterator);
             }

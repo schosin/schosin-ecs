@@ -17,6 +17,7 @@ import de.schosin.ecs.api.components.types.RelationComponentType.EntityRelationT
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveComponentRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.ExclusiveEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.IterableAccessor;
 import de.schosin.ecs.storage.api.StorageEngineException;
 import de.schosin.ecs.storage.api.StorageWorld;
@@ -25,6 +26,9 @@ import de.schosin.ecs.storage.api.entities.Archetype;
 import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
 import de.schosin.ecs.storage.archetype.ArchetypeStorageConfig;
 import de.schosin.ecs.storage.archetype.components.ComponentIndex;
+import de.schosin.ecs.storage.archetype.components.accessors.EnumComponentAccessorImpl;
+import de.schosin.ecs.storage.archetype.components.accessors.IndexedComponentAccessorImpl;
+import de.schosin.ecs.storage.archetype.components.accessors.PendingComponentAccessorImpl;
 import de.schosin.ecs.storage.archetype.entities.EntityIndex;
 import de.schosin.ecs.storage.archetype.entities.EntityRelationIndex;
 import de.schosin.ecs.storage.archetype.entities.Observers;
@@ -216,6 +220,26 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         accessor.index = -1;
 
         return accessor;
+    }
+
+    @Override
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public <T> ArchetypeComponentAccessor<T> getComponentAccessor(int componentId) {
+        var index = componentTypeIds.getSafe(componentId);
+
+        // Component not part of archetype -> pending component
+        if (index == -1) {
+            return new PendingComponentAccessorImpl<>(componentId, pendingChanges);
+        }
+
+        // Zero-sized enum -> return value immediately
+        if (index < -1) {
+            return new EnumComponentAccessorImpl((Enum<?>) zeroSizedTypes[-index - 2]);
+            // TODO enum
+        }
+
+        // Access component by index in archetype
+        return new IndexedComponentAccessorImpl<>((Bag<T>) data[index]);
     }
 
     @Override
@@ -478,7 +502,11 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
 
     }
 
+    @Deprecated(forRemoval = true)
     private <R> R retrievePendingComponent(int index, int componentId) {
+        // TODO see if this can be removed with IterableComponentAccessor
+        var remove = true;
+
         var changes = pendingChanges.get(index);
         if (changes == null || changes.isNoAdded()) {
             return null;
@@ -489,16 +517,25 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             return null;
         }
 
-        return changes.getComponent(componentType);
+        return changes.getComponent(componentId);
     }
 
+    @Deprecated(forRemoval = true)
     private <R> R retrievePendingComponent(int index, RegularComponentType<?, R> componentType) {
+        // TODO remove this, refactor callers if neccessary
+        var remove = true;
+
         var changes = pendingChanges.get(index);
         if (changes == null || changes.isNoAdded()) {
             return null;
         }
 
-        return changes.getComponent(componentType);
+        var componentId = componentIndex.getExistingId(componentType);
+        if (componentId == -1) {
+            return null;
+        }
+
+        return changes.getComponent(componentId);
     }
 
     @Override
@@ -777,7 +814,7 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
             this.entityIdSupplier = null;
             this.i = -2;
             this.end = -2;
-            
+
             this.entityIds.clear();
             this.calls.clear();
         }
@@ -1032,6 +1069,21 @@ public final class ArchetypeDataSoaImpl implements ArchetypeData {
         @Override
         public Archetype getArchetype() {
             return ArchetypeDataSoaImpl.this;
+        }
+
+        @Override
+        public int size() {
+            return alive;
+        }
+
+        @Override
+        public int entityId(int index) {
+            return entities.get(index);
+        }
+
+        @Override
+        public void resetIterable() {
+            this.index = -1;
         }
 
         @Override

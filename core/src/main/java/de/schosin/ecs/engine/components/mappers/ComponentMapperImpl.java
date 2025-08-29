@@ -2,6 +2,7 @@ package de.schosin.ecs.engine.components.mappers;
 
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.types.ClassType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.TransmutationManager;
@@ -98,6 +99,16 @@ public class ComponentMapperImpl<T> implements ComponentMapper<T> {
         }
 
         return IndexedAccessorImpl.getInstance(index);
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<T> getArchetypeComponentAccessor(DataAccessor accessor) {
+        if (!(accessor instanceof ArchetypeAccessor archetypeAccessor)) {
+            throw new IllegalArgumentException("Unexpected DataAccessor not implementing ArchetypeAccessor: " + accessor);
+        }
+
+        var archetype = archetypeAccessor.getArchetype();
+        return archetype.getComponentAccessor(componentId);
     }
 
     @Override

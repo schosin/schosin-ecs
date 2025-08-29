@@ -162,13 +162,13 @@ public class BaseDataGenerator {
             parameters.add(ParameterSpec.builder(Utils.DATA_ACCESSOR, "accessor").build());
             arguments += ", accessor";
 
-            var iterableComponentAccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_ACCESSOR, dataType, dataTypeProcessor);
+            var iterableComponentProccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_PROCESSOR, dataType, dataTypeProcessor);
 
             return MethodSpec.methodBuilder("getComponentAccessor")
                     .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                     .addTypeVariables(typeVariables)
                     .addParameters(parameters)
-                    .returns(iterableComponentAccessor)
+                    .returns(iterableComponentProccessor)
                     .addStatement("return $1T.getComponentAccessor(%s)".formatted(arguments), dataAccessorN)
                     .build();
         }
@@ -211,7 +211,7 @@ public class BaseDataGenerator {
             var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
             var dataTypeProcessor = ParameterizedTypeName.get(ClassName.get("", "DataType" + n).nestedClass("Processor" + n), typeVariablesArray);
 
-            var iterableComponentAccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_ACCESSOR, dataType, dataTypeProcessor);
+            var iterableComponentProccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_PROCESSOR, dataType, dataTypeProcessor);
 
             var parameterizedPool = ParameterizedTypeName.get(Utils.POOL, className);
             var pool = FieldSpec.builder(parameterizedPool, "POOL", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
@@ -225,7 +225,7 @@ public class BaseDataGenerator {
             return TypeSpec.classBuilder(className)
                     .addModifiers(Modifier.FINAL)
                     .addTypeVariables(typeVariables)
-                    .addSuperinterface(iterableComponentAccessor)
+                    .addSuperinterface(iterableComponentProccessor)
                     .addSuperinterface(dataType)
                     .addSuperinterface(Utils.POOLED)
                     .addField(pool)
@@ -258,7 +258,7 @@ public class BaseDataGenerator {
                 var dataType = ParameterizedTypeName.get(ClassName.get("", "Data" + n), typeVariablesArray);
                 var dataTypeProcessor = ParameterizedTypeName.get(ClassName.get("", "DataType" + n).nestedClass("Processor" + n), typeVariablesArray);
 
-                var iterableComponentAccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_ACCESSOR, dataType, dataTypeProcessor);
+                var iterableComponentProccessor = ParameterizedTypeName.get(Utils.ITERABLE_COMPONENT_PROCESSOR, dataType, dataTypeProcessor);
 
                 var parameters = new ArrayList<ParameterSpec>(typeVariables.size());
 
@@ -280,7 +280,7 @@ public class BaseDataGenerator {
                         .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
                         .addTypeVariables(typeVariables)
                         .addParameters(parameters)
-                        .returns(iterableComponentAccessor)
+                        .returns(iterableComponentProccessor)
                         .addCode(body.build())
                         .build();
             }

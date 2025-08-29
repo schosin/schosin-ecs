@@ -28,6 +28,7 @@ import de.schosin.ecs.api.components.mappers.EntityRelationMappers.EntityRelatio
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.AbstractWorldTest;
@@ -234,6 +235,14 @@ class DefaultComponents<T> implements CustomComponentMapper<T, T>, ComponentAcce
     @Override
     public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
         return this;
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<T> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override

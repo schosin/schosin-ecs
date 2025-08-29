@@ -4,11 +4,11 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import de.schosin.ecs.api.components.mappers.Components;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 
-public 
-final class DefaultComponentsImpl<T> implements DefaultComponents<T>, ComponentAccessor<T> {
+public final class DefaultComponentsImpl<T> implements DefaultComponents<T>, ComponentAccessor<T> {
     private final Components<T, T> components;
     private final Supplier<T> defaultInstance;
 
@@ -20,6 +20,14 @@ final class DefaultComponentsImpl<T> implements DefaultComponents<T>, ComponentA
     @Override
     public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
         return this;
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<T> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override

@@ -4,6 +4,7 @@ import java.util.function.IntSupplier;
 import java.util.function.ObjIntConsumer;
 
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.IterableAccessor;
 import de.schosin.ecs.storage.api.components.Component;
 import de.schosin.ecs.utils.collections.ImmutableBag;
@@ -32,6 +33,8 @@ public interface Archetype {
     int getComponentIndex(int componentId);
 
     IterableAccessor getAccessor();
+    
+    <T> ArchetypeComponentAccessor<T> getComponentAccessor(int componentId);
 
     void createEntity(int entityId, Object[] components);
 

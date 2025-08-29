@@ -8,6 +8,7 @@ import java.util.function.IntFunction;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
 import de.schosin.ecs.api.components.types.ComponentType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.codegen.EcsCodegen;
@@ -96,6 +97,14 @@ public class DataTypeMapper<T extends Data, R extends Data> implements CustomCom
     @Override
     public ComponentAccessor<R> getComponentAccessor(DataAccessor accessor) {
         return DataTypeMapperHelper.getComponentAccessor(dataType, mappers, accessor);
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<R> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override

@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.components.mappers.ComponentMapper;
 import de.schosin.ecs.api.components.mappers.CustomComponentMapper;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
@@ -77,6 +78,14 @@ public class WildcardClassMapper<T> implements CustomComponentMapper<T, Wildcard
     @Override
     public WildcardComponentResultImpl getComponentAccessor(DataAccessor accessor) {
         return pool.getInstance().init(accessor);
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<WildcardResult<T>> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override

@@ -14,6 +14,7 @@ import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.ComponentType.RegularComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
 import de.schosin.ecs.api.components.types.RelationFetchType.EntityRelationFetchType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 
@@ -137,6 +138,8 @@ public sealed interface Components<T, R> permits RegularComponents, ComponentSet
      * @return component accessor
      */
     ComponentAccessor<R> getComponentAccessor(DataAccessor accessor);
+
+    ArchetypeComponentAccessor<R> getArchetypeComponentAccessor(DataAccessor accessor);
 
     /**
      * Marks the component for removal. The component will be removed during the {@link #process()} call.

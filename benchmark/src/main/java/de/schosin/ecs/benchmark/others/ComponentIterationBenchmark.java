@@ -29,7 +29,7 @@ public class ComponentIterationBenchmark {
     public static void main(String[] args) throws Exception {
         var options = new OptionsBuilder()
                 .include(benchmarkName(SchosinEcs.class))
-                .include(benchmarkName(Dominion.class))
+                // .include(benchmarkName(Dominion.class))
                 .build();
 
         new Runner(options).run();
@@ -86,7 +86,7 @@ public class ComponentIterationBenchmark {
 
             private CompositionData1<Schosin1> composition;
 
-            @Setup(Level.Trial)
+            // @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {
                 setup();
 
@@ -96,7 +96,7 @@ public class ComponentIterationBenchmark {
                 this.bh = bh;
             }
 
-            @Benchmark
+            // @Benchmark
             public void iterate() {
                 composition.process(this::process);
             }
@@ -125,7 +125,7 @@ public class ComponentIterationBenchmark {
                 this.bh = bh;
             }
 
-            @Benchmark
+            // @Benchmark
             public void componentMappers() {
                 composition.process(this::processMapper);
             }
@@ -137,7 +137,7 @@ public class ComponentIterationBenchmark {
                 bh.consume(mapper3.get(entityId));
             }
 
-            @Benchmark
+            // @Benchmark
             public void dataType() {
                 composition.process(this::process);
             }
@@ -162,7 +162,7 @@ public class ComponentIterationBenchmark {
             private CompositionData6<Schosin1, Schosin2, Schosin3, Schosin4, Schosin5, Schosin6> composition;
             private CompositionData<ComponentSet6.Processor> setComposition;
 
-            @Setup(Level.Trial)
+            // @Setup(Level.Trial)
             public void setupComposition(Blackhole bh) {
                 setup();
 
@@ -173,7 +173,7 @@ public class ComponentIterationBenchmark {
                 this.bh = bh;
             }
 
-            @Benchmark
+            // @Benchmark
             public void componentMappers() {
                 composition.process(this::processMapper);
             }
@@ -188,12 +188,12 @@ public class ComponentIterationBenchmark {
                 bh.consume(mapper6.get(entityId));
             }
 
-            @Benchmark
+            // @Benchmark
             public void dataType() {
                 composition.process(this::process);
             }
 
-            @Benchmark
+            // @Benchmark
             public void componentSet() {
                 setComposition.process(this::process);
             }

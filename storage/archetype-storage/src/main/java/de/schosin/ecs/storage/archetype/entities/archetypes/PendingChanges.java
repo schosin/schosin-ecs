@@ -53,8 +53,8 @@ public class PendingChanges {
     }
 
     @SuppressWarnings("unchecked")
-    public <R> R getComponent(RegularComponentType<?, R> type) {
-        var index = addedTypes.indexOf(type);
+    public <R> R getComponent(int componentId) {
+        var index = addedIds.indexOf(componentId);
         if (index == -1) {
             return null;
         }

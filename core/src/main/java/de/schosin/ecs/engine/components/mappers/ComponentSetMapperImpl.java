@@ -5,6 +5,7 @@ import java.util.function.IntFunction;
 import org.jspecify.annotations.NonNull;
 
 import de.schosin.ecs.api.components.ComponentSet;
+import de.schosin.ecs.api.components.ComponentSet.ArchetypeIterator;
 import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.Relation.ComponentRelation;
 import de.schosin.ecs.api.components.Relation.EntityRelation;
@@ -14,12 +15,16 @@ import de.schosin.ecs.api.components.mappers.ComponentSetMapper;
 import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.ComponentSetType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
+import de.schosin.ecs.api.data.DataProcessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
 import de.schosin.ecs.engine.components.ComponentMapperManager.ReclaimingComponents;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper;
 import de.schosin.ecs.engine.utils.components.ComponentSetsHelper.ComponentSetFactory;
+import de.schosin.ecs.storage.api.entities.Archetype;
+import de.schosin.ecs.storage.api.entities.ArchetypeAccessor;
 import de.schosin.ecs.utils.collections.Bag;
 
 public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements ComponentSetMapper<T>, ReclaimingComponents {
@@ -49,6 +54,17 @@ public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements 
 
             this.mappers[i] = componentMapperManager.getComponents(componentType.type());
         }
+    }
+
+    public <P extends DataProcessor<T>> ArchetypeIterator<P> getArchetypeIterator(Archetype archetype) {
+        var accessor = archetype.getAccessor();
+
+        var accessors = new ArchetypeComponentAccessor<?>[mappers.length];
+        for (int i = 0; i < size; i++) {
+            accessors[i] = mappers[i].getArchetypeComponentAccessor(accessor);
+        }
+
+        return factory.getArchetypeIterator(accessor, accessors);
     }
 
     @Override
@@ -121,6 +137,14 @@ public final class ComponentSetMapperImpl<T extends ComponentSet<?>> implements 
     @Override
     public ComponentAccessor<T> getComponentAccessor(DataAccessor accessor) {
         return factory.getComponentAccessor(accessor, mappers);
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<T> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override

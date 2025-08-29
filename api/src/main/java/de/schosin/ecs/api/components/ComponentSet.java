@@ -8,11 +8,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import de.schosin.ecs.api.Pooled;
 import de.schosin.ecs.api.World;
 import de.schosin.ecs.api.components.ComponentSet.AccessorFactory;
+import de.schosin.ecs.api.components.ComponentSet.ArchetypeIterator;
 import de.schosin.ecs.api.components.ComponentSet.Component;
 import de.schosin.ecs.api.components.ComponentSet.ComponentData;
 import de.schosin.ecs.api.components.ComponentSet.ComponentSetData;
@@ -27,6 +29,7 @@ import de.schosin.ecs.api.components.mappers.Components;
 import de.schosin.ecs.api.components.types.ComponentSetType;
 import de.schosin.ecs.api.components.types.ComponentType;
 import de.schosin.ecs.api.components.types.CustomComponentType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.api.data.DataProcessor;
@@ -82,6 +85,10 @@ import de.schosin.ecs.api.data.IterableAccessor;
  */
 public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 
+    interface ArchetypeIterator<P extends DataProcessor<?>> {
+        void process(P processor);
+    }
+
     /**
      * Functional interface for the factory method to instantiate the component set by 
      * the world using a {@link IterableAccessor}.
@@ -112,6 +119,8 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
         AccessorFactory<S> accessorFactory();
 
         List<ComponentData<S, ?, ?>> components();
+
+        BiFunction<IterableAccessor, ArchetypeComponentAccessor<?>[], ArchetypeIterator<P>> iteratorFactory();
     }
 
     /**
@@ -155,8 +164,10 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
     /**
      * Creates a {@link ComponentSetDataBuilder} instance given the factory method.
      */
-    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(AccessorFactory<S> accessorFactory) {
-        return new ComponentSetDataBuilderImpl<>(accessorFactory);
+    static <S extends ComponentSet<?>, P extends DataProcessor<S>> ComponentSetDataBuilder<S, P> builder(AccessorFactory<S> accessorFactory,
+            BiFunction<IterableAccessor, ArchetypeComponentAccessor<?>[], ArchetypeIterator<P>> iteratorFactory) {
+
+        return new ComponentSetDataBuilderImpl<>(accessorFactory, iteratorFactory);
     }
 
     static <T extends CustomComponentType<?, ?, ?>> void registerComponentType(Class<? extends T> componentType, Function<Type, T> converter) {
@@ -199,11 +210,13 @@ public interface ComponentSet<P extends DataProcessor<?>> extends Pooled {
 final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetDataBuilder<S, P> {
 
     private final AccessorFactory<S> accessorFactory;
+    private final BiFunction<IterableAccessor, ArchetypeComponentAccessor<?>[], ArchetypeIterator<P>> iteratorFactory;
 
     private final List<ComponentData<S, ?, ?>> components = new ArrayList<>();
 
-    public ComponentSetDataBuilderImpl(AccessorFactory<S> accessorFactory) {
+    public ComponentSetDataBuilderImpl(AccessorFactory<S> accessorFactory, BiFunction<IterableAccessor, ArchetypeComponentAccessor<?>[], ArchetypeIterator<P>> iteratorFactory) {
         this.accessorFactory = accessorFactory;
+        this.iteratorFactory = iteratorFactory;
     }
 
     @Override
@@ -215,7 +228,7 @@ final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends Dat
 
     @Override
     public ComponentSetData<S, P> build() {
-        return new ComponentSetDataImpl<>(accessorFactory, components);
+        return new ComponentSetDataImpl<>(accessorFactory, iteratorFactory, components);
     }
 
 }
@@ -223,16 +236,23 @@ final class ComponentSetDataBuilderImpl<S extends ComponentSet<?>, P extends Dat
 final class ComponentSetDataImpl<S extends ComponentSet<?>, P extends DataProcessor<S>> implements ComponentSetData<S, P> {
 
     private final AccessorFactory<S> accessorFactory;
+    private final BiFunction<IterableAccessor, ArchetypeComponentAccessor<?>[], ArchetypeIterator<P>> iteratorFactory;
     private final List<ComponentData<S, ?, ?>> components;
 
-    ComponentSetDataImpl(AccessorFactory<S> accessorFactory, List<ComponentData<S, ?, ?>> components) {
+    ComponentSetDataImpl(AccessorFactory<S> accessorFactory, BiFunction<IterableAccessor, ArchetypeComponentAccessor<?>[], ArchetypeIterator<P>> iteratorFactory, List<ComponentData<S, ?, ?>> components) {
         this.accessorFactory = accessorFactory;
+        this.iteratorFactory = iteratorFactory;
         this.components = components;
     }
 
     @Override
     public AccessorFactory<S> accessorFactory() {
         return accessorFactory;
+    }
+
+    @Override
+    public BiFunction<IterableAccessor, ArchetypeComponentAccessor<?>[], ArchetypeIterator<P>> iteratorFactory() {
+        return iteratorFactory;
     }
 
     @Override

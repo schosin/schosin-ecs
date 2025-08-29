@@ -12,6 +12,7 @@ import de.schosin.ecs.api.components.mappers.EntityFetchRelationMappers.Exclusiv
 import de.schosin.ecs.api.components.mappers.EntityRelationMappers.ExclusiveEntityRelationMapper;
 import de.schosin.ecs.api.components.types.RelationComponentType.RegularEntityRelationType;
 import de.schosin.ecs.api.components.types.RelationFetchType.ExclusiveEntityRelationFetchType;
+import de.schosin.ecs.api.data.ArchetypeComponentAccessor;
 import de.schosin.ecs.api.data.ComponentAccessor;
 import de.schosin.ecs.api.data.DataAccessor;
 import de.schosin.ecs.engine.components.ComponentMapperManager;
@@ -75,6 +76,14 @@ public class ExclusiveEntityRelationFetchMapperImpl<R extends Exclusive, T> impl
     @Override
     public EntityRelationFetchAccessor<R, T> getComponentAccessor(DataAccessor accessor) {
         return accessorPool.getInstance().init(accessor);
+    }
+
+    @Override
+    public ArchetypeComponentAccessor<EntityRelationData<R, T>> getArchetypeComponentAccessor(DataAccessor accessor) {
+        // TODO implement
+        var todo = true;
+
+        throw new UnsupportedOperationException("getArchetypeComponentAccessor(%s) not implemented yet".formatted(accessor));
     }
 
     @Override
